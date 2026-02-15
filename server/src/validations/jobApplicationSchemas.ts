@@ -64,6 +64,10 @@ export const updateJobBodySchema = z.object({
   generationStatus: z.enum(['none', 'pending_input', 'pending_generation', 'draft_ready', 'finalized', 'error']).optional(),
   draftCvJson: z.any().optional(),
   draftCoverLetterText: z.string().optional(),
+  // Allow updating baseCvId and jobType
+  baseCvId: z.string().optional().nullable(),
+  jobType: jobTypeEnum.optional().nullable(),
+  language: z.enum(['en', 'de']).optional(),
 });
 
 /**

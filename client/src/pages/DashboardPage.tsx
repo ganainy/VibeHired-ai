@@ -205,7 +205,9 @@ const DashboardPage: React.FC = () => {
       contact: job.contact,
       dateApplied: job.dateApplied,
       language: job.language,
-      createdAt: job.createdAt
+      createdAt: job.createdAt,
+      baseCvId: job.baseCvId,
+      jobType: job.jobType
     });
     setModalError(null);
     setModalMode('edit');
@@ -986,6 +988,28 @@ const DashboardPage: React.FC = () => {
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       Choose which CV version to use as the base for this job application
                     </p>
+                  </div>
+
+                  {/* Job Type */}
+                  <div className="mb-5">
+                    <label htmlFor="jobType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Job Type
+                    </label>
+                    <select
+                      id="jobType"
+                      name="jobType"
+                      value={formData.jobType || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                    >
+                      <option value="">Not specified</option>
+                      <option value="full-time">Full-time</option>
+                      <option value="part-time">Part-time</option>
+                      <option value="working-student">Working Student</option>
+                      <option value="internship">Internship</option>
+                      <option value="contract">Contract</option>
+                      <option value="freelance">Freelance</option>
+                    </select>
                   </div>
 
                   {/* Date Added */}
