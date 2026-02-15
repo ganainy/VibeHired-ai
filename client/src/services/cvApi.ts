@@ -16,7 +16,10 @@ const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:50
 
 export interface CVDocument {
     _id: string;
-    isMasterCv: boolean;
+    isPrimary?: boolean;
+    category?: string | null;
+    displayName?: string;
+    isMasterCv?: boolean; // Keep for backward compatibility
     jobApplicationId?: string | null;
     jobApplication?: {
         _id: string;
@@ -67,10 +70,117 @@ export interface PromoteCvResponse {
     cv: CVDocument;
 }
 
+export interface GetCvBranchesResponse {
+    branches: CVDocument[];
+}
+
+export interface CreateBranchRequest {
+    sourceCvId: string;
+    category: string;
+    displayName: string;
+}
+
+export interface CreateBranchResponse {
+    message: string;
+    branch: CVDocument;
+}
+
+export interface SetPrimaryResponse {
+    message: string;
+    branch: {
+        _id: string;
+        isPrimary: boolean;
+        category: string | null;
+        displayName: string;
+        updatedAt: string;
+    };
+}
+
+export interface RenameBranchRequest {
+    displayName: string;
+}
+
+export interface RenameBranchResponse {
+    message: string;
+    branch: {
+        _id: string;
+        displayName: string;
+        updatedAt: string;
+    };
+}
+
 export interface PreviewCvResponse {
     message: string;
     pdfBase64: string;
 }
+
+// ============================================================================
+// New Branch API Functions
+// ============================================================================
+
+/**
+ * Get all CV branches for the current user
+ */
+export const getCvBranches = async (): Promise<GetCvBranchesResponse> => {
+    try {
+        const response = await axios.get<GetCvBranchesResponse>(`${API_BASE_URL}/branches`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Get CV branches API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred fetching CV branches.' };
+    }
+};
+
+/**
+ * Create a new CV branch
+ */
+export const createCvBranch = async (data: CreateBranchRequest): Promise<CreateBranchResponse> => {
+    try {
+        const response = await axios.post<CreateBranchResponse>(`${API_BASE_URL}/create-branch`, data);
+        return response.data;
+    } catch (error: any) {
+        console.error('Create CV branch API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred creating CV branch.' };
+    }
+};
+
+/**
+ * Set a CV as primary
+ */
+export const setCvPrimary = async (cvId: string): Promise<SetPrimaryResponse> => {
+    try {
+        const response = await axios.patch<SetPrimaryResponse>(`${API_BASE_URL}/${cvId}/set-primary`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Set CV primary API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred setting CV as primary.' };
+    }
+};
+
+/**
+ * Rename a CV branch
+ */
+export const renameCvBranch = async (cvId: string, data: RenameBranchRequest): Promise<RenameBranchResponse> => {
+    try {
+        const response = await axios.patch<RenameBranchResponse>(`${API_BASE_URL}/${cvId}/rename`, data);
+        return response.data;
+    } catch (error: any) {
+        console.error('Rename CV branch API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred renaming CV branch.' };
+    }
+};
 
 // ============================================================================
 // API Functions
@@ -288,10 +398,18 @@ export const getEffectiveTemplate = (cv: CVDocument, userDefault?: string): stri
 };
 
 /**
- * Filter CVs by type
+ * Filter CVs by type (updated for branch system)
  */
+export const filterPrimaryCv = (cvs: CVDocument[]): CVDocument | undefined => {
+    return cvs.find(cv => cv.isPrimary);
+};
+
 export const filterMasterCv = (cvs: CVDocument[]): CVDocument | undefined => {
     return cvs.find(cv => cv.isMasterCv);
+};
+
+export const filterBranchCvs = (cvs: CVDocument[]): CVDocument[] => {
+    return cvs.filter(cv => !cv.isPrimary && !cv.isMasterCv);
 };
 
 export const filterJobCvs = (cvs: CVDocument[]): CVDocument[] => {

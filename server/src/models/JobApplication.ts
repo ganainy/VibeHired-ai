@@ -60,6 +60,11 @@ export interface IJobApplication extends Document {
     // --- New Fields for Final Filenames ---
     generatedCvFilename?: string; // Store the filename of the latest generated CV PDF
     generatedCoverLetterFilename?: string; // Store the filename of the latest generated CL PDF
+    // --- New Fields for CV Branch System ---
+    jobCategory?: string | null;   // e.g., "Software Engineering" (free text)
+    baseCvId?: mongoose.Schema.Types.ObjectId | null;  // Which CV branch was used as base
+    // --- Job Type Field ---
+    jobType?: 'full-time' | 'part-time' | 'working-student' | 'internship' | 'contract' | 'freelance' | null;
     // --- Chat History ---
     chatHistory?: Array<{
         sender: 'user' | 'ai';
@@ -148,6 +153,15 @@ const JobApplicationSchema: Schema = new Schema(
         // --- Schema Definitions for New Fields ---
         generatedCvFilename: { type: String, required: false },
         generatedCoverLetterFilename: { type: String, required: false },
+        // --- Schema Definitions for CV Branch System ---
+        jobCategory: { type: String, default: null, maxlength: 50 },
+        baseCvId: { type: Schema.Types.ObjectId, ref: 'CV', default: null },
+        // --- Job Type Schema ---
+        jobType: {
+            type: String,
+            enum: ['full-time', 'part-time', 'working-student', 'internship', 'contract', 'freelance', null],
+            default: null
+        },
         // --- Chat History Schema ---
         chatHistory: [{
             sender: { type: String, enum: ['user', 'ai'], required: true },

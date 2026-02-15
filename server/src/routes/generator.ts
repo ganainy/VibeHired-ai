@@ -304,10 +304,18 @@ const generateDocumentsHandler: RequestHandler = async (req: ValidatedRequest, r
             await jobCv.save();
         } else {
             // Create new Job CV
+            // Get job info for display name
+            const job = await JobApplication.findById(jobId).select('jobTitle companyName');
+            const jobDisplayName = job 
+                ? `Tailored CV - ${job.jobTitle} at ${job.companyName}`
+                : 'Tailored CV';
+            
             await CV.create({
                 userId: userId,
                 jobApplicationId: jobId,
                 isMasterCv: false,
+                isPrimary: false,
+                displayName: jobDisplayName,
                 cvJson: tailoredCvJson,
                 // Inherit template from master if possible, or default?
                 // For now, let's leave templateId undefined (will use default)
@@ -448,10 +456,18 @@ const finalizeGenerationHandler: RequestHandler = async (req: ValidatedRequest, 
             await jobCv.save();
         } else {
             // Create new Job CV
+            // Get job info for display name
+            const job = await JobApplication.findById(jobId).select('jobTitle companyName');
+            const jobDisplayName = job 
+                ? `Tailored CV - ${job.jobTitle} at ${job.companyName}`
+                : 'Tailored CV';
+            
             await CV.create({
                 userId: user._id.toString(),
                 jobApplicationId: jobId,
                 isMasterCv: false,
+                isPrimary: false,
+                displayName: jobDisplayName,
                 cvJson: tailoredCvJson,
             });
         }
@@ -1099,10 +1115,18 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             await jobCv.save();
         } else {
             // Create new Job CV if missing
+            // Get job info for display name
+            const job = await JobApplication.findById(jobId).select('jobTitle companyName');
+            const jobDisplayName = job 
+                ? `Tailored CV - ${job.jobTitle} at ${job.companyName}`
+                : 'Tailored CV';
+            
             await CV.create({
                 userId: userId,
                 jobApplicationId: jobId,
                 isMasterCv: false,
+                isPrimary: false,
+                displayName: jobDisplayName,
                 cvJson: tailoredCvJson,
                 tailoringChanges: tailoringChanges,
             });

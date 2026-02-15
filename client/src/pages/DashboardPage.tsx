@@ -8,8 +8,10 @@ import {
   updateJob,
   JobApplication,
   CreateJobPayload,
-  createJobFromTextApi
+  createJobFromTextApi,
+  CreateJobFromTextOptions
 } from '../services/jobApi';
+import { getCvBranches, CVDocument } from '../services/cvApi';
 
 import JobStatusBadge from '../components/jobs/JobStatusBadge';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
@@ -21,6 +23,17 @@ type JobFormData = Partial<Omit<JobApplication, '_id' | 'updatedAt' | 'generatio
 // Explicitly list sortable keys for type safety
 type SortableJobKeys = 'jobTitle' | 'companyName' | 'status' | 'createdAt' | 'language';
 
+// Job type options for dropdown
+const JOB_TYPE_OPTIONS = [
+  { value: '', label: 'Auto-detect (AI will determine)' },
+  { value: 'full-time', label: 'Full-time' },
+  { value: 'part-time', label: 'Part-time' },
+  { value: 'working-student', label: 'Working Student' },
+  { value: 'internship', label: 'Internship' },
+  { value: 'contract', label: 'Contract' },
+  { value: 'freelance', label: 'Freelance' },
+];
+
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -28,6 +41,10 @@ const DashboardPage: React.FC = () => {
   const [jobs, setJobs] = useState<JobApplication[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // --- CV State ---
+  const [cvs, setCvs] = useState<CVDocument[]>([]);
+  const [isLoadingCvs, setIsLoadingCvs] = useState<boolean>(false);
 
   // --- Modal & Form State ---
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
@@ -40,6 +57,12 @@ const DashboardPage: React.FC = () => {
   const [jobTextInput, setJobTextInput] = useState<string>('');
   const [isCreatingFromText, setIsCreatingFromText] = useState<boolean>(false);
   const [createFromTextError, setCreateFromTextError] = useState<string | null>(null);
+
+  // --- Pre-Extraction Form State ---
+  const [selectedCvBranchId, setSelectedCvBranchId] = useState<string | null>(null);
+  const [preExtractionJobUrl, setPreExtractionJobUrl] = useState<string>('');
+  const [preExtractionStatus, setPreExtractionStatus] = useState<string>('Not Applied');
+  const [preExtractionJobType, setPreExtractionJobType] = useState<string>('');
 
   // --- Filtering & Sorting State ---
   const [filterText, setFilterText] = useState<string>('');
@@ -81,6 +104,23 @@ const DashboardPage: React.FC = () => {
       }
     };
     fetchJobs();
+  }, []);
+
+  // --- useEffect: Fetch CV branches ---
+  useEffect(() => {
+    const fetchCvs = async () => {
+      setIsLoadingCvs(true);
+      try {
+        const fetchedCvs = await getCvBranches();
+        setCvs(fetchedCvs.branches);
+      } catch (err: any) {
+        console.error("Failed to fetch CVs:", err);
+        // Don't set error state for CVs as it's not critical for job creation
+      } finally {
+        setIsLoadingCvs(false);
+      }
+    };
+    fetchCvs();
   }, []);
 
 
@@ -137,7 +177,16 @@ const DashboardPage: React.FC = () => {
 
   // --- Modal Event Handlers ---
   const handleOpenAddModal = () => {
-    setFormData({ jobTitle: '', companyName: '', status: 'Not Applied', jobUrl: '', notes: '', language: 'en' });
+    const primaryCv = cvs.find(cv => cv.isPrimary);
+    setFormData({ 
+      jobTitle: '', 
+      companyName: '', 
+      status: 'Not Applied', 
+      jobUrl: '', 
+      notes: '', 
+      language: 'en',
+      baseCvId: primaryCv?._id || null
+    });
     setCurrentJobId(null);
     setModalError(null);
     setModalMode('add');
@@ -256,9 +305,16 @@ const DashboardPage: React.FC = () => {
     setError(null);
 
     try {
-      const newJob = await createJobFromTextApi(jobTextInput);
+      const newJob = await createJobFromTextApi(jobTextInput, {
+        baseCvId: selectedCvBranchId,
+        jobUrl: preExtractionJobUrl || undefined,
+        status: preExtractionStatus as JobApplication['status'],
+        jobType: preExtractionJobType as JobApplication['jobType'] || undefined,
+      });
       setJobs(prevJobs => [newJob, ...prevJobs]);
       setJobTextInput('');
+      setPreExtractionJobUrl('');
+      setPreExtractionJobType('');
       setToast({ message: 'Job application created successfully!', type: 'success' });
     } catch (err: any) {
       console.error("Failed to create job from text:", err);
@@ -395,6 +451,91 @@ const DashboardPage: React.FC = () => {
         <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 space-y-6">
           <div className="flex flex-col gap-4">
             <form onSubmit={handleCreateFromTextSubmit} className="w-full">
+              {/* Pre-Extraction Form Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                {/* CV Branch Selection */}
+                <div>
+                  <label htmlFor="cvBranch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    CV Branch
+                  </label>
+                  <select
+                    id="cvBranch"
+                    value={selectedCvBranchId || ''}
+                    onChange={(e) => setSelectedCvBranchId(e.target.value || null)}
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    disabled={isCreatingFromText}
+                  >
+                    <option value="">Select CV (optional)</option>
+                    {cvs.filter(cv => !cv.jobApplication).map(cv => (
+                      <option key={cv._id} value={cv._id}>
+                        {cv.displayName || cv.category || 'CV'} {cv.isPrimary ? '(Primary)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Job URL */}
+                <div>
+                  <label htmlFor="jobUrl" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Job URL
+                  </label>
+                  <input
+                    type="url"
+                    id="jobUrl"
+                    value={preExtractionJobUrl}
+                    onChange={(e) => setPreExtractionJobUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    disabled={isCreatingFromText}
+                  />
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Status
+                  </label>
+                  <select
+                    id="status"
+                    value={preExtractionStatus}
+                    onChange={(e) => setPreExtractionStatus(e.target.value)}
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    disabled={isCreatingFromText}
+                  >
+                    <option value="Not Applied">Not Applied</option>
+                    <option value="Applied">Applied</option>
+                    <option value="Interview">Interview</option>
+                    <option value="Assessment">Assessment</option>
+                    <option value="Offer">Offer</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                </div>
+
+                {/* Job Type */}
+                <div>
+                  <label htmlFor="jobType" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Job Type
+                  </label>
+                  <select
+                    id="jobType"
+                    value={preExtractionJobType}
+                    onChange={(e) => setPreExtractionJobType(e.target.value)}
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    disabled={isCreatingFromText}
+                  >
+                    <option value="">Auto-detect</option>
+                    <option value="full-time">Full-time</option>
+                    <option value="part-time">Part-time</option>
+                    <option value="working-student">Working Student</option>
+                    <option value="internship">Internship</option>
+                    <option value="contract">Contract</option>
+                    <option value="freelance">Freelance</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Job Description Text Area */}
               <div className="relative">
                 <div className="absolute left-4 top-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                   <ClipboardIcon />
@@ -817,6 +958,34 @@ const DashboardPage: React.FC = () => {
                         <option value="de" className="bg-white dark:bg-gray-700">German</option>
                       </select>
                     </div>
+                  </div>
+
+                  {/* CV Selection */}
+                  <div className="mb-5">
+                    <label htmlFor="baseCvId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Base CV
+                    </label>
+                    <select
+                      id="baseCvId"
+                      name="baseCvId"
+                      value={formData.baseCvId || ''}
+                      onChange={handleInputChange}
+                      disabled={isLoadingCvs}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer disabled:opacity-50"
+                    >
+                      <option value="">
+                        {isLoadingCvs ? 'Loading CVs...' : 'Select a CV (optional)'}
+                      </option>
+                      {cvs.map(cv => (
+                        <option key={cv._id} value={cv._id} className="bg-white dark:bg-gray-700">
+                          {cv.displayName || cv.category || 'Unnamed CV'}
+                          {cv.isPrimary ? ' (Primary)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Choose which CV version to use as the base for this job application
+                    </p>
                   </div>
 
                   {/* Date Added */}

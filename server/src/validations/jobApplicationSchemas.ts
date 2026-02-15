@@ -14,6 +14,18 @@ const jobStatusEnum = z.enum([
 ]);
 
 /**
+ * Job type enum
+ */
+const jobTypeEnum = z.enum([
+  'full-time',
+  'part-time',
+  'working-student',
+  'internship',
+  'contract',
+  'freelance',
+]).nullable().optional();
+
+/**
  * Create job application body schema
  */
 export const createJobBodySchema = z.object({
@@ -30,6 +42,7 @@ export const createJobBodySchema = z.object({
   contact: z.string().optional(),
   language: z.string().optional(),
   jobDescriptionText: z.string().optional(),
+  baseCvId: z.string().optional(),
   createdAt: z.string().optional(),
 });
 
@@ -94,4 +107,9 @@ export const createJobFromTextBodySchema = z.object({
   text: z.string({
     required_error: 'Job description text is required',
   }).min(50, 'Please paste more job description text (at least 50 characters)').max(200000, 'Text is too long'),
+  // Additional fields for pre-extraction form
+  baseCvId: z.string().optional().nullable(),
+  jobUrl: z.string().url('Invalid URL format').optional().or(z.literal('')),
+  status: jobStatusEnum.optional(),
+  jobType: jobTypeEnum,
 });

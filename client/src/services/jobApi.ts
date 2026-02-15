@@ -21,11 +21,14 @@ export interface JobApplication {
     jobDescriptionText?: string;
     language?: 'en' | 'de'; // More specific type
     jobPrerequisites?: string; // AI-extracted job requirements and prerequisites
+    jobType?: 'full-time' | 'part-time' | 'working-student' | 'internship' | 'contract' | 'freelance' | null; // Employment type
     draftCvJson?: any | null; // Use JsonResumeSchema if imported, else any
     draftCoverLetterText?: string | null;
     generationStatus?: 'none' | 'pending_input' | 'pending_generation' | 'draft_ready' | 'finalized' | 'error'; // Added pending_generation
     generatedCvFilename?: string; // Added
     generatedCoverLetterFilename?: string; // Added
+    baseCvId?: string | null; // Reference to the base CV used for this job
+    jobCategory?: string | null; // Category of the job (e.g., "IT Helpdesk", "Programming")
     createdAt: string; // Dates are often strings in JSON
     updatedAt: string; // Dates are often strings in JSON
     extractedData?: {
@@ -154,9 +157,17 @@ export const createJobFromUrlApi = async (url: string): Promise<JobApplication> 
 };
 
 // ---  Create Job From Pasted Text Function ---
-export const createJobFromTextApi = async (text: string): Promise<JobApplication> => {
+export interface CreateJobFromTextOptions {
+    baseCvId?: string | null;
+    jobUrl?: string;
+    status?: JobApplication['status'];
+    jobType?: JobApplication['jobType'];
+}
+
+export const createJobFromTextApi = async (text: string, options?: CreateJobFromTextOptions): Promise<JobApplication> => {
     try {
-        const response = await axios.post<JobApplication>(`${API_BASE_URL}/job-applications/create-from-text`, { text });
+        const payload: any = { text, ...options };
+        const response = await axios.post<JobApplication>(`${API_BASE_URL}/job-applications/create-from-text`, payload);
         return response.data;
     } catch (error: any) {
         console.error(`Error creating job from pasted text:`, error);

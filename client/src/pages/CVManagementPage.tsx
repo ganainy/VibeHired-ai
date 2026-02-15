@@ -1,13 +1,17 @@
 // client/src/pages/CVManagementPage.tsx
 import React, { useState, ChangeEvent, FormEvent, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   uploadCV,
   getMasterCv,
   getAllCvs,
   updateCv,
   deleteCv,
-  CVDocument
+  CVDocument,
+  getCvBranches,
+  createCvBranch,
+  setCvPrimary,
+  renameCvBranch
 } from '../services/cvApi';
 import { ResumeBuilder } from '../components/resume-builder';
 import CvLivePreview from '../components/cv-editor/CvLivePreview';
@@ -19,6 +23,7 @@ import { improveSection } from '../services/generatorApi';
 import { scanAts, getAtsScores, getLatestAts, AtsScores, getAtsForJob } from '../services/atsApi';
 import { getAllTemplates } from '../templates/config';
 import Sidebar from '../components/cv-management/Sidebar';
+import CreateBranchModal from '../components/cv-management/CreateBranchModal';
 
 const CVManagementPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -54,12 +59,22 @@ const CVManagementPage: React.FC = () => {
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   // UI state
-  const [activeCvId, setActiveCvId] = useState<string | null>(null); // CV's MongoDB _id (null = loading)
+  const [activeCvId, setActiveCvId] = useState<string | null>(() => {
+    // Initialize from URL parameter
+    const cvId = searchParams.get('cv');
+    return cvId || null;
+  }); // CV's MongoDB _id (null = loading)
 
   // All CVs state (master + job CVs) from unified model
   const [allCvs, setAllCvs] = useState<CVDocument[]>([]);
   const [isLoadingJobCvs, setIsLoadingJobCvs] = useState<boolean>(false);
+
+  // Create branch modal state
+  const [isCreateBranchModalOpen, setIsCreateBranchModalOpen] = useState<boolean>(false);
+  const [isCreatingBranch, setIsCreatingBranch] = useState<boolean>(false);
 
   // Track original CV data for unsaved changes detection
   const originalCvDataRef = useRef<JsonResumeSchema | null>(null);
@@ -69,14 +84,29 @@ const CVManagementPage: React.FC = () => {
   // Can be backend hash (SHA256) or frontend hash (JSON string) - both work for comparison
   const lastAnalyzedCvHashRef = useRef<string | null>(null);
 
+  // Update URL when activeCvId changes
+  useEffect(() => {
+    if (activeCvId) {
+      const newSearchParams = new URLSearchParams(location.search);
+      newSearchParams.set('cv', activeCvId);
+      navigate(`${location.pathname}?${newSearchParams.toString()}`, { replace: true });
+    } else {
+      const newSearchParams = new URLSearchParams(location.search);
+      newSearchParams.delete('cv');
+      navigate(`${location.pathname}?${newSearchParams.toString()}`, { replace: true });
+    }
+  }, [activeCvId, navigate, location.pathname, location.search]);
+
   // Helper function to check if error is API key related
   const isApiKeyError = (errorMessage: string): boolean => {
     return errorMessage?.toLowerCase().includes('api key');
   };
 
-  // Derived state from allCvs
-  const masterCv = useMemo(() => allCvs.find(cv => cv.isMasterCv), [allCvs]);
-  const jobCvs = useMemo(() => allCvs.filter(cv => !cv.isMasterCv), [allCvs]);
+  // Derived state from allCvs (updated for branch system)
+  const primaryCv = useMemo(() => allCvs.find(cv => cv.isPrimary), [allCvs]);
+  const branchCvs = useMemo(() => allCvs.filter(cv => !cv.isPrimary), [allCvs]);
+  const masterCv = useMemo(() => allCvs.find(cv => cv.isMasterCv), [allCvs]); // Keep for backward compatibility
+  const jobCvs = useMemo(() => allCvs.filter(cv => !cv.isMasterCv), [allCvs]); // Keep for backward compatibility
 
   // Get active CV document
   const activeCv = useMemo(() => {
@@ -337,32 +367,30 @@ const CVManagementPage: React.FC = () => {
     };
   }, []);
 
-  // Fetch all CVs (master + job) from unified API
+  // Fetch all CV branches from unified API
   useEffect(() => {
     const fetchAllCvsData = async () => {
       setIsLoadingJobCvs(true);
       try {
-        const response = await getAllCvs();
-        setAllCvs(response.cvs);
+        const response = await getCvBranches();
+        setAllCvs(response.branches);
 
-        // Set activeCvId to master CV if not set yet
-        const master = response.cvs.find(cv => cv.isMasterCv);
-        if (master && !activeCvId) {
-          setActiveCvId(master._id);
+        // Set activeCvId to primary CV if not set yet
+        const primary = response.branches.find(cv => cv.isPrimary);
+        if (primary && !activeCvId) {
+          setActiveCvId(primary._id);
         }
       } catch (error: any) {
-        console.error("Error fetching CVs:", error);
-        // Silently fail - job CVs are optional
+        console.error("Error fetching CV branches:", error);
+        // Silently fail - CV branches are optional
       } finally {
         setIsLoadingJobCvs(false);
       }
     };
 
-    // Fetch when master CV is loaded
-    if (masterCvId) {
-      fetchAllCvsData();
-    }
-  }, [masterCvId]);
+    // Fetch branches on mount, independent of master CV
+    fetchAllCvsData();
+  }, []);
 
   // Fetch ATS scores when switching context
   useEffect(() => {
@@ -685,13 +713,16 @@ const CVManagementPage: React.FC = () => {
 
 
   const handleDeleteCv = async (cvId: string) => {
-    // Find the CV to determine if it's master or job
+    // Find the CV to determine if it's primary or branch
     const cvToDelete = allCvs.find(cv => cv._id === cvId);
-    const isJobCv = cvToDelete && !cvToDelete.isMasterCv;
+    const isPrimary = cvToDelete?.isPrimary;
 
-    const confirmMessage = isJobCv
-      ? 'Are you sure you want to delete this job-specific CV? This action cannot be undone.'
-      : 'Are you sure you want to delete your master CV? This action cannot be undone.';
+    if (isPrimary) {
+      setToast({ message: 'Cannot delete primary CV. Set another CV as primary first.', type: 'error' });
+      return;
+    }
+
+    const confirmMessage = 'Are you sure you want to delete this CV branch? This action cannot be undone.';
 
     if (!window.confirm(confirmMessage)) {
       return;
@@ -699,31 +730,18 @@ const CVManagementPage: React.FC = () => {
 
     setIsDeleting(true);
     try {
-      // Use unified deleteCv API for both master and job CVs
+      // Use unified deleteCv API
       await deleteCv(cvId);
 
-      if (isJobCv) {
-        // Update local state - remove the CV from allCvs list
-        setAllCvs((prev: CVDocument[]) => prev.filter((cv: CVDocument) => cv._id !== cvId));
+      // Update local state - remove the CV from allCvs list
+      setAllCvs((prev: CVDocument[]) => prev.filter((cv: CVDocument) => cv._id !== cvId));
 
-        // Switch to master CV if we were viewing the deleted job CV
-        if (activeCvId === cvId && masterCv) {
-          setActiveCvId(masterCv._id);
-        }
-
-        setToast({ message: 'Job CV deleted successfully.', type: 'success' });
-      } else {
-        // Master CV deleted
-        setCurrentCvData(null);
-        setMasterCvId(null);
-        setAllCvs((prev: CVDocument[]) => prev.filter((cv: CVDocument) => cv._id !== cvId));
-        originalCvDataRef.current = null;
-        setSelectedFile(null);
-        setActiveCvId(null);
-        const fileInput = document.getElementById('cvFileInput') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
-        setToast({ message: 'CV deleted successfully.', type: 'success' });
+      // Switch to primary CV if we were viewing the deleted branch
+      if (activeCvId === cvId && primaryCv) {
+        setActiveCvId(primaryCv._id);
       }
+
+      setToast({ message: 'CV branch deleted successfully.', type: 'success' });
     } catch (error: any) {
       console.error("Error deleting CV:", error);
       setToast({ message: error.message || 'Failed to delete CV.', type: 'error' });
@@ -731,11 +749,66 @@ const CVManagementPage: React.FC = () => {
       setIsDeleting(false);
     }
   };
+  const handleSetPrimary = async (cvId: string) => {
+    if (!window.confirm('Are you sure you want to set this CV as your primary? This will replace your current primary CV.')) {
+      return;
+    }
 
+    try {
+      await setCvPrimary(cvId);
+      
+      // Update local state
+      setAllCvs((prev: CVDocument[]) => 
+        prev.map((cv: CVDocument) => ({
+          ...cv,
+          isPrimary: cv._id === cvId
+        }))
+      );
 
+      setToast({ message: 'CV set as primary successfully.', type: 'success' });
+    } catch (error: any) {
+      console.error("Error setting CV as primary:", error);
+      setToast({ message: error.message || 'Failed to set CV as primary.', type: 'error' });
+    }
+  };
+
+  const handleRenameBranch = async (cvId: string, newName: string) => {
+    try {
+      await renameCvBranch(cvId, { displayName: newName });
+      
+      // Update local state
+      setAllCvs((prev: CVDocument[]) => 
+        prev.map((cv: CVDocument) => 
+          cv._id === cvId ? { ...cv, displayName: newName } : cv
+        )
+      );
+
+      setToast({ message: 'CV branch renamed successfully.', type: 'success' });
+    } catch (error: any) {
+      console.error("Error renaming CV branch:", error);
+      setToast({ message: error.message || 'Failed to rename CV branch.', type: 'error' });
+    }
+  };
+
+  const handleCreateBranch = async (sourceCvId: string, category: string, displayName: string) => {
+    setIsCreatingBranch(true);
+    try {
+      const response = await createCvBranch({ sourceCvId, category, displayName });
+      
+      // Add the new branch to local state
+      setAllCvs((prev: CVDocument[]) => [...prev, response.branch]);
+
+      setToast({ message: 'CV branch created successfully.', type: 'success' });
+    } catch (error: any) {
+      console.error("Error creating CV branch:", error);
+      setToast({ message: error.message || 'Failed to create CV branch.', type: 'error' });
+      throw error; // Re-throw to let modal handle it
+    } finally {
+      setIsCreatingBranch(false);
+    }
+  };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -855,8 +928,8 @@ const CVManagementPage: React.FC = () => {
       {/* Left Sidebar */}
       {!isReplacing && (
         <Sidebar
-          masterCv={masterCv || null}
-          jobCvs={jobCvs}
+          primaryCv={primaryCv || null}
+          branchCvs={branchCvs}
           activeCvId={activeCvId}
           onSelectCv={setActiveCvId}
           onAddNewCv={() => {
@@ -870,6 +943,9 @@ const CVManagementPage: React.FC = () => {
             setCreationMode('upload');
           }}
           onDeleteCv={handleDeleteCv}
+          onSetPrimary={handleSetPrimary}
+          onRenameBranch={handleRenameBranch}
+          onCreateBranch={() => setIsCreateBranchModalOpen(true)}
           className="w-80 flex-shrink-0 z-20 overflow-hidden"
         />
       )}
@@ -880,18 +956,25 @@ const CVManagementPage: React.FC = () => {
         {(!currentCvData || isReplacing) && !isLoadingCv ? (
           <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-8">
             {/* Back Button */}
-            <button
-              onClick={() => {
-                setIsReplacing(false);
-                setCreationMode('choose');
-              }}
-              className="mb-6 flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-all font-medium"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to My CVs
-            </button>
+            {allCvs.length > 0 && (
+              <button
+                onClick={() => {
+                  // Select the primary CV if available, otherwise select the first CV
+                  const cvToSelect = primaryCv || allCvs[0];
+                  if (cvToSelect) {
+                    setActiveCvId(cvToSelect._id);
+                    setIsReplacing(false);
+                    setCreationMode('choose');
+                  }
+                }}
+                className="mb-6 flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-all font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to My CVs
+              </button>
+            )}
 
             {/* Choice Mode */}
             {creationMode === 'choose' && (
@@ -1023,6 +1106,11 @@ const CVManagementPage: React.FC = () => {
                 {activeCvData?.basics?.name && (
                   <span className="text-sm text-gray-500 dark:text-gray-400">
                     Editing <span className="font-semibold text-gray-900 dark:text-gray-100">{activeCvData.basics.name} - {activeCvData.basics.label}</span>
+                    {activeCv && (
+                      <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                        {activeCv.isPrimary ? 'Primary CV' : (activeCv.displayName || activeCv.category || 'Branch')}
+                      </span>
+                    )}
                   </span>
                 )}
                 {/* Save Status */}
@@ -1088,6 +1176,15 @@ const CVManagementPage: React.FC = () => {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Create Branch Modal */}
+      <CreateBranchModal
+        isOpen={isCreateBranchModalOpen}
+        onClose={() => setIsCreateBranchModalOpen(false)}
+        onCreateBranch={handleCreateBranch}
+        allCvs={allCvs}
+        isLoading={isCreatingBranch}
+      />
     </div>
   );
 };

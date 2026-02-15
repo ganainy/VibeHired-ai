@@ -16,6 +16,7 @@ export interface ExtractedJobData {
     salary?: string | null; // Extracted salary info
     keyDetails?: Array<{ key: string; value: string }> | null; // AI extracted highlights (key-value pairs)
     jobPrerequisites?: string | null; // AI-extracted job requirements and prerequisites
+    jobType?: 'full-time' | 'part-time' | 'working-student' | 'internship' | 'contract' | 'freelance' | null; // Employment type
     notes?: string; // Reserved for user, typically null from AI
 }
 
@@ -138,10 +139,12 @@ async function extractFieldsWithGemini(htmlContent: string, url: string, userId:
         6. Extract any salary or compensation information provided.
         7. Extract key highlights such as Employment Type, Experience Level, Remote Policy, Benefits, Tech Stack, Location, Salary, and any other important details. Return them as a structured list of key-value pairs in the 'keyDetails' field.
         8. Extract the job prerequisites and requirements as a bullet-pointed list. Include required skills, qualifications, years of experience, education requirements, certifications, languages, and any "must-have" or "nice-to-have" items. IMPORTANT: This list MUST BE IN ENGLISH, even if the job description is in another language. Translate the requirements to English if necessary. Format as a clean bulleted list (using • or - characters). Leave the 'notes' field NULL.
+        9. Determine the employment type (jobType). Map common terms to these exact values: "full-time" (for Vollzeit, full-time, 40 hours), "part-time" (for Teilzeit, part-time), "working-student" (for Werkstudent, working student, student assistant), "internship" (for Praktikum, internship), "contract" (for Befristet, contract, temporary), "freelance" (for Freelance, self-employed). Use null if not specified.
 
         Output Format:
-        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "keyDetails", "jobPrerequisites", and "notes".
+        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "keyDetails", "jobPrerequisites", "jobType", and "notes".
         - jobTitle, companyName, language, location, salary, jobPrerequisites should be strings if found, or null.
+        - jobType should be one of: "full-time", "part-time", "working-student", "internship", "contract", "freelance", or null.
         - keyDetails should be an array of objects with "key" and "value" strings, or null.
         - jobPrerequisites should be a bulleted list string of requirements and qualifications (ALWAYS IN ENGLISH).
         - jobDescriptionText is REQUIRED.
@@ -156,6 +159,7 @@ async function extractFieldsWithGemini(htmlContent: string, url: string, userId:
           "language": "en",
           "location": "Berlin / Hybrid",
           "salary": "€80k",
+          "jobType": "full-time",
           "keyDetails": [
             { "key": "Contract", "value": "Full-time" },
             { "key": "Location", "value": "Berlin / Hybrid" },
@@ -246,10 +250,12 @@ export async function extractJobDataFromText(rawText: string, userId: string): P
         6. Extract any salary or compensation information provided.
         7. Extract key highlights such as Employment Type, Experience Level, Remote Policy, Benefits, Tech Stack, Location, Salary, and any other important details. Return them as a structured list of key-value pairs in the 'keyDetails' field.
         8. Extract the job prerequisites and requirements as a bullet-pointed list. Include required skills, qualifications, years of experience, education requirements, certifications, languages, and any "must-have" or "nice-to-have" items. IMPORTANT: This list MUST BE IN ENGLISH, even if the job description is in another language. Translate the requirements to English if necessary. Format as a clean bulleted list (using • or - characters). Leave the 'notes' field NULL.
+        9. Determine the employment type (jobType). Map common terms to these exact values: "full-time" (for Vollzeit, full-time, 40 hours), "part-time" (for Teilzeit, part-time), "working-student" (for Werkstudent, working student, student assistant), "internship" (for Praktikum, internship), "contract" (for Befristet, contract, temporary), "freelance" (for Freelance, self-employed). Use null if not specified.
 
         Output Format:
-        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "keyDetails", "jobPrerequisites", and "notes".
+        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "keyDetails", "jobPrerequisites", "jobType", and "notes".
         - jobTitle, companyName, language, location, salary, jobPrerequisites should be strings if found, or null.
+        - jobType should be one of: "full-time", "part-time", "working-student", "internship", "contract", "freelance", or null.
         - keyDetails should be an array of objects with "key" and "value" strings, or null.
         - jobPrerequisites should be a bulleted list string of requirements and qualifications (ALWAYS IN ENGLISH).
         - jobDescriptionText is REQUIRED.
@@ -264,6 +270,7 @@ export async function extractJobDataFromText(rawText: string, userId: string): P
           "language": "en",
           "location": "SF",
           "salary": "$150k",
+          "jobType": "full-time",
           "keyDetails": [
             { "key": "Contract", "value": "Full-time" },
             { "key": "Experience", "value": "3+ years" },

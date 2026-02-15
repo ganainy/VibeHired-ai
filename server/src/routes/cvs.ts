@@ -3,7 +3,7 @@
  * Unified CV Routes
  * 
  * Handles all CV operations using the unified CV model.
- * Replaces the old cv.ts routes that stored master CV in User model.
+ * Replaces the old cv.ts routes that stored the master CV in the User model.
  */
 import express, { Router, Request, Response, RequestHandler } from 'express';
 import multer from 'multer';
@@ -68,29 +68,30 @@ function parseJsonResponseToSchema(responseText: string): JsonResumeSchema | nul
             throw new Error('AI response was not valid JSON.');
         }
     }
-    throw new Error('AI failed to return CV data in the expected format.');
+    throw new Error('AI failed to return CV data in expected format.');
 }
 
 /**
- * GET /api/cvs
- * Get all CVs for the current user
+ * GET /api/cvs/branches
+ * Get all CV branches for the current user
  */
-router.get('/', asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user!._id;
+router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id as string;
 
-    const cvs = await CV.find({ userId })
-        .populate('jobApplication', 'jobTitle companyName status')
-        .sort({ isMasterCv: -1, createdAt: -1 });
+    const branches = await CV.getBaseCvs(userId);
 
     res.json({
-        cvs: cvs.map(cv => ({
+        branches: branches.map(cv => ({
             _id: cv._id,
-            isMasterCv: cv.isMasterCv,
+            isPrimary: cv.isPrimary,
+            isMasterCv: cv.isPrimary, // For backward compatibility
+            category: cv.category,
+            displayName: cv.displayName,
             jobApplicationId: cv.jobApplicationId,
-            jobApplication: (cv as any).jobApplication || null,
             cvJson: cv.cvJson,
             templateId: cv.templateId,
             filename: cv.filename,
+            analysisCache: cv.analysisCache,
             createdAt: cv.createdAt,
             updatedAt: cv.updatedAt,
         }))
@@ -99,35 +100,113 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * GET /api/cvs/master
- * Get the master CV for the current user
+ * Get the primary CV for the current user (formerly master CV)
  */
 router.get('/master', asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id as string;
 
-    const masterCv = await CV.getMasterCv(userId);
+    const primaryCv = await CV.getPrimaryCv(userId);
 
-    if (!masterCv) {
+    if (!primaryCv) {
         res.json({
             cv: null,
-            message: 'No master CV found'
+            message: 'No primary CV found'
         });
         return;
     }
 
     // Get user's default template if CV doesn't have one
     const user = await User.findById(userId).select('selectedTemplate');
-    const effectiveTemplate = masterCv.templateId || user?.selectedTemplate || 'modern-clean';
+    const effectiveTemplate = primaryCv.templateId || user?.selectedTemplate || 'modern-clean';
 
     res.json({
         cv: {
-            _id: masterCv._id,
-            isMasterCv: true,
-            cvJson: masterCv.cvJson,
+            _id: primaryCv._id,
+            isPrimary: true,
+            isMasterCv: true, // Keep for backward compatibility
+            cvJson: primaryCv.cvJson,
             templateId: effectiveTemplate,
-            filename: masterCv.filename,
-            analysisCache: masterCv.analysisCache,
-            createdAt: masterCv.createdAt,
-            updatedAt: masterCv.updatedAt,
+            filename: primaryCv.filename,
+            analysisCache: primaryCv.analysisCache,
+            createdAt: primaryCv.createdAt,
+            updatedAt: primaryCv.updatedAt,
+        }
+    });
+}));
+
+/**
+ * POST /api/cvs/create-branch
+ * Create a new CV branch
+ */
+router.post('/create-branch', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id as string;
+    const { sourceCvId, category, displayName } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(sourceCvId)) {
+        throw new ValidationError('Invalid source CV ID');
+    }
+
+    if (!category || typeof category !== 'string' || category.trim().length === 0) {
+        throw new ValidationError('Category is required');
+    }
+
+    if (!displayName || typeof displayName !== 'string' || displayName.trim().length === 0) {
+        throw new ValidationError('Display name is required');
+    }
+
+    // Verify source CV exists and belongs to user
+    const sourceCv = await CV.findOne({ _id: sourceCvId, userId });
+    if (!sourceCv) {
+        throw new NotFoundError('Source CV not found');
+    }
+
+    // Create new branch
+    const newBranch = await CV.create({
+        userId,
+        isPrimary: false,
+        category,
+        displayName,
+        cvJson: JSON.parse(JSON.stringify(sourceCv.cvJson)), // Deep copy
+        templateId: sourceCv.templateId,
+    });
+
+    res.status(201).json({
+        message: 'CV branch created successfully.',
+        branch: {
+            _id: newBranch._id,
+            isPrimary: newBranch.isPrimary,
+            category: newBranch.category,
+            displayName: newBranch.displayName,
+            cvJson: newBranch.cvJson,
+            templateId: newBranch.templateId,
+            createdAt: newBranch.createdAt,
+            updatedAt: newBranch.updatedAt,
+        }
+    });
+}));
+
+/**
+ * PATCH /api/cvs/:id/set-primary
+ * Set a CV as primary
+ */
+router.patch('/:id/set-primary', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id as string;
+    const cvId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(cvId)) {
+        throw new ValidationError('Invalid CV ID');
+    }
+
+    const result = await CV.setAsPrimary(cvId, userId);
+
+    res.json({
+        message: 'CV set as primary successfully.',
+        branch: {
+            _id: result._id,
+            isPrimary: result.isPrimary,
+            category: result.category,
+            displayName: result.displayName,
+            updatedAt: result.updatedAt,
         }
     });
 }));
@@ -220,7 +299,7 @@ router.get('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * POST /api/cvs/upload
- * Upload and parse a new CV file (creates/replaces master CV)
+ * Upload and parse a new CV file (creates/replaces the primary CV)
  */
 router.post(
     '/upload',
@@ -245,7 +324,7 @@ router.post(
         try {
             const prompt = `
         Analyze the content of the attached CV file (${req.file.originalname}).
-        Your task is to extract the information and structure it precisely according to the JSON Resume Schema (details at https://jsonresume.org/schema/).
+        Your task is to extract information and structure it precisely according to the JSON Resume Schema (details at https://jsonresume.org/schema/).
 
         Instructions:
         - Parse the entire document.
@@ -279,24 +358,28 @@ router.post(
                 throw new Error('Failed to parse AI response into valid JSON Resume structure.');
             }
 
-            // Delete existing master CV (if any) and create new one
-            await CV.deleteOne({ userId, isMasterCv: true });
+            // Set all existing CVs as non-primary and create new primary CV
+            await CV.updateMany({ userId }, { isPrimary: false });
 
             const newCv = await CV.create({
                 userId,
-                isMasterCv: true,
+                isPrimary: true,
+                category: 'General',
+                displayName: 'Primary CV',
                 cvJson: cvJsonResume,
                 filename: req.file.originalname,
                 templateId: null, // Will inherit from user settings
             });
 
-            console.log(`Master CV created for user ${req.user!.email}`);
+            console.log(`Primary CV created for user ${req.user!.email}`);
 
             res.status(200).json({
                 message: 'CV uploaded and parsed successfully.',
                 cv: {
                     _id: newCv._id,
-                    isMasterCv: true,
+                    isPrimary: true,
+                    category: newCv.category,
+                    displayName: newCv.displayName,
                     cvJson: cvJsonResume,
                     filename: newCv.filename,
                     createdAt: newCv.createdAt,
@@ -316,7 +399,7 @@ router.post(
 
 /**
  * POST /api/cvs/job/:jobId
- * Create a job-specific CV (copies from master CV if no body provided)
+ * Create a job-specific CV (copies from the primary CV if no body provided)
  */
 router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id;
@@ -338,22 +421,24 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
         throw new ValidationError('CV already exists for this job. Use PUT to update.');
     }
 
-    // Get CV data from body or copy from master
+    // Get CV data from body or copy from primary CV
     let cvJson: JsonResumeSchema;
     if (req.body.cvJson) {
         cvJson = req.body.cvJson;
     } else {
-        // Copy from master CV
-        const masterCv = await CV.getMasterCv(userId as string);
-        if (!masterCv) {
-            throw new ValidationError('No master CV found. Please upload a CV first.');
+        // Copy from primary CV
+        const primaryCv = await CV.getPrimaryCv(userId as string);
+        if (!primaryCv) {
+            throw new ValidationError('No primary CV found. Please upload a CV first.');
         }
-        cvJson = JSON.parse(JSON.stringify(masterCv.cvJson)); // Deep copy
+        cvJson = JSON.parse(JSON.stringify(primaryCv.cvJson)); // Deep copy
     }
 
     const newCv = await CV.create({
         userId,
         isMasterCv: false,
+        isPrimary: false,
+        displayName: `Job CV - ${job.jobTitle} at ${job.companyName}`,
         jobApplicationId: new mongoose.Types.ObjectId(jobId),
         cvJson,
         templateId: req.body.templateId || null,
@@ -450,7 +535,7 @@ router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * POST /api/cvs/:id/promote
- * Promote a job CV to become the master CV
+ * Promote a job CV to become the primary CV
  */
 router.post('/:id/promote', asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id as string;
@@ -462,10 +547,10 @@ router.post('/:id/promote', asyncHandler(async (req: Request, res: Response) => 
 
     const promotedCv = await CV.promoteToMaster(cvId, userId);
 
-    console.log(`CV ${cvId} promoted to master for user ${req.user!.email}`);
+    console.log(`CV ${cvId} promoted to primary for user ${req.user!.email}`);
 
     res.json({
-        message: 'CV promoted to master successfully.',
+        message: 'CV promoted to primary successfully.',
         cv: {
             _id: promotedCv._id,
             isMasterCv: true,
@@ -493,44 +578,60 @@ router.post('/:id/preview', asyncHandler(async (req: Request, res: Response) => 
         throw new NotFoundError('CV not found');
     }
 
-    // Get effective template
-    const user = await User.findById(userId).select('selectedTemplate');
-    const template = req.body.template || cv.templateId || user?.selectedTemplate || 'modern-clean';
+    const { template } = req.body;
+    const templateId = template || cv.templateId || 'modern-clean';
 
-    const pdfBuffer = await generateCvPdfBuffer(
-        cv.cvJson as JsonResumeSchema,
-        template as CVTemplate
-    );
+    try {
+        const pdfBuffer = await generateCvPdfBuffer(cv.cvJson, templateId as CVTemplate);
+        const pdfBase64 = pdfBuffer.toString('base64');
 
-    const base64Pdf = pdfBuffer.toString('base64');
-
-    res.json({
-        message: 'CV preview generated successfully.',
-        pdfBase64: base64Pdf
-    });
+        res.json({
+            message: 'PDF preview generated successfully.',
+            pdfBase64,
+            templateId,
+        });
+    } catch (error: any) {
+        if (error instanceof GoogleGenerativeAIError) {
+            throw new ValidationError('Failed to generate PDF: AI service error');
+        }
+        console.error('PDF generation error:', error);
+        throw new ValidationError('Failed to generate PDF preview. Please try again.');
+    }
 }));
 
 /**
- * POST /api/cvs/preview
- * Generate PDF preview from provided CV data (without saving)
+ * PATCH /api/cvs/:id/rename
+ * Rename a CV branch
  */
-router.post('/preview', asyncHandler(async (req: Request, res: Response) => {
-    const { cvData, template } = req.body;
+router.patch('/:id/rename', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id;
+    const cvId = req.params.id;
+    const { displayName } = req.body;
 
-    if (!cvData || typeof cvData !== 'object') {
-        throw new ValidationError('CV data is required in the request body.');
+    if (!mongoose.Types.ObjectId.isValid(cvId)) {
+        throw new ValidationError('Invalid CV ID');
     }
 
-    const pdfBuffer = await generateCvPdfBuffer(
-        cvData as JsonResumeSchema,
-        (template as CVTemplate) || CVTemplate.HARVARD
-    );
+    if (!displayName || typeof displayName !== 'string' || displayName.trim().length === 0) {
+        throw new ValidationError('Display name is required');
+    }
 
-    const base64Pdf = pdfBuffer.toString('base64');
+    // Verify CV exists and belongs to user
+    const cv = await CV.findOne({ _id: cvId, userId });
+    if (!cv) {
+        throw new NotFoundError('CV not found');
+    }
+
+    cv.displayName = displayName.trim();
+    await cv.save();
 
     res.json({
-        message: 'CV preview generated successfully.',
-        pdfBase64: base64Pdf
+        message: 'CV branch renamed successfully',
+        branch: {
+            _id: cv._id,
+            displayName: cv.displayName,
+            updatedAt: cv.updatedAt,
+        }
     });
 }));
 

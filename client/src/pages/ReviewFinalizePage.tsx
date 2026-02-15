@@ -14,7 +14,7 @@ import CvLivePreview from '../components/cv-editor/CvLivePreview';
 import { DEFAULT_CV_PROMPT, DEFAULT_COVER_LETTER_PROMPT } from '../constants/prompts';
 import { getAllTemplates, TemplateConfig } from '../templates/config';
 import { generateCoverLetter } from '../services/coverLetterApi';
-import { getMasterCv, previewCv, getAllCvs, CVDocument, getJobCv, createJobCv, updateCv, deleteCv } from '../services/cvApi';
+import { getMasterCv, previewCv, getCvBranches, CVDocument, getJobCv, createJobCv, updateCv, deleteCv } from '../services/cvApi';
 import AtsReportView from '../components/ats/AtsReportView';
 import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
 import axios from 'axios';
@@ -328,30 +328,39 @@ const ReviewFinalizePage: React.FC = () => {
         }
     }, [jobApplication]);
 
-    // Fetch Available CVs (Master + Other Jobs) from unified CV model
+    // Fetch Available CVs (Primary + Branches only, exclude job-specific CVs)
     useEffect(() => {
         const loadCvs = async () => {
             try {
-                const response = await getAllCvs();
-                const allCvs = response.cvs;
+                const response = await getCvBranches();
+                const branches = response.branches;
 
                 const options: { id: string; name: string; data: any }[] = [];
 
-                // Add Master CV first
-                const masterCv = allCvs.find((cv: CVDocument) => cv.isMasterCv);
-                if (masterCv) {
-                    const masterName = masterCv.filename
-                        ? `Master CV (${masterCv.filename})`
-                        : 'Master CV (Default)';
-                    options.push({ id: masterCv._id, name: masterName, data: masterCv.cvJson });
+                // Add Primary CV first
+                const primaryCv = branches.find((cv: CVDocument) => cv.isPrimary);
+                if (primaryCv) {
+                    const primaryName = primaryCv.displayName
+                        ? `${primaryCv.displayName} (Primary)`
+                        : primaryCv.filename
+                            ? `${primaryCv.filename} (Primary)`
+                            : 'Primary CV';
+                    options.push({ id: primaryCv._id, name: primaryName, data: primaryCv.cvJson });
                 }
 
-                // Add Job CVs
-                allCvs.forEach((cv: CVDocument) => {
-                    if (!cv.isMasterCv && cv._id !== jobId && cv.jobApplication) {
+                // Add CV Branches (CVs without jobApplication - these are branches, not job-specific CVs)
+                branches.forEach((cv: CVDocument) => {
+                    // Only include CVs that are NOT job-specific (no jobApplication field)
+                    // and are not the primary CV (already added above)
+                    if (!cv.jobApplicationId && cv._id !== primaryCv?._id) {
+                        const branchName = cv.displayName
+                            ? cv.displayName
+                            : cv.category
+                                ? `${cv.category} CV`
+                                : 'CV Branch';
                         options.push({
                             id: cv._id,
-                            name: `${cv.jobApplication.jobTitle} at ${cv.jobApplication.companyName}`,
+                            name: branchName,
                             data: cv.cvJson
                         });
                     }
@@ -1897,6 +1906,22 @@ const ReviewFinalizePage: React.FC = () => {
                                                 ))
                                             )
                                         )}
+
+                                        {/* CV Information */}
+                                        {(() => {
+                                            const baseCv = availableCvs.find(cv => cv.id === jobApplication.baseCvId);
+                                            if (baseCv) {
+                                                return (
+                                                    <li className="flex items-start gap-3">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0"></span>
+                                                        <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                            <strong className="text-text-main-light dark:text-text-main-dark">Base CV:</strong> {baseCv.name}
+                                                        </span>
+                                                    </li>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
 
                                     </ul>
                                 </div>

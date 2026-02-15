@@ -56,7 +56,7 @@ const createJobHandler: RequestHandler = async (req: ValidatedRequest, res) => {
     res.status(401).json({ message: 'User not authenticated correctly.' });
     return;
   }
-  const { jobTitle, companyName, status, jobUrl, notes, jobDescriptionText, salary, contact, language, createdAt } = req.validated!.body!;
+  const { jobTitle, companyName, status, jobUrl, notes, jobDescriptionText, salary, contact, language, baseCvId, createdAt } = req.validated!.body!;
 
   try {
     const jobData: any = {
@@ -70,6 +70,7 @@ const createJobHandler: RequestHandler = async (req: ValidatedRequest, res) => {
       contact,
       language,
       jobDescriptionText, // Pass scraped text if provided
+      baseCvId: baseCvId || null, // Store the base CV ID if provided
       isAutoJob: false, // Manual job
       showInDashboard: true // Manual jobs always show in dashboard
     };
@@ -368,6 +369,7 @@ const extractFromTextHandler: RequestHandler = async (req: ValidatedRequest, res
       jobDescriptionText: extractedData.jobDescriptionText,
       language: extractedData.language,
       jobPrerequisites: extractedData.jobPrerequisites || undefined,
+      jobType: extractedData.jobType || undefined, // Include AI-extracted job type
       extractedData: {
         ...existingExtractedData,
         location: extractedData.location || existingExtractedData.location,
@@ -509,7 +511,7 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
     res.status(401).json({ message: 'User not authenticated.' });
     return;
   }
-  const { text } = req.validated!.body!; // Expect text in the validated request body
+  const { text, baseCvId, jobUrl, status, jobType } = req.validated!.body!; // Extract all fields from request body
 
   const userId = req.user._id as mongoose.Types.ObjectId;
   const userIdString = userId.toString();
@@ -520,6 +522,8 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
     const extractedData: ExtractedJobData = await extractJobDataFromText(text, userIdString);
 
     // 2. Create a new JobApplication document
+    // Use provided values or AI-extracted values for jobType
+    const finalJobType = jobType !== undefined ? jobType : extractedData.jobType;
 
     const newJob = new JobApplication({
       userId: userId,
@@ -529,7 +533,10 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
       language: extractedData.language,
       jobPrerequisites: extractedData.jobPrerequisites || undefined,
       notes: extractedData.notes || '',
-      status: 'Not Applied',
+      jobUrl: jobUrl || undefined, // Use provided job URL
+      status: status || 'Not Applied', // Use provided status or default
+      jobType: finalJobType, // Use provided or AI-extracted job type
+      baseCvId: baseCvId || null, // Store the selected CV branch
       isAutoJob: false,
       showInDashboard: true,
       extractedData: {

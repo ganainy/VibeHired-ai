@@ -6,13 +6,22 @@ import { JsonResumeSchema } from '../types/jsonresume';
  * Unified CV Model
  * 
  * Stores both master CVs and job-specific CVs in a single collection.
- * - Master CV: isMasterCv = true, jobApplicationId = null (only ONE per user)
- * - Job CV: isMasterCv = false, jobApplicationId = <job_id>
+ * - Primary CV: isPrimary = true, jobApplicationId = null (only ONE per user)
+ * - Category CV: isPrimary = false, category = "Cybersecurity", jobApplicationId = null
+ * - Job CV: jobApplicationId = <job_id> (tailored for specific job)
  */
 export interface ICV extends Document {
     _id: Types.ObjectId;
     userId: Types.ObjectId;
+    
+    // DEPRECATED: Keep for backward compatibility during migration
     isMasterCv: boolean;
+    
+    // NEW FIELDS: CV Branch System
+    isPrimary: boolean;           // One primary CV per user (default)
+    category: string | null;       // e.g., "Software Engineering", "Cybersecurity", null = primary
+    displayName: string;           // User-friendly name: "My SE Resume", "Cyber CV"
+    
     jobApplicationId?: Types.ObjectId | null;
     cvJson: JsonResumeSchema;
     templateId?: string | null;  // null = use user's default template
@@ -40,6 +49,23 @@ const CVSchema = new Schema<ICV>(
             required: true,
             default: false,
             index: true,
+        },
+        // NEW FIELDS: CV Branch System
+        isPrimary: {
+            type: Boolean,
+            required: true,
+            default: false,
+            index: true,
+        },
+        category: {
+            type: String,
+            default: null,
+            maxlength: 50,  // Reasonable limit for category names
+        },
+        displayName: {
+            type: String,
+            required: true,
+            maxlength: 100,  // Reasonable limit for display names
         },
         jobApplicationId: {
             type: Schema.Types.ObjectId,
@@ -94,6 +120,19 @@ CVSchema.index(
 );
 
 /**
+ * Unique partial index: Ensures only ONE primary CV per user
+ * Only applies when isPrimary = true
+ */
+CVSchema.index(
+    { userId: 1, isPrimary: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { isPrimary: true },
+        name: 'unique_primary_cv_per_user',
+    }
+);
+
+/**
  * Unique index: Ensures only ONE CV per job application
  * Sparse index ignores documents where jobApplicationId is null
  */
@@ -122,7 +161,21 @@ CVSchema.virtual('jobApplication', {
 });
 
 /**
- * Static method: Get master CV for a user
+ * Static method: Get primary CV for a user
+ */
+CVSchema.statics.getPrimaryCv = async function (userId: Types.ObjectId | string) {
+    return this.findOne({ userId, isPrimary: true });
+};
+
+/**
+ * Static method: Get all base CVs for a user (primary + category CVs, excludes job CVs)
+ */
+CVSchema.statics.getBaseCvs = async function (userId: Types.ObjectId | string) {
+    return this.find({ userId, jobApplicationId: null }).sort({ isPrimary: -1, createdAt: -1 });
+};
+
+/**
+ * Static method: Get master CV for a user (DEPRECATED - use getPrimaryCv)
  */
 CVSchema.statics.getMasterCv = async function (userId: Types.ObjectId | string) {
     return this.findOne({ userId, isMasterCv: true });
@@ -132,7 +185,7 @@ CVSchema.statics.getMasterCv = async function (userId: Types.ObjectId | string) 
  * Static method: Get all CVs for a user
  */
 CVSchema.statics.getUserCvs = async function (userId: Types.ObjectId | string) {
-    return this.find({ userId }).sort({ isMasterCv: -1, createdAt: -1 });
+    return this.find({ userId }).sort({ isMasterCv: -1, isPrimary: -1, createdAt: -1 });
 };
 
 /**
@@ -143,7 +196,54 @@ CVSchema.statics.getJobCv = async function (jobApplicationId: Types.ObjectId | s
 };
 
 /**
- * Static method: Promote a CV to master
+ * Static method: Promote a CV to primary
+ * - Unsets current primary CV
+ * - Sets target CV as new primary
+ */
+CVSchema.statics.setAsPrimary = async function (
+    cvId: Types.ObjectId | string,
+    userId: Types.ObjectId | string
+) {
+    const cv = await this.findOne({ _id: cvId, userId });
+    if (!cv) {
+        throw new Error('CV not found or does not belong to user');
+    }
+
+    if (cv.isPrimary) {
+        throw new Error('CV is already the primary CV');
+    }
+
+    if (cv.jobApplicationId) {
+        throw new Error('Cannot set a job-specific CV as primary');
+    }
+
+    // Start a session for transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        // Unset current primary CV
+        await this.updateMany(
+            { userId, isPrimary: true },
+            { $set: { isPrimary: false } }
+        ).session(session);
+
+        // Set target CV as primary
+        cv.isPrimary = true;
+        await cv.save({ session });
+
+        await session.commitTransaction();
+        return cv;
+    } catch (error) {
+        await session.abortTransaction();
+        throw error;
+    } finally {
+        session.endSession();
+    }
+};
+
+/**
+ * Static method: Promote a CV to master (DEPRECATED - use setAsPrimary)
  * - Deletes the current master CV (if exists)
  * - Updates the target CV to be the new master
  */
@@ -185,10 +285,13 @@ CVSchema.statics.promoteToMaster = async function (
 
 // Add static methods to the interface
 export interface ICVModel extends mongoose.Model<ICV> {
-    getMasterCv(userId: Types.ObjectId | string): Promise<ICV | null>;
+    getPrimaryCv(userId: Types.ObjectId | string): Promise<ICV | null>;
+    getBaseCvs(userId: Types.ObjectId | string): Promise<ICV[]>;
+    getMasterCv(userId: Types.ObjectId | string): Promise<ICV | null>; // DEPRECATED
     getUserCvs(userId: Types.ObjectId | string): Promise<ICV[]>;
     getJobCv(jobApplicationId: Types.ObjectId | string): Promise<ICV | null>;
-    promoteToMaster(cvId: Types.ObjectId | string, userId: Types.ObjectId | string): Promise<ICV>;
+    setAsPrimary(cvId: Types.ObjectId | string, userId: Types.ObjectId | string): Promise<ICV>;
+    promoteToMaster(cvId: Types.ObjectId | string, userId: Types.ObjectId | string): Promise<ICV>; // DEPRECATED
 }
 
 const CV = mongoose.model<ICV, ICVModel>('CV', CVSchema);

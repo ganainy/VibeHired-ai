@@ -19,18 +19,21 @@ VibeHired is an AI-powered job application assistant built on Google Gemini AI t
 
 ### Job Application Management
 - **AI-Powered Job Extraction:** Paste a job posting URL and Google Gemini AI automatically extracts and structures job details (Title, Company, Description, Language, Notes) from any job posting
+- **CV Branch Selection:** Choose which CV branch to use for each job application during creation
 - **Dashboard View:** Filterable and sortable table view of all applications
 - **Kanban Pipeline View:** Visual kanban board for tracking application status (Applied, Interview, Assessment, Offer, Rejected)
 - **Status Tracking:** Track applications through multiple stages with custom statuses
 
 ### CV Management
+- **Multi-Branch CV System:** Create and manage multiple CV versions (branches) for different career paths (e.g., IT Helpdesk, Programming, Cybersecurity) with a primary CV as default
+- **Branch Management:** Create new CV branches from existing ones, rename branches, set primary CV, and organize by category
 - **Unified Master CV:** Maintain a single "Master CV" as your source of truth and create tailored versions for each job application without duplicating data efforts
 - **AI-Powered CV Parsing:** Upload CV files (PDF, DOCX, RTF, TXT) and Google Gemini AI automatically parses and structures content into JSON Resume schema format
 - **Rich CV Editor:** Comprehensive editor with section-by-section editing capabilities and real-time preview
 - **Formatted Project Lists:** Automatically consolidates projects into a clean, single section with markdown-style bold titles for professional rendering
 - **Rich Text Support:** Templates now support bold text formatting in custom sections for emphasized keywords and titles
 - **AI CV Analysis:** AI-powered analysis of CV sections with intelligent improvement suggestions and recommendations
-- **Multiple Versions:** Store and manage unlimited job-specific CV versions linked to applications
+- **CV Branch Selection:** Choose which CV branch to use for each job application during creation
 
 ### AI-Powered Features
 - **Intelligent CV Analysis:** Google Gemini AI analyzes your CV against job descriptions to identify strengths, gaps, and areas for improvement with actionable feedback
