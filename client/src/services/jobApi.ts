@@ -17,7 +17,12 @@ export interface JobApplication {
     jobUrl?: string;
     notes?: string;
     salary?: string; // Can be number, range, or text (e.g., "50k-70k", "$80,000 - $100,000")
-    contact?: string; // Email, URL, or name
+    contact?: string; // Email, URL, or name - legacy field
+    // Structured contact information from AI extraction
+    contactEmail?: string; // Recruiter or company contact email
+    contactPhone?: string; // Recruiter or company contact phone
+    hiringManagerName?: string; // Hiring manager or recruiter name
+    applicationUrl?: string; // Direct application URL/portal link
     jobDescriptionText?: string;
     language?: 'en' | 'de'; // More specific type
     jobPrerequisites?: string; // AI-extracted job requirements and prerequisites

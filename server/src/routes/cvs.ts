@@ -72,6 +72,66 @@ function parseJsonResponseToSchema(responseText: string): JsonResumeSchema | nul
 }
 
 /**
+ * Helper: Parse uploaded CV file using AI
+ */
+async function parseUploadedCv(reqFile: Express.Multer.File, userId: string): Promise<JsonResumeSchema> {
+    // Save file temporarily for AI processing
+    const tempDir = path.join(process.cwd(), 'temp_uploads');
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+    }
+    const tempFilePath = path.join(tempDir, `cv_${Date.now()}_${reqFile.originalname}`);
+    fs.writeFileSync(tempFilePath, reqFile.buffer);
+
+    try {
+        const prompt = `
+    Analyze the content of the attached CV file (${reqFile.originalname}).
+    Your task is to extract information and structure it precisely according to the JSON Resume Schema (details at https://jsonresume.org/schema/).
+
+    Instructions:
+    - Parse the entire document.
+    - Populate the standard JSON Resume fields: basics, work, education, skills, projects, languages, etc., based *only* on the content found in the file.
+    - For 'basics.profiles', extract common profiles like LinkedIn, GitHub, Portfolio, etc.
+    - For 'work.highlights' or 'work.description', use bullet points (array of strings for highlights) or a single description string. Prioritize 'highlights' if possible.
+    - For 'skills', try to group them under relevant 'name' properties (e.g., "Programming Languages", "Frameworks", "Tools") with specific skills listed in 'keywords'. If grouping isn't clear, create a single skill entry with a general name and list all skills under its 'keywords'.
+    - Format dates as YYYY-MM-DD, YYYY-MM, or YYYY where possible. Use "Present" for ongoing roles/studies.
+    - If a standard section (like 'awards' or 'volunteer') is not present in the CV, omit that key entirely from the JSON output.
+    - If a specific field within a section (like 'work.location') is not found, omit that field or set it to null.
+
+    **CRITICAL: Do NOT include any comments (e.g., // or /* */) within the JSON output.**
+
+    Output Format:
+    Return ONLY a single, valid JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`) that strictly adheres to the JSON Resume Schema structure. Do not include any explanatory text before or after the JSON block.
+  `;
+
+        console.log('Sending CV parsing request to AI...');
+        const result = await generateContentWithFile(
+            String(userId),
+            prompt,
+            tempFilePath,
+            reqFile.mimetype
+        );
+        const responseText = result.text;
+        console.log('Received CV parsing response from AI.');
+
+        const cvJsonResume = parseJsonResponseToSchema(responseText);
+
+        if (!cvJsonResume) {
+            throw new Error('Failed to parse AI response into valid JSON Resume structure.');
+        }
+
+        return cvJsonResume;
+    } finally {
+        // Clean up temp file
+        try {
+            fs.unlinkSync(tempFilePath);
+        } catch (err) {
+            console.error('Error deleting temp file:', err);
+        }
+    }
+}
+
+/**
  * GET /api/cvs/branches
  * Get all CV branches for the current user
  */
@@ -313,87 +373,36 @@ router.post(
 
         console.log(`Processing CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
-        // Save file temporarily for AI processing
-        const tempDir = path.join(process.cwd(), 'temp_uploads');
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-        }
-        const tempFilePath = path.join(tempDir, `cv_${Date.now()}_${req.file.originalname}`);
-        fs.writeFileSync(tempFilePath, req.file.buffer);
+        const cvJsonResume = await parseUploadedCv(req.file, String(userId));
 
-        try {
-            const prompt = `
-        Analyze the content of the attached CV file (${req.file.originalname}).
-        Your task is to extract information and structure it precisely according to the JSON Resume Schema (details at https://jsonresume.org/schema/).
+        // Set all existing CVs as non-primary and create new primary CV
+        await CV.updateMany({ userId }, { isPrimary: false });
 
-        Instructions:
-        - Parse the entire document.
-        - Populate the standard JSON Resume fields: basics, work, education, skills, projects, languages, etc., based *only* on the content found in the file.
-        - For 'basics.profiles', extract common profiles like LinkedIn, GitHub, Portfolio, etc.
-        - For 'work.highlights' or 'work.description', use bullet points (array of strings for highlights) or a single description string. Prioritize 'highlights' if possible.
-        - For 'skills', try to group them under relevant 'name' properties (e.g., "Programming Languages", "Frameworks", "Tools") with specific skills listed in 'keywords'. If grouping isn't clear, create a single skill entry with a general name and list all skills under its 'keywords'.
-        - Format dates as YYYY-MM-DD, YYYY-MM, or YYYY where possible. Use "Present" for ongoing roles/studies.
-        - If a standard section (like 'awards' or 'volunteer') is not present in the CV, omit that key entirely from the JSON output.
-        - If a specific field within a section (like 'work.location') is not found, omit that field or set it to null.
+        const newCv = await CV.create({
+            userId,
+            isPrimary: true,
+            category: 'General',
+            displayName: 'Primary CV',
+            cvJson: cvJsonResume,
+            filename: req.file.originalname,
+            templateId: null, // Will inherit from user settings
+        });
 
-        **CRITICAL: Do NOT include any comments (e.g., // or /* */) within the JSON output.**
+        console.log(`Primary CV created for user ${req.user!.email}`);
 
-        Output Format:
-        Return ONLY a single, valid JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`) that strictly adheres to the JSON Resume Schema structure. Do not include any explanatory text before or after the JSON block.
-      `;
-
-            console.log('Sending CV parsing request to AI...');
-            const result = await generateContentWithFile(
-                String(userId),
-                prompt,
-                tempFilePath,
-                req.file.mimetype
-            );
-            const responseText = result.text;
-            console.log('Received CV parsing response from AI.');
-
-            const cvJsonResume = parseJsonResponseToSchema(responseText);
-
-            if (!cvJsonResume) {
-                throw new Error('Failed to parse AI response into valid JSON Resume structure.');
-            }
-
-            // Set all existing CVs as non-primary and create new primary CV
-            await CV.updateMany({ userId }, { isPrimary: false });
-
-            const newCv = await CV.create({
-                userId,
+        res.status(200).json({
+            message: 'CV uploaded and parsed successfully.',
+            cv: {
+                _id: newCv._id,
                 isPrimary: true,
-                category: 'General',
-                displayName: 'Primary CV',
+                category: newCv.category,
+                displayName: newCv.displayName,
                 cvJson: cvJsonResume,
-                filename: req.file.originalname,
-                templateId: null, // Will inherit from user settings
-            });
-
-            console.log(`Primary CV created for user ${req.user!.email}`);
-
-            res.status(200).json({
-                message: 'CV uploaded and parsed successfully.',
-                cv: {
-                    _id: newCv._id,
-                    isPrimary: true,
-                    category: newCv.category,
-                    displayName: newCv.displayName,
-                    cvJson: cvJsonResume,
-                    filename: newCv.filename,
-                    createdAt: newCv.createdAt,
-                    updatedAt: newCv.updatedAt,
-                }
-            });
-        } finally {
-            // Clean up temp file
-            try {
-                fs.unlinkSync(tempFilePath);
-            } catch (err) {
-                console.error('Error deleting temp file:', err);
+                filename: newCv.filename,
+                createdAt: newCv.createdAt,
+                updatedAt: newCv.updatedAt,
             }
-        }
+        });
     })
 );
 
@@ -457,6 +466,57 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
         }
     });
 }));
+
+/**
+ * POST /api/cvs/upload-branch
+ * Upload and parse a new CV file as a branch (non-primary CV)
+ */
+router.post(
+    '/upload-branch',
+    upload.single('cvFile'),
+    asyncHandler(async (req: Request, res: Response) => {
+        const userId = req.user!._id;
+        const { category, displayName } = req.body;
+
+        if (!req.file) {
+            throw new ValidationError('No CV file uploaded.');
+        }
+
+        if (!category || !displayName) {
+            throw new ValidationError('Category and display name are required.');
+        }
+
+        console.log(`Processing branch CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
+
+        const cvJsonResume = await parseUploadedCv(req.file, String(userId));
+
+        const newCv = await CV.create({
+            userId,
+            isPrimary: false,
+            category: category.trim(),
+            displayName: displayName.trim(),
+            cvJson: cvJsonResume,
+            filename: req.file.originalname,
+            templateId: null, // Will inherit from user settings
+        });
+
+        console.log(`Branch CV created for user ${req.user!.email}`);
+
+        res.status(201).json({
+            message: 'CV branch uploaded and parsed successfully.',
+            branch: {
+                _id: newCv._id,
+                isPrimary: false,
+                category: newCv.category,
+                displayName: newCv.displayName,
+                cvJson: cvJsonResume,
+                filename: newCv.filename,
+                createdAt: newCv.createdAt,
+                updatedAt: newCv.updatedAt,
+            }
+        });
+    })
+);
 
 /**
  * PUT /api/cvs/:id

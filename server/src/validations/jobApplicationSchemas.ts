@@ -40,6 +40,11 @@ export const createJobBodySchema = z.object({
   notes: z.string().optional(),
   salary: z.string().optional(),
   contact: z.string().optional(),
+  // Structured contact information
+  contactEmail: z.string().email('Invalid email format').optional().or(z.literal('')),
+  contactPhone: z.string().optional(),
+  hiringManagerName: z.string().optional(),
+  applicationUrl: z.string().url('Invalid URL format').optional().or(z.literal('')),
   language: z.string().optional(),
   jobDescriptionText: z.string().optional(),
   baseCvId: z.string().optional(),
@@ -57,6 +62,11 @@ export const updateJobBodySchema = z.object({
   notes: z.string().optional(),
   salary: z.string().optional(),
   contact: z.string().optional(),
+  // Structured contact information
+  contactEmail: z.string().email('Invalid email format').optional().or(z.literal('')),
+  contactPhone: z.string().optional(),
+  hiringManagerName: z.string().optional(),
+  applicationUrl: z.string().url('Invalid URL format').optional().or(z.literal('')),
   jobDescriptionText: z.string().optional(),
   dateApplied: z.string().optional(),
   createdAt: z.string().optional(),

@@ -56,7 +56,7 @@ const createJobHandler: RequestHandler = async (req: ValidatedRequest, res) => {
     res.status(401).json({ message: 'User not authenticated correctly.' });
     return;
   }
-  const { jobTitle, companyName, status, jobUrl, notes, jobDescriptionText, salary, contact, language, baseCvId, createdAt } = req.validated!.body!;
+  const { jobTitle, companyName, status, jobUrl, notes, jobDescriptionText, salary, contact, contactEmail, contactPhone, hiringManagerName, applicationUrl, language, baseCvId, createdAt } = req.validated!.body!;
 
   try {
     const jobData: any = {
@@ -68,6 +68,10 @@ const createJobHandler: RequestHandler = async (req: ValidatedRequest, res) => {
       notes,
       salary,
       contact,
+      contactEmail,
+      contactPhone,
+      hiringManagerName,
+      applicationUrl,
       language,
       jobDescriptionText, // Pass scraped text if provided
       baseCvId: baseCvId || null, // Store the base CV ID if provided
@@ -370,6 +374,11 @@ const extractFromTextHandler: RequestHandler = async (req: ValidatedRequest, res
       language: extractedData.language,
       jobPrerequisites: extractedData.jobPrerequisites || undefined,
       jobType: extractedData.jobType || undefined, // Include AI-extracted job type
+      // Contact information from AI extraction
+      contactEmail: extractedData.contactEmail || undefined,
+      contactPhone: extractedData.contactPhone || undefined,
+      hiringManagerName: extractedData.hiringManagerName || undefined,
+      applicationUrl: extractedData.applicationUrl || undefined,
       extractedData: {
         ...existingExtractedData,
         location: extractedData.location || existingExtractedData.location,
@@ -461,6 +470,11 @@ const createJobFromUrlHandler: RequestHandler = async (req: ValidatedRequest, re
       notes: extractedData.notes || '',
       jobUrl: url, // Save the original URL
       status: 'Not Applied', // Default status
+      // Contact information from AI extraction
+      contactEmail: extractedData.contactEmail || undefined,
+      contactPhone: extractedData.contactPhone || undefined,
+      hiringManagerName: extractedData.hiringManagerName || undefined,
+      applicationUrl: extractedData.applicationUrl || undefined,
       isAutoJob: false, // Manual job
       showInDashboard: true, // Manual jobs always show in dashboard
       extractedData: {
@@ -537,6 +551,11 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
       status: status || 'Not Applied', // Use provided status or default
       jobType: finalJobType, // Use provided or AI-extracted job type
       baseCvId: baseCvId || null, // Store the selected CV branch
+      // Contact information from AI extraction
+      contactEmail: extractedData.contactEmail || undefined,
+      contactPhone: extractedData.contactPhone || undefined,
+      hiringManagerName: extractedData.hiringManagerName || undefined,
+      applicationUrl: extractedData.applicationUrl || undefined,
       isAutoJob: false,
       showInDashboard: true,
       extractedData: {

@@ -17,6 +17,11 @@ export interface ExtractedJobData {
     keyDetails?: Array<{ key: string; value: string }> | null; // AI extracted highlights (key-value pairs)
     jobPrerequisites?: string | null; // AI-extracted job requirements and prerequisites
     jobType?: 'full-time' | 'part-time' | 'working-student' | 'internship' | 'contract' | 'freelance' | null; // Employment type
+    // Contact information fields
+    contactEmail?: string | null; // Recruiter or company contact email
+    contactPhone?: string | null; // Recruiter or company contact phone
+    hiringManagerName?: string | null; // Hiring manager or recruiter name
+    applicationUrl?: string | null; // Direct application URL/portal link
     notes?: string; // Reserved for user, typically null from AI
 }
 
@@ -140,10 +145,15 @@ async function extractFieldsWithGemini(htmlContent: string, url: string, userId:
         7. Extract key highlights such as Employment Type, Experience Level, Remote Policy, Benefits, Tech Stack, Location, Salary, and any other important details. Return them as a structured list of key-value pairs in the 'keyDetails' field.
         8. Extract the job prerequisites and requirements as a bullet-pointed list. Include required skills, qualifications, years of experience, education requirements, certifications, languages, and any "must-have" or "nice-to-have" items. IMPORTANT: This list MUST BE IN ENGLISH, even if the job description is in another language. Translate the requirements to English if necessary. Format as a clean bulleted list (using • or - characters). Leave the 'notes' field NULL.
         9. Determine the employment type (jobType). Map common terms to these exact values: "full-time" (for Vollzeit, full-time, 40 hours), "part-time" (for Teilzeit, part-time), "working-student" (for Werkstudent, working student, student assistant), "internship" (for Praktikum, internship), "contract" (for Befristet, contract, temporary), "freelance" (for Freelance, self-employed). Use null if not specified.
+        10. Extract contact information if available:
+            - contactEmail: Recruiter or company contact email address
+            - contactPhone: Recruiter or company contact phone number
+            - hiringManagerName: Name of hiring manager, recruiter, or contact person
+            - applicationUrl: Direct application URL or portal link (if different from the source URL)
 
         Output Format:
-        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "keyDetails", "jobPrerequisites", "jobType", and "notes".
-        - jobTitle, companyName, language, location, salary, jobPrerequisites should be strings if found, or null.
+        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "keyDetails", "jobPrerequisites", "jobType", "contactEmail", "contactPhone", "hiringManagerName", "applicationUrl", and "notes".
+        - jobTitle, companyName, language, location, salary, jobPrerequisites, contactEmail, contactPhone, hiringManagerName, applicationUrl should be strings if found, or null.
         - jobType should be one of: "full-time", "part-time", "working-student", "internship", "contract", "freelance", or null.
         - keyDetails should be an array of objects with "key" and "value" strings, or null.
         - jobPrerequisites should be a bulleted list string of requirements and qualifications (ALWAYS IN ENGLISH).
@@ -160,6 +170,10 @@ async function extractFieldsWithGemini(htmlContent: string, url: string, userId:
           "location": "Berlin / Hybrid",
           "salary": "€80k",
           "jobType": "full-time",
+          "contactEmail": "recruiting@techcorp.com",
+          "contactPhone": "+49 30 12345678",
+          "hiringManagerName": "Jane Smith",
+          "applicationUrl": "https://techcorp.com/careers/apply/123",
           "keyDetails": [
             { "key": "Contract", "value": "Full-time" },
             { "key": "Location", "value": "Berlin / Hybrid" },
@@ -251,10 +265,15 @@ export async function extractJobDataFromText(rawText: string, userId: string): P
         7. Extract key highlights such as Employment Type, Experience Level, Remote Policy, Benefits, Tech Stack, Location, Salary, and any other important details. Return them as a structured list of key-value pairs in the 'keyDetails' field.
         8. Extract the job prerequisites and requirements as a bullet-pointed list. Include required skills, qualifications, years of experience, education requirements, certifications, languages, and any "must-have" or "nice-to-have" items. IMPORTANT: This list MUST BE IN ENGLISH, even if the job description is in another language. Translate the requirements to English if necessary. Format as a clean bulleted list (using • or - characters). Leave the 'notes' field NULL.
         9. Determine the employment type (jobType). Map common terms to these exact values: "full-time" (for Vollzeit, full-time, 40 hours), "part-time" (for Teilzeit, part-time), "working-student" (for Werkstudent, working student, student assistant), "internship" (for Praktikum, internship), "contract" (for Befristet, contract, temporary), "freelance" (for Freelance, self-employed). Use null if not specified.
+        10. Extract contact information if available:
+            - contactEmail: Recruiter or company contact email address
+            - contactPhone: Recruiter or company contact phone number
+            - hiringManagerName: Name of hiring manager, recruiter, or contact person
+            - applicationUrl: Direct application URL or portal link
 
         Output Format:
-        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "keyDetails", "jobPrerequisites", "jobType", and "notes".
-        - jobTitle, companyName, language, location, salary, jobPrerequisites should be strings if found, or null.
+        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "keyDetails", "jobPrerequisites", "jobType", "contactEmail", "contactPhone", "hiringManagerName", "applicationUrl", and "notes".
+        - jobTitle, companyName, language, location, salary, jobPrerequisites, contactEmail, contactPhone, hiringManagerName, applicationUrl should be strings if found, or null.
         - jobType should be one of: "full-time", "part-time", "working-student", "internship", "contract", "freelance", or null.
         - keyDetails should be an array of objects with "key" and "value" strings, or null.
         - jobPrerequisites should be a bulleted list string of requirements and qualifications (ALWAYS IN ENGLISH).
@@ -271,6 +290,10 @@ export async function extractJobDataFromText(rawText: string, userId: string): P
           "location": "SF",
           "salary": "$150k",
           "jobType": "full-time",
+          "contactEmail": "jobs@techcorp.com",
+          "contactPhone": "+1 555 123 4567",
+          "hiringManagerName": "John Doe",
+          "applicationUrl": "https://techcorp.com/apply",
           "keyDetails": [
             { "key": "Contract", "value": "Full-time" },
             { "key": "Experience", "value": "3+ years" },

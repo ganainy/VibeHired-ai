@@ -109,6 +109,17 @@ export interface RenameBranchResponse {
     };
 }
 
+export interface UploadBranchRequest {
+    file: File;
+    category: string;
+    displayName: string;
+}
+
+export interface UploadBranchResponse {
+    message: string;
+    branch: CVDocument;
+}
+
 export interface PreviewCvResponse {
     message: string;
     pdfBase64: string;
@@ -147,6 +158,27 @@ export const createCvBranch = async (data: CreateBranchRequest): Promise<CreateB
             throw error.response.data;
         }
         throw { message: 'An unknown error occurred creating CV branch.' };
+    }
+};
+
+/**
+ * Upload a new CV file as a branch (supports PDF, DOCX, RTF)
+ */
+export const uploadCvBranch = async (file: File, category: string, displayName: string): Promise<UploadBranchResponse> => {
+    const formData = new FormData();
+    formData.append('cvFile', file);
+    formData.append('category', category);
+    formData.append('displayName', displayName);
+
+    try {
+        const response = await axios.post<UploadBranchResponse>(`${API_BASE_URL}/upload-branch`, formData);
+        return response.data;
+    } catch (error: any) {
+        console.error('Upload CV branch API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred uploading CV branch.' };
     }
 };
 

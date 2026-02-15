@@ -1,0 +1,29 @@
+export type CvSectionKey =
+  | 'profile'
+  | 'work'
+  | 'projects'
+  | 'education'
+  | 'skills'
+  | 'languages'
+  | 'certifications';
+
+export interface CvSectionConfig {
+  key: CvSectionKey;
+  label: string;
+  anchorId: string;
+}
+
+export const CV_SECTIONS: CvSectionConfig[] = [
+  { key: 'profile', label: 'Profile', anchorId: 'cv-section-profile' },
+  { key: 'work', label: 'Experience', anchorId: 'cv-section-work' },
+  { key: 'projects', label: 'Projects', anchorId: 'cv-section-projects' },
+  { key: 'education', label: 'Education', anchorId: 'cv-section-education' },
+  { key: 'skills', label: 'Skills', anchorId: 'cv-section-skills' },
+  { key: 'languages', label: 'Languages', anchorId: 'cv-section-languages' },
+  { key: 'certifications', label: 'Certifications', anchorId: 'cv-section-certifications' }
+];
+
+export const getSectionAnchorId = (key: CvSectionKey): string => {
+  const match = CV_SECTIONS.find((section) => section.key === key);
+  return match ? match.anchorId : key;
+};

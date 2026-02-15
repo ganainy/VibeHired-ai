@@ -1,5 +1,6 @@
 import React from 'react';
 import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
+import { getSectionAnchorId } from '../../constants/cvSections';
 import {
     ProfileForm,
     WorkExperiencesForm,
@@ -43,51 +44,86 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({
 
     return (
         <div className="resume-builder flex flex-col gap-6 max-w-3xl mx-auto p-4">
-            {/* Profile/Basics Section */}
-            <ProfileForm
-                data={data}
-                onChange={onChange}
-                onImprove={handleImproveProfile}
-                isImproving={improvingSections['basics-0'] || false}
-            />
+            <section
+                id={getSectionAnchorId('profile')}
+                data-section-key="profile"
+                className="scroll-mt-28"
+            >
+                <ProfileForm
+                    data={data}
+                    onChange={onChange}
+                    onImprove={handleImproveProfile}
+                    isImproving={improvingSections['basics-0'] || false}
+                />
+            </section>
 
-            {/* Work Experience Section */}
-            <WorkExperiencesForm
-                data={data}
-                onChange={onChange}
-                onImprove={handleImproveWork}
-                improvingSections={improvingSections}
-            />
+            <section
+                id={getSectionAnchorId('work')}
+                data-section-key="work"
+                className="scroll-mt-28"
+            >
+                <WorkExperiencesForm
+                    data={data}
+                    onChange={onChange}
+                    onImprove={handleImproveWork}
+                    improvingSections={improvingSections}
+                />
+            </section>
 
-            {/* Projects Section */}
-            <ProjectsForm
-                data={data}
-                onChange={onChange}
-            />
+            <section
+                id={getSectionAnchorId('projects')}
+                data-section-key="projects"
+                className="scroll-mt-28"
+            >
+                <ProjectsForm
+                    data={data}
+                    onChange={onChange}
+                />
+            </section>
 
-            {/* Education Section */}
-            <EducationsForm
-                data={data}
-                onChange={onChange}
-            />
+            <section
+                id={getSectionAnchorId('education')}
+                data-section-key="education"
+                className="scroll-mt-28"
+            >
+                <EducationsForm
+                    data={data}
+                    onChange={onChange}
+                />
+            </section>
 
-            {/* Skills Section */}
-            <SkillsForm
-                data={data}
-                onChange={onChange}
-            />
+            <section
+                id={getSectionAnchorId('skills')}
+                data-section-key="skills"
+                className="scroll-mt-28"
+            >
+                <SkillsForm
+                    data={data}
+                    onChange={onChange}
+                />
+            </section>
 
-            {/* Languages Section */}
-            <LanguagesForm
-                data={data}
-                onChange={onChange}
-            />
+            <section
+                id={getSectionAnchorId('languages')}
+                data-section-key="languages"
+                className="scroll-mt-28"
+            >
+                <LanguagesForm
+                    data={data}
+                    onChange={onChange}
+                />
+            </section>
 
-            {/* Certifications Section */}
-            <CertificatesForm
-                data={data}
-                onChange={onChange}
-            />
+            <section
+                id={getSectionAnchorId('certifications')}
+                data-section-key="certifications"
+                className="scroll-mt-28"
+            >
+                <CertificatesForm
+                    data={data}
+                    onChange={onChange}
+                />
+            </section>
         </div>
     );
 };

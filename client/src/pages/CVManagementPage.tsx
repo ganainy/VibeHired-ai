@@ -11,7 +11,8 @@ import {
   getCvBranches,
   createCvBranch,
   setCvPrimary,
-  renameCvBranch
+  renameCvBranch,
+  uploadCvBranch
 } from '../services/cvApi';
 import { ResumeBuilder } from '../components/resume-builder';
 import CvLivePreview from '../components/cv-editor/CvLivePreview';
@@ -24,6 +25,8 @@ import { scanAts, getAtsScores, getLatestAts, AtsScores, getAtsForJob } from '..
 import { getAllTemplates } from '../templates/config';
 import Sidebar from '../components/cv-management/Sidebar';
 import CreateBranchModal from '../components/cv-management/CreateBranchModal';
+import NavigationMenu from '../components/cv-management/NavigationMenu';
+import { validateCvFile, formatFileSize } from '../lib/utils';
 
 const CVManagementPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -57,6 +60,8 @@ const CVManagementPage: React.FC = () => {
   const [isAnalysisOutdated, setIsAnalysisOutdated] = useState<boolean>(false);
   const atsPollingIntervalIdRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const contentScrollRef = useRef<HTMLElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -427,35 +432,10 @@ const CVManagementPage: React.FC = () => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
 
-      // Validate file type
-      const validTypes = ['application/pdf', 'application/rtf', 'text/rtf'];
-      const validExtensions = ['.pdf', '.rtf'];
-      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-      const maxFileSize = 10 * 1024 * 1024; // 10MB
-
-      // Check file type
-      if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
-        const actualExtension = file.name.split('.').pop()?.toUpperCase() || 'unknown';
+      const validation = validateCvFile(file);
+      if (!validation.isValid) {
         setToast({
-          message: `Invalid file type (.${actualExtension}). Please upload a PDF or RTF file.`,
-          type: 'error'
-        });
-        return;
-      }
-
-      // Check file size
-      if (file.size > maxFileSize) {
-        setToast({
-          message: `File too large (${formatFileSize(file.size)}). Maximum size is 10MB.`,
-          type: 'error'
-        });
-        return;
-      }
-
-      // Check if file is empty
-      if (file.size === 0) {
-        setToast({
-          message: 'The selected file is empty. Please choose a valid CV file.',
+          message: validation.errorMessage!,
           type: 'error'
         });
         return;
@@ -498,34 +478,11 @@ const CVManagementPage: React.FC = () => {
 
     if (files && files[0]) {
       const file = files[0];
-      const validTypes = ['application/pdf', 'application/rtf', 'text/rtf'];
-      const validExtensions = ['.pdf', '.rtf'];
-      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-      const maxFileSize = 10 * 1024 * 1024; // 10MB
 
-      // Check file type
-      if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
-        const actualExtension = file.name.split('.').pop()?.toUpperCase() || 'unknown';
+      const validation = validateCvFile(file);
+      if (!validation.isValid) {
         setToast({
-          message: `Invalid file type (.${actualExtension}). Please drop a PDF or RTF file.`,
-          type: 'error'
-        });
-        return;
-      }
-
-      // Check file size
-      if (file.size > maxFileSize) {
-        setToast({
-          message: `File too large (${formatFileSize(file.size)}). Maximum size is 10MB.`,
-          type: 'error'
-        });
-        return;
-      }
-
-      // Check if file is empty
-      if (file.size === 0) {
-        setToast({
-          message: 'The dropped file is empty. Please choose a valid CV file.',
+          message: validation.errorMessage!,
           type: 'error'
         });
         return;
@@ -547,7 +504,7 @@ const CVManagementPage: React.FC = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedFile) {
-      setToast({ message: 'Please select a PDF or RTF file to upload.', type: 'error' });
+      setToast({ message: 'Please select a PDF, DOCX, or RTF file to upload.', type: 'error' });
       return;
     }
 
@@ -808,11 +765,25 @@ const CVManagementPage: React.FC = () => {
     }
   };
 
-  const formatFileSize = (bytes: number): string => {
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  const handleUploadBranchFromFile = async (file: File, category: string, displayName: string) => {
+    setIsCreatingBranch(true);
+    try {
+      const response = await uploadCvBranch(file, category, displayName);
+      
+      // Add the new branch to local state
+      setAllCvs((prev: CVDocument[]) => [...prev, response.branch]);
+      
+      // Optionally set the new branch as active
+      setActiveCvId(response.branch._id);
+
+      setToast({ message: 'CV branch uploaded and created successfully.', type: 'success' });
+    } catch (error: any) {
+      console.error("Error uploading CV branch:", error);
+      setToast({ message: error.message || 'Failed to upload CV branch.', type: 'error' });
+      throw error; // Re-throw to let modal handle it
+    } finally {
+      setIsCreatingBranch(false);
+    }
   };
 
   const formatRelativeTime = (date: Date): string => {
@@ -1033,7 +1004,7 @@ const CVManagementPage: React.FC = () => {
               <div className="max-w-2xl mx-auto mt-10">
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Import Your CV</h2>
-                  <p className="text-gray-600 dark:text-gray-400">Upload a PDF or RTF file.</p>
+                  <p className="text-gray-600 dark:text-gray-400">Upload a PDF, DOCX, or RTF file.</p>
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -1048,7 +1019,7 @@ const CVManagementPage: React.FC = () => {
                     ) : (
                       <>
                         <p className="text-lg font-medium text-gray-900 dark:text-gray-100">Drag & Drop or Click to Upload</p>
-                        <input type="file" id="cvFileInput" onChange={handleFileChange} className="hidden" accept=".pdf,.rtf" />
+                        <input type="file" id="cvFileInput" onChange={handleFileChange} className="hidden" accept=".pdf,.docx,.rtf" />
                         <label htmlFor="cvFileInput" className="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">Select File</label>
                       </>
                     )}
@@ -1122,8 +1093,14 @@ const CVManagementPage: React.FC = () => {
               </div>
             </div>
 
+            {viewMode === 'edit' && (
+              <div className="flex-shrink-0 bg-white dark:bg-gray-800 px-6 pt-4">
+                <NavigationMenu scrollContainerRef={scrollContainerRef} />
+              </div>
+            )}
+
             {/* Content Body - Scrollable */}
-            <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 p-6 relative">
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 p-6 relative">
               <div className="max-w-4xl mx-auto pb-20">
                 {viewMode === 'edit' ? (
                   <ResumeBuilder
@@ -1182,6 +1159,7 @@ const CVManagementPage: React.FC = () => {
         isOpen={isCreateBranchModalOpen}
         onClose={() => setIsCreateBranchModalOpen(false)}
         onCreateBranch={handleCreateBranch}
+        onUploadBranchFromFile={handleUploadBranchFromFile}
         allCvs={allCvs}
         isLoading={isCreatingBranch}
       />

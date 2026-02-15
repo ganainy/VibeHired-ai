@@ -15,7 +15,12 @@ export interface IJobApplication extends Document {
     jobUrl?: string; // Optional but useful
     notes?: string; // Optional user notes
     salary?: string; // Salary (can be number, range, or text like "50k-70k")
-    contact?: string; // Contact info (email, link, or name)
+    contact?: string; // Contact info (email, link, or name) - legacy field
+    // Structured contact information from AI extraction
+    contactEmail?: string; // Recruiter or company contact email
+    contactPhone?: string; // Recruiter or company contact phone
+    hiringManagerName?: string; // Hiring manager or recruiter name
+    applicationUrl?: string; // Direct application URL/portal link
     jobDescriptionText?: string; // Store the scraped text
     language?: string; // Language of the job
     jobPrerequisites?: string; // AI-extracted job requirements and prerequisites
@@ -99,7 +104,12 @@ const JobApplicationSchema: Schema = new Schema(
         jobUrl: { type: String, trim: true },
         notes: { type: String, trim: true },
         salary: { type: String, trim: true }, // Flexible format: "50000", "50k-70k", "$80,000 - $100,000"
-        contact: { type: String, trim: true }, // Email, URL, or name
+        contact: { type: String, trim: true }, // Email, URL, or name - legacy field
+        // Structured contact information from AI extraction
+        contactEmail: { type: String, trim: true }, // Recruiter or company contact email
+        contactPhone: { type: String, trim: true }, // Recruiter or company contact phone
+        hiringManagerName: { type: String, trim: true }, // Hiring manager or recruiter name
+        applicationUrl: { type: String, trim: true }, // Direct application URL/portal link
         jobDescriptionText: { type: String }, // Text from scraping
         language: { type: String, trim: true },
         jobPrerequisites: { type: String }, // AI-extracted job requirements and prerequisites

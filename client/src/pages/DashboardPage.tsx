@@ -744,6 +744,7 @@ const DashboardPage: React.FC = () => {
                             {sortKey === 'createdAt' && <ArrowDownIcon />}
                           </div>
                         </th>
+                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Type</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Language</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Salary</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Contact</th>
@@ -766,24 +767,55 @@ const DashboardPage: React.FC = () => {
                           <td className="p-4 text-slate-600 dark:text-slate-400">
                             {new Date(job.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                           </td>
+                          <td className="p-4 text-slate-600 dark:text-slate-400">
+                            {job.jobType ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                {job.jobType === 'full-time' && 'Full-time'}
+                                {job.jobType === 'part-time' && 'Part-time'}
+                                {job.jobType === 'working-student' && 'Working Student'}
+                                {job.jobType === 'internship' && 'Internship'}
+                                {job.jobType === 'contract' && 'Contract'}
+                                {job.jobType === 'freelance' && 'Freelance'}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 dark:text-slate-500">-</span>
+                            )}
+                          </td>
                           <td className="p-4 text-slate-600 dark:text-slate-400">{job.language ? job.language.toUpperCase() : '-'}</td>
                           <td className="p-4 text-slate-600 dark:text-slate-400">{job.salary || '-'}</td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400" onClick={(e) => e.stopPropagation()}>
-                            {job.contact ? (
-                              // Check if it's an email
-                              job.contact.includes('@') ? (
-                                <a href={`mailto:${job.contact}`} className="text-indigo-500 dark:text-indigo-400 hover:underline" title={`Email ${job.contact}`}>
-                                  {job.contact.length > 20 ? job.contact.substring(0, 20) + '...' : job.contact}
-                                </a>
-                              ) : // Check if it's a URL
-                                job.contact.startsWith('http') ? (
-                                  <a href={job.contact} target="_blank" rel="noopener noreferrer" className="text-indigo-500 dark:text-indigo-400 hover:underline" title={job.contact}>
-                                    {job.contact.length > 20 ? job.contact.substring(0, 20) + '...' : job.contact}
+                          <td className="p-4 text-slate-600 dark:text-slate-400 max-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                            {/* Display structured contact info if available, otherwise fall back to legacy contact field */}
+                            {job.contactEmail || job.contactPhone || job.hiringManagerName ? (
+                              <div className="flex flex-col gap-0.5 text-xs">
+                                {job.contactEmail && (
+                                  <a href={`mailto:${job.contactEmail}`} className="text-indigo-500 dark:text-indigo-400 hover:underline truncate block" title={`Email: ${job.contactEmail}`}>
+                                    📧 {job.contactEmail.length > 12 ? job.contactEmail.substring(0, 12) + '...' : job.contactEmail}
                                   </a>
-                                ) : (
-                                  // Plain text
-                                  <span title={job.contact}>{job.contact.length > 20 ? job.contact.substring(0, 20) + '...' : job.contact}</span>
-                                )
+                                )}
+                                {job.contactPhone && (
+                                  <span className="truncate block" title={`Phone: ${job.contactPhone}`}>
+                                    📞 {job.contactPhone.length > 12 ? job.contactPhone.substring(0, 12) + '...' : job.contactPhone}
+                                  </span>
+                                )}
+                                {job.hiringManagerName && (
+                                  <span className="truncate block text-slate-500 dark:text-slate-400" title={`Contact: ${job.hiringManagerName}`}>
+                                    👤 {job.hiringManagerName.length > 12 ? job.hiringManagerName.substring(0, 12) + '...' : job.hiringManagerName}
+                                  </span>
+                                )}
+                              </div>
+                            ) : job.contact ? (
+                              // Legacy contact field fallback
+                              job.contact.includes('@') ? (
+                                <a href={`mailto:${job.contact}`} className="text-indigo-500 dark:text-indigo-400 hover:underline truncate block" title={`Email ${job.contact}`}>
+                                  {job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}
+                                </a>
+                              ) : job.contact.startsWith('http') ? (
+                                <a href={job.contact} target="_blank" rel="noopener noreferrer" className="text-indigo-500 dark:text-indigo-400 hover:underline truncate block" title={job.contact}>
+                                  {job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}
+                                </a>
+                              ) : (
+                                <span className="truncate block" title={job.contact}>{job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}</span>
+                              )
                             ) : '-'}
                           </td>
                           <td className="p-4" onClick={(e) => e.stopPropagation()}>

@@ -1885,6 +1885,47 @@ const ReviewFinalizePage: React.FC = () => {
                                                 </span>
                                             </li>
                                         )}
+                                        
+                                        {/* Contact Information */}
+                                        {jobApplication.contactEmail && (
+                                            <li className="flex items-start gap-3">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                    <strong className="text-text-main-light dark:text-text-main-dark">Contact Email:</strong>{' '}
+                                                    <a href={`mailto:${jobApplication.contactEmail}`} className="text-indigo-500 dark:text-indigo-400 hover:underline">
+                                                        {jobApplication.contactEmail}
+                                                    </a>
+                                                </span>
+                                            </li>
+                                        )}
+                                        {jobApplication.contactPhone && (
+                                            <li className="flex items-start gap-3">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                    <strong className="text-text-main-light dark:text-text-main-dark">Contact Phone:</strong> {jobApplication.contactPhone}
+                                                </span>
+                                            </li>
+                                        )}
+                                        {jobApplication.hiringManagerName && (
+                                            <li className="flex items-start gap-3">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                    <strong className="text-text-main-light dark:text-text-main-dark">Hiring Manager:</strong> {jobApplication.hiringManagerName}
+                                                </span>
+                                            </li>
+                                        )}
+                                        {jobApplication.applicationUrl && (
+                                            <li className="flex items-start gap-3">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                    <strong className="text-text-main-light dark:text-text-main-dark">Application Portal:</strong>{' '}
+                                                    <a href={jobApplication.applicationUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-500 dark:text-indigo-400 hover:underline">
+                                                        {jobApplication.applicationUrl.length > 50 ? jobApplication.applicationUrl.substring(0, 50) + '...' : jobApplication.applicationUrl}
+                                                    </a>
+                                                </span>
+                                            </li>
+                                        )}
+                                        
                                         {jobApplication.extractedData?.keyDetails && (
                                             Array.isArray(jobApplication.extractedData.keyDetails) ? (
                                                 jobApplication.extractedData.keyDetails.map((item, idx) => (
@@ -1977,39 +2018,34 @@ const ReviewFinalizePage: React.FC = () => {
                                 <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                                     <div className="flex justify-between items-center mb-4">
                                         <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Description</h2>
-                                        <button
-                                            onClick={() => {
-                                                // If job description exists, start extraction immediately
-                                                if (jobApplication.jobDescriptionText && jobApplication.jobDescriptionText.trim().length >= 50) {
-                                                    handleReExtractWithAi();
-                                                } else {
-                                                    // Otherwise, toggle the paste dialog
-                                                    setShowExtractWithAi(!showExtractWithAi);
-                                                }
-                                            }}
-                                            disabled={isExtractingWithAi}
-                                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${isExtractingWithAi
-                                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                                : showExtractWithAi
+                                        {/* Only show Extract with AI button if no job description exists */}
+                                        {(!jobApplication.jobDescriptionText || jobApplication.jobDescriptionText.trim().length < 50) && (
+                                            <button
+                                                onClick={() => setShowExtractWithAi(!showExtractWithAi)}
+                                                disabled={isExtractingWithAi}
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${isExtractingWithAi
                                                     ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                                    : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-                                                }`}
-                                            title="Extract job details using AI"
-                                        >
-                                            {isExtractingWithAi ? (
-                                                <>
-                                                    <Spinner size="sm" />
-                                                    <span>Extracting...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5Z" />
-                                                    </svg>
-                                                    <span>{showExtractWithAi ? 'Cancel' : 'Extract with AI'}</span>
-                                                </>
-                                            )}
-                                        </button>
+                                                    : showExtractWithAi
+                                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                                        : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                                                    }`}
+                                                title="Extract job details using AI"
+                                            >
+                                                {isExtractingWithAi ? (
+                                                    <>
+                                                        <Spinner size="sm" />
+                                                        <span>Extracting...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5Z" />
+                                                        </svg>
+                                                        <span>{showExtractWithAi ? 'Cancel' : 'Extract with AI'}</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
                                     </div>
 
                                     {refreshError && (
@@ -2022,94 +2058,56 @@ const ReviewFinalizePage: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {/* Extract with AI Section - Toggleable */}
-                                    {showExtractWithAi && (
+                                    {/* Extract with AI Section - Only shown when no job description exists */}
+                                    {showExtractWithAi && (!jobApplication.jobDescriptionText || jobApplication.jobDescriptionText.trim().length < 50) && (
                                         <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                                            {jobApplication.jobDescriptionText ? (
-                                                // When job description already exists - show simple re-extract option
-                                                <>
-                                                    <div className="flex items-start justify-between gap-4">
-                                                        <div className="flex-1">
-                                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                                                Re-extract job details
-                                                            </p>
-                                                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                                Use AI to re-analyze the existing job description and update the job title, company, and other details.
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={handleReExtractWithAi}
-                                                            disabled={isExtractingWithAi}
-                                                            className="bg-indigo-600 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2 flex-shrink-0"
-                                                        >
-                                                            {isExtractingWithAi ? (
-                                                                <>
-                                                                    <Spinner size="sm" />
-                                                                    <span>Extracting...</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5Z" />
-                                                                    </svg>
-                                                                    <span>Re-extract</span>
-                                                                </>
-                                                            )}
-                                                        </button>
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                                                Paste the job description text below and click "Extract" to update the job details using AI.
+                                            </p>
+                                            <div className="relative">
+                                                <textarea
+                                                    value={pastedJobText}
+                                                    onChange={(e) => setPastedJobText(e.target.value)}
+                                                    placeholder="Paste job description here..."
+                                                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50 resize-y min-h-[120px] text-sm transition-all"
+                                                    rows={5}
+                                                    disabled={isExtractingWithAi}
+                                                />
+                                                {isExtractingWithAi && (
+                                                    <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2">
+                                                        <Spinner size="md" />
+                                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Extracting job details...</p>
                                                     </div>
-                                                </>
-                                            ) : (
-                                                // When no job description - show paste option
-                                                <>
-                                                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                                                        Paste the job description text below and click "Extract" to update the job details using AI.
-                                                    </p>
-                                                    <div className="relative">
-                                                        <textarea
-                                                            value={pastedJobText}
-                                                            onChange={(e) => setPastedJobText(e.target.value)}
-                                                            placeholder="Paste job description here..."
-                                                            className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50 resize-y min-h-[120px] text-sm transition-all"
-                                                            rows={5}
-                                                            disabled={isExtractingWithAi}
-                                                        />
-                                                        {isExtractingWithAi && (
-                                                            <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2">
-                                                                <Spinner size="md" />
-                                                                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Extracting job details...</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center justify-between mt-3">
-                                                        <div>
-                                                            {pastedJobText && pastedJobText.trim().length > 0 && pastedJobText.trim().length < 50 && (
-                                                                <p className="text-xs text-amber-600 dark:text-amber-400">
-                                                                    Please paste more text (at least 50 characters)
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                        <button
-                                                            onClick={handleExtractWithAi}
-                                                            disabled={isExtractingWithAi || !pastedJobText || pastedJobText.trim().length < 50}
-                                                            className="bg-indigo-600 text-white font-medium py-2 px-5 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
-                                                        >
-                                                            {isExtractingWithAi ? (
-                                                                <>
-                                                                    <Spinner size="sm" />
-                                                                    <span>Extracting...</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5Z" />
-                                                                    </svg>
-                                                                    <span>Extract with AI</span>
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                </>
-                                            )}
+                                                )}
+                                            </div>
+                                            <div className="flex items-center justify-between mt-3">
+                                                <div>
+                                                    {pastedJobText && pastedJobText.trim().length > 0 && pastedJobText.trim().length < 50 && (
+                                                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                                                            Please paste more text (at least 50 characters)
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={handleExtractWithAi}
+                                                    disabled={isExtractingWithAi || !pastedJobText || pastedJobText.trim().length < 50}
+                                                    className="bg-indigo-600 text-white font-medium py-2 px-5 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
+                                                >
+                                                    {isExtractingWithAi ? (
+                                                        <>
+                                                            <Spinner size="sm" />
+                                                            <span>Extracting...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5Z" />
+                                                            </svg>
+                                                            <span>Extract with AI</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
 
