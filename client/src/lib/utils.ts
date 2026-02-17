@@ -65,3 +65,66 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+/**
+ * Parse multiple URLs from a string (separated by newlines or commas)
+ * Returns an array of trimmed, validated URLs
+ */
+export function parseMultipleUrls(urlString: string): string[] {
+  if (!urlString || !urlString.trim()) return [];
+  
+  // Split by newlines and commas
+  const urls = urlString
+    .split(/[\n,]+/)
+    .map(url => url.trim())
+    .filter(url => url.length > 0);
+  
+  return urls;
+}
+
+/**
+ * Format multiple URLs into a newline-separated string
+ */
+export function formatMultipleUrls(urls: string[]): string {
+  return urls.filter(url => url && url.trim()).join('\n');
+}
+
+/**
+ * Check if a string is a valid URL
+ */
+export function isValidUrl(url: string): boolean {
+  if (!url || !url.trim()) return false;
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    // Try adding https:// if missing
+    try {
+      new URL('https://' + url.replace(/^https?:\/\//, ''));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/**
+ * Normalize a URL (add https:// if missing)
+ */
+export function normalizeUrl(url: string): string {
+  if (!url || !url.trim()) return '';
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return 'https://' + trimmed;
+}
+
+/**
+ * Normalize multiple URLs in a string
+ */
+export function normalizeMultipleUrls(urlString: string): string {
+  const urls = parseMultipleUrls(urlString);
+  const normalizedUrls = urls.map(normalizeUrl);
+  return formatMultipleUrls(normalizedUrls);
+}
+

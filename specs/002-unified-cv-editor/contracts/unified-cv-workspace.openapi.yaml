@@ -1,0 +1,219 @@
+openapi: 3.0.3
+info:
+  title: Unified CV Editable A4 Workspace API
+  version: 0.1.0
+  description: >-
+    Contracts for loading, saving, and exporting a single editable A4 CV workspace
+    where downloaded PDF must match the currently edited document.
+servers:
+  - url: /api
+security:
+  - bearerAuth: []
+paths:
+  /cvs/workspace/{cvId}:
+    get:
+      summary: Load editable A4 workspace state for a CV variant
+      operationId: getCvWorkspace
+      parameters:
+        - name: cvId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Workspace loaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvWorkspaceResponse'
+        '404':
+          description: CV not found or unauthorized
+    patch:
+      summary: Save editable A4 workspace changes
+      operationId: patchCvWorkspace
+      parameters:
+        - name: cvId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CvWorkspaceSaveRequest'
+      responses:
+        '200':
+          description: Save completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvWorkspaceSaveResponse'
+        '409':
+          description: Version conflict (stale editing session)
+        '422':
+          description: Validation error for inputs/template compatibility
+
+  /cvs/workspace/{cvId}/export:
+    post:
+      summary: Generate downloadable PDF from active editable A4 session
+      operationId: exportCvWorkspacePdf
+      parameters:
+        - name: cvId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version:
+                  type: integer
+                  minimum: 0
+                forceLatestSave:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: PDF generated from current editable A4 state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvWorkspaceExportResponse'
+        '409':
+          description: Version conflict or unsaved mismatch
+
+  /jobs/{jobId}/cv-workspace:
+    get:
+      summary: Resolve job-specific CV workspace context
+      operationId: getJobCvWorkspaceContext
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job-specific CV workspace context resolved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [jobId, cvId, variantType]
+                properties:
+                  jobId:
+                    type: string
+                  cvId:
+                    type: string
+                  variantType:
+                    type: string
+                    enum: [job-specific]
+        '404':
+          description: Job or associated CV not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CvWorkspaceResponse:
+      type: object
+      required:
+        - cvId
+        - variantType
+        - templateId
+        - template
+        - inputs
+        - saveStatus
+        - version
+      properties:
+        cvId:
+          type: string
+        variantType:
+          type: string
+          enum: [primary, branch, job-specific]
+        templateId:
+          type: string
+        template:
+          type: object
+          additionalProperties: true
+          description: pdfme template object for single A4 page
+        inputs:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items:
+            type: object
+            additionalProperties: true
+        saveStatus:
+          type: string
+          enum: [idle, unsaved, saving, saved, error]
+        version:
+          type: integer
+          minimum: 0
+        lastSavedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CvWorkspaceSaveRequest:
+      type: object
+      required: [version, inputs]
+      properties:
+        version:
+          type: integer
+          minimum: 0
+        inputs:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items:
+            type: object
+            additionalProperties: true
+        templateId:
+          type: string
+          nullable: true
+
+    CvWorkspaceSaveResponse:
+      type: object
+      required: [cvId, saveStatus, version, updatedAt]
+      properties:
+        cvId:
+          type: string
+        saveStatus:
+          type: string
+          enum: [saved]
+        version:
+          type: integer
+          minimum: 1
+        updatedAt:
+          type: string
+          format: date-time
+
+    CvWorkspaceExportResponse:
+      type: object
+      required: [cvId, version, fileName, mimeType, downloadUrl]
+      properties:
+        cvId:
+          type: string
+        version:
+          type: integer
+          minimum: 0
+        fileName:
+          type: string
+        mimeType:
+          type: string
+          enum: [application/pdf]
+        downloadUrl:
+          type: string
+          description: Signed or temporary URL to generated PDF

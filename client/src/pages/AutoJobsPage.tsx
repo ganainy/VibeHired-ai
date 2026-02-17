@@ -24,6 +24,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import JobRecommendationBadge from '../components/jobs/JobRecommendationBadge';
 import { formatDate } from '../utils/dateUtils';
 import { getJobRecommendation } from '../services/jobRecommendationApi';
+import { parseMultipleUrls } from '../lib/utils';
 
 const AutoJobsPage: React.FC = () => {
     // State
@@ -1173,7 +1174,7 @@ const AutoJobsPage: React.FC = () => {
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
                                                     <a
-                                                        href={job.jobUrl}
+                                                        href={parseMultipleUrls(job.jobUrl || '')[0] || '#'}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="font-semibold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"

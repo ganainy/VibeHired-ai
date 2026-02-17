@@ -50,15 +50,25 @@ export async function getJobRecommendation(
             };
         }
 
-        // Fetch master CV from the unified CV model
-        const masterCv = await CV.findOne({ userId: userIdObj, isMasterCv: true });
-        if (!masterCv || !masterCv.cvJson) {
+        // Use the Base CV selected for this job (baseCvId field)
+        let cvToUse: { cvJson: JsonResumeSchema } | null = null;
+
+        if (job.baseCvId) {
+            // Use the specific Base CV selected for this job
+            const baseCv = await CV.findOne({ _id: job.baseCvId, userId: userIdObj });
+            if (baseCv && baseCv.cvJson && Object.keys(baseCv.cvJson).length > 0) {
+                cvToUse = baseCv;
+                console.log(`[Recommendation] Using Base CV (${baseCv.displayName || job.baseCvId}) for job ${jobId}`);
+            }
+        }
+
+        if (!cvToUse || !cvToUse.cvJson) {
             return {
                 shouldApply: false,
                 score: null,
-                reason: 'Please upload your master CV first to get recommendations',
+                reason: 'No Base CV selected for this job',
                 cached: false,
-                error: 'Master CV not found - please upload your CV on the CV Management page'
+                error: 'No Base CV selected - please select a Base CV for this job to calculate match'
             };
         }
 
@@ -74,7 +84,7 @@ export async function getJobRecommendation(
 
         const analysisResult = await analyzeWithGemini(
             userIdObj.toString(),
-            masterCv.cvJson as JsonResumeSchema,
+            cvToUse.cvJson as JsonResumeSchema,
             job.jobDescriptionText
         );
 

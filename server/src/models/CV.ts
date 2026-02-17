@@ -32,6 +32,7 @@ export interface ICV extends Document {
         description: string;   // What was changed
         reason: string;        // Why it was changed (connection to job requirements)
     }> | null;
+    version: number;           // For optimistic concurrency in workspace
     createdAt: Date;
     updatedAt: Date;
 }
@@ -97,6 +98,11 @@ const CVSchema = new Schema<ICV>(
                 reason: { type: String, required: true },
             }],
             default: null,
+        },
+        version: {
+            type: Number,
+            default: 0,
+            min: 0,
         },
     },
     {

@@ -26,6 +26,7 @@ import JobStatusBadge from '../components/jobs/JobStatusBadge';
 import { getJobRecommendation, JobRecommendation } from '../services/jobRecommendationApi';
 import CoverLetterEditor from '../components/CoverLetterEditor';
 import { JobChatWindow, FloatingChatButton } from '../components/chat';
+import { parseMultipleUrls } from '../lib/utils';
 
 import PromptCustomizer from '../components/common/PromptCustomizer';
 import { PromptTemplateSelector } from '../components/common/PromptTemplateSelector';
@@ -216,13 +217,97 @@ const ReviewFinalizePage: React.FC = () => {
     const [clCustomInstructions, setClCustomInstructions] = useState<string>('');
     // Base CV Selection State
     const [availableCvs, setAvailableCvs] = useState<{ id: string; name: string; data: any }[]>([]);
-    const [selectedBaseCvId, setSelectedBaseCvId] = useState<string>('master');
-    const [selectedClBaseCvId, setSelectedClBaseCvId] = useState<string>('master');
+    const [selectedBaseCvId, setSelectedBaseCvId] = useState<string>(() => {
+        // Read from localStorage for persistence per job
+        if (jobId) {
+            try {
+                const saved = localStorage.getItem(`job_selectedBaseCvId_${jobId}`);
+                if (saved) {
+                    return saved;
+                }
+            } catch (e) {
+                console.error("Error reading selectedBaseCvId from localStorage", e);
+            }
+        }
+        return 'master';
+    });
+    const [selectedClBaseCvId, setSelectedClBaseCvId] = useState<string>(() => {
+        // Read from localStorage for persistence per job
+        if (jobId) {
+            try {
+                const saved = localStorage.getItem(`job_selectedClBaseCvId_${jobId}`);
+                if (saved) {
+                    return saved;
+                }
+            } catch (e) {
+                console.error("Error reading selectedClBaseCvId from localStorage", e);
+            }
+        }
+        return 'master';
+    });
 
     // Extract with AI State
     const [pastedJobText, setPastedJobText] = useState<string>('');
     const [isExtractingWithAi, setIsExtractingWithAi] = useState<boolean>(false);
     const [showExtractWithAi, setShowExtractWithAi] = useState<boolean>(false);
+
+    // Handlers for Base CV selection that persist to localStorage
+    const handleSelectedBaseCvIdChange = (newId: string) => {
+        setSelectedBaseCvId(newId);
+        if (jobId) {
+            const currentJobId = jobId;
+            try {
+                localStorage.setItem(`job_selectedBaseCvId_${currentJobId}`, newId);
+            } catch (e) {
+                console.error("Error saving selectedBaseCvId to localStorage", e);
+            }
+
+            const baseCvIdForJob = newId === 'master' ? null : newId;
+            void updateJob(currentJobId, { baseCvId: baseCvIdForJob })
+                .then((updatedJob) => {
+                    setJobApplication(prev => prev ? { ...prev, baseCvId: updatedJob.baseCvId ?? null } : prev);
+                })
+                .catch((error: any) => {
+                    console.error('Error saving baseCvId to job:', error);
+                });
+        }
+    };
+
+    const handleSelectedClBaseCvIdChange = (newId: string) => {
+        setSelectedClBaseCvId(newId);
+        if (jobId) {
+            try {
+                localStorage.setItem(`job_selectedClBaseCvId_${jobId}`, newId);
+            } catch (e) {
+                console.error("Error saving selectedClBaseCvId to localStorage", e);
+            }
+        }
+    };
+
+    // Update selected CV IDs when jobId changes (switching between jobs)
+    useEffect(() => {
+        if (jobId) {
+            try {
+                const savedBaseCvId = localStorage.getItem(`job_selectedBaseCvId_${jobId}`);
+                if (savedBaseCvId) {
+                    setSelectedBaseCvId(savedBaseCvId);
+                } else {
+                    setSelectedBaseCvId('master');
+                }
+
+                const savedClBaseCvId = localStorage.getItem(`job_selectedClBaseCvId_${jobId}`);
+                if (savedClBaseCvId) {
+                    setSelectedClBaseCvId(savedClBaseCvId);
+                } else {
+                    setSelectedClBaseCvId('master');
+                }
+            } catch (e) {
+                console.error("Error reading CV selection from localStorage", e);
+                setSelectedBaseCvId('master');
+                setSelectedClBaseCvId('master');
+            }
+        }
+    }, [jobId]);
 
     const ATS_POLLING_INTERVAL_MS = 3000; // Poll more frequently for ATS
     const ATS_POLLING_TIMEOUT_MS = 120000; // 2 minutes timeout
@@ -373,6 +458,19 @@ const ReviewFinalizePage: React.FC = () => {
         loadCvs();
     }, [jobId]);
 
+    // Ensure selected Base CV is always a valid option once CVs are loaded
+    useEffect(() => {
+        if (availableCvs.length === 0 || !jobId) return;
+
+        const hasValidSelection = availableCvs.some(cv => cv.id === selectedBaseCvId);
+        if (hasValidSelection) return;
+
+        const fallbackCvId = availableCvs[0]?.id;
+        if (!fallbackCvId) return;
+
+        handleSelectedBaseCvIdChange(fallbackCvId);
+    }, [availableCvs, selectedBaseCvId, jobId]);
+
     // Fetch existing ATS scores when job application is loaded
     useEffect(() => {
         const fetchExistingAtsScores = async () => {
@@ -416,30 +514,77 @@ const ReviewFinalizePage: React.FC = () => {
         setAvailableTemplates(getAllTemplates());
     }, []);
 
-    // Fetch AI recommendation when job application is loaded
-    useEffect(() => {
-        const fetchRecommendation = async () => {
-            if (!jobId || !jobApplication?.jobDescriptionText) {
-                setRecommendation(null);
-                return;
-            }
+    // Fetch AI recommendation when job application is loaded - DISABLED (now manual via button)
+    // useEffect(() => {
+    //     const fetchRecommendation = async () => {
+    //         if (!jobId || !jobApplication?.jobDescriptionText) {
+    //             setRecommendation(null);
+    //             return;
+    //         }
 
-            setIsLoadingRecommendation(true);
-            try {
-                const result = await getJobRecommendation(jobId);
-                setRecommendation(result);
-            } catch (err: any) {
-                console.error('Failed to fetch recommendation:', err);
-                setRecommendation(null);
-            } finally {
-                setIsLoadingRecommendation(false);
-            }
-        };
+    //         setIsLoadingRecommendation(true);
+    //         try {
+    //             const result = await getJobRecommendation(jobId);
+    //             setRecommendation(result);
+    //         } catch (err: any) {
+    //             console.error('Failed to fetch recommendation:', err);
+    //             setRecommendation(null);
+    //         } finally {
+    //             setIsLoadingRecommendation(false);
+    //         }
+    //     };
 
-        if (jobApplication) {
-            fetchRecommendation();
+    //     if (jobApplication) {
+    //         fetchRecommendation();
+    //     }
+    // }, [jobId, jobApplication?.jobDescriptionText]);
+
+    // Handler to calculate match recommendation manually
+    const handleCalculateMatch = async () => {
+        if (!jobId || !jobApplication?.jobDescriptionText) {
+            showToast('Please add a job description first', 'error');
+            return;
         }
-    }, [jobId, jobApplication?.jobDescriptionText]);
+        const currentJobId = jobId;
+
+        const baseCvIdForJob = selectedBaseCvId && selectedBaseCvId !== 'master' ? selectedBaseCvId : null;
+        if (!baseCvIdForJob) {
+            showToast('Please select a Base CV for this job.', 'error');
+            return;
+        }
+
+        setIsLoadingRecommendation(true);
+        try {
+            if (jobApplication.baseCvId !== baseCvIdForJob) {
+                const updatedJob = await updateJob(currentJobId, { baseCvId: baseCvIdForJob });
+                setJobApplication(prev => prev ? { ...prev, baseCvId: updatedJob.baseCvId ?? null } : prev);
+            }
+
+            console.log('[handleCalculateMatch] Starting calculation for jobId:', currentJobId);
+            const result = await getJobRecommendation(currentJobId, true);
+            console.log('[handleCalculateMatch] Result:', result);
+            setRecommendation(result);
+            if (result.error) {
+                showToast(result.error, 'error');
+            } else if (result.score !== null && result.score !== undefined) {
+                showToast(`Match calculated: ${result.score}%`, 'success');
+            } else {
+                showToast('No match score returned. Please select a Base CV for this job.', 'error');
+            }
+        } catch (err: any) {
+            console.error('[handleCalculateMatch] Failed to calculate recommendation:', err);
+            showToast(err?.message || 'Failed to calculate match', 'error');
+            setRecommendation({ 
+                shouldApply: false, 
+                score: null, 
+                reason: '', 
+                cached: false, 
+                error: err?.message || 'Failed to calculate match' 
+            });
+        } finally {
+            setIsLoadingRecommendation(false);
+        }
+    };
 
     // Handler to refresh AI recommendation
     const handleRefreshRecommendation = async () => {
@@ -740,7 +885,7 @@ const ReviewFinalizePage: React.FC = () => {
     }, [cvData, coverLetterText, jobId, jobApplication, currentCvId]);
 
     const handleRefreshJobDetails = async () => {
-        if (!jobId || !jobApplication?.jobUrl) return;
+        if (!jobId || !jobApplication?.jobUrl || parseMultipleUrls(jobApplication.jobUrl).length === 0) return;
 
         setIsRefreshing(true);
         setRefreshError(null);
@@ -768,6 +913,8 @@ const ReviewFinalizePage: React.FC = () => {
             setPastedJobText(''); // Clear the textarea
             setShowExtractWithAi(false); // Close the extract UI
             showToast('Job details extracted successfully', 'success');
+            // Redirect to the job page after successful extraction
+            navigate(`/jobs/${jobId}/review/job-description`);
         } catch (error: any) {
             console.error("Error extracting job details:", error);
             setRefreshError(error.message || 'Failed to extract job details.');
@@ -1554,47 +1701,71 @@ const ReviewFinalizePage: React.FC = () => {
                             </p>
                         </div>
 
-                        {/* Match Column - Clickable */}
-                        <button
-                            onClick={() => setIsRecommendationModalOpen(true)}
-                            className="text-center cursor-pointer hover:opacity-80 transition-opacity"
-                            title="Click to view AI Application Advice"
-                        >
-                            <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
-                            <p className={`text-sm font-semibold ${isLoadingRecommendation
-                                ? 'text-gray-400 dark:text-gray-500'
-                                : recommendation?.score !== null && recommendation?.score !== undefined
-                                    ? recommendation.shouldApply
+                        {/* Match Column - Clickable or Calculate Button */}
+                        {recommendation && recommendation.score !== null && recommendation.score !== undefined ? (
+                            <button
+                                onClick={() => setIsRecommendationModalOpen(true)}
+                                className="text-center cursor-pointer hover:opacity-80 transition-opacity"
+                                title="Click to view AI Application Advice"
+                            >
+                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
+                                <p className={`text-sm font-semibold ${
+                                    recommendation.shouldApply
                                         ? 'text-green-600 dark:text-green-400'
                                         : 'text-amber-600 dark:text-amber-400'
-                                    : 'text-gray-400 dark:text-gray-500'
                                 }`}>
+                                    {`${recommendation.score}%`}
+                                </p>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleCalculateMatch}
+                                disabled={isLoadingRecommendation || !jobApplication?.jobDescriptionText}
+                                className="text-center cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!jobApplication?.jobDescriptionText ? "Add job description first" : "Click to calculate match"}
+                            >
+                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
                                 {isLoadingRecommendation ? (
                                     <span className="inline-flex items-center gap-1">
                                         <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
                                     </span>
-                                ) : recommendation?.score !== null && recommendation?.score !== undefined ? (
-                                    `${recommendation.score}%`
                                 ) : recommendation?.error ? (
-                                    '—'
+                                    <span className="text-xs px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                        Retry
+                                    </span>
                                 ) : (
-                                    '—'
+                                    <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                        Calculate
+                                    </span>
                                 )}
-                            </p>
-                        </button>
+                            </button>
+                        )}
 
 
                         {/* Open Job Link Button */}
-                        {jobApplication.jobUrl && (
-                            <a
-                                href={jobApplication.jobUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-3 text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
-                                title="View Original Job Posting"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">open_in_new</span>
-                            </a>
+                        {jobApplication.jobUrl && parseMultipleUrls(jobApplication.jobUrl).length > 0 && (
+                            <div className="flex items-center gap-1">
+                                {parseMultipleUrls(jobApplication.jobUrl).slice(0, 3).map((url, idx) => (
+                                    <a
+                                        key={idx}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-3 text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
+                                        title={`View Job Posting ${parseMultipleUrls(jobApplication.jobUrl).length > 1 ? `(${idx + 1})` : ''}: ${url}`}
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">open_in_new</span>
+                                        {parseMultipleUrls(jobApplication.jobUrl).length > 1 && (
+                                            <span className="text-xs ml-0.5">{idx + 1}</span>
+                                        )}
+                                    </a>
+                                ))}
+                                {parseMultipleUrls(jobApplication.jobUrl).length > 3 && (
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 ml-1" title={parseMultipleUrls(jobApplication.jobUrl).slice(3).join('\n')}>
+                                        +{parseMultipleUrls(jobApplication.jobUrl).length - 3} more
+                                    </span>
+                                )}
+                            </div>
                         )}
 
                         {/* Mark as Applied Button */}
@@ -1868,6 +2039,23 @@ const ReviewFinalizePage: React.FC = () => {
                                         <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Key Highlights</h2>
                                     </div>
                                     <ul className="space-y-3">
+
+                                        {/* Job URL(s) */}
+                                        {jobApplication.jobUrl && parseMultipleUrls(jobApplication.jobUrl).length > 0 && (
+                                            <>
+                                                {parseMultipleUrls(jobApplication.jobUrl).map((url, idx) => (
+                                                    <li key={idx} className="flex items-start gap-3">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
+                                                        <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                            <strong className="text-text-main-light dark:text-text-main-dark">{parseMultipleUrls(jobApplication.jobUrl).length > 1 ? `Job URL ${idx + 1}:` : 'Job URL:'}</strong>{' '}
+                                                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-indigo-500 dark:text-indigo-400 hover:underline break-all">
+                                                                {url.length > 60 ? url.substring(0, 60) + '...' : url}
+                                                            </a>
+                                                        </span>
+                                                    </li>
+                                                ))}
+                                            </>
+                                        )}
 
                                         {jobApplication.extractedData?.location && (
                                             <li className="flex items-start gap-3">
@@ -2381,7 +2569,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <div className="relative">
                                                     <select
                                                         value={selectedClBaseCvId}
-                                                        onChange={(e) => setSelectedClBaseCvId(e.target.value)}
+                                                        onChange={(e) => handleSelectedClBaseCvIdChange(e.target.value)}
                                                         className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
                                                     >
                                                         {availableCvs.map(cv => (
@@ -2407,6 +2595,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             label="Custom Instructions"
                                             placeholder="e.g. Focus on my project management skills and keep the tone professional..."
                                             defaultContent={DEFAULT_COVER_LETTER_PROMPT}
+                                            defaultSystemPrompt={DEFAULT_COVER_LETTER_PROMPT}
                                         />
 
                                         {/* Footer Actions */}
@@ -2758,7 +2947,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     <div className="relative">
                                                         <select
                                                             value={selectedBaseCvId}
-                                                            onChange={(e) => setSelectedBaseCvId(e.target.value)}
+                                                            onChange={(e) => handleSelectedBaseCvIdChange(e.target.value)}
                                                             className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
                                                         >
                                                             {availableCvs.map(cv => (
@@ -2785,6 +2974,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 label="Custom Instructions"
                                                 placeholder="e.g. Highlight my experience with Python and emphasize leadership skills..."
                                                 defaultContent={DEFAULT_CV_PROMPT}
+                                                defaultSystemPrompt={DEFAULT_CV_PROMPT}
                                             />
                                         </div>
                                     </div>

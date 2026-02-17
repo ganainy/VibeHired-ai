@@ -12,6 +12,7 @@ import {
   CreateJobFromTextOptions
 } from '../services/jobApi';
 import { getCvBranches, CVDocument } from '../services/cvApi';
+import { parseMultipleUrls, normalizeMultipleUrls, normalizeUrl } from '../lib/utils';
 
 import JobStatusBadge from '../components/jobs/JobStatusBadge';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
@@ -59,10 +60,37 @@ const DashboardPage: React.FC = () => {
   const [createFromTextError, setCreateFromTextError] = useState<string | null>(null);
 
   // --- Pre-Extraction Form State ---
-  const [selectedCvBranchId, setSelectedCvBranchId] = useState<string | null>(null);
+  const [selectedCvBranchId, setSelectedCvBranchId] = useState<string | null>(() => {
+    // Initialize from localStorage for persistence
+    try {
+      const saved = localStorage.getItem('dashboard_selectedCvBranchId');
+      return saved || null;
+    } catch (e) {
+      console.error("Error reading selectedCvBranchId from localStorage", e);
+      return null;
+    }
+  });
   const [preExtractionJobUrl, setPreExtractionJobUrl] = useState<string>('');
-  const [preExtractionStatus, setPreExtractionStatus] = useState<string>('Not Applied');
-  const [preExtractionJobType, setPreExtractionJobType] = useState<string>('');
+  const [preExtractionStatus, setPreExtractionStatus] = useState<string>(() => {
+    // Initialize from localStorage for persistence
+    try {
+      const saved = localStorage.getItem('dashboard_preExtractionStatus');
+      return saved || 'Not Applied';
+    } catch (e) {
+      console.error("Error reading preExtractionStatus from localStorage", e);
+      return 'Not Applied';
+    }
+  });
+  const [preExtractionJobType, setPreExtractionJobType] = useState<string>(() => {
+    // Initialize from localStorage for persistence
+    try {
+      const saved = localStorage.getItem('dashboard_preExtractionJobType');
+      return saved || '';
+    } catch (e) {
+      console.error("Error reading preExtractionJobType from localStorage", e);
+      return '';
+    }
+  });
 
   // --- Filtering & Sorting State ---
   const [filterText, setFilterText] = useState<string>('');
@@ -122,6 +150,41 @@ const DashboardPage: React.FC = () => {
     };
     fetchCvs();
   }, []);
+
+  // --- useEffect: Persist selected CV branch to localStorage ---
+  useEffect(() => {
+    try {
+      if (selectedCvBranchId) {
+        localStorage.setItem('dashboard_selectedCvBranchId', selectedCvBranchId);
+      } else {
+        localStorage.removeItem('dashboard_selectedCvBranchId');
+      }
+    } catch (e) {
+      console.error("Error saving selectedCvBranchId to localStorage", e);
+    }
+  }, [selectedCvBranchId]);
+
+  // --- useEffect: Persist preExtractionStatus to localStorage ---
+  useEffect(() => {
+    try {
+      localStorage.setItem('dashboard_preExtractionStatus', preExtractionStatus);
+    } catch (e) {
+      console.error("Error saving preExtractionStatus to localStorage", e);
+    }
+  }, [preExtractionStatus]);
+
+  // --- useEffect: Persist preExtractionJobType to localStorage ---
+  useEffect(() => {
+    try {
+      if (preExtractionJobType) {
+        localStorage.setItem('dashboard_preExtractionJobType', preExtractionJobType);
+      } else {
+        localStorage.removeItem('dashboard_preExtractionJobType');
+      }
+    } catch (e) {
+      console.error("Error saving preExtractionJobType to localStorage", e);
+    }
+  }, [preExtractionJobType]);
 
 
   // Reset to page 1 when filters change
@@ -318,6 +381,8 @@ const DashboardPage: React.FC = () => {
       setPreExtractionJobUrl('');
       setPreExtractionJobType('');
       setToast({ message: 'Job application created successfully!', type: 'success' });
+      // Redirect to the job page after successful extraction
+      navigate(`/jobs/${newJob._id}/review/job-description`);
     } catch (err: any) {
       console.error("Failed to create job from text:", err);
       const errorMessage = err.message || 'Failed to extract job details.';
@@ -443,9 +508,26 @@ const DashboardPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6">
-        <div className="mb-2">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Job Dashboard</h1>
-          <p className="mt-1 text-slate-600 dark:text-slate-400">Manage your job applications and track your progress.</p>
+        <div className="mb-2 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Job Dashboard</h1>
+            <p className="mt-1 text-slate-600 dark:text-slate-400">Manage your job applications and track your progress.</p>
+          </div>
+          {(() => {
+            const todayCount = jobs.filter(job => {
+              const jobDate = new Date(job.createdAt);
+              const today = new Date();
+              return jobDate.getDate() === today.getDate() &&
+                     jobDate.getMonth() === today.getMonth() &&
+                     jobDate.getFullYear() === today.getFullYear();
+            }).length;
+            return todayCount > 0 ? (
+              <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-lg">
+                <span className="text-sm text-slate-600 dark:text-slate-400">Today's Applications:</span>
+                <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{todayCount}</span>
+              </div>
+            ) : null;
+          })()}
         </div>
 
 
@@ -479,17 +561,24 @@ const DashboardPage: React.FC = () => {
                 {/* Job URL */}
                 <div>
                   <label htmlFor="jobUrl" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Job URL
+                    Job URL(s)
                   </label>
-                  <input
-                    type="url"
+                  <textarea
                     id="jobUrl"
                     value={preExtractionJobUrl}
                     onChange={(e) => setPreExtractionJobUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    onBlur={(e) => {
+                      const normalized = normalizeMultipleUrls(e.target.value);
+                      setPreExtractionJobUrl(normalized);
+                    }}
+                    placeholder="https://example.com/job-posting&#10;Multiple URLs allowed (one per line or comma-separated)"
+                    rows={3}
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-y"
                     disabled={isCreatingFromText}
                   />
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Multiple URLs allowed - separate with newlines or commas
+                  </p>
                 </div>
 
                 {/* Status */}
@@ -746,7 +835,6 @@ const DashboardPage: React.FC = () => {
                         </th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Type</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Language</th>
-                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Salary</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Contact</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Link</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Actions</th>
@@ -765,11 +853,18 @@ const DashboardPage: React.FC = () => {
                             <JobStatusBadge type="application" status={job.status} />
                           </td>
                           <td className="p-4 text-slate-600 dark:text-slate-400">
-                            {new Date(job.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            <div className="flex flex-col">
+                              <span className="text-xs text-slate-400 dark:text-slate-500">
+                                {new Date(job.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              <span>
+                                {new Date(job.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              </span>
+                            </div>
                           </td>
                           <td className="p-4 text-slate-600 dark:text-slate-400">
                             {job.jobType ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                              <span>
                                 {job.jobType === 'full-time' && 'Full-time'}
                                 {job.jobType === 'part-time' && 'Part-time'}
                                 {job.jobType === 'working-student' && 'Working Student'}
@@ -782,7 +877,6 @@ const DashboardPage: React.FC = () => {
                             )}
                           </td>
                           <td className="p-4 text-slate-600 dark:text-slate-400">{job.language ? job.language.toUpperCase() : '-'}</td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400">{job.salary || '-'}</td>
                           <td className="p-4 text-slate-600 dark:text-slate-400 max-w-[120px]" onClick={(e) => e.stopPropagation()}>
                             {/* Display structured contact info if available, otherwise fall back to legacy contact field */}
                             {job.contactEmail || job.contactPhone || job.hiringManagerName ? (
@@ -820,17 +914,28 @@ const DashboardPage: React.FC = () => {
                           </td>
                           <td className="p-4" onClick={(e) => e.stopPropagation()}>
                             {job.jobUrl ? (
-                              <a
-                                href={job.jobUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-indigo-500 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
-                                title="Open job posting"
-                              >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                              </a>
+                              <div className="flex items-center gap-1">
+                                {parseMultipleUrls(job.jobUrl).slice(0, 3).map((url, idx, arr) => (
+                                  <a
+                                    key={idx}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-md text-indigo-500 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                                    title={`Open: ${url}`}
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                    {arr.length > 1 && <span className="text-xs ml-0.5">{idx + 1}</span>}
+                                  </a>
+                                ))}
+                                {parseMultipleUrls(job.jobUrl).length > 3 && (
+                                  <span className="text-xs text-slate-500 dark:text-slate-400 ml-1" title={parseMultipleUrls(job.jobUrl).slice(3).join('\n')}>
+                                    +{parseMultipleUrls(job.jobUrl).length - 3} more
+                                  </span>
+                                )}
+                              </div>
                             ) : (
                               <span className="text-slate-400 dark:text-slate-500">-</span>
                             )}
@@ -1099,31 +1204,24 @@ const DashboardPage: React.FC = () => {
                   {/* Job URL */}
                   <div className="mb-5">
                     <label htmlFor="jobUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Job URL
+                      Job URL(s)
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                      </div>
-                      <input
-                        type="text"
-                        id="jobUrl"
-                        name="jobUrl"
-                        value={formData.jobUrl || ''}
-                        onChange={handleInputChange}
-                        onBlur={(e) => {
-                          const val = e.target.value.trim();
-                          if (val && !/^https?:\/\//i.test(val)) {
-                            // Automatically add https:// if missing
-                            setFormData(prev => ({ ...prev, jobUrl: `https://${val}` }));
-                          }
-                        }}
-                        placeholder="https://..."
-                        className="w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                      />
-                    </div>
+                    <textarea
+                      id="jobUrl"
+                      name="jobUrl"
+                      value={formData.jobUrl || ''}
+                      onChange={handleInputChange}
+                      onBlur={(e) => {
+                        const normalized = normalizeMultipleUrls(e.target.value);
+                        setFormData(prev => ({ ...prev, jobUrl: normalized }));
+                      }}
+                      placeholder="https://example.com/job-posting&#10;Multiple URLs allowed (one per line or comma-separated)"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-y"
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Multiple URLs allowed - separate with newlines or commas
+                    </p>
                   </div>
 
                   {/* Salary and Contact - Side by Side */}

@@ -14,6 +14,8 @@ interface PromptTemplateSelectorProps {
     label?: string;
     placeholder?: string;
     defaultContent?: string;
+    defaultSystemPrompt?: string;
+    defaultUserPrompt?: string;
 }
 
 export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
@@ -23,7 +25,9 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
     onTemplateSelect,
     label = "Custom Instructions",
     placeholder = "Enter your instructions here...",
-    defaultContent = ""
+    defaultContent = "",
+    defaultSystemPrompt,
+    defaultUserPrompt
 }) => {
     const [templates, setTemplates] = useState<PromptTemplate[]>([]);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>('default-system');
@@ -33,6 +37,9 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
     // UI states for saving/naming
     const [showSaveInput, setShowSaveInput] = useState(false);
     const [newTemplateName, setNewTemplateName] = useState('');
+    
+    // State for prompt preview modal
+    const [showPromptModal, setShowPromptModal] = useState(false);
 
     useEffect(() => {
         loadTemplates();
@@ -57,6 +64,8 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
 
         if (id === 'default-system') {
             onChange(defaultContent);
+        } else if (id === 'default-user') {
+            onChange(defaultUserPrompt || defaultContent);
         } else if (id) {
             const template = templates.find(t => t.id === id);
             if (template) {
@@ -138,6 +147,30 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
         }
     };
 
+    // Get the content to display in the modal based on selected template
+    const getPromptContent = () => {
+        if (selectedTemplateId === 'default-system') {
+            return defaultSystemPrompt || defaultContent;
+        } else if (selectedTemplateId === 'default-user') {
+            return defaultUserPrompt || defaultContent;
+        } else if (selectedTemplateId) {
+            const template = templates.find(t => t.id === selectedTemplateId);
+            return template?.content || '';
+        }
+        return '';
+    };
+
+    const getTemplateName = () => {
+        if (selectedTemplateId === 'default-system') {
+            return 'Default System Prompt';
+        } else if (selectedTemplateId === 'default-user') {
+            return 'Default User Prompt';
+        } else if (selectedTemplateId) {
+            return templates.find(t => t.id === selectedTemplateId)?.name || 'Unknown Template';
+        }
+        return 'No template selected';
+    };
+
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -166,6 +199,7 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                                 >
                                     <option value="">Select a template...</option>
                                     <option value="default-system">Default System Prompt</option>
+                                    {defaultUserPrompt && <option value="default-user">Default User Prompt</option>}
                                     {templates.map(t => (
                                         <option key={t.id} value={t.id}>{t.name}</option>
                                     ))}
@@ -207,13 +241,20 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                 />
 
                 <div className="flex justify-between items-center mt-2 pt-2 border-t border-purple-200 dark:border-purple-800/30">
-                    <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                        {selectedTemplateId
-                            ? `Active Template: ${selectedTemplateId === 'default-system'
-                                ? 'Default System Prompt'
-                                : (templates.find(t => t.id === selectedTemplateId)?.name || 'Unknown Template')}`
-                            : 'No template selected'}
-                    </span>
+                    <button
+                        type="button"
+                        onClick={() => selectedTemplateId && setShowPromptModal(true)}
+                        disabled={!selectedTemplateId}
+                        className={`text-xs font-medium flex items-center gap-1 ${
+                            selectedTemplateId 
+                                ? 'text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 cursor-pointer underline underline-offset-2' 
+                                : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                        }`}
+                        title={selectedTemplateId ? 'Click to view full prompt' : 'No template selected'}
+                    >
+                        <span className="material-symbols-outlined text-sm">visibility</span>
+                        Active Template: {getTemplateName()}
+                    </button>
 
                     {!showSaveInput ? (
                         <button
@@ -249,6 +290,41 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Prompt Preview Modal */}
+            {showPromptModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="w-full max-w-4xl max-h-[80vh] bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">description</span>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    {getTemplateName()}
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setShowPromptModal(false)}
+                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="p-4 overflow-auto max-h-[calc(80vh-80px)]">
+                            <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-mono bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                                {getPromptContent()}
+                            </pre>
+                        </div>
+                        <div className="flex justify-end p-4 border-t border-gray-200 dark:border-gray-700">
+                            <button
+                                onClick={() => setShowPromptModal(false)}
+                                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

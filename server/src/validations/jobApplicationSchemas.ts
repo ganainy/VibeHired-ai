@@ -36,7 +36,7 @@ export const createJobBodySchema = z.object({
     required_error: 'Company name is required',
   }).min(1, 'Company name cannot be empty').trim(),
   status: jobStatusEnum.optional(),
-  jobUrl: z.string().url('Invalid URL format').optional().or(z.literal('')),
+  jobUrl: z.string().optional(), // Accept any string - can contain multiple URLs separated by newlines/commas
   notes: z.string().optional(),
   salary: z.string().optional(),
   contact: z.string().optional(),
@@ -58,7 +58,7 @@ export const updateJobBodySchema = z.object({
   jobTitle: z.string().min(1, 'Job title cannot be empty').trim().optional(),
   companyName: z.string().min(1, 'Company name cannot be empty').trim().optional(),
   status: jobStatusEnum.optional(),
-  jobUrl: z.string().url('Invalid URL format').optional().or(z.literal('')),
+  jobUrl: z.string().optional(), // Accept any string - can contain multiple URLs separated by newlines/commas
   notes: z.string().optional(),
   salary: z.string().optional(),
   contact: z.string().optional(),
@@ -123,7 +123,7 @@ export const createJobFromTextBodySchema = z.object({
   }).min(50, 'Please paste more job description text (at least 50 characters)').max(200000, 'Text is too long'),
   // Additional fields for pre-extraction form
   baseCvId: z.string().optional().nullable(),
-  jobUrl: z.string().url('Invalid URL format').optional().or(z.literal('')),
+  jobUrl: z.string().optional(), // Accept any string - can contain multiple URLs separated by newlines/commas
   status: jobStatusEnum.optional(),
   jobType: jobTypeEnum,
 });
