@@ -21,7 +21,7 @@ import Toast from '../components/common/Toast';
 type JobFormData = Partial<Omit<JobApplication, '_id' | 'updatedAt' | 'generationStatus' | 'generatedCvFilename' | 'generatedCoverLetterFilename'>>;
 
 // Explicitly list sortable keys for type safety
-type SortableJobKeys = 'jobTitle' | 'companyName' | 'status' | 'createdAt' | 'language';
+type SortableJobKeys = 'jobTitle' | 'companyName' | 'status' | 'createdAt';
 
 // Job type options for dropdown
 const JOB_TYPE_OPTIONS = [
@@ -796,7 +796,6 @@ const DashboardPage: React.FC = () => {
                           </div>
                         </th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Type</th>
-                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Language</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Contact</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Link</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Actions</th>
@@ -838,7 +837,6 @@ const DashboardPage: React.FC = () => {
                               <span className="text-slate-400 dark:text-slate-500">-</span>
                             )}
                           </td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400">{job.language ? job.language.toUpperCase() : '-'}</td>
                           <td className="p-4 text-slate-600 dark:text-slate-400 max-w-[120px]" onClick={(e) => e.stopPropagation()}>
                             {/* Display structured contact info if available, otherwise fall back to legacy contact field */}
                             {job.contactEmail || job.contactPhone || job.hiringManagerName ? (
