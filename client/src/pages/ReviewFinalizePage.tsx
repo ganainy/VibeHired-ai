@@ -53,7 +53,6 @@ type JobDetailsFormData = {
     hiringManagerName: string;
     applicationUrl: string;
     notes: string;
-    jobDescriptionText: string;
 };
 
 const ReviewFinalizePage: React.FC = () => {
@@ -366,7 +365,6 @@ const ReviewFinalizePage: React.FC = () => {
             hiringManagerName,
             applicationUrl,
             notes: job.notes || '',
-            jobDescriptionText: job.jobDescriptionText || '',
         };
     }, []);
 
@@ -1685,7 +1683,6 @@ const ReviewFinalizePage: React.FC = () => {
                 applicationUrl: jobDetailsForm.applicationUrl.trim() || undefined,
                 contact: legacyContact,
                 notes: jobDetailsForm.notes,
-                jobDescriptionText: jobDetailsForm.jobDescriptionText,
             };
 
             const updatedJob = await updateJob(jobId, updatePayload);
@@ -2465,17 +2462,6 @@ const ReviewFinalizePage: React.FC = () => {
                                                     onChange={(e) => handleJobDetailsInputChange('notes', e.target.value)}
                                                     rows={3}
                                                     placeholder="Add notes for this application"
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm resize-y"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Description</label>
-                                                <textarea
-                                                    value={jobDetailsForm.jobDescriptionText}
-                                                    onChange={(e) => handleJobDetailsInputChange('jobDescriptionText', e.target.value)}
-                                                    rows={8}
-                                                    placeholder="Paste or edit the full job description"
                                                     className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm resize-y"
                                                 />
                                             </div>

@@ -33,6 +33,12 @@ export interface ICV extends Document {
         reason: string;        // Why it was changed (connection to job requirements)
     }> | null;
     version: number;           // For optimistic concurrency in workspace
+    workspaceMode?: 'from-scratch' | 'pdf-edit';
+    fidelityLevel?: 'high' | 'medium' | 'low';
+    fidelityWarnings?: string[];
+    snapshotVersion?: number;
+    lastEditedAt?: Date;
+    originalPdf?: Buffer | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -103,6 +109,34 @@ const CVSchema = new Schema<ICV>(
             type: Number,
             default: 0,
             min: 0,
+        },
+        workspaceMode: {
+            type: String,
+            enum: ['from-scratch', 'pdf-edit'],
+            default: 'from-scratch',
+        },
+        fidelityLevel: {
+            type: String,
+            enum: ['high', 'medium', 'low'],
+            default: 'high',
+        },
+        fidelityWarnings: {
+            type: [String],
+            default: [],
+        },
+        snapshotVersion: {
+            type: Number,
+            default: 1,
+            min: 1,
+        },
+        lastEditedAt: {
+            type: Date,
+            default: null,
+        },
+        originalPdf: {
+            type: Buffer,
+            default: null,
+            select: false,
         },
     },
     {
