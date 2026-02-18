@@ -71,6 +71,7 @@ export const LanguagesForm: React.FC<LanguagesFormProps> = ({
             addButtonText="Add Language"
             isCollapsible
             defaultExpanded={false}
+            variant="row"
         >
             {languages.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 italic py-4">

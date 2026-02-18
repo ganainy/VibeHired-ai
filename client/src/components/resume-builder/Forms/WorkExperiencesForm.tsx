@@ -69,6 +69,7 @@ export const WorkExperiencesForm: React.FC<WorkExperiencesFormProps> = ({
             addButtonText="Add Work Experience"
             isCollapsible
             defaultExpanded={false}
+            variant="row"
         >
             {workExperiences.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 italic py-4">

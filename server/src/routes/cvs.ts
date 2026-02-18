@@ -85,23 +85,70 @@ async function parseUploadedCv(reqFile: Express.Multer.File, userId: string): Pr
 
     try {
         const prompt = `
-    Analyze the content of the attached CV file (${reqFile.originalname}).
-    Your task is to extract information and structure it precisely according to the JSON Resume Schema (details at https://jsonresume.org/schema/).
+You are a precise CV/resume data extractor. Analyze the attached CV file (${reqFile.originalname}) and extract ALL information into a strictly valid JSON Resume Schema object.
 
-    Instructions:
-    - Parse the entire document.
-    - Populate the standard JSON Resume fields: basics, work, education, skills, projects, languages, etc., based *only* on the content found in the file.
-    - For 'basics.profiles', extract common profiles like LinkedIn, GitHub, Portfolio, etc.
-    - For 'work.highlights' or 'work.description', use bullet points (array of strings for highlights) or a single description string. Prioritize 'highlights' if possible.
-    - For 'skills', try to group them under relevant 'name' properties (e.g., "Programming Languages", "Frameworks", "Tools") with specific skills listed in 'keywords'. If grouping isn't clear, create a single skill entry with a general name and list all skills under its 'keywords'.
-    - Format dates as YYYY-MM-DD, YYYY-MM, or YYYY where possible. Use "Present" for ongoing roles/studies.
-    - If a standard section (like 'awards' or 'volunteer') is not present in the CV, omit that key entirely from the JSON output.
-    - If a specific field within a section (like 'work.location') is not found, omit that field or set it to null.
+=== CRITICAL FIELD-BY-FIELD RULES ===
 
-    **CRITICAL: Do NOT include any comments (e.g., // or /* */) within the JSON output.**
+**basics.name**
+- Extract the candidate's full name EXACTLY as it appears, preserving proper word spacing.
+- If the name appears as a concatenated string (e.g. "JohnDoe" due to PDF rendering), reconstruct the correct spacing by inserting a space at the camelCase boundary (e.g. "John Doe").
+- NEVER output the name without a space between first and last name.
 
-    Output Format:
-    Return ONLY a single, valid JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`) that strictly adheres to the JSON Resume Schema structure. Do not include any explanatory text before or after the JSON block.
+**basics.summary**
+- Extract ONLY the body/paragraph text of the professional summary or profile section.
+- NEVER include the section heading (e.g. "Professional Summary", "Berufsprofil", "Über mich") as part of the value.
+- The value must be plain prose text only.
+
+**basics.location**
+- Map city → "city", state/region → "region", country → "countryCode" (ISO 2-letter code, e.g. "DE", "EG").
+
+**work[].name / work[].position**
+- "name" = the employer/company name only.
+- "position" = the job title only.
+- "highlights" = array of individual bullet point strings (each bullet is one separate array element, NOT a single concatenated paragraph).
+- "startDate" / "endDate" = YYYY-MM or YYYY. Use "Present" for current roles.
+
+**education[].studyType / education[].area / education[].institution**
+- "studyType" = the degree type (e.g. "Bachelor of Science", "Master of Science", "Ausbildung").
+- "area" = the field of study (e.g. "Computer Science", "Internet Security").
+- "institution" = the university or school name only.
+
+**skills[]**
+- Group skills into meaningful categories. Each element MUST be an object: { "name": "<Category>", "keywords": ["skill1", "skill2", ...] }
+- "keywords" MUST be an array of individual short skill/technology names — NEVER a single long paragraph string.
+- Each keyword is ONE skill (e.g. "Windows 10/11", "Active Directory", "TCP/IP") — not a sentence.
+- Example of CORRECT skills entry:
+  { "name": "Networking", "keywords": ["TCP/IP", "DNS", "DHCP", "HTTP/HTTPS", "WLAN"] }
+- Example of INCORRECT skills entry (DO NOT do this):
+  { "name": "Skills", "keywords": ["Kenntnisse in TCP/IP, DNS, DHCP, HTTP/HTTPS sowie grundlegender Netzwerkdiagnose"] }
+- If the CV lists skills as a long paragraph, split each individual skill/term into its own keyword string.
+
+**languages[]**
+- EACH language entry MUST have exactly two separate fields:
+  - "language": the language name ONLY (e.g. "Deutsch", "English", "Arabic", "Arabisch") — NO proficiency level here
+  - "fluency": the proficiency level ONLY (e.g. "C1", "B2", "Native", "Fluent", "Conversational", "Basic") — NO language name here
+- NEVER merge language name and proficiency into a single string (e.g. "DeutschC1" or "ArabischNative" are WRONG).
+- Example of CORRECT entry: { "language": "Deutsch", "fluency": "C1" }
+- Example of INCORRECT entry: { "language": "DeutschC1", "fluency": "" }
+
+**projects[]**
+- "name" = project title only.
+- "description" = brief one-line description (plain text, no heading labels).
+- "highlights" = array of individual bullet strings describing what was done.
+- "url" = GitHub or live URL if present, otherwise omit.
+
+**General rules**
+- Parse the ENTIRE document — do not skip any section.
+- NEVER include section heading labels (e.g. "Skills & Technologies", "Berufserfahrung") as field values.
+- Format all dates as YYYY-MM or YYYY. Use "Present" for ongoing. Omit date fields that are not found.
+- If an entire section is absent from the CV, omit that top-level key entirely.
+- If a specific field is not found, omit it (do not set to null or empty string unless required).
+- For 'basics.profiles', extract LinkedIn, GitHub, Portfolio URLs with "network" = platform name.
+- **DO NOT include any JavaScript/JSON comments (// or /* */) anywhere in the output.**
+
+=== OUTPUT FORMAT ===
+Return ONLY a single valid JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`).
+No text, explanation, or commentary before or after the JSON block.
   `;
 
         console.log('Sending CV parsing request to AI...');

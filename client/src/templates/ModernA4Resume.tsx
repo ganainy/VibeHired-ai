@@ -41,7 +41,7 @@ const ModernA4Resume = forwardRef<HTMLDivElement, { data: ResumeData }>(({ data 
   };
 
   return (
-    <div ref={ref} className="bg-white text-gray-900 p-4 mx-auto text-sm leading-tight" style={{ maxWidth: '8.27in', width: '100%' }}>
+    <div ref={ref} className="bg-white text-gray-900 p-4 w-full text-sm leading-tight" style={{ minHeight: '11in' }}>
       <header className="mb-4 relative">
         <div
           style={{

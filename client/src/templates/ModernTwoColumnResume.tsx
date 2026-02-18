@@ -24,7 +24,7 @@ const ModernTwoColumnResume = forwardRef<HTMLDivElement, { data: ResumeData }>((
       case 'Basic': rating = 2; break;
       default: rating = 1; break;
     }
-    
+
     return Array.from({ length: 5 }, (_, i) => {
       const isFilled = i < rating;
       return (
@@ -41,12 +41,12 @@ const ModernTwoColumnResume = forwardRef<HTMLDivElement, { data: ResumeData }>((
   };
 
   return (
-    <div ref={ref} className="bg-white text-black p-4 mx-auto text-sm leading-tight" style={{ maxWidth: '8.27in', width: '100%' }}>
+    <div ref={ref} className="bg-white text-black p-4 w-full text-sm leading-tight" style={{ minHeight: '11in' }}>
       <header className="mb-4 text-center">
         <h1 className="text-lg font-bold text-gray-900 mb-1 text-center">
           {data.firstName} {data.lastName}
         </h1>
-        
+
         <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-700 mb-2">
           {data.email && (
             <div className="flex items-center gap-1">
@@ -79,10 +79,10 @@ const ModernTwoColumnResume = forwardRef<HTMLDivElement, { data: ResumeData }>((
             </div>
           )}
         </div>
-        
+
         <div
-          style={{ 
-            borderTop: '2px solid #374151', 
+          style={{
+            borderTop: '2px solid #374151',
             margin: '6px auto',
             width: '100%'
           }}
@@ -120,8 +120,8 @@ const ModernTwoColumnResume = forwardRef<HTMLDivElement, { data: ResumeData }>((
                       </div>
                     )}
                     <div
-                      style={{ 
-                        borderTop: '1px solid #e5e7eb', 
+                      style={{
+                        borderTop: '1px solid #e5e7eb',
                         margin: '8px 0',
                         width: '100%'
                       }}
@@ -187,8 +187,8 @@ const ModernTwoColumnResume = forwardRef<HTMLDivElement, { data: ResumeData }>((
                 PROFESSIONAL SUMMARY
               </h2>
               <div
-                style={{ 
-                  borderLeft: '3px solid #6b7280', 
+                style={{
+                  borderLeft: '3px solid #6b7280',
                   paddingLeft: '10px'
                 }}
                 data-preserve="true"
@@ -208,7 +208,7 @@ const ModernTwoColumnResume = forwardRef<HTMLDivElement, { data: ResumeData }>((
                   <div
                     key={index}
                     className="text-xs text-gray-700 py-1 px-2 text-center"
-                    style={{ 
+                    style={{
                       border: '1px solid #d1d5db',
                       backgroundColor: '#f9fafb'
                     }}

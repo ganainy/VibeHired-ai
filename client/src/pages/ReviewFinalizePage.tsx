@@ -2020,7 +2020,7 @@ const ReviewFinalizePage: React.FC = () => {
                         </button>
                     </div>
                 </div>      {/* Tab Content */}
-                <div className="p-6">
+                <div className="px-0 py-6">
                     {/* Tab 1: AI Review with ATS Report */}
                     {activeTab === 'ai-review' && (
                         <div>
@@ -2181,375 +2181,436 @@ const ReviewFinalizePage: React.FC = () => {
 
                     {/* Tab 2: Job Description */}
                     {activeTab === 'job-description' && (
-                        <div className="max-w-7xl mx-auto">
-                            <div className="max-w-5xl mx-auto space-y-6">
+                        <div className="w-full space-y-6">
 
-                                {/* Editable Job Details */}
-                                <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 md:p-6">
-                                    <div className="flex flex-wrap items-center justify-between gap-3 mb-5 md:mb-6">
-                                        <div className="flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-primary">edit_square</span>
-                                            <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Job Details</h2>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            {jobDetailsHasChanges && (
-                                                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Unsaved changes</span>
-                                            )}
-                                            <button
-                                                onClick={handleSaveJobDetails}
-                                                disabled={!jobDetailsHasChanges || isSavingJobDetails || !jobDetailsForm}
-                                                className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primaryLight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                            >
-                                                {isSavingJobDetails ? (
-                                                    <>
-                                                        <Spinner size="sm" />
-                                                        <span>Saving...</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span className="material-symbols-outlined text-sm">save</span>
-                                                        <span>Save Changes</span>
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
+                            {/* Editable Job Details */}
+                            <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 md:p-6">
+                                <div className="flex flex-wrap items-center justify-between gap-3 mb-5 md:mb-6">
+                                    <div className="flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-primary">edit_square</span>
+                                        <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Job Details</h2>
                                     </div>
-
-                                    {jobDetailsSaveError && (
-                                        <div className="mb-4">
-                                            <ErrorAlert
-                                                message={jobDetailsSaveError}
-                                                onDismiss={() => setJobDetailsSaveError(null)}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {jobDetailsForm && (
-                                        <div className="space-y-5 md:space-y-6">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Title <span className="text-red-500">*</span></label>
-                                                    <input
-                                                        type="text"
-                                                        value={jobDetailsForm.jobTitle}
-                                                        onChange={(e) => handleJobDetailsInputChange('jobTitle', e.target.value)}
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Name <span className="text-red-500">*</span></label>
-                                                    <input
-                                                        type="text"
-                                                        value={jobDetailsForm.companyName}
-                                                        onChange={(e) => handleJobDetailsInputChange('companyName', e.target.value)}
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                                                    <select
-                                                        value={jobDetailsForm.status}
-                                                        onChange={(e) => handleJobDetailsInputChange('status', e.target.value)}
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    >
-                                                        {jobStatusOptions.map(status => (
-                                                            <option key={status} value={status}>{status}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Language</label>
-                                                    <select
-                                                        value={jobDetailsForm.language}
-                                                        onChange={(e) => handleJobDetailsInputChange('language', e.target.value)}
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    >
-                                                        <option value="en">English</option>
-                                                        <option value="de">German</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date Added</label>
-                                                    <input
-                                                        type="date"
-                                                        value={formatDateForInput(jobDetailsForm.createdAt)}
-                                                        onChange={(e) => {
-                                                            const nextDate = e.target.value ? new Date(`${e.target.value}T12:00:00`).toISOString() : '';
-                                                            handleJobDetailsInputChange('createdAt', nextDate);
-                                                        }}
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employment Type</label>
-                                                    <select
-                                                        value={jobDetailsForm.jobType || ''}
-                                                        onChange={(e) => handleJobDetailsInputChange('jobType', e.target.value)}
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    >
-                                                        <option value="">Not specified</option>
-                                                        <option value="full-time">Full-time</option>
-                                                        <option value="part-time">Part-time</option>
-                                                        <option value="working-student">Working Student</option>
-                                                        <option value="internship">Internship</option>
-                                                        <option value="contract">Contract</option>
-                                                        <option value="freelance">Freelance</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base CV</label>
-                                                    <select
-                                                        value={jobDetailsForm.baseCvId}
-                                                        onChange={(e) => handleJobDetailsInputChange('baseCvId', e.target.value)}
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    >
-                                                        <option value="">Use master/primary CV</option>
-                                                        {jobDetailsForm.baseCvId && !availableCvs.some(cv => cv.id === jobDetailsForm.baseCvId) && (
-                                                            <option value={jobDetailsForm.baseCvId}>Current saved CV ({jobDetailsForm.baseCvId})</option>
-                                                        )}
-                                                        {availableCvs.map((cv) => (
-                                                            <option key={cv.id} value={cv.id}>{cv.name}</option>
-                                                        ))}
-                                                    </select>
-                                                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Choose which CV version to use as the default for this job.</p>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job URL(s)</label>
-                                                <div className="space-y-2">
-                                                    {jobDetailsForm.jobUrls.map((urlValue, idx) => (
-                                                        <div key={idx} className="flex items-center gap-2">
-                                                            <input
-                                                                type="url"
-                                                                value={urlValue}
-                                                                onChange={(e) => handleJobUrlFieldChange(idx, e.target.value)}
-                                                                onBlur={(e) => handleJobUrlFieldChange(idx, normalizeMultipleUrls(e.target.value))}
-                                                                placeholder={`Job URL ${idx + 1}`}
-                                                                className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                            />
-                                                            {jobDetailsForm.jobUrls.length > 1 && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleRemoveJobUrlField(idx)}
-                                                                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 hover:text-red-500 hover:border-red-300 dark:hover:border-red-700 transition-colors"
-                                                                    title="Remove URL"
-                                                                >
-                                                                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleAddJobUrlField}
-                                                        className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primaryLight transition-colors"
-                                                    >
-                                                        <span className="material-symbols-outlined text-[16px]">add</span>
-                                                        <span>Add another URL</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Salary</label>
-                                                    <input
-                                                        type="text"
-                                                        value={jobDetailsForm.salary}
-                                                        onChange={(e) => handleJobDetailsInputChange('salary', e.target.value)}
-                                                        placeholder="e.g., 50k-70k, $80,000"
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Email</label>
-                                                    <input
-                                                        type="email"
-                                                        value={jobDetailsForm.contactEmail}
-                                                        onChange={(e) => handleJobDetailsInputChange('contactEmail', e.target.value)}
-                                                        placeholder="name@company.com"
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Phone</label>
-                                                    <input
-                                                        type="text"
-                                                        value={jobDetailsForm.contactPhone}
-                                                        onChange={(e) => handleJobDetailsInputChange('contactPhone', e.target.value)}
-                                                        placeholder="+49 ..."
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hiring Manager</label>
-                                                    <input
-                                                        type="text"
-                                                        value={jobDetailsForm.hiringManagerName}
-                                                        onChange={(e) => handleJobDetailsInputChange('hiringManagerName', e.target.value)}
-                                                        placeholder="Recruiter or manager name"
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Application URL</label>
-                                                    <input
-                                                        type="url"
-                                                        value={jobDetailsForm.applicationUrl}
-                                                        onChange={(e) => handleJobDetailsInputChange('applicationUrl', e.target.value)}
-                                                        placeholder="https://company.com/apply"
-                                                        className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
-                                                <textarea
-                                                    value={jobDetailsForm.notes}
-                                                    onChange={(e) => handleJobDetailsInputChange('notes', e.target.value)}
-                                                    rows={3}
-                                                    placeholder="Add notes for this application"
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm resize-y"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Highlights Card */}
-                                <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <span className="material-symbols-outlined text-primary">lightbulb</span>
-                                        <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Key Highlights</h2>
-                                    </div>
-                                    <ul className="space-y-3">
-
-                                        {jobApplication.extractedData?.location && (
-                                            <li className="flex items-start gap-3">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                    <strong className="text-text-main-light dark:text-text-main-dark">Location:</strong> {jobApplication.extractedData.location}
-                                                </span>
-                                            </li>
+                                    <div className="flex items-center gap-3">
+                                        {jobDetailsHasChanges && (
+                                            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Unsaved changes</span>
                                         )}
-                                        {jobApplication.extractedData?.salaryRaw && (
-                                            <li className="flex items-start gap-3">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                    <strong className="text-text-main-light dark:text-text-main-dark">Salary Estimate:</strong> {jobApplication.extractedData.salaryRaw}
-                                                </span>
-                                            </li>
-                                        )}
-
-                                        {/* Contact Information */}
-                                        {jobApplication.contactEmail && (
-                                            <li className="flex items-start gap-3">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
-                                                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                    <strong className="text-text-main-light dark:text-text-main-dark">Contact Email:</strong>{' '}
-                                                    <a href={`mailto:${jobApplication.contactEmail}`} className="text-indigo-500 dark:text-indigo-400 hover:underline">
-                                                        {jobApplication.contactEmail}
-                                                    </a>
-                                                </span>
-                                            </li>
-                                        )}
-                                        {jobApplication.contactPhone && (
-                                            <li className="flex items-start gap-3">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
-                                                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                    <strong className="text-text-main-light dark:text-text-main-dark">Contact Phone:</strong> {jobApplication.contactPhone}
-                                                </span>
-                                            </li>
-                                        )}
-                                        {jobApplication.hiringManagerName && (
-                                            <li className="flex items-start gap-3">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
-                                                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                    <strong className="text-text-main-light dark:text-text-main-dark">Hiring Manager:</strong> {jobApplication.hiringManagerName}
-                                                </span>
-                                            </li>
-                                        )}
-                                        {jobApplication.applicationUrl && (
-                                            <li className="flex items-start gap-3">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
-                                                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                    <strong className="text-text-main-light dark:text-text-main-dark">Application Portal:</strong>{' '}
-                                                    <a href={jobApplication.applicationUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-500 dark:text-indigo-400 hover:underline">
-                                                        {jobApplication.applicationUrl.length > 50 ? jobApplication.applicationUrl.substring(0, 50) + '...' : jobApplication.applicationUrl}
-                                                    </a>
-                                                </span>
-                                            </li>
-                                        )}
-
-                                        {jobApplication.extractedData?.keyDetails && (
-                                            Array.isArray(jobApplication.extractedData.keyDetails) ? (
-                                                jobApplication.extractedData.keyDetails.map((item, idx) => (
-                                                    <li key={idx} className="flex items-start gap-3">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                                        <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                            <strong className="text-text-main-light dark:text-text-main-dark">{item.key}:</strong> {item.value}
-                                                        </span>
-                                                    </li>
-                                                ))
+                                        <button
+                                            onClick={handleSaveJobDetails}
+                                            disabled={!jobDetailsHasChanges || isSavingJobDetails || !jobDetailsForm}
+                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primaryLight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            {isSavingJobDetails ? (
+                                                <>
+                                                    <Spinner size="sm" />
+                                                    <span>Saving...</span>
+                                                </>
                                             ) : (
-                                                (jobApplication.extractedData.keyDetails as string).split('\n').filter(line => line.trim()).map((line, idx) => (
-                                                    <li key={idx} className="flex items-start gap-3">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                                        <span className="text-sm text-text-sub-light dark:text-text-sub-dark leading-relaxed">
-                                                            {line.replace(/^[\*\-]\s*/, '')}
-                                                        </span>
-                                                    </li>
-                                                ))
-                                            )
-                                        )}
-
-                                    </ul>
+                                                <>
+                                                    <span className="material-symbols-outlined text-sm">save</span>
+                                                    <span>Save Changes</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {/* Job Prerequisites Card */}
-                                {jobApplication.jobPrerequisites && (
-                                    <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-indigo-500">checklist</span>
-                                                Requirements
-                                            </h2>
-                                        </div>
-                                        <div className="text-sm text-text-main-light dark:text-text-main-dark leading-relaxed">
-                                            <div className="whitespace-pre-wrap">
-                                                {jobApplication.jobPrerequisites}
-                                            </div>
-                                        </div>
+                                {jobDetailsSaveError && (
+                                    <div className="mb-4">
+                                        <ErrorAlert
+                                            message={jobDetailsSaveError}
+                                            onDismiss={() => setJobDetailsSaveError(null)}
+                                        />
                                     </div>
                                 )}
 
-                                {/* Description Card */}
+                                {jobDetailsForm && (
+                                    <div className="space-y-5 md:space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Title <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    value={jobDetailsForm.jobTitle}
+                                                    onChange={(e) => handleJobDetailsInputChange('jobTitle', e.target.value)}
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Name <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    value={jobDetailsForm.companyName}
+                                                    onChange={(e) => handleJobDetailsInputChange('companyName', e.target.value)}
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                                                <select
+                                                    value={jobDetailsForm.status}
+                                                    onChange={(e) => handleJobDetailsInputChange('status', e.target.value)}
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                >
+                                                    {jobStatusOptions.map(status => (
+                                                        <option key={status} value={status}>{status}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Language</label>
+                                                <select
+                                                    value={jobDetailsForm.language}
+                                                    onChange={(e) => handleJobDetailsInputChange('language', e.target.value)}
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                >
+                                                    <option value="en">English</option>
+                                                    <option value="de">German</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date Added</label>
+                                                <input
+                                                    type="date"
+                                                    value={formatDateForInput(jobDetailsForm.createdAt)}
+                                                    onChange={(e) => {
+                                                        const nextDate = e.target.value ? new Date(`${e.target.value}T12:00:00`).toISOString() : '';
+                                                        handleJobDetailsInputChange('createdAt', nextDate);
+                                                    }}
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employment Type</label>
+                                                <select
+                                                    value={jobDetailsForm.jobType || ''}
+                                                    onChange={(e) => handleJobDetailsInputChange('jobType', e.target.value)}
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                >
+                                                    <option value="">Not specified</option>
+                                                    <option value="full-time">Full-time</option>
+                                                    <option value="part-time">Part-time</option>
+                                                    <option value="working-student">Working Student</option>
+                                                    <option value="internship">Internship</option>
+                                                    <option value="contract">Contract</option>
+                                                    <option value="freelance">Freelance</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base CV</label>
+                                                <select
+                                                    value={jobDetailsForm.baseCvId}
+                                                    onChange={(e) => handleJobDetailsInputChange('baseCvId', e.target.value)}
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                >
+                                                    <option value="">Use master/primary CV</option>
+                                                    {jobDetailsForm.baseCvId && !availableCvs.some(cv => cv.id === jobDetailsForm.baseCvId) && (
+                                                        <option value={jobDetailsForm.baseCvId}>Current saved CV ({jobDetailsForm.baseCvId})</option>
+                                                    )}
+                                                    {availableCvs.map((cv) => (
+                                                        <option key={cv.id} value={cv.id}>{cv.name}</option>
+                                                    ))}
+                                                </select>
+                                                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Choose which CV version to use as the default for this job.</p>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job URL(s)</label>
+                                            <div className="space-y-2">
+                                                {jobDetailsForm.jobUrls.map((urlValue, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2">
+                                                        <input
+                                                            type="url"
+                                                            value={urlValue}
+                                                            onChange={(e) => handleJobUrlFieldChange(idx, e.target.value)}
+                                                            onBlur={(e) => handleJobUrlFieldChange(idx, normalizeMultipleUrls(e.target.value))}
+                                                            placeholder={`Job URL ${idx + 1}`}
+                                                            className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                        />
+                                                        {jobDetailsForm.jobUrls.length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveJobUrlField(idx)}
+                                                                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 hover:text-red-500 hover:border-red-300 dark:hover:border-red-700 transition-colors"
+                                                                title="Remove URL"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAddJobUrlField}
+                                                    className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primaryLight transition-colors"
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">add</span>
+                                                    <span>Add another URL</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Salary</label>
+                                                <input
+                                                    type="text"
+                                                    value={jobDetailsForm.salary}
+                                                    onChange={(e) => handleJobDetailsInputChange('salary', e.target.value)}
+                                                    placeholder="e.g., 50k-70k, $80,000"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Email</label>
+                                                <input
+                                                    type="email"
+                                                    value={jobDetailsForm.contactEmail}
+                                                    onChange={(e) => handleJobDetailsInputChange('contactEmail', e.target.value)}
+                                                    placeholder="name@company.com"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Phone</label>
+                                                <input
+                                                    type="text"
+                                                    value={jobDetailsForm.contactPhone}
+                                                    onChange={(e) => handleJobDetailsInputChange('contactPhone', e.target.value)}
+                                                    placeholder="+49 ..."
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hiring Manager</label>
+                                                <input
+                                                    type="text"
+                                                    value={jobDetailsForm.hiringManagerName}
+                                                    onChange={(e) => handleJobDetailsInputChange('hiringManagerName', e.target.value)}
+                                                    placeholder="Recruiter or manager name"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Application URL</label>
+                                                <input
+                                                    type="url"
+                                                    value={jobDetailsForm.applicationUrl}
+                                                    onChange={(e) => handleJobDetailsInputChange('applicationUrl', e.target.value)}
+                                                    placeholder="https://company.com/apply"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
+                                            <textarea
+                                                value={jobDetailsForm.notes}
+                                                onChange={(e) => handleJobDetailsInputChange('notes', e.target.value)}
+                                                rows={3}
+                                                placeholder="Add notes for this application"
+                                                className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm resize-y"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Highlights Card */}
+                            <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="material-symbols-outlined text-primary">lightbulb</span>
+                                    <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Key Highlights</h2>
+                                </div>
+                                <ul className="space-y-3">
+
+                                    {jobApplication.extractedData?.location && (
+                                        <li className="flex items-start gap-3">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
+                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                <strong className="text-text-main-light dark:text-text-main-dark">Location:</strong> {jobApplication.extractedData.location}
+                                            </span>
+                                        </li>
+                                    )}
+                                    {jobApplication.extractedData?.salaryRaw && (
+                                        <li className="flex items-start gap-3">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
+                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                <strong className="text-text-main-light dark:text-text-main-dark">Salary Estimate:</strong> {jobApplication.extractedData.salaryRaw}
+                                            </span>
+                                        </li>
+                                    )}
+
+                                    {/* Contact Information */}
+                                    {jobApplication.contactEmail && (
+                                        <li className="flex items-start gap-3">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                <strong className="text-text-main-light dark:text-text-main-dark">Contact Email:</strong>{' '}
+                                                <a href={`mailto:${jobApplication.contactEmail}`} className="text-indigo-500 dark:text-indigo-400 hover:underline">
+                                                    {jobApplication.contactEmail}
+                                                </a>
+                                            </span>
+                                        </li>
+                                    )}
+                                    {jobApplication.contactPhone && (
+                                        <li className="flex items-start gap-3">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                <strong className="text-text-main-light dark:text-text-main-dark">Contact Phone:</strong> {jobApplication.contactPhone}
+                                            </span>
+                                        </li>
+                                    )}
+                                    {jobApplication.hiringManagerName && (
+                                        <li className="flex items-start gap-3">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                <strong className="text-text-main-light dark:text-text-main-dark">Hiring Manager:</strong> {jobApplication.hiringManagerName}
+                                            </span>
+                                        </li>
+                                    )}
+                                    {jobApplication.applicationUrl && (
+                                        <li className="flex items-start gap-3">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                <strong className="text-text-main-light dark:text-text-main-dark">Application Portal:</strong>{' '}
+                                                <a href={jobApplication.applicationUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-500 dark:text-indigo-400 hover:underline">
+                                                    {jobApplication.applicationUrl.length > 50 ? jobApplication.applicationUrl.substring(0, 50) + '...' : jobApplication.applicationUrl}
+                                                </a>
+                                            </span>
+                                        </li>
+                                    )}
+
+                                    {jobApplication.extractedData?.keyDetails && (
+                                        Array.isArray(jobApplication.extractedData.keyDetails) ? (
+                                            jobApplication.extractedData.keyDetails.map((item, idx) => (
+                                                <li key={idx} className="flex items-start gap-3">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
+                                                    <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                                                        <strong className="text-text-main-light dark:text-text-main-dark">{item.key}:</strong> {item.value}
+                                                    </span>
+                                                </li>
+                                            ))
+                                        ) : (
+                                            (jobApplication.extractedData.keyDetails as string).split('\n').filter(line => line.trim()).map((line, idx) => (
+                                                <li key={idx} className="flex items-start gap-3">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
+                                                    <span className="text-sm text-text-sub-light dark:text-text-sub-dark leading-relaxed">
+                                                        {line.replace(/^[\*\-]\s*/, '')}
+                                                    </span>
+                                                </li>
+                                            ))
+                                        )
+                                    )}
+
+                                </ul>
+                            </div>
+
+                            {/* Job Prerequisites Card */}
+                            {jobApplication.jobPrerequisites && (
                                 <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                                     <div className="flex justify-between items-center mb-4">
-                                        <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Description</h2>
-                                        {/* Only show Extract with AI button if no job description exists */}
-                                        {(!jobApplication.jobDescriptionText || jobApplication.jobDescriptionText.trim().length < 50) && (
-                                            <button
-                                                onClick={() => setShowExtractWithAi(!showExtractWithAi)}
-                                                disabled={isExtractingWithAi}
-                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${isExtractingWithAi
+                                        <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-indigo-500">checklist</span>
+                                            Requirements
+                                        </h2>
+                                    </div>
+                                    <div className="text-sm text-text-main-light dark:text-text-main-dark leading-relaxed">
+                                        <div className="whitespace-pre-wrap">
+                                            {jobApplication.jobPrerequisites}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Description Card */}
+                            <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Description</h2>
+                                    {/* Only show Extract with AI button if no job description exists */}
+                                    {(!jobApplication.jobDescriptionText || jobApplication.jobDescriptionText.trim().length < 50) && (
+                                        <button
+                                            onClick={() => setShowExtractWithAi(!showExtractWithAi)}
+                                            disabled={isExtractingWithAi}
+                                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${isExtractingWithAi
+                                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                                : showExtractWithAi
                                                     ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                                    : showExtractWithAi
-                                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                                        : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-                                                    }`}
-                                                title="Extract job details using AI"
+                                                    : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                                                }`}
+                                            title="Extract job details using AI"
+                                        >
+                                            {isExtractingWithAi ? (
+                                                <>
+                                                    <Spinner size="sm" />
+                                                    <span>Extracting...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5Z" />
+                                                    </svg>
+                                                    <span>{showExtractWithAi ? 'Cancel' : 'Extract with AI'}</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+
+                                {refreshError && (
+                                    <div className="mb-4">
+                                        <ErrorAlert
+                                            message={refreshError}
+                                            onDismiss={() => setRefreshError(null)}
+                                            onRetry={handleRefreshJobDetails}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Extract with AI Section - Only shown when no job description exists */}
+                                {showExtractWithAi && (!jobApplication.jobDescriptionText || jobApplication.jobDescriptionText.trim().length < 50) && (
+                                    <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                                            Paste the job description text below and click "Extract" to update the job details using AI.
+                                        </p>
+                                        <div className="relative">
+                                            <textarea
+                                                value={pastedJobText}
+                                                onChange={(e) => setPastedJobText(e.target.value)}
+                                                placeholder="Paste job description here..."
+                                                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50 resize-y min-h-[120px] text-sm transition-all"
+                                                rows={5}
+                                                disabled={isExtractingWithAi}
+                                            />
+                                            {isExtractingWithAi && (
+                                                <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2">
+                                                    <Spinner size="md" />
+                                                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Extracting job details...</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center justify-between mt-3">
+                                            <div>
+                                                {pastedJobText && pastedJobText.trim().length > 0 && pastedJobText.trim().length < 50 && (
+                                                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                                                        Please paste more text (at least 50 characters)
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={handleExtractWithAi}
+                                                disabled={isExtractingWithAi || !pastedJobText || pastedJobText.trim().length < 50}
+                                                className="bg-indigo-600 text-white font-medium py-2 px-5 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
                                             >
                                                 {isExtractingWithAi ? (
                                                     <>
@@ -2561,152 +2622,89 @@ const ReviewFinalizePage: React.FC = () => {
                                                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                                             <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5Z" />
                                                         </svg>
-                                                        <span>{showExtractWithAi ? 'Cancel' : 'Extract with AI'}</span>
+                                                        <span>Extract with AI</span>
                                                     </>
                                                 )}
                                             </button>
-                                        )}
-                                    </div>
-
-                                    {refreshError && (
-                                        <div className="mb-4">
-                                            <ErrorAlert
-                                                message={refreshError}
-                                                onDismiss={() => setRefreshError(null)}
-                                                onRetry={handleRefreshJobDetails}
-                                            />
                                         </div>
-                                    )}
+                                    </div>
+                                )}
 
-                                    {/* Extract with AI Section - Only shown when no job description exists */}
-                                    {showExtractWithAi && (!jobApplication.jobDescriptionText || jobApplication.jobDescriptionText.trim().length < 50) && (
-                                        <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                                                Paste the job description text below and click "Extract" to update the job details using AI.
-                                            </p>
-                                            <div className="relative">
-                                                <textarea
-                                                    value={pastedJobText}
-                                                    onChange={(e) => setPastedJobText(e.target.value)}
-                                                    placeholder="Paste job description here..."
-                                                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50 resize-y min-h-[120px] text-sm transition-all"
-                                                    rows={5}
-                                                    disabled={isExtractingWithAi}
-                                                />
-                                                {isExtractingWithAi && (
-                                                    <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2">
-                                                        <Spinner size="md" />
-                                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Extracting job details...</p>
-                                                    </div>
+                                <div className={`custom-scrollbar overflow-y-auto pr-2 text-sm text-text-main-light dark:text-text-main-dark leading-relaxed space-y-4 ${isJobDescriptionExpanded ? 'max-h-none' : 'max-h-[500px]'}`}>
+                                    {jobApplication.jobDescriptionText ? (
+                                        <div className="whitespace-pre-wrap">
+                                            {jobApplication.jobDescriptionText}
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                                            <span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600 mb-2">description</span>
+                                            <p className="text-text-sub-light dark:text-text-sub-dark mb-6">No job description available.</p>
+
+                                            {/* Extract with AI Section */}
+                                            <div className="w-full max-w-2xl">
+                                                <div className="relative">
+                                                    <textarea
+                                                        value={pastedJobText}
+                                                        onChange={(e) => setPastedJobText(e.target.value)}
+                                                        placeholder="Paste job description here..."
+                                                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 disabled:opacity-50 resize-y min-h-[120px] text-sm transition-all"
+                                                        rows={5}
+                                                        disabled={isExtractingWithAi}
+                                                    />
+                                                    {isExtractingWithAi && (
+                                                        <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2">
+                                                            <Spinner size="md" />
+                                                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Extracting job details...</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex justify-center gap-3 mt-4">
+                                                    <button
+                                                        onClick={handleExtractWithAi}
+                                                        disabled={isExtractingWithAi || !pastedJobText || pastedJobText.trim().length < 50}
+                                                        className="bg-indigo-600 text-white font-medium py-2 px-5 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
+                                                    >
+                                                        {isExtractingWithAi ? (
+                                                            <>
+                                                                <Spinner size="sm" />
+                                                                <span>Extracting...</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                                    <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5Z" />
+                                                                </svg>
+                                                                <span>Extract with AI</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                                {pastedJobText && pastedJobText.trim().length > 0 && pastedJobText.trim().length < 50 && (
+                                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                                                        Please paste more text (at least 50 characters)
+                                                    </p>
                                                 )}
                                             </div>
-                                            <div className="flex items-center justify-between mt-3">
-                                                <div>
-                                                    {pastedJobText && pastedJobText.trim().length > 0 && pastedJobText.trim().length < 50 && (
-                                                        <p className="text-xs text-amber-600 dark:text-amber-400">
-                                                            Please paste more text (at least 50 characters)
-                                                        </p>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    onClick={handleExtractWithAi}
-                                                    disabled={isExtractingWithAi || !pastedJobText || pastedJobText.trim().length < 50}
-                                                    className="bg-indigo-600 text-white font-medium py-2 px-5 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
-                                                >
-                                                    {isExtractingWithAi ? (
-                                                        <>
-                                                            <Spinner size="sm" />
-                                                            <span>Extracting...</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                                <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5Z" />
-                                                            </svg>
-                                                            <span>Extract with AI</span>
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className={`custom-scrollbar overflow-y-auto pr-2 text-sm text-text-main-light dark:text-text-main-dark leading-relaxed space-y-4 ${isJobDescriptionExpanded ? 'max-h-none' : 'max-h-[500px]'}`}>
-                                        {jobApplication.jobDescriptionText ? (
-                                            <div className="whitespace-pre-wrap">
-                                                {jobApplication.jobDescriptionText}
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center py-8 text-center">
-                                                <span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600 mb-2">description</span>
-                                                <p className="text-text-sub-light dark:text-text-sub-dark mb-6">No job description available.</p>
-
-                                                {/* Extract with AI Section */}
-                                                <div className="w-full max-w-2xl">
-                                                    <div className="relative">
-                                                        <textarea
-                                                            value={pastedJobText}
-                                                            onChange={(e) => setPastedJobText(e.target.value)}
-                                                            placeholder="Paste job description here..."
-                                                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 disabled:opacity-50 resize-y min-h-[120px] text-sm transition-all"
-                                                            rows={5}
-                                                            disabled={isExtractingWithAi}
-                                                        />
-                                                        {isExtractingWithAi && (
-                                                            <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2">
-                                                                <Spinner size="md" />
-                                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Extracting job details...</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex justify-center gap-3 mt-4">
-                                                        <button
-                                                            onClick={handleExtractWithAi}
-                                                            disabled={isExtractingWithAi || !pastedJobText || pastedJobText.trim().length < 50}
-                                                            className="bg-indigo-600 text-white font-medium py-2 px-5 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
-                                                        >
-                                                            {isExtractingWithAi ? (
-                                                                <>
-                                                                    <Spinner size="sm" />
-                                                                    <span>Extracting...</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5Z" />
-                                                                    </svg>
-                                                                    <span>Extract with AI</span>
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                    {pastedJobText && pastedJobText.trim().length > 0 && pastedJobText.trim().length < 50 && (
-                                                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                                                            Please paste more text (at least 50 characters)
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {jobApplication.jobDescriptionText && (
-                                        <div className="mt-4 flex justify-center pt-2 border-t border-gray-100 dark:border-gray-700">
-                                            <button
-                                                onClick={() => setIsJobDescriptionExpanded(!isJobDescriptionExpanded)}
-                                                className="text-sm text-primary font-medium hover:underline flex items-center gap-1"
-                                            >
-                                                {isJobDescriptionExpanded ? 'Show less' : 'Read full description'}
-                                                <span className="material-symbols-outlined text-base">
-                                                    {isJobDescriptionExpanded ? 'expand_less' : 'expand_more'}
-                                                </span>
-                                            </button>
                                         </div>
                                     )}
                                 </div>
 
-
+                                {jobApplication.jobDescriptionText && (
+                                    <div className="mt-4 flex justify-center pt-2 border-t border-gray-100 dark:border-gray-700">
+                                        <button
+                                            onClick={() => setIsJobDescriptionExpanded(!isJobDescriptionExpanded)}
+                                            className="text-sm text-primary font-medium hover:underline flex items-center gap-1"
+                                        >
+                                            {isJobDescriptionExpanded ? 'Show less' : 'Read full description'}
+                                            <span className="material-symbols-outlined text-base">
+                                                {isJobDescriptionExpanded ? 'expand_less' : 'expand_more'}
+                                            </span>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
+
+
                         </div>
                     )}
 
@@ -3225,59 +3223,61 @@ const ReviewFinalizePage: React.FC = () => {
 
 
             {/* Tailoring Progress Modal */}
-            {isGeneratingCv && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
-                        <div className="p-8">
-                            <div className="flex justify-center mb-8">
-                                <div className="relative">
-                                    <div className="w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center animate-pulse">
-                                        <span className="material-symbols-outlined text-4xl text-purple-600 dark:text-purple-400">auto_awesome</span>
+            {
+                isGeneratingCv && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                            <div className="p-8">
+                                <div className="flex justify-center mb-8">
+                                    <div className="relative">
+                                        <div className="w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center animate-pulse">
+                                            <span className="material-symbols-outlined text-4xl text-purple-600 dark:text-purple-400">auto_awesome</span>
+                                        </div>
+                                        <div className="absolute inset-0 border-4 border-purple-500 rounded-full border-t-transparent animate-spin"></div>
                                     </div>
-                                    <div className="absolute inset-0 border-4 border-purple-500 rounded-full border-t-transparent animate-spin"></div>
                                 </div>
-                            </div>
 
-                            <h3 className="text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-2">
-                                {generationStep === 'analyzing' && 'Analyzing Job Requirements...'}
-                                {generationStep === 'matching' && 'Matching Skills & Experience...'}
-                                {generationStep === 'tailoring' && 'Tailoring Your Resume...'}
-                                {generationStep === 'finalizing' && 'Finalizing Document...'}
-                            </h3>
+                                <h3 className="text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-2">
+                                    {generationStep === 'analyzing' && 'Analyzing Job Requirements...'}
+                                    {generationStep === 'matching' && 'Matching Skills & Experience...'}
+                                    {generationStep === 'tailoring' && 'Tailoring Your Resume...'}
+                                    {generationStep === 'finalizing' && 'Finalizing Document...'}
+                                </h3>
 
-                            <p className="text-center text-gray-500 dark:text-gray-400 mb-8 text-sm">
-                                {generationStep === 'analyzing' && 'Identifying key keywords and requirements from the job description.'}
-                                {generationStep === 'matching' && 'Finding the best projects and experiences from your history.'}
-                                {generationStep === 'tailoring' && 'Rewriting descriptions to highlight relevance and impact.'}
-                                {generationStep === 'finalizing' && 'Formatting your new CV for maximum impact.'}
-                            </p>
+                                <p className="text-center text-gray-500 dark:text-gray-400 mb-8 text-sm">
+                                    {generationStep === 'analyzing' && 'Identifying key keywords and requirements from the job description.'}
+                                    {generationStep === 'matching' && 'Finding the best projects and experiences from your history.'}
+                                    {generationStep === 'tailoring' && 'Rewriting descriptions to highlight relevance and impact.'}
+                                    {generationStep === 'finalizing' && 'Formatting your new CV for maximum impact.'}
+                                </p>
 
-                            {/* Progress Steps */}
-                            <div className="space-y-4">
-                                <div className="relative pt-1">
-                                    <div className="flex mb-2 items-center justify-between">
-                                        <div className="text-right">
-                                            <span className="text-xs font-semibold inline-block text-purple-600 dark:text-purple-400">
-                                                {Math.round(generationProgress)}%
-                                            </span>
+                                {/* Progress Steps */}
+                                <div className="space-y-4">
+                                    <div className="relative pt-1">
+                                        <div className="flex mb-2 items-center justify-between">
+                                            <div className="text-right">
+                                                <span className="text-xs font-semibold inline-block text-purple-600 dark:text-purple-400">
+                                                    {Math.round(generationProgress)}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-purple-100 dark:bg-gray-700">
+                                            <div style={{ width: `${generationProgress}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-600 transition-all duration-500 ease-out"></div>
                                         </div>
                                     </div>
-                                    <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-purple-100 dark:bg-gray-700">
-                                        <div style={{ width: `${generationProgress}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-600 transition-all duration-500 ease-out"></div>
-                                    </div>
-                                </div>
 
-                                <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-medium text-gray-400">
-                                    <div className={generationStep === 'analyzing' || generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Analyze</div>
-                                    <div className={generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Match</div>
-                                    <div className={generationStep === 'tailoring' || generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Tailor</div>
-                                    <div className={generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Finalize</div>
+                                    <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-medium text-gray-400">
+                                        <div className={generationStep === 'analyzing' || generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Analyze</div>
+                                        <div className={generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Match</div>
+                                        <div className={generationStep === 'tailoring' || generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Tailor</div>
+                                        <div className={generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Finalize</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* CV Preview Modal */}
             <CvPreviewModal
@@ -3323,227 +3323,231 @@ const ReviewFinalizePage: React.FC = () => {
             }
 
             {/* Cover Letter Generation Loading Overlay */}
-            {isGeneratingCoverLetter && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in duration-200">
-                        <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mb-2">
-                            <Spinner size="lg" />
+            {
+                isGeneratingCoverLetter && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in duration-200">
+                            <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mb-2">
+                                <Spinner size="lg" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Generating Cover Letter</h3>
+                            <p className="text-gray-500 dark:text-gray-400 text-center text-sm">
+                                Analyzing job details and crafting your personalized letter...
+                            </p>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Generating Cover Letter</h3>
-                        <p className="text-gray-500 dark:text-gray-400 text-center text-sm">
-                            Analyzing job details and crafting your personalized letter...
-                        </p>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* AI Application Advice Modal */}
-            {isRecommendationModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="relative w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl shadow-2xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                        {/* Modal Header */}
-                        <div className="flex items-center gap-3 mb-6">
-                            <span className={`material-symbols-outlined text-2xl ${recommendation?.shouldApply
-                                ? 'text-green-600 dark:text-green-400'
-                                : recommendation?.error
-                                    ? 'text-red-500 dark:text-red-400'
-                                    : recommendation && !recommendation.shouldApply
-                                        ? 'text-amber-600 dark:text-amber-400'
-                                        : 'text-primary'
-                                }`}>smart_toy</span>
-                            <h2 className="text-xl font-bold text-text-main-light dark:text-text-main-dark">AI Application Advice</h2>
-                            <div className="ml-auto flex items-center gap-2">
-                                <button
-                                    onClick={handleRefreshRecommendation}
-                                    disabled={isLoadingRecommendation || isRefreshingRecommendation || !jobApplication?.jobDescriptionText}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    title={!jobApplication?.jobDescriptionText ? 'Job description required' : 'Refresh analysis'}
-                                >
-                                    {isRefreshingRecommendation ? (
-                                        <Spinner size="sm" />
-                                    ) : (
-                                        <span className="material-symbols-outlined text-sm">refresh</span>
-                                    )}
-                                    <span>Refresh</span>
-                                </button>
-                                {/* Close Button */}
-                                <button
-                                    onClick={() => setIsRecommendationModalOpen(false)}
-                                    className="p-1.5 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                    title="Close"
-                                >
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Loading State */}
-                        {isLoadingRecommendation && (
-                            <div className="flex items-center gap-3 py-8 justify-center">
-                                <Spinner size="md" />
-                                <span className="text-gray-500 dark:text-gray-400">Analyzing job match...</span>
-                            </div>
-                        )}
-
-                        {/* No Job Description */}
-                        {!isLoadingRecommendation && !jobApplication?.jobDescriptionText && (
-                            <div className="flex items-start gap-3 py-4">
-                                <span className="material-symbols-outlined text-gray-400 dark:text-gray-500 mt-0.5">info</span>
-                                <div>
-                                    <p className="text-gray-600 dark:text-gray-400">
-                                        Job description is required to provide AI application advice.
-                                    </p>
-                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-                                        Go to the Job Description tab and paste the job description.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Error State - CV not found */}
-                        {!isLoadingRecommendation && recommendation?.error && recommendation.error.toLowerCase().includes('cv') && (
-                            <div className="flex items-start gap-3 py-4">
-                                <span className="material-symbols-outlined text-amber-500 dark:text-amber-400 mt-0.5">upload_file</span>
-                                <div>
-                                    <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">Master CV Required</p>
-                                    <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
-                                        Please upload your master CV first to get AI-powered application advice.
-                                    </p>
-                                    <Link
-                                        to="/manage-cv"
-                                        onClick={() => setIsRecommendationModalOpen(false)}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+            {
+                isRecommendationModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <div className="relative w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl shadow-2xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                            {/* Modal Header */}
+                            <div className="flex items-center gap-3 mb-6">
+                                <span className={`material-symbols-outlined text-2xl ${recommendation?.shouldApply
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : recommendation?.error
+                                        ? 'text-red-500 dark:text-red-400'
+                                        : recommendation && !recommendation.shouldApply
+                                            ? 'text-amber-600 dark:text-amber-400'
+                                            : 'text-primary'
+                                    }`}>smart_toy</span>
+                                <h2 className="text-xl font-bold text-text-main-light dark:text-text-main-dark">AI Application Advice</h2>
+                                <div className="ml-auto flex items-center gap-2">
+                                    <button
+                                        onClick={handleRefreshRecommendation}
+                                        disabled={isLoadingRecommendation || isRefreshingRecommendation || !jobApplication?.jobDescriptionText}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        title={!jobApplication?.jobDescriptionText ? 'Job description required' : 'Refresh analysis'}
                                     >
-                                        <span className="material-symbols-outlined text-sm">description</span>
-                                        <span>Upload Master CV</span>
-                                    </Link>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Error State - Other errors */}
-                        {!isLoadingRecommendation && recommendation?.error && !recommendation.error.toLowerCase().includes('cv') && (
-                            <div className="flex items-start gap-3 py-4">
-                                <span className="material-symbols-outlined text-red-500 dark:text-red-400 mt-0.5">error</span>
-                                <div>
-                                    <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Analysis Error</p>
-                                    <p className="text-sm text-red-600 dark:text-red-400">{recommendation.error}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Recommendation Result */}
-                        {!isLoadingRecommendation && recommendation && !recommendation.error && (
-                            <div className="space-y-5">
-                                {/* Main Verdict */}
-                                <div className={`flex items-center gap-4 p-5 rounded-xl ${recommendation.shouldApply
-                                    ? 'bg-green-100 dark:bg-green-900/40'
-                                    : 'bg-amber-100 dark:bg-amber-900/40'
-                                    }`}>
-                                    <div className={`flex items-center justify-center w-14 h-14 rounded-full ${recommendation.shouldApply ? 'bg-green-500' : 'bg-amber-500'
-                                        }`}>
-                                        <span className="material-symbols-outlined text-white text-3xl">
-                                            {recommendation.shouldApply ? 'thumb_up' : 'warning'}
-                                        </span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className={`text-xl font-bold ${recommendation.shouldApply
-                                            ? 'text-green-800 dark:text-green-200'
-                                            : 'text-amber-800 dark:text-amber-200'
-                                            }`}>
-                                            {recommendation.shouldApply ? 'Apply!' : 'Consider Carefully'}
-                                        </p>
-                                        {recommendation.score !== null && (
-                                            <p className={`text-sm ${recommendation.shouldApply
-                                                ? 'text-green-700 dark:text-green-300'
-                                                : 'text-amber-700 dark:text-amber-300'
-                                                }`}>
-                                                Match Score: <span className="font-bold text-lg">{recommendation.score}%</span>
-                                            </p>
+                                        {isRefreshingRecommendation ? (
+                                            <Spinner size="sm" />
+                                        ) : (
+                                            <span className="material-symbols-outlined text-sm">refresh</span>
                                         )}
+                                        <span>Refresh</span>
+                                    </button>
+                                    {/* Close Button */}
+                                    <button
+                                        onClick={() => setIsRecommendationModalOpen(false)}
+                                        className="p-1.5 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                        title="Close"
+                                    >
+                                        <span className="material-symbols-outlined">close</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Loading State */}
+                            {isLoadingRecommendation && (
+                                <div className="flex items-center gap-3 py-8 justify-center">
+                                    <Spinner size="md" />
+                                    <span className="text-gray-500 dark:text-gray-400">Analyzing job match...</span>
+                                </div>
+                            )}
+
+                            {/* No Job Description */}
+                            {!isLoadingRecommendation && !jobApplication?.jobDescriptionText && (
+                                <div className="flex items-start gap-3 py-4">
+                                    <span className="material-symbols-outlined text-gray-400 dark:text-gray-500 mt-0.5">info</span>
+                                    <div>
+                                        <p className="text-gray-600 dark:text-gray-400">
+                                            Job description is required to provide AI application advice.
+                                        </p>
+                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
+                                            Go to the Job Description tab and paste the job description.
+                                        </p>
                                     </div>
                                 </div>
+                            )}
 
-                                {/* Reason */}
-                                <div>
-                                    <p className="text-sm font-medium text-text-main-light dark:text-text-main-dark mb-2">Why?</p>
-                                    <p className="text-sm text-text-sub-light dark:text-text-sub-dark leading-relaxed">
-                                        {recommendation.reason}
-                                    </p>
+                            {/* Error State - CV not found */}
+                            {!isLoadingRecommendation && recommendation?.error && recommendation.error.toLowerCase().includes('cv') && (
+                                <div className="flex items-start gap-3 py-4">
+                                    <span className="material-symbols-outlined text-amber-500 dark:text-amber-400 mt-0.5">upload_file</span>
+                                    <div>
+                                        <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">Master CV Required</p>
+                                        <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
+                                            Please upload your master CV first to get AI-powered application advice.
+                                        </p>
+                                        <Link
+                                            to="/manage-cv"
+                                            onClick={() => setIsRecommendationModalOpen(false)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">description</span>
+                                            <span>Upload Master CV</span>
+                                        </Link>
+                                    </div>
                                 </div>
+                            )}
 
-                                {/* Keyword Analysis Section */}
-                                {recommendation.keywordAnalysis && (
-                                    recommendation.keywordAnalysis.matchedKeywords.length > 0 ||
-                                    recommendation.keywordAnalysis.missingKeywords.length > 0
-                                ) && (
-                                        <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
-                                            <p className="text-sm font-medium text-text-main-light dark:text-text-main-dark mb-3">
-                                                Keyword Analysis
-                                            </p>
-                                            <p className="text-xs text-text-sub-light dark:text-text-sub-dark mb-3">
-                                                <span className="text-green-600 dark:text-green-400 font-medium">Matched</span> keywords in your CV |
-                                                <span className="text-amber-600 dark:text-amber-400 font-medium"> Missing</span> from your CV
-                                            </p>
-                                            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto custom-scrollbar">
-                                                {recommendation.keywordAnalysis.matchedKeywords.map((keyword, idx) => (
-                                                    <span
-                                                        key={`matched-${idx}`}
-                                                        className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800"
-                                                    >
-                                                        {keyword}
-                                                    </span>
-                                                ))}
-                                                {recommendation.keywordAnalysis.missingKeywords.map((keyword, idx) => (
-                                                    <span
-                                                        key={`missing-${idx}`}
-                                                        className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                                                    >
-                                                        {keyword}
-                                                    </span>
-                                                ))}
-                                            </div>
+                            {/* Error State - Other errors */}
+                            {!isLoadingRecommendation && recommendation?.error && !recommendation.error.toLowerCase().includes('cv') && (
+                                <div className="flex items-start gap-3 py-4">
+                                    <span className="material-symbols-outlined text-red-500 dark:text-red-400 mt-0.5">error</span>
+                                    <div>
+                                        <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Analysis Error</p>
+                                        <p className="text-sm text-red-600 dark:text-red-400">{recommendation.error}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Recommendation Result */}
+                            {!isLoadingRecommendation && recommendation && !recommendation.error && (
+                                <div className="space-y-5">
+                                    {/* Main Verdict */}
+                                    <div className={`flex items-center gap-4 p-5 rounded-xl ${recommendation.shouldApply
+                                        ? 'bg-green-100 dark:bg-green-900/40'
+                                        : 'bg-amber-100 dark:bg-amber-900/40'
+                                        }`}>
+                                        <div className={`flex items-center justify-center w-14 h-14 rounded-full ${recommendation.shouldApply ? 'bg-green-500' : 'bg-amber-500'
+                                            }`}>
+                                            <span className="material-symbols-outlined text-white text-3xl">
+                                                {recommendation.shouldApply ? 'thumb_up' : 'warning'}
+                                            </span>
                                         </div>
-                                    )}
+                                        <div className="flex-1">
+                                            <p className={`text-xl font-bold ${recommendation.shouldApply
+                                                ? 'text-green-800 dark:text-green-200'
+                                                : 'text-amber-800 dark:text-amber-200'
+                                                }`}>
+                                                {recommendation.shouldApply ? 'Apply!' : 'Consider Carefully'}
+                                            </p>
+                                            {recommendation.score !== null && (
+                                                <p className={`text-sm ${recommendation.shouldApply
+                                                    ? 'text-green-700 dark:text-green-300'
+                                                    : 'text-amber-700 dark:text-amber-300'
+                                                    }`}>
+                                                    Match Score: <span className="font-bold text-lg">{recommendation.score}%</span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
 
-                                {/* Cached Info */}
-                                {recommendation.cached && recommendation.cachedAt && (
-                                    <p className="text-xs text-gray-400 dark:text-gray-500 pt-2">
-                                        Last analyzed: {new Date(recommendation.cachedAt).toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
+                                    {/* Reason */}
+                                    <div>
+                                        <p className="text-sm font-medium text-text-main-light dark:text-text-main-dark mb-2">Why?</p>
+                                        <p className="text-sm text-text-sub-light dark:text-text-sub-dark leading-relaxed">
+                                            {recommendation.reason}
+                                        </p>
+                                    </div>
+
+                                    {/* Keyword Analysis Section */}
+                                    {recommendation.keywordAnalysis && (
+                                        recommendation.keywordAnalysis.matchedKeywords.length > 0 ||
+                                        recommendation.keywordAnalysis.missingKeywords.length > 0
+                                    ) && (
+                                            <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+                                                <p className="text-sm font-medium text-text-main-light dark:text-text-main-dark mb-3">
+                                                    Keyword Analysis
+                                                </p>
+                                                <p className="text-xs text-text-sub-light dark:text-text-sub-dark mb-3">
+                                                    <span className="text-green-600 dark:text-green-400 font-medium">Matched</span> keywords in your CV |
+                                                    <span className="text-amber-600 dark:text-amber-400 font-medium"> Missing</span> from your CV
+                                                </p>
+                                                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto custom-scrollbar">
+                                                    {recommendation.keywordAnalysis.matchedKeywords.map((keyword, idx) => (
+                                                        <span
+                                                            key={`matched-${idx}`}
+                                                            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800"
+                                                        >
+                                                            {keyword}
+                                                        </span>
+                                                    ))}
+                                                    {recommendation.keywordAnalysis.missingKeywords.map((keyword, idx) => (
+                                                        <span
+                                                            key={`missing-${idx}`}
+                                                            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                                                        >
+                                                            {keyword}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                    {/* Cached Info */}
+                                    {recommendation.cached && recommendation.cachedAt && (
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 pt-2">
+                                            Last analyzed: {new Date(recommendation.cachedAt).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* No recommendation yet but has job description */}
+                            {!isLoadingRecommendation && !recommendation && jobApplication?.jobDescriptionText && (
+                                <div className="flex flex-col items-center justify-center py-8 gap-4">
+                                    <span className="material-symbols-outlined text-gray-400 dark:text-gray-500 text-4xl">auto_awesome</span>
+                                    <p className="text-gray-600 dark:text-gray-400 text-center">
+                                        AI recommendation not yet generated.
                                     </p>
-                                )}
-                            </div>
-                        )}
-
-                        {/* No recommendation yet but has job description */}
-                        {!isLoadingRecommendation && !recommendation && jobApplication?.jobDescriptionText && (
-                            <div className="flex flex-col items-center justify-center py-8 gap-4">
-                                <span className="material-symbols-outlined text-gray-400 dark:text-gray-500 text-4xl">auto_awesome</span>
-                                <p className="text-gray-600 dark:text-gray-400 text-center">
-                                    AI recommendation not yet generated.
-                                </p>
-                                <button
-                                    onClick={handleRefreshRecommendation}
-                                    disabled={isRefreshingRecommendation}
-                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primaryLight disabled:opacity-50 transition-colors"
-                                >
-                                    {isRefreshingRecommendation ? (
-                                        <Spinner size="sm" />
-                                    ) : (
-                                        <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                                    )}
-                                    <span>Generate Recommendation</span>
-                                </button>
-                            </div>
-                        )}
+                                    <button
+                                        onClick={handleRefreshRecommendation}
+                                        disabled={isRefreshingRecommendation}
+                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primaryLight disabled:opacity-50 transition-colors"
+                                    >
+                                        {isRefreshingRecommendation ? (
+                                            <Spinner size="sm" />
+                                        ) : (
+                                            <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                                        )}
+                                        <span>Generate Recommendation</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </div >
     );
 };

@@ -49,14 +49,13 @@ const MinimalistResume = forwardRef<HTMLDivElement, { data: ResumeData }>((props
   return (
     <div
       ref={ref}
-      className="mx-auto p-6"
+      className="p-4"
       style={{
         backgroundColor: '#ffffff',
         fontFamily: "'Arial', sans-serif",
         fontSize: '11px',
         lineHeight: '1.5',
         minHeight: '11in',
-        maxWidth: '8.27in',
         width: '100%'
       }}
     >

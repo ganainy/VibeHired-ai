@@ -86,6 +86,7 @@ export const ProjectsForm: React.FC<ProjectsFormProps> = ({
             addButtonText="Add Project"
             isCollapsible
             defaultExpanded={false}
+            variant="row"
         >
             {projects.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 italic py-4">

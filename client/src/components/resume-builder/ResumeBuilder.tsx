@@ -43,99 +43,96 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({
     };
 
     return (
-        <div className="resume-builder flex flex-col gap-8 max-w-3xl mx-auto p-4">
-            <section
-                id={getSectionAnchorId('basics')}
-                data-section-key="profile"
-                className="scroll-mt-28"
-            >
-                <ProfileForm
-                    data={data}
-                    onChange={onChange}
-                    onImprove={handleImproveProfile}
-                    isImproving={improvingSections['basics-0'] || false}
-                />
-            </section>
+        <div className="resume-builder w-full">
+            {/* Header */}
+            <div className="pb-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Resume Sections</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage and organize your professional details for this version.</p>
+            </div>
 
-            <div className="border-t border-slate-200 dark:border-slate-800" />
+            {/* Sections List */}
+            <div className="divide-y divide-gray-100 dark:divide-gray-700 border-t border-gray-100 dark:border-gray-700">
+                <section
+                    id={getSectionAnchorId('basics')}
+                    data-section-key="profile"
+                    className="scroll-mt-28"
+                >
+                    <ProfileForm
+                        data={data}
+                        onChange={onChange}
+                        onImprove={handleImproveProfile}
+                        isImproving={improvingSections['basics-0'] || false}
+                    />
+                </section>
 
-            <section
-                id={getSectionAnchorId('work')}
-                data-section-key="work"
-                className="scroll-mt-28"
-            >
-                <WorkExperiencesForm
-                    data={data}
-                    onChange={onChange}
-                    onImprove={handleImproveWork}
-                    improvingSections={improvingSections}
-                />
-            </section>
+                <section
+                    id={getSectionAnchorId('work')}
+                    data-section-key="work"
+                    className="scroll-mt-28"
+                >
+                    <WorkExperiencesForm
+                        data={data}
+                        onChange={onChange}
+                        onImprove={handleImproveWork}
+                        improvingSections={improvingSections}
+                    />
+                </section>
 
-            <div className="border-t border-slate-200 dark:border-slate-800" />
+                <section
+                    id={getSectionAnchorId('projects')}
+                    data-section-key="projects"
+                    className="scroll-mt-28"
+                >
+                    <ProjectsForm
+                        data={data}
+                        onChange={onChange}
+                    />
+                </section>
 
-            <section
-                id={getSectionAnchorId('projects')}
-                data-section-key="projects"
-                className="scroll-mt-28"
-            >
-                <ProjectsForm
-                    data={data}
-                    onChange={onChange}
-                />
-            </section>
+                <section
+                    id={getSectionAnchorId('education')}
+                    data-section-key="education"
+                    className="scroll-mt-28"
+                >
+                    <EducationsForm
+                        data={data}
+                        onChange={onChange}
+                    />
+                </section>
 
-            <div className="border-t border-slate-200 dark:border-slate-800" />
+                <section
+                    id={getSectionAnchorId('skills')}
+                    data-section-key="skills"
+                    className="scroll-mt-28"
+                >
+                    <SkillsForm
+                        data={data}
+                        onChange={onChange}
+                    />
+                </section>
 
-            <section
-                id={getSectionAnchorId('education')}
-                data-section-key="education"
-                className="scroll-mt-28"
-            >
-                <EducationsForm
-                    data={data}
-                    onChange={onChange}
-                />
-            </section>
+                <section
+                    id={getSectionAnchorId('languages')}
+                    data-section-key="languages"
+                    className="scroll-mt-28"
+                >
+                    <LanguagesForm
+                        data={data}
+                        onChange={onChange}
+                    />
+                </section>
 
-            <div className="border-t border-slate-200 dark:border-slate-800" />
-
-            <section
-                id={getSectionAnchorId('skills')}
-                data-section-key="skills"
-                className="scroll-mt-28"
-            >
-                <SkillsForm
-                    data={data}
-                    onChange={onChange}
-                />
-            </section>
-
-            <div className="border-t border-slate-200 dark:border-slate-800" />
-
-            <section
-                id={getSectionAnchorId('languages')}
-                data-section-key="languages"
-                className="scroll-mt-28"
-            >
-                <LanguagesForm
-                    data={data}
-                    onChange={onChange}
-                />
-            </section>
-
-            <div className="border-t border-slate-200 dark:border-slate-800" />
-
-            <section
-                id={getSectionAnchorId('certificates')}
-                data-section-key="certifications"
-                className="scroll-mt-28"
-            >
-                <CertificatesForm
-                    data={data}
-                    onChange={onChange}
-                />
-            </section>
+                <section
+                    id={getSectionAnchorId('certificates')}
+                    data-section-key="certifications"
+                    className="scroll-mt-28"
+                >
+                    <CertificatesForm
+                        data={data}
+                        onChange={onChange}
+                    />
+                </section>
+            </div>
         </div>
     );
 };

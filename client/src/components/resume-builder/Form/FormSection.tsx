@@ -10,6 +10,7 @@ interface FormSectionProps {
     className?: string;
     isCollapsible?: boolean;
     defaultExpanded?: boolean;
+    variant?: 'default' | 'ghost' | 'row';
 }
 
 /**
@@ -24,45 +25,46 @@ export const FormSection: React.FC<FormSectionProps> = ({
     className = '',
     isCollapsible = false,
     defaultExpanded = true,
+    variant = 'default',
 }) => {
     const [isExpanded, setIsExpanded] = React.useState(defaultExpanded);
 
+    const isRow = variant === 'row';
+
     return (
-        <BaseForm className={className}>
-            <div className="flex items-center justify-between gap-4">
-                <div
-                    className={`flex grow items-center gap-2 ${isCollapsible ? 'cursor-pointer' : ''}`}
-                    onClick={isCollapsible ? () => setIsExpanded(!isExpanded) : undefined}
-                >
+        <BaseForm className={`${isRow ? 'gap-0' : 'gap-3'} ${className}`}>
+            <div
+                className={`flex items-center justify-between gap-4 transition-colors ${isCollapsible ? 'cursor-pointer' : ''} ${isRow ? 'px-6 py-5 hover:bg-gray-50/50 dark:hover:bg-gray-800/50' : ''}`}
+                onClick={isCollapsible ? () => setIsExpanded(!isExpanded) : undefined}
+            >
+                <div className="flex grow items-center gap-4">
                     {icon && (
-                        <span className="text-gray-500 dark:text-gray-400">
+                        <span className="text-gray-400 dark:text-gray-500 flex-shrink-0">
                             {icon}
                         </span>
                     )}
-                    <h2 className="text-lg font-semibold tracking-wide text-gray-900 dark:text-white">
+                    <h2 className={`text-base font-semibold text-gray-900 dark:text-white ${isRow ? '' : 'text-lg'}`}>
                         {title}
                     </h2>
-                    {isCollapsible && (
-                        <svg
-                            className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    )}
                 </div>
+                {isCollapsible && (
+                    <svg
+                        className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                )}
             </div>
 
             {(!isCollapsible || isExpanded) && (
-                <>
-                    <div className="mt-2">
-                        {children}
-                    </div>
+                <div className={`${isRow ? 'px-6 pb-6 pt-2' : 'mt-2'}`}>
+                    {children}
 
                     {onAdd && addButtonText && (
-                        <div className="mt-4 flex justify-end">
+                        <div className="mt-6 flex justify-end">
                             <button
                                 type="button"
                                 onClick={onAdd}
@@ -75,7 +77,7 @@ export const FormSection: React.FC<FormSectionProps> = ({
                             </button>
                         </div>
                     )}
-                </>
+                </div>
             )}
         </BaseForm>
     );

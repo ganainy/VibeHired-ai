@@ -167,7 +167,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
 
           {/* Editor pane */}
           <div className="h-full overflow-y-auto p-6">
-            <div className="max-w-2xl mx-auto pb-6">
+            <div className="w-full pb-6">
               {data && (
                 <ResumeBuilder
                   data={data}
@@ -180,7 +180,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
           </div>
 
           {/* Preview pane */}
-          <div className="h-full overflow-y-auto p-6" style={{ minHeight: '800px' }}>
+          <div className="h-full overflow-y-auto p-0" style={{ minHeight: '800px' }}>
             <CvLivePreview
               ref={previewRef}
               data={data}

@@ -72,11 +72,10 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
     <div className={`flex flex-col h-full ${className}`}>
 
 
-      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4 rounded-lg">
+      <div className="flex-1 overflow-auto bg-white dark:bg-gray-800 p-0">
         <div
           ref={ref as React.RefObject<HTMLDivElement>}
-          className="bg-white dark:bg-white shadow-lg mx-auto"
-          style={{ maxWidth: '816px', width: '100%' }}
+          className="bg-white dark:bg-gray-800 mx-auto w-full"
           id="cv-preview-container"
         >
           <div ref={previewRef} className="cv-preview-container">

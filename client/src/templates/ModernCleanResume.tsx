@@ -9,7 +9,7 @@ const ModernCleanResume = forwardRef<HTMLDivElement, { data: ResumeData }>((prop
   const { data } = props;
 
   return (
-    <div ref={ref} className="bg-white text-black p-3 mx-auto shadow-lg" style={{ maxWidth: '8.27in', width: '100%' }}>
+    <div ref={ref} className="bg-white text-black p-4 w-full max-w-[210mm] mx-auto" style={{ minHeight: '11in' }}>
       <header className="mb-3 text-center">
         <h1 className="text-lg font-bold text-gray-900 mb-1">
           {data.firstName} {data.lastName}

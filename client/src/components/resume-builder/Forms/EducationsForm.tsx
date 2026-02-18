@@ -67,6 +67,7 @@ export const EducationsForm: React.FC<EducationsFormProps> = ({
             addButtonText="Add Education"
             isCollapsible
             defaultExpanded={false}
+            variant="row"
         >
             {educations.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 italic py-4">
