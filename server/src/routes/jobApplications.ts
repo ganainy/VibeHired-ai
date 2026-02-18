@@ -15,6 +15,7 @@ import {
   createJobFromUrlBodySchema,
   createJobFromTextBodySchema,
   updateDraftBodySchema,
+  checkDuplicateQuerySchema,
 } from '../validations/jobApplicationSchemas';
 import { objectIdParamSchema, jobIdParamSchema, filenameParamSchema } from '../validations/commonSchemas';
 
@@ -535,6 +536,52 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
     // 1. Call the AI extractor for text
     const extractedData: ExtractedJobData = await extractJobDataFromText(text, userIdString);
 
+    // 1b. Duplicate check by company+title (unless force=true)
+    const force = req.validated!.body!.force;
+    if (!force && extractedData.companyName && extractedData.jobTitle) {
+      // Normalize: lowercase, strip all non-alphanumeric chars, collapse spaces
+      const normalize = (s: string) =>
+        s.toLowerCase().replace(/[^a-z0-9\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+
+      // Word-overlap similarity: what fraction of words in `a` appear in `b`
+      const wordOverlap = (a: string, b: string): number => {
+        const wordsA = normalize(a).split(' ').filter(Boolean);
+        const wordsB = new Set(normalize(b).split(' ').filter(Boolean));
+        if (wordsA.length === 0) return 0;
+        const matches = wordsA.filter(w => wordsB.has(w)).length;
+        return matches / wordsA.length;
+      };
+
+      const extractedCompany = extractedData.companyName.trim();
+      const extractedTitle   = extractedData.jobTitle.trim();
+
+      // Escape for MongoDB regex (broad company-name fetch, refined in JS)
+      const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const companyRegex = new RegExp(escapeRegex(extractedCompany), 'i');
+
+      // Fetch candidates matching company first (broad), then filter by title in JS
+      const candidates = await JobApplication.find({
+        userId,
+        showInDashboard: true,
+        companyName: { $regex: companyRegex },
+      }).select('_id jobTitle companyName status createdAt jobUrl').lean();
+
+      // Require ≥70% word overlap on both company and title to call it a duplicate
+      const existingByTitle = candidates.filter(job =>
+        wordOverlap(extractedCompany, job.companyName) >= 0.7 &&
+        wordOverlap(extractedTitle, job.jobTitle) >= 0.7
+      );
+
+      if (existingByTitle.length > 0) {
+        res.status(409).json({
+          code: 'DUPLICATE_JOB',
+          message: `A job application for "${extractedData.jobTitle}" at "${extractedData.companyName}" already exists.`,
+          duplicates: existingByTitle,
+        });
+        return;
+      }
+    }
+
     // 2. Create a new JobApplication document
     // Use provided values or AI-extracted values for jobType
     const finalJobType = jobType !== undefined ? jobType : extractedData.jobType;
@@ -597,6 +644,51 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
   }
 };
 router.post('/create-from-text', validateRequest({ body: createJobFromTextBodySchema }), createJobFromTextHandler);
+
+
+// --- Check for Duplicate Jobs ---
+// GET /api/job-applications/check-duplicate?jobUrl=...&companyName=...&jobTitle=...
+const checkDuplicateHandler: RequestHandler = async (req: ValidatedRequest, res) => {
+  if (!req.user) {
+    res.status(401).json({ message: 'User not authenticated.' });
+    return;
+  }
+  const userId = req.user._id;
+  const { jobUrl, companyName, jobTitle } = req.query as { jobUrl?: string; companyName?: string; jobTitle?: string };
+
+  try {
+    const conditions: any[] = [];
+
+    if (jobUrl && jobUrl.trim()) {
+      const escaped = jobUrl.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      conditions.push({ jobUrl: { $regex: new RegExp(`^${escaped}$`, 'i') } });
+    }
+    if (companyName && jobTitle) {
+      const escapedCompany = companyName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      conditions.push({
+        companyName: { $regex: new RegExp(escapedCompany, 'i') },
+        jobTitle: { $regex: new RegExp(jobTitle.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+      });
+    }
+
+    if (conditions.length === 0) {
+      res.status(200).json({ duplicates: [] });
+      return;
+    }
+
+    const duplicates = await JobApplication.find({
+      userId,
+      showInDashboard: true,
+      $or: conditions,
+    }).select('_id jobTitle companyName status createdAt jobUrl').lean();
+
+    res.status(200).json({ duplicates });
+  } catch (error: any) {
+    console.error('Error checking for duplicate jobs:', error);
+    res.status(500).json({ message: 'Error checking for duplicate jobs.' });
+  }
+};
+router.get('/check-duplicate', checkDuplicateHandler);
 
 
 // ---  Get Draft Data Endpoint ---

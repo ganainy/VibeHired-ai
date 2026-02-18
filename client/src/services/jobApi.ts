@@ -167,6 +167,14 @@ export interface CreateJobFromTextOptions {
     jobUrl?: string;
     status?: JobApplication['status'];
     jobType?: JobApplication['jobType'];
+    force?: boolean;
+}
+
+// Error thrown when the server detects a duplicate job (409)
+export interface DuplicateJobError {
+    code: 'DUPLICATE_JOB';
+    message: string;
+    duplicates: Pick<JobApplication, '_id' | 'jobTitle' | 'companyName' | 'status' | 'createdAt' | 'jobUrl'>[];
 }
 
 export const createJobFromTextApi = async (text: string, options?: CreateJobFromTextOptions): Promise<JobApplication> => {
@@ -177,9 +185,23 @@ export const createJobFromTextApi = async (text: string, options?: CreateJobFrom
     } catch (error: any) {
         console.error(`Error creating job from pasted text:`, error);
         if (axios.isAxiosError(error) && error.response) {
-            throw error.response.data;
+            throw error.response.data; // includes code: 'DUPLICATE_JOB' on 409
         }
         throw { message: 'An unknown error occurred while extracting job details.' };
+    }
+};
+
+// --- Check for duplicate jobs by URL (pre-extraction) ---
+export const checkJobUrlDuplicateApi = async (jobUrl: string): Promise<{ duplicates: Pick<JobApplication, '_id' | 'jobTitle' | 'companyName' | 'status' | 'createdAt' | 'jobUrl'>[] }> => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/job-applications/check-duplicate`, {
+            params: { jobUrl },
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error('Error checking for duplicate job by URL:', error);
+        // Don't block extraction on check failure - return empty
+        return { duplicates: [] };
     }
 };
 

@@ -8,7 +8,9 @@ import {
   JobApplication,
   CreateJobPayload,
   createJobFromTextApi,
-  CreateJobFromTextOptions
+  CreateJobFromTextOptions,
+  checkJobUrlDuplicateApi,
+  DuplicateJobError,
 } from '../services/jobApi';
 import { getCvBranches, CVDocument } from '../services/cvApi';
 import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
@@ -16,6 +18,7 @@ import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
 import JobStatusBadge from '../components/jobs/JobStatusBadge';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import Toast from '../components/common/Toast';
+import DuplicateJobWarningModal from '../components/jobs/DuplicateJobWarningModal';
 
 // Define type for the form data used in the Add modal
 type JobFormData = Partial<Omit<JobApplication, '_id' | 'updatedAt' | 'generationStatus' | 'generatedCvFilename' | 'generatedCoverLetterFilename'>>;
@@ -106,6 +109,18 @@ const DashboardPage: React.FC = () => {
     isOpen: false,
     jobId: null,
     jobTitle: ''
+  });
+
+  // --- Duplicate Warning Modal State ---
+  type DuplicateEntry = DuplicateJobError['duplicates'][number];
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    isOpen: boolean;
+    duplicates: DuplicateEntry[];
+    pendingPayload: { text: string; options: CreateJobFromTextOptions } | null;
+  }>({
+    isOpen: false,
+    duplicates: [],
+    pendingPayload: null,
   });
 
 
@@ -337,28 +352,64 @@ const DashboardPage: React.FC = () => {
     setCreateFromTextError(null);
     setError(null);
 
+    const options: CreateJobFromTextOptions = {
+      baseCvId: selectedCvBranchId,
+      jobUrl: preExtractionJobUrl || undefined,
+      status: preExtractionStatus as JobApplication['status'],
+      jobType: preExtractionJobType as JobApplication['jobType'] || undefined,
+    };
+
+    // --- URL pre-check (before calling AI) ---
+    if (preExtractionJobUrl && preExtractionJobUrl.trim()) {
+      const { duplicates } = await checkJobUrlDuplicateApi(preExtractionJobUrl.trim());
+      if (duplicates.length > 0) {
+        setIsCreatingFromText(false);
+        setDuplicateWarning({ isOpen: true, duplicates, pendingPayload: { text: jobTextInput, options } });
+        return;
+      }
+    }
+
+    await doCreateFromText(jobTextInput, options);
+  };
+
+  // Performs the actual extraction + creation (called directly or after "Add Anyway")
+  const doCreateFromText = async (text: string, options: CreateJobFromTextOptions) => {
+    setIsCreatingFromText(true);
+    setCreateFromTextError(null);
     try {
-      const newJob = await createJobFromTextApi(jobTextInput, {
-        baseCvId: selectedCvBranchId,
-        jobUrl: preExtractionJobUrl || undefined,
-        status: preExtractionStatus as JobApplication['status'],
-        jobType: preExtractionJobType as JobApplication['jobType'] || undefined,
-      });
+      const newJob = await createJobFromTextApi(text, options);
       setJobs(prevJobs => [newJob, ...prevJobs]);
       setJobTextInput('');
       setPreExtractionJobUrl('');
       setPreExtractionJobType('');
+      setDuplicateWarning({ isOpen: false, duplicates: [], pendingPayload: null });
       setToast({ message: 'Job application created successfully!', type: 'success' });
-      // Redirect to the job page after successful extraction
       navigate(`/jobs/${newJob._id}/review/job-description`);
     } catch (err: any) {
-      console.error("Failed to create job from text:", err);
+      console.error('Failed to create job from text:', err);
+      // Server-side company+title duplicate check
+      if (err?.code === 'DUPLICATE_JOB' && err?.duplicates?.length > 0) {
+        setIsCreatingFromText(false);
+        setDuplicateWarning({ isOpen: true, duplicates: err.duplicates, pendingPayload: { text, options } });
+        return;
+      }
       const errorMessage = err.message || 'Failed to extract job details.';
       setCreateFromTextError(errorMessage);
       setToast({ message: errorMessage, type: 'error' });
     } finally {
       setIsCreatingFromText(false);
     }
+  };
+
+  // Called when user clicks "Add Anyway" in the duplicate warning modal
+  const handleAddAnywayConfirm = async () => {
+    if (!duplicateWarning.pendingPayload) return;
+    const { text, options } = duplicateWarning.pendingPayload;
+    await doCreateFromText(text, { ...options, force: true });
+  };
+
+  const handleDuplicateWarningCancel = () => {
+    setDuplicateWarning({ isOpen: false, duplicates: [], pendingPayload: null });
   };
 
   // --- Sort Handler ---
@@ -1313,6 +1364,15 @@ const DashboardPage: React.FC = () => {
           />
         )}
       </div>
+
+      {/* Duplicate Job Warning Modal */}
+      <DuplicateJobWarningModal
+        isOpen={duplicateWarning.isOpen}
+        duplicates={duplicateWarning.duplicates}
+        onCancel={handleDuplicateWarningCancel}
+        onAddAnyway={handleAddAnywayConfirm}
+        isSubmitting={isCreatingFromText}
+      />
     </div>
   );
 };

@@ -126,4 +126,11 @@ export const createJobFromTextBodySchema = z.object({
   jobUrl: z.string().optional(), // Accept any string - can contain multiple URLs separated by newlines/commas
   status: jobStatusEnum.optional(),
   jobType: jobTypeEnum,
+  force: z.boolean().optional(), // Skip duplicate check when true
+});
+
+export const checkDuplicateQuerySchema = z.object({
+  jobUrl: z.string().url('Must be a valid URL').optional(),
+  companyName: z.string().optional(),
+  jobTitle: z.string().optional(),
 });
