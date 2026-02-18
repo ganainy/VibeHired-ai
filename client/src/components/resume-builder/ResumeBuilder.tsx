@@ -43,9 +43,9 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({
     };
 
     return (
-        <div className="resume-builder flex flex-col gap-6 max-w-3xl mx-auto p-4">
+        <div className="resume-builder flex flex-col gap-8 max-w-3xl mx-auto p-4">
             <section
-                id={getSectionAnchorId('profile')}
+                id={getSectionAnchorId('basics')}
                 data-section-key="profile"
                 className="scroll-mt-28"
             >
@@ -56,6 +56,8 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({
                     isImproving={improvingSections['basics-0'] || false}
                 />
             </section>
+
+            <div className="border-t border-slate-200 dark:border-slate-800" />
 
             <section
                 id={getSectionAnchorId('work')}
@@ -70,6 +72,8 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({
                 />
             </section>
 
+            <div className="border-t border-slate-200 dark:border-slate-800" />
+
             <section
                 id={getSectionAnchorId('projects')}
                 data-section-key="projects"
@@ -80,6 +84,8 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({
                     onChange={onChange}
                 />
             </section>
+
+            <div className="border-t border-slate-200 dark:border-slate-800" />
 
             <section
                 id={getSectionAnchorId('education')}
@@ -92,6 +98,8 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({
                 />
             </section>
 
+            <div className="border-t border-slate-200 dark:border-slate-800" />
+
             <section
                 id={getSectionAnchorId('skills')}
                 data-section-key="skills"
@@ -102,6 +110,8 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({
                     onChange={onChange}
                 />
             </section>
+
+            <div className="border-t border-slate-200 dark:border-slate-800" />
 
             <section
                 id={getSectionAnchorId('languages')}
@@ -114,8 +124,10 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({
                 />
             </section>
 
+            <div className="border-t border-slate-200 dark:border-slate-800" />
+
             <section
-                id={getSectionAnchorId('certifications')}
+                id={getSectionAnchorId('certificates')}
                 data-section-key="certifications"
                 className="scroll-mt-28"
             >

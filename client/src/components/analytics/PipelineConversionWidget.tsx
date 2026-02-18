@@ -101,7 +101,12 @@ export const PipelineConversionWidget: React.FC<PipelineConversionWidgetProps> =
                     </svg>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Keep your head up! A <span className="font-semibold text-slate-900 dark:text-white">{getPercentage(data.interview, data.applied)}%</span> interview rate is a solid start. Focus on tailoring your resume to improve conversion.
+                    {data.applied === 0 
+                        ? <>Start applying to jobs to see your pipeline conversion metrics here. Quality applications lead to better conversion rates!</>
+                        : data.interview === 0
+                            ? <>No interviews yet. Focus on tailoring your resume to each job description to improve your chances.</>
+                            : <>Great progress! A <span className="font-semibold text-slate-900 dark:text-white">{getPercentage(data.interview, data.applied)}%</span> interview rate shows your applications are getting noticed. Keep refining your approach!</>
+                    }
                 </p>
             </div>
         </div>

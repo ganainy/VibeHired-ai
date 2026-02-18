@@ -65,12 +65,12 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
         bg-white dark:bg-zinc-800
         p-4 rounded-lg border border-gray-200 dark:border-zinc-700 shadow-sm
         cursor-pointer hover:shadow-md transition-shadow
-        mb-3
+        mb-3 overflow-hidden
         ${isDragging ? 'opacity-50' : ''}
       `}
     >
-      <h5 className="font-semibold text-gray-900 dark:text-white mb-1">{job.jobTitle}</h5>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{job.companyName}</p>
+      <h5 className="font-semibold text-gray-900 dark:text-white mb-1 break-words">{job.jobTitle}</h5>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 break-words">{job.companyName}</p>
       <div className="flex flex-col text-xs">
         <span className="text-gray-500 dark:text-gray-400 mb-1">{getDateText()}</span>
         <JobStatusBadge type="application" status={job.status} />

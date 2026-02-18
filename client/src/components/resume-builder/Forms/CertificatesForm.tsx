@@ -60,6 +60,8 @@ export const CertificatesForm: React.FC<CertificatesFormProps> = ({
             icon={<CertificatesIcon />}
             onAdd={addCertificate}
             addButtonText="Add Certification"
+            isCollapsible
+            defaultExpanded={false}
         >
             {certificates.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 italic py-4">

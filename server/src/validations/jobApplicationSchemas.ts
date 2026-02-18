@@ -78,6 +78,8 @@ export const updateJobBodySchema = z.object({
   baseCvId: z.string().optional().nullable(),
   jobType: jobTypeEnum.optional().nullable(),
   language: z.enum(['en', 'de']).optional(),
+  // Allow updating favorite status
+  isFavorite: z.boolean().optional(),
 });
 
 /**

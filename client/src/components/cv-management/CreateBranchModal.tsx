@@ -130,7 +130,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                        Create CV Branch
+                        Create New CV
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Create a new CV version tailored for a specific career path
@@ -145,22 +145,20 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setMode('existing')}
-                                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                    mode === 'existing'
+                                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${mode === 'existing'
                                         ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
                                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                                }`}
+                                    }`}
                             >
                                 Use Existing CV
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setMode('upload')}
-                                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                                    mode === 'upload'
+                                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${mode === 'upload'
                                         ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
                                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                                }`}
+                                    }`}
                             >
                                 Upload From Device
                             </button>
@@ -178,11 +176,10 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                                 value={sourceCvId}
                                 onChange={(e) => setSourceCvId(e.target.value)}
                                 disabled={isLoading}
-                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${
-                                    errors.sourceCvId ? 'border-red-500' : 'border-gray-300'
-                                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.sourceCvId ? 'border-red-500' : 'border-gray-300'
+                                    } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                <option value="">Select a CV to branch from</option>
+                                <option value="">Select a CV to copy from</option>
                                 {availableSourceCvs.map((cv) => (
                                     <option key={cv._id} value={cv._id}>
                                         {cv.isPrimary ? '⭐ Primary CV' : cv.displayName || cv.category || 'Unnamed CV'}
@@ -204,9 +201,8 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                                     accept=".pdf,.docx,.rtf"
                                     onChange={handleFileChange}
                                     disabled={isLoading}
-                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-l-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-300 ${
-                                        errors.uploadedFile ? 'border-red-500' : 'border-gray-300'
-                                    } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-l-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-300 ${errors.uploadedFile ? 'border-red-500' : 'border-gray-300'
+                                        } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 />
                                 {uploadedFile && (
                                     <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
@@ -239,9 +235,8 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                             onChange={(e) => setCategory(e.target.value)}
                             disabled={isLoading}
                             placeholder="e.g., IT Helpdesk, Programming, Cybersecurity"
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${
-                                errors.category ? 'border-red-500' : 'border-gray-300'
-                            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.category ? 'border-red-500' : 'border-gray-300'
+                                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
                         {errors.category && (
                             <p className="text-red-500 text-sm mt-1">{errors.category}</p>
@@ -260,9 +255,8 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                             onChange={(e) => setDisplayName(e.target.value)}
                             disabled={isLoading}
                             placeholder="e.g., Backend Developer CV"
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${
-                                errors.displayName ? 'border-red-500' : 'border-gray-300'
-                            } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.displayName ? 'border-red-500' : 'border-gray-300'
+                                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
                         {errors.displayName && (
                             <p className="text-red-500 text-sm mt-1">{errors.displayName}</p>
@@ -293,7 +287,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                                     Creating...
                                 </span>
                             ) : (
-                                'Create Branch'
+                                'Create CV'
                             )}
                         </button>
                     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { JsonResumeSchema, JsonResumeBasics, JsonResumeWorkItem, JsonResumeEducationItem, JsonResumeSkillItem, JsonResumeProjectItem, JsonResumeLanguageItem, JsonResumeCertificateItem } from '../../../../server/src/types/jsonresume';
+import { JsonResumeSchema, JsonResumeBasics, JsonResumeWorkItem, JsonResumeEducationItem, JsonResumeSkillItem, JsonResumeProjectItem, JsonResumeLanguageItem, JsonResumeCertificateItem, JsonResumeVolunteerItem, JsonResumeAwardItem, JsonResumePublicationItem, JsonResumeInterestItem, JsonResumeReferenceItem } from '../../../../server/src/types/jsonresume';
 import EditableText from './EditableText';
 import EditableTextarea from './EditableTextarea';
 import EditableList from './EditableList';
@@ -168,6 +168,56 @@ const CvDocumentRenderer: React.FC<CvDocumentRendererProps> = ({ data, onChange,
         onChange({ ...data, certificates });
     };
 
+    // Volunteer handlers
+    const handleVolunteerChange = (index: number, field: keyof JsonResumeVolunteerItem, value: string | string[]) => {
+        const volunteer = [...(data.volunteer || [])];
+        volunteer[index] = { ...volunteer[index], [field]: value };
+        onChange({ ...data, volunteer });
+    };
+    const deleteVolunteerItem = (index: number) => {
+        onChange({ ...data, volunteer: (data.volunteer || []).filter((_, i) => i !== index) });
+    };
+
+    // Awards handlers
+    const handleAwardsChange = (index: number, field: keyof JsonResumeAwardItem, value: string) => {
+        const awards = [...(data.awards || [])];
+        awards[index] = { ...awards[index], [field]: value };
+        onChange({ ...data, awards });
+    };
+    const deleteAwardItem = (index: number) => {
+        onChange({ ...data, awards: (data.awards || []).filter((_, i) => i !== index) });
+    };
+
+    // Publications handlers
+    const handlePublicationsChange = (index: number, field: keyof JsonResumePublicationItem, value: string) => {
+        const publications = [...(data.publications || [])];
+        publications[index] = { ...publications[index], [field]: value };
+        onChange({ ...data, publications });
+    };
+    const deletePublicationItem = (index: number) => {
+        onChange({ ...data, publications: (data.publications || []).filter((_, i) => i !== index) });
+    };
+
+    // Interests handlers
+    const handleInterestsChange = (index: number, field: keyof JsonResumeInterestItem, value: string | string[]) => {
+        const interests = [...(data.interests || [])];
+        interests[index] = { ...interests[index], [field]: value };
+        onChange({ ...data, interests });
+    };
+    const deleteInterestItem = (index: number) => {
+        onChange({ ...data, interests: (data.interests || []).filter((_, i) => i !== index) });
+    };
+
+    // References handlers
+    const handleReferencesChange = (index: number, field: keyof JsonResumeReferenceItem, value: string) => {
+        const references = [...(data.references || [])];
+        references[index] = { ...references[index], [field]: value };
+        onChange({ ...data, references });
+    };
+    const deleteReferenceItem = (index: number) => {
+        onChange({ ...data, references: (data.references || []).filter((_, i) => i !== index) });
+    };
+
     return (
         <div className="cv-document" style={{
             fontFamily: 'Arial, Helvetica, sans-serif',
@@ -177,7 +227,7 @@ const CvDocumentRenderer: React.FC<CvDocumentRendererProps> = ({ data, onChange,
             padding: '40px',
         }}>
             {/* Header Section */}
-            <div className="header section" style={{ textAlign: 'center', marginBottom: '25px' }}>
+            <div id="cv-section-basics" className="header section" style={{ textAlign: 'center', marginBottom: '25px' }}>
                 <h1 style={{
                     fontSize: '18pt',
                     color: '#111',
@@ -308,7 +358,7 @@ const CvDocumentRenderer: React.FC<CvDocumentRendererProps> = ({ data, onChange,
             </div>
 
             {/* Work Experience Section */}
-            <div className="section work" style={{ marginBottom: '20px' }}>
+            <div id="cv-section-work" className="section work" style={{ marginBottom: '20px' }}>
                 <h2 style={{
                     fontSize: '14pt',
                     color: '#111',
@@ -410,7 +460,7 @@ const CvDocumentRenderer: React.FC<CvDocumentRendererProps> = ({ data, onChange,
             </div>
 
             {/* Projects Section */}
-            <div className="section projects" style={{ marginBottom: '20px' }}>
+            <div id="cv-section-projects" className="section projects" style={{ marginBottom: '20px' }}>
                 <h2 style={{
                     fontSize: '14pt',
                     color: '#111',
@@ -502,7 +552,7 @@ const CvDocumentRenderer: React.FC<CvDocumentRendererProps> = ({ data, onChange,
             </div>
 
             {/* Education Section */}
-            <div className="section education" style={{ marginBottom: '20px' }}>
+            <div id="cv-section-education" className="section education" style={{ marginBottom: '20px' }}>
                 <h2 style={{
                     fontSize: '14pt',
                     color: '#111',
@@ -624,7 +674,7 @@ const CvDocumentRenderer: React.FC<CvDocumentRendererProps> = ({ data, onChange,
             </div>
 
             {/* Skills Section */}
-            <div className="section skills" style={{ marginBottom: '20px' }}>
+            <div id="cv-section-skills" className="section skills" style={{ marginBottom: '20px' }}>
                 <h2 style={{
                     fontSize: '14pt',
                     color: '#111',
@@ -729,7 +779,7 @@ const CvDocumentRenderer: React.FC<CvDocumentRendererProps> = ({ data, onChange,
             </div>
 
             {/* Languages Section */}
-            <div className="section languages" style={{ marginBottom: '20px' }}>
+            <div id="cv-section-languages" className="section languages" style={{ marginBottom: '20px' }}>
                 <h2 style={{
                     fontSize: '14pt',
                     color: '#111',
@@ -795,7 +845,7 @@ const CvDocumentRenderer: React.FC<CvDocumentRendererProps> = ({ data, onChange,
             </div>
 
             {/* Certificates Section */}
-            <div className="section certificates" style={{ marginBottom: '20px' }}>
+            <div id="cv-section-certificates" className="section certificates" style={{ marginBottom: '20px' }}>
                 <h2 style={{
                     fontSize: '14pt',
                     color: '#111',
@@ -864,11 +914,147 @@ const CvDocumentRenderer: React.FC<CvDocumentRendererProps> = ({ data, onChange,
                             </button>
                         </div>
                     ))}
-                {(data.certificates || []).length === 0 && (
-                    <p style={{ fontSize: '11pt', color: '#999', fontStyle: 'italic' }}>No certificates added yet. Click "Add Certificate" to add one.</p>
-                )}
                 <SectionManager sectionName="Certificate" onAdd={addCertificateItem} />
             </div>
+
+            {/* Volunteer Section — shown only when data exists */}
+            {!!data.volunteer?.length && (
+                <div id="cv-section-volunteer" className="section volunteer" style={{ marginBottom: '20px' }}>
+                    <h2 style={{ fontSize: '14pt', color: '#111', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>
+                        Volunteer
+                    </h2>
+                    {data.volunteer.map((item, index) => (
+                        <div key={index} className="item" style={{ marginBottom: '15px', paddingLeft: '5px' }}>
+                            <div className="item-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                <span style={{ fontSize: '12pt', fontWeight: 'bold', color: '#222' }}>
+                                    <EditableText value={item.position || ''} onChange={(v) => handleVolunteerChange(index, 'position', v)} placeholder="Role" style={{ fontSize: '12pt', fontWeight: 'bold' }} />
+                                </span>
+                                <span style={{ fontSize: '10pt', color: '#666', whiteSpace: 'nowrap', paddingLeft: '15px' }}>
+                                    <EditableText value={item.startDate || ''} onChange={(v) => handleVolunteerChange(index, 'startDate', v)} placeholder="Start Date" style={{ fontSize: '10pt' }} />
+                                    {' - '}
+                                    <EditableText value={item.endDate || 'Present'} onChange={(v) => handleVolunteerChange(index, 'endDate', v)} placeholder="End Date" style={{ fontSize: '10pt' }} />
+                                </span>
+                            </div>
+                            <div style={{ fontSize: '11pt', fontStyle: 'italic', color: '#555', marginBottom: '5px' }}>
+                                <EditableText value={item.organization || ''} onChange={(v) => handleVolunteerChange(index, 'organization', v)} placeholder="Organization" style={{ fontSize: '11pt', fontStyle: 'italic' }} />
+                            </div>
+                            <p style={{ fontSize: '11pt', marginTop: '5px', marginBottom: '5px' }}>
+                                <EditableTextarea value={item.summary || ''} onChange={(v) => handleVolunteerChange(index, 'summary', v)} placeholder="Summary" style={{ fontSize: '11pt' }} rows={2} />
+                            </p>
+                            <div style={{ marginTop: '5px' }}>
+                                <EditableList items={item.highlights || []} onChange={(items) => handleVolunteerChange(index, 'highlights', items)} placeholder="Add highlights (one per line)" />
+                            </div>
+                            <button onClick={() => deleteVolunteerItem(index)} className="mt-1 text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" title="Delete this volunteer entry">Delete</button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Awards Section — shown only when data exists */}
+            {!!data.awards?.length && (
+                <div id="cv-section-awards" className="section awards" style={{ marginBottom: '20px' }}>
+                    <h2 style={{ fontSize: '14pt', color: '#111', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>
+                        Awards
+                    </h2>
+                    {data.awards.map((item, index) => (
+                        <div key={index} className="item" style={{ marginBottom: '15px', paddingLeft: '5px' }}>
+                            <div className="item-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                <span style={{ fontSize: '12pt', fontWeight: 'bold', color: '#222' }}>
+                                    <EditableText value={item.title || ''} onChange={(v) => handleAwardsChange(index, 'title', v)} placeholder="Award Title" style={{ fontSize: '12pt', fontWeight: 'bold' }} />
+                                </span>
+                                {item.date && (
+                                    <span style={{ fontSize: '10pt', color: '#666', whiteSpace: 'nowrap', paddingLeft: '15px' }}>
+                                        <EditableText value={item.date} onChange={(v) => handleAwardsChange(index, 'date', v)} placeholder="Date" style={{ fontSize: '10pt' }} />
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ fontSize: '11pt', fontStyle: 'italic', color: '#555', marginBottom: '5px' }}>
+                                <EditableText value={item.awarder || ''} onChange={(v) => handleAwardsChange(index, 'awarder', v)} placeholder="Awarder / Organization" style={{ fontSize: '11pt', fontStyle: 'italic' }} />
+                            </div>
+                            {item.summary && (
+                                <p style={{ fontSize: '11pt', marginTop: '5px' }}>
+                                    <EditableTextarea value={item.summary} onChange={(v) => handleAwardsChange(index, 'summary', v)} placeholder="Summary" style={{ fontSize: '11pt' }} rows={2} />
+                                </p>
+                            )}
+                            <button onClick={() => deleteAwardItem(index)} className="mt-1 text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" title="Delete this award">Delete</button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Publications Section — shown only when data exists */}
+            {!!data.publications?.length && (
+                <div id="cv-section-publications" className="section publications" style={{ marginBottom: '20px' }}>
+                    <h2 style={{ fontSize: '14pt', color: '#111', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>
+                        Publications
+                    </h2>
+                    {data.publications.map((item, index) => (
+                        <div key={index} className="item" style={{ marginBottom: '15px', paddingLeft: '5px' }}>
+                            <div className="item-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                <span style={{ fontSize: '12pt', fontWeight: 'bold', color: '#222' }}>
+                                    <EditableText value={item.name || ''} onChange={(v) => handlePublicationsChange(index, 'name', v)} placeholder="Title" style={{ fontSize: '12pt', fontWeight: 'bold' }} />
+                                </span>
+                                {item.releaseDate && (
+                                    <span style={{ fontSize: '10pt', color: '#666', whiteSpace: 'nowrap', paddingLeft: '15px' }}>
+                                        <EditableText value={item.releaseDate} onChange={(v) => handlePublicationsChange(index, 'releaseDate', v)} placeholder="Release Date" style={{ fontSize: '10pt' }} />
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ fontSize: '11pt', fontStyle: 'italic', color: '#555', marginBottom: '5px' }}>
+                                <EditableText value={item.publisher || ''} onChange={(v) => handlePublicationsChange(index, 'publisher', v)} placeholder="Publisher" style={{ fontSize: '11pt', fontStyle: 'italic' }} />
+                            </div>
+                            {item.summary && (
+                                <p style={{ fontSize: '11pt', marginTop: '5px' }}>
+                                    <EditableTextarea value={item.summary} onChange={(v) => handlePublicationsChange(index, 'summary', v)} placeholder="Summary" style={{ fontSize: '11pt' }} rows={2} />
+                                </p>
+                            )}
+                            <button onClick={() => deletePublicationItem(index)} className="mt-1 text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" title="Delete this publication">Delete</button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Interests Section — shown only when data exists */}
+            {!!data.interests?.length && (
+                <div id="cv-section-interests" className="section interests" style={{ marginBottom: '20px' }}>
+                    <h2 style={{ fontSize: '14pt', color: '#111', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>
+                        Interests
+                    </h2>
+                    {data.interests.map((item, index) => (
+                        <div key={index} className="interests-category" style={{ marginBottom: '10px' }}>
+                            <h4 style={{ fontSize: '11pt', fontWeight: 'bold', marginBottom: '5px', marginTop: '8px', color: '#444' }}>
+                                <EditableText value={item.name || ''} onChange={(v) => handleInterestsChange(index, 'name', v)} placeholder="Interest" style={{ fontSize: '11pt', fontWeight: 'bold' }} />
+                            </h4>
+                            {(item.keywords || []).map((kw, kIndex) => (
+                                <span key={kIndex} style={{ display: 'inline-block', backgroundColor: '#f0f0f0', padding: '4px 8px', marginRight: '6px', marginBottom: '6px', borderRadius: '4px', fontSize: '10pt', color: '#444' }}>
+                                    {kw}
+                                </span>
+                            ))}
+                            <button onClick={() => deleteInterestItem(index)} className="ml-2 mt-1 text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" title="Delete this interest">Delete</button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* References Section — shown only when data exists */}
+            {!!data.references?.length && (
+                <div id="cv-section-references" className="section references" style={{ marginBottom: '20px' }}>
+                    <h2 style={{ fontSize: '14pt', color: '#111', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>
+                        References
+                    </h2>
+                    {data.references.map((item, index) => (
+                        <div key={index} className="item" style={{ marginBottom: '15px', paddingLeft: '5px' }}>
+                            <div style={{ fontSize: '12pt', fontWeight: 'bold', color: '#222', marginBottom: '5px' }}>
+                                <EditableText value={item.name || ''} onChange={(v) => handleReferencesChange(index, 'name', v)} placeholder="Name" style={{ fontSize: '12pt', fontWeight: 'bold' }} />
+                            </div>
+                            <p style={{ fontSize: '11pt', marginTop: '5px' }}>
+                                <EditableTextarea value={item.reference || ''} onChange={(v) => handleReferencesChange(index, 'reference', v)} placeholder="Reference details" style={{ fontSize: '11pt' }} rows={2} />
+                            </p>
+                            <button onClick={() => deleteReferenceItem(index)} className="mt-1 text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" title="Delete this reference">Delete</button>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

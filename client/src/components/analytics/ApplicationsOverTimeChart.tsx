@@ -44,9 +44,26 @@ export const ApplicationsOverTimeChart: React.FC<ApplicationsOverTimeChartProps>
     const chartData = useMemo(() => {
         let labels: { key: string; label: string }[] = [];
 
-        if (selectedMonth) {
+        if (selectedMonth === 'today') {
+            // Today view: Just one day
+            const now = new Date();
+            const dayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            labels.push({
+                key: dayKey,
+                label: 'Today'
+            });
+        } else if (selectedMonth === 'last-week') {
+            // Last week view: 7 days including today
+            const now = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(now.getDate() - i);
+                const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                const label = date.toLocaleDateString('en-US', { weekday: 'short' });
+                labels.push({ key: dayKey, label });
+            }
+        } else if (selectedMonth && selectedMonth.match(/^\d{4}-\d{2}$/)) {
             // Daily View: Generate days for the selected month
-            // selectedMonth is "YYYY-MM"
             const [year, month] = selectedMonth.split('-').map(Number);
             const daysInMonth = new Date(year, month, 0).getDate();
 

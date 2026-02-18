@@ -10,11 +10,24 @@ export const getJobApplicationStats = async (userId: string, monthFilter?: strin
         deletedAt: null
     };
 
-    // If filter is provided (format "YYYY-MM"), restrict date range
-    if (monthFilter) {
-        const startDate = new Date(`${monthFilter}-01`);
+    // If filter is provided, restrict date range
+    if (monthFilter === 'today') {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setHours(23, 59, 59, 999);
+        matchStage.createdAt = { $gte: start, $lte: end };
+    } else if (monthFilter === 'last-week') {
+        const start = new Date();
+        start.setDate(start.getDate() - 7);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
+        matchStage.createdAt = { $gte: start, $lte: end };
+    } else if (monthFilter && monthFilter.match(/^\d{4}-\d{2}$/)) {
+        const startDate = new Date(`${monthFilter}-01T00:00:00Z`);
         const endDate = new Date(startDate);
-        endDate.setMonth(endDate.getMonth() + 1);
+        endDate.setUTCMonth(endDate.getUTCMonth() + 1);
 
         matchStage.createdAt = {
             $gte: startDate,
@@ -22,8 +35,8 @@ export const getJobApplicationStats = async (userId: string, monthFilter?: strin
         };
     }
 
-    // Determine grouping format: Daily if filtered by month, otherwise Monthly
-    const dateFormat = monthFilter ? '%Y-%m-%d' : '%Y-%m';
+    // Determine grouping format: Daily if filtered by month or keyword, otherwise Monthly
+    const dateFormat = (monthFilter === 'today' || monthFilter === 'last-week' || (monthFilter && monthFilter.match(/^\d{4}-\d{2}$/))) ? '%Y-%m-%d' : '%Y-%m';
 
     const stats = await JobApplication.aggregate([
         {

@@ -52,7 +52,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
     };
 
     return (
-        <FormSection title="Personal Details" icon={<UserIcon />}>
+        <FormSection title="Personal Details" icon={<UserIcon />} isCollapsible defaultExpanded={false}>
             <div className="grid grid-cols-6 gap-6">
                 {/* Name - Half Width */}
                 <Input

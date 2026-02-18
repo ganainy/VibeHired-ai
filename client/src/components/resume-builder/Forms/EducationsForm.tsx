@@ -65,6 +65,8 @@ export const EducationsForm: React.FC<EducationsFormProps> = ({
             icon={<EducationIcon />}
             onAdd={addEducation}
             addButtonText="Add Education"
+            isCollapsible
+            defaultExpanded={false}
         >
             {educations.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 italic py-4">

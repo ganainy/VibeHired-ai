@@ -1,191 +1,167 @@
-
-import React, { useEffect, useState } from 'react';
-import { getApplicationStats, ApplicationStats } from '../services/analyticsApi';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getJobs, updateJob, JobApplication } from '../services/jobApi';
-import ErrorAlert from '../components/common/ErrorAlert';
-import Spinner from '../components/common/Spinner';
-import { StatsGrid } from '../components/analytics/StatsGrid';
-import { ApplicationsOverTimeChart } from '../components/analytics/ApplicationsOverTimeChart';
+import { getApplicationStats, ApplicationStats } from '../services/analyticsApi';
 import { WeeklyGoalWidget } from '../components/analytics/WeeklyGoalWidget';
 import { PipelineConversionWidget } from '../components/analytics/PipelineConversionWidget';
+import { ApplicationsOverTimeChart } from '../components/analytics/ApplicationsOverTimeChart';
 import { RecentActivityWidget } from '../components/analytics/RecentActivityWidget';
 import ApplicationPipelineKanban from '../components/jobs/ApplicationPipelineKanban';
-import { Calendar } from 'lucide-react';
+import Spinner from '../components/common/Spinner';
+import ErrorAlert from '../components/common/ErrorAlert';
 
 const AnalyticsPage: React.FC = () => {
-    const [stats, setStats] = useState<ApplicationStats | null>(null);
     const [jobs, setJobs] = useState<JobApplication[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [stats, setStats] = useState<ApplicationStats | null>(null);
     const [isLoadingJobs, setIsLoadingJobs] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
-    const [isLoadingStats, setIsLoadingStats] = useState(false);
+    const [isLoadingStats, setIsLoadingStats] = useState(true);
+    const [jobsError, setJobsError] = useState<string | null>(null);
+    const [statsError, setStatsError] = useState<string | null>(null);
 
-    // Weekly Goal State (Persisted)
-    const [weeklyGoal, setWeeklyGoal] = useState<number>(() => {
-        const saved = localStorage.getItem('weeklyGoalTarget');
-        return saved ? parseInt(saved, 10) : 20;
+    const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+        return localStorage.getItem('analytics_selectedMonth') || 'current-month';
     });
+
+    const [weeklyGoal, setWeeklyGoal] = useState<number>(() => {
+        const saved = localStorage.getItem('weekly_application_goal');
+        return saved ? parseInt(saved, 10) : 5;
+    });
+
+    const fetchJobsData = useCallback(async () => {
+        setIsLoadingJobs(true);
+        setJobsError(null);
+        try {
+            const data = await getJobs();
+            setJobs(data);
+        } catch (error: any) {
+            setJobsError(error.message || 'Failed to fetch jobs');
+        } finally {
+            setIsLoadingJobs(false);
+        }
+    }, []);
+
+    const fetchStatsData = useCallback(async (period: string) => {
+        setIsLoadingStats(true);
+        setStatsError(null);
+        try {
+            const data = await getApplicationStats(period);
+            setStats(data);
+        } catch (error: any) {
+            setStatsError(error.message || 'Failed to fetch statistics');
+        } finally {
+            setIsLoadingStats(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchJobsData();
+    }, [fetchJobsData]);
+
+    useEffect(() => {
+        localStorage.setItem('analytics_selectedMonth', selectedMonth);
+        fetchStatsData(selectedMonth);
+    }, [selectedMonth, fetchStatsData]);
 
     const handleUpdateWeeklyGoal = (newTarget: number) => {
         setWeeklyGoal(newTarget);
-        localStorage.setItem('weeklyGoalTarget', newTarget.toString());
+        localStorage.setItem('weekly_application_goal', newTarget.toString());
     };
 
-    const fetchStats = async (month?: string) => {
+    const handleStatusChange = async (jobId: string, newStatus: string) => {
         try {
-            setIsLoadingStats(true);
-            const data = await getApplicationStats(month);
-            setStats(data);
-        } catch (err: any) {
-            setError(err.message || 'Failed to fetch analytics data.');
-        } finally {
-            setIsLoadingStats(false);
-            setIsLoading(false);
+            // Need to handle the type casting as updateJob expects specific status string types
+            await updateJob(jobId, { status: newStatus as any });
+            fetchJobsData();
+            fetchStatsData(selectedMonth);
+        } catch (error) {
+            console.error('Failed to update job status:', error);
         }
     };
 
-    useEffect(() => {
-        fetchStats(selectedMonth || undefined);
-    }, [selectedMonth]);
+    const monthOptions = [
+        { value: 'today', label: 'Today' },
+        { value: 'last-week', label: 'Last 7 Days' },
+        { value: 'current-month', label: 'Current Month' },
+        { value: 'last-month', label: 'Last Month' },
+        { value: 'last-3-months', label: 'Last 3 Months' },
+        { value: 'year', label: 'Full Year' },
+    ];
 
-    useEffect(() => {
-        const fetchJobs = async () => {
-            try {
-                setIsLoadingJobs(true);
-                const data = await getJobs();
-                setJobs(data);
-            } catch (err: any) {
-                console.error('Failed to fetch jobs:', err);
-            } finally {
-                setIsLoadingJobs(false);
-            }
-        };
-        fetchJobs();
-    }, []);
-
-    const handleMonthSelect = (month: string | null) => {
-        setSelectedMonth(month);
-    };
-
-    const handleStatusChange = async (jobId: string, newStatus: JobApplication['status']) => {
-        try {
-            await updateJob(jobId, { status: newStatus });
-            setJobs(prevJobs =>
-                prevJobs.map(job =>
-                    job._id === jobId ? { ...job, status: newStatus } : job
-                )
-            );
-            const data = await getApplicationStats(selectedMonth || undefined);
-            setStats(data);
-        } catch (err: any) {
-            console.error('Failed to update job status:', err);
-            throw err;
-        }
-    };
-
-    // Generate last 12 months for dropdown
-    const monthOptions = React.useMemo(() => {
-        const options = [];
-        const today = new Date();
-        for (let i = 0; i < 12; i++) {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            options.push({ value, label });
-        }
-        return options;
-    }, []);
-
-    if (isLoading) {
+    if (jobsError || statsError) {
         return (
-            <div className="container mx-auto p-4 text-center">
-                <Spinner />
-                <p className="text-gray-600 dark:text-gray-300 mt-2">Loading analytics...</p>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="container mx-auto p-4">
-                <ErrorAlert message={error} />
+            <div className="p-8">
+                <ErrorAlert message={jobsError || statsError || 'An error occurred'} onRetry={() => { fetchJobsData(); fetchStatsData(selectedMonth); }} />
             </div>
         );
     }
 
     return (
-        <div className="h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 p-6 lg:p-8 space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics Overview</h2>
+        <div className="container mx-auto px-4 py-8 max-w-7xl animate-in fade-in duration-500">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Analytics Dashboard</h1>
+                    <p className="text-slate-500 dark:text-slate-400">Track your application progress and performance.</p>
+                </div>
 
-                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md px-3 py-1.5 shadow-sm">
-                    <Calendar className="w-4 h-4 text-slate-500" />
+                <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400 ml-2">Period:</span>
                     <select
-                        value={selectedMonth || ''}
-                        onChange={(e) => handleMonthSelect(e.target.value || null)}
-                        className="text-sm bg-transparent border-none focus:ring-0 text-slate-700 dark:text-slate-200 cursor-pointer"
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="bg-transparent border-none focus:ring-0 text-sm font-semibold text-slate-800 dark:text-slate-100 cursor-pointer pr-8"
                     >
-                        <option value="">Last 6 Months</option>
-                        {monthOptions.map(option => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
+                        <optgroup label="Timeframe">
+                            {monthOptions.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </optgroup>
                     </select>
                 </div>
             </div>
 
-            {/* Top Stats Grid */}
-            <StatsGrid stats={stats} jobs={jobs} />
-
-            {/* Middle Row: Velocity Chart + Weekly Goal */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Application Velocity Chart */}
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col h-[400px] min-w-0">
-                    <div className="flex justify-between items-start mb-6">
-                        <div>
-                            <h3 className="font-semibold text-slate-900 dark:text-white">Application Velocity</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Applications sent vs status changes</p>
-                        </div>
-                        {/* Legend is handled inside the chart component */}
-                    </div>
-
-                    <div className="flex-1 w-full min-h-0 min-w-0">
-                        {isLoadingStats ? (
-                            <div className="h-full flex items-center justify-center">
-                                <Spinner />
-                            </div>
-                        ) : (
-                            <ApplicationsOverTimeChart
-                                data={stats?.applicationsOverTimeByStatus || []}
-                                onMonthClick={handleMonthSelect}
-                                selectedMonth={selectedMonth}
-                            />
-                        )}
-                    </div>
-                </div>
-
-                {/* Weekly Goal Widget */}
-                <div>
+            {/* Dashboard Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Applications Goal Widget */}
+                <div className={`${selectedMonth === 'today' ? 'md:col-span-2' : 'md:col-span-1'}`}>
                     <WeeklyGoalWidget
                         jobs={jobs}
                         target={weeklyGoal}
                         onUpdateTarget={handleUpdateWeeklyGoal}
                     />
                 </div>
-            </div>
 
-            {/* Bottom Row: Pipeline + Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Pipeline Conversion */}
-                <div>
+                <div className={`${selectedMonth === 'today' ? 'md:col-span-2' : 'md:col-span-1'}`}>
                     <PipelineConversionWidget stats={stats} />
                 </div>
 
+                {/* Application Velocity Chart - Only shown if not 'today' */}
+                {selectedMonth !== 'today' && (
+                    <div className="md:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col h-[400px] min-w-0">
+                        <div className="flex items-center gap-2 mb-6">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[20px]">trending_up</span>
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Application Velocity</h3>
+                        </div>
+                        <div className="flex-1 min-h-0">
+                            {isLoadingStats ? (
+                                <div className="h-full flex items-center justify-center">
+                                    <Spinner />
+                                </div>
+                            ) : (
+                                <ApplicationsOverTimeChart
+                                    data={stats?.applicationsOverTimeByStatus || []}
+                                    selectedMonth={selectedMonth}
+                                />
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Recent Activity */}
-                <div className="lg:col-span-2">
+                <div className="md:col-span-2">
                     <RecentActivityWidget jobs={jobs} />
                 </div>
             </div>

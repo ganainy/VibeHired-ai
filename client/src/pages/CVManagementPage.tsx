@@ -14,9 +14,8 @@ import {
   renameCvBranch,
   uploadCvBranch
 } from '../services/cvApi';
-import { ResumeBuilder } from '../components/resume-builder';
-import CvLivePreview from '../components/cv-editor/CvLivePreview';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
+import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 import Toast from '../components/common/Toast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import { fetchAllSectionsAnalysis, fetchSectionAnalysis, SectionAnalysisResult } from '../services/analysisApi';
@@ -25,7 +24,6 @@ import { scanAts, getAtsScores, getLatestAts, AtsScores, getAtsForJob } from '..
 import { getAllTemplates } from '../templates/config';
 import Sidebar from '../components/cv-management/Sidebar';
 import CreateBranchModal from '../components/cv-management/CreateBranchModal';
-import NavigationMenu from '../components/cv-management/NavigationMenu';
 import { validateCvFile, formatFileSize } from '../lib/utils';
 
 const CVManagementPage: React.FC = () => {
@@ -45,7 +43,6 @@ const CVManagementPage: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('modern-clean');
-  const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
   const [creationMode, setCreationMode] = useState<'choose' | 'upload' | 'scratch'>('choose');
 
   // Analysis state
@@ -60,8 +57,6 @@ const CVManagementPage: React.FC = () => {
   const [isAnalysisOutdated, setIsAnalysisOutdated] = useState<boolean>(false);
   const atsPollingIntervalIdRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const contentScrollRef = useRef<HTMLElement | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -713,9 +708,9 @@ const CVManagementPage: React.FC = () => {
 
     try {
       await setCvPrimary(cvId);
-      
+
       // Update local state
-      setAllCvs((prev: CVDocument[]) => 
+      setAllCvs((prev: CVDocument[]) =>
         prev.map((cv: CVDocument) => ({
           ...cv,
           isPrimary: cv._id === cvId
@@ -732,10 +727,10 @@ const CVManagementPage: React.FC = () => {
   const handleRenameBranch = async (cvId: string, newName: string) => {
     try {
       await renameCvBranch(cvId, { displayName: newName });
-      
+
       // Update local state
-      setAllCvs((prev: CVDocument[]) => 
-        prev.map((cv: CVDocument) => 
+      setAllCvs((prev: CVDocument[]) =>
+        prev.map((cv: CVDocument) =>
           cv._id === cvId ? { ...cv, displayName: newName } : cv
         )
       );
@@ -751,7 +746,7 @@ const CVManagementPage: React.FC = () => {
     setIsCreatingBranch(true);
     try {
       const response = await createCvBranch({ sourceCvId, category, displayName });
-      
+
       // Add the new branch to local state
       setAllCvs((prev: CVDocument[]) => [...prev, response.branch]);
 
@@ -769,10 +764,10 @@ const CVManagementPage: React.FC = () => {
     setIsCreatingBranch(true);
     try {
       const response = await uploadCvBranch(file, category, displayName);
-      
+
       // Add the new branch to local state
       setAllCvs((prev: CVDocument[]) => [...prev, response.branch]);
-      
+
       // Optionally set the new branch as active
       setActiveCvId(response.branch._id);
 
@@ -895,7 +890,7 @@ const CVManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full overflow-hidden bg-gray-50 dark:bg-gray-900 p-6 pt-10 gap-6">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 p-6 pt-10 gap-6 overflow-hidden">
       {/* Left Sidebar */}
       {!isReplacing && (
         <Sidebar
@@ -917,7 +912,7 @@ const CVManagementPage: React.FC = () => {
           onSetPrimary={handleSetPrimary}
           onRenameBranch={handleRenameBranch}
           onCreateBranch={() => setIsCreateBranchModalOpen(true)}
-          className="w-80 flex-shrink-0 z-20 overflow-hidden"
+          className="w-full flex-shrink-0 z-20"
         />
       )}
 
@@ -1045,103 +1040,18 @@ const CVManagementPage: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col h-full overflow-hidden relative">
-            {/* Header / Tabs */}
-            <div className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex justify-between items-center z-10">
-              {/* Tabs */}
-              <div className="flex space-x-6">
-                <button
-                  onClick={() => setViewMode('edit')}
-                  className={`flex items-center gap-2 pb-2 text-sm font-medium border-b-2 transition-colors ${viewMode === 'edit'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  Edit Content
-                </button>
-                <button
-                  onClick={() => setViewMode('preview')}
-                  className={`flex items-center gap-2 pb-2 text-sm font-medium border-b-2 transition-colors ${viewMode === 'preview'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                    }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                  Live Preview
-                </button>
-              </div>
-
-              {/* Right Side: Status & Edit Info */}
-              <div className="flex items-center gap-4">
-                {activeCvData?.basics?.name && (
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Editing <span className="font-semibold text-gray-900 dark:text-gray-100">{activeCvData.basics.name} - {activeCvData.basics.label}</span>
-                    {activeCv && (
-                      <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                        {activeCv.isPrimary ? 'Primary CV' : (activeCv.displayName || activeCv.category || 'Branch')}
-                      </span>
-                    )}
-                  </span>
-                )}
-                {/* Save Status */}
-                {getSmartStatus() && (
-                  <div className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full bg-${getSmartStatus()?.color}-100 dark:bg-${getSmartStatus()?.color}-900/30 text-${getSmartStatus()?.color}-700 dark:text-${getSmartStatus()?.color}-300`}>
-                    {getSmartStatus()?.text}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {viewMode === 'edit' && (
-              <div className="flex-shrink-0 bg-white dark:bg-gray-800 px-6 pt-4">
-                <NavigationMenu scrollContainerRef={scrollContainerRef} />
-              </div>
-            )}
-
-            {/* Content Body - Scrollable */}
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 p-6 relative">
-              <div className="max-w-4xl mx-auto pb-20">
-                {viewMode === 'edit' ? (
-                  <ResumeBuilder
-                    data={activeCvData || currentCvData || { basics: {} }}
-                    onChange={handleCvChange}
-                    onImproveSection={handleImproveSection}
-                    improvingSections={improvingSections}
-                  />
-                ) : (
-                  <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden min-h-[800px]">
-                    <CvLivePreview
-                      data={activeCvData || currentCvData}
-                      templateId={selectedTemplate}
-                      onTemplateChange={handleTemplateChange}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Floating Action Button */}
-            <div className="absolute bottom-6 right-8">
-              <button
-                onClick={() => handleSaveCv()}
-                disabled={!hasUnsavedChanges || saveStatus === 'saving'}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold shadow-lg transition-all ${hasUnsavedChanges
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white transform hover:scale-105'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                  }`}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {saveStatus === 'saving' ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="animate-spin" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                  )}
-                </svg>
-                {saveStatus === 'saving' ? 'Saving...' : 'Update CV'}
-              </button>
-            </div>
-          </div>
+          <CvEditorPanel
+            data={activeCvData || currentCvData}
+            onChange={handleCvChange}
+            onSave={() => handleSaveCv()}
+            saveStatus={saveStatus}
+            hasUnsavedChanges={hasUnsavedChanges}
+            templateId={selectedTemplate}
+            onTemplateChange={handleTemplateChange}
+            onImproveSection={handleImproveSection}
+            improvingSections={improvingSections}
+            className="h-full"
+          />
         )}
       </div>
 

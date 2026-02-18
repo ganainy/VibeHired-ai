@@ -1,18 +1,15 @@
 // client/src/pages/ReviewFinalizePage.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useReactToPrint } from 'react-to-print';
 import { updateCustomPrompts } from '../services/settingsApi';
 import { getJobById, updateJob, JobApplication, scrapeJobDescriptionApi, extractJobFromTextApi, deleteJob } from '../services/jobApi';
 import { renderFinalPdfs, renderCvPdf, renderCoverLetterPdf, getDownloadUrl, generateDocuments, generateCvOnly, improveSection } from '../services/generatorApi';
 import { analyzeCv, AnalysisResult, getAnalysis } from '../services/analysisApi';
 import { scanAts, getAtsScores, getAtsForJob, AtsScores, deleteAtsAnalysis } from '../services/atsApi';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
-import ResumeBuilder from '../components/resume-builder/ResumeBuilder';
-import CvLivePreview from '../components/cv-editor/CvLivePreview';
+import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 // import { downloadCvAsPdf } from '../services/pdfService'; // Removed as we use react-to-print now
 import { DEFAULT_CV_PROMPT, DEFAULT_COVER_LETTER_PROMPT } from '../constants/prompts';
-import { getAllTemplates, TemplateConfig } from '../templates/config';
 import { generateCoverLetter } from '../services/coverLetterApi';
 import { getMasterCv, previewCv, getCvBranches, CVDocument, getJobCv, createJobCv, updateCv, deleteCv } from '../services/cvApi';
 import AtsReportView from '../components/ats/AtsReportView';
@@ -169,38 +166,12 @@ const ReviewFinalizePage: React.FC = () => {
     const [previewPdfBase64, setPreviewPdfBase64] = useState<string | null>(null);
     const [isGeneratingPreview, setIsGeneratingPreview] = useState<boolean>(false);
     const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
-    const [cvViewMode, setCvViewMode] = useState<'edit' | 'preview' | 'split'>(() => {
-        // Read from localStorage for persistence per job
-        if (jobId) {
-            try {
-                const saved = localStorage.getItem(`job_cvViewMode_${jobId}`);
-                if (saved && ['edit', 'preview', 'split'].includes(saved)) {
-                    return saved as 'edit' | 'preview' | 'split';
-                }
-            } catch (e) {
-                console.error("Error reading cvViewMode from localStorage", e);
-            }
-        }
-        return 'split';
-    });
 
-    const handleCvViewModeChange = (newMode: 'edit' | 'preview' | 'split') => {
-        setCvViewMode(newMode);
-        if (jobId) {
-            try {
-                localStorage.setItem(`job_cvViewMode_${jobId}`, newMode);
-            } catch (e) {
-                console.error("Error saving cvViewMode to localStorage", e);
-            }
-        }
-    };
     const [selectedTemplate, setSelectedTemplate] = useState<string>('modern-clean');
-    const [availableTemplates, setAvailableTemplates] = useState<TemplateConfig[]>([]);
-    const [isDownloadingCvPdf, setIsDownloadingCvPdf] = useState<boolean>(false);
+    const [cvSaveStatus, setCvSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
     // Ref for accessing the CV preview element for PDF generation
-    const cvPreviewRef = useRef<HTMLDivElement>(null);
-    const splitViewCvPreviewRef = useRef<HTMLDivElement>(null);
+    // (print refs are now managed inside CvEditorPanel)
 
     // Helper to generate a clean filename
     const getPdfFilename = () => {
@@ -215,16 +186,7 @@ const ReviewFinalizePage: React.FC = () => {
         return `${docType}_${companyName}_${jobTitle}`;
     };
 
-    // React-to-print hook
-    const handlePrintCv = useReactToPrint({
-        contentRef: cvPreviewRef,
-        documentTitle: getPdfFilename(),
-    });
-
-    const handlePrintSplitCv = useReactToPrint({
-        contentRef: splitViewCvPreviewRef,
-        documentTitle: getPdfFilename(),
-    });
+    // React-to-print hooks are now handled inside CvEditorPanel
 
     // Tailor Job CV Form State
     const [tailoredJobTitle, setTailoredJobTitle] = useState<string>('');
@@ -602,10 +564,7 @@ const ReviewFinalizePage: React.FC = () => {
     }, [atsPollingIntervalId]);
 
     // Load available templates
-    useEffect(() => {
-        setAvailableTemplates(getAllTemplates());
-    }, []);
-
+    // (now handled inside CvEditorPanel)
     // Fetch AI recommendation when job application is loaded - DISABLED (now manual via button)
     // useEffect(() => {
     //     const fetchRecommendation = async () => {
@@ -666,12 +625,12 @@ const ReviewFinalizePage: React.FC = () => {
         } catch (err: any) {
             console.error('[handleCalculateMatch] Failed to calculate recommendation:', err);
             showToast(err?.message || 'Failed to calculate match', 'error');
-            setRecommendation({ 
-                shouldApply: false, 
-                score: null, 
-                reason: '', 
-                cached: false, 
-                error: err?.message || 'Failed to calculate match' 
+            setRecommendation({
+                shouldApply: false,
+                score: null,
+                reason: '',
+                cached: false,
+                error: err?.message || 'Failed to calculate match'
             });
         } finally {
             setIsLoadingRecommendation(false);
@@ -1338,20 +1297,22 @@ const ReviewFinalizePage: React.FC = () => {
     };
 
     /**
-     * Downloads the CV as PDF by capturing the exact preview element.
-     * This ensures WYSIWYG - the downloaded PDF matches exactly what's shown in the preview.
+     * Explicit manual save of the CV (triggered by the Save button in CvEditorPanel).
+     * Auto-save continues to run in the background as a safety net.
      */
-    /**
-     * Downloads the CV as PDF using native browser print (via react-to-print).
-     * This ensures correct pagination and better quality than html2canvas.
-     */
-    const handleDownloadCvPdf = () => {
-        if (cvViewMode === 'split' && splitViewCvPreviewRef.current) {
-            handlePrintSplitCv();
-        } else if (cvPreviewRef.current) {
-            handlePrintCv();
-        } else {
-            showToast('CV Preview not ready. Please wait for preview to load.', 'info');
+    const handleManualSaveCv = async () => {
+        if (!currentCvId || !cvData) return;
+        setCvSaveStatus('saving');
+        try {
+            await updateCv(currentCvId, { cvJson: cvData });
+            lastSavedCvDataRef.current = JSON.stringify(cvData);
+            setCvSaveStatus('saved');
+            setTimeout(() => setCvSaveStatus('idle'), 3000);
+        } catch (error: any) {
+            console.error('Error saving CV:', error);
+            setCvSaveStatus('error');
+            showToast(error.message || 'Failed to save CV.', 'error');
+            setTimeout(() => setCvSaveStatus('idle'), 5000);
         }
     };
 
@@ -1565,7 +1526,6 @@ const ReviewFinalizePage: React.FC = () => {
                     ? ` with ${response.changesCount} tailoring changes`
                     : '';
                 showToast(`CV generated successfully${changesMsg}`, 'success');
-                setCvViewMode('split'); // Switch to split view to see changes
             } else if (response.status === 'pending_input') {
                 setGenerateCvError('Generation requires additional input. Please check the console for details.');
             } else {
@@ -1903,11 +1863,10 @@ const ReviewFinalizePage: React.FC = () => {
                                 title="Click to view AI Application Advice"
                             >
                                 <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
-                                <p className={`text-sm font-semibold ${
-                                    recommendation.shouldApply
-                                        ? 'text-green-600 dark:text-green-400'
-                                        : 'text-amber-600 dark:text-amber-400'
-                                }`}>
+                                <p className={`text-sm font-semibold ${recommendation.shouldApply
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : 'text-amber-600 dark:text-amber-400'
+                                    }`}>
                                     {`${recommendation.score}%`}
                                 </p>
                             </button>
@@ -2213,7 +2172,6 @@ const ReviewFinalizePage: React.FC = () => {
                                     atsScores={atsScores}
                                     onEditCv={() => {
                                         handleTabChange('cv');
-                                        setCvViewMode('edit');
                                     }}
                                     onDelete={handleDeleteAts}
                                 />
@@ -2493,7 +2451,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 </span>
                                             </li>
                                         )}
-                                        
+
                                         {/* Contact Information */}
                                         {jobApplication.contactEmail && (
                                             <li className="flex items-start gap-3">
@@ -2533,7 +2491,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 </span>
                                             </li>
                                         )}
-                                        
+
                                         {jobApplication.extractedData?.keyDetails && (
                                             Array.isArray(jobApplication.extractedData.keyDetails) ? (
                                                 jobApplication.extractedData.keyDetails.map((item, idx) => (
@@ -3016,52 +2974,85 @@ const ReviewFinalizePage: React.FC = () => {
                     {activeTab === 'cv' && (
                         <div>
                             {hasLocalCv ? (
-                                <>
+                                <CvEditorPanel
+                                    data={cvData}
+                                    onChange={handleCvChange}
+                                    onSave={handleManualSaveCv}
+                                    saveStatus={cvSaveStatus}
+                                    hasUnsavedChanges={
+                                        lastSavedCvDataRef.current !== null &&
+                                        JSON.stringify(cvData) !== lastSavedCvDataRef.current
+                                    }
+                                    templateId={selectedTemplate}
+                                    onTemplateChange={setSelectedTemplate}
+                                    onImproveSection={handleImproveSection}
+                                    improvingSections={improvingSections}
+                                    onDelete={async () => {
+                                        if (window.confirm('Are you sure you want to delete this CV? You will need to regenerate it.')) {
+                                            if (currentCvId) {
+                                                try {
+                                                    await deleteCv(currentCvId);
+                                                    setCvData({ basics: {} });
+                                                    setCurrentCvId(null);
+                                                    setJobApplication(prev => prev ? { ...prev, draftCvJson: undefined } : null);
+                                                    showToast('CV deleted successfully', 'success');
+                                                } catch (err: any) {
+                                                    console.error('Failed to delete CV', err);
+                                                    showToast(`Failed to delete CV: ${err.message}`, 'error');
+                                                }
+                                            } else if (jobId && jobApplication?.draftCvJson) {
+                                                try {
+                                                    await updateJob(jobId, { draftCvJson: null });
+                                                    setCvData({ basics: {} });
+                                                    setJobApplication(prev => prev ? { ...prev, draftCvJson: undefined } : null);
+                                                    showToast('CV deleted successfully', 'success');
+                                                } catch (err: any) {
+                                                    console.error('Failed to delete legacy CV', err);
+                                                    showToast(`Failed to delete CV: ${err.message}`, 'error');
+                                                }
+                                            }
+                                        }
+                                    }}
+                                >
                                     {/* Tailoring Changes Panel - Show what AI changed */}
                                     {tailoringChanges && tailoringChanges.length > 0 && (
-                                        <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800 overflow-hidden">
+                                        <div className="mb-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                                             <details className="group" open>
-                                                <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-colors">
+                                                <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-transparent group-open:border-slate-100 dark:group-open:border-slate-800">
                                                     <div className="flex items-center gap-3">
-                                                        <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-500 text-white">
-                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                                            </svg>
-                                                        </span>
+                                                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm">
+                                                            <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
+                                                        </div>
                                                         <div>
-                                                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                                                            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                                                                 Tailoring Changes
                                                             </h3>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                                {tailoringChanges.length} modification{tailoringChanges.length !== 1 ? 's' : ''} made for this job
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                                {tailoringChanges.length} modification{tailoringChanges.length !== 1 ? 's' : ''} recorded
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <span className="text-gray-500 dark:text-gray-400 group-open:rotate-180 transition-transform duration-200">
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                        </svg>
+                                                    <span className="text-slate-400 group-open:rotate-180 transition-transform duration-200">
+                                                        <span className="material-symbols-outlined text-[20px]">expand_more</span>
                                                     </span>
                                                 </summary>
-                                                <div className="p-4 pt-0 space-y-3">
+                                                <div className="p-4 pt-0 divide-y divide-slate-100 dark:divide-slate-800">
                                                     {tailoringChanges.map((change, index) => (
                                                         <div
                                                             key={index}
-                                                            className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm"
+                                                            className="py-4 first:pt-2 last:pb-2"
                                                         >
-                                                            <div className="flex items-start gap-3">
-                                                                <span className="flex-shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 capitalize">
+                                                            <div className="flex items-start gap-4">
+                                                                <span className="flex-shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                                                                     {change.section}
                                                                 </span>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                                <div className="flex-1 min-w-0 space-y-1.5">
+                                                                    <p className="text-sm text-slate-800 dark:text-slate-200 leading-snug">
                                                                         {change.description}
                                                                     </p>
-                                                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1.5">
-                                                                        <svg className="w-4 h-4 flex-shrink-0 mt-0.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                        </svg>
-                                                                        <span className="italic">{change.reason}</span>
+                                                                    <p className="text-xs text-slate-500 dark:text-slate-500 flex items-center gap-2 italic">
+                                                                        <span className="w-1 h-1 rounded-full bg-indigo-400 dark:bg-indigo-500"></span>
+                                                                        {change.reason}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -3072,173 +3063,16 @@ const ReviewFinalizePage: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <div className="mb-4">
-                                        {/* Grey rounded card containing title, view mode toggle, and buttons */}
-                                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700 mb-4">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit CV</h2>
-
-                                                    {/* View Mode Toggle */}
-                                                    <div className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
-                                                        <button
-                                                            onClick={() => handleCvViewModeChange('edit')}
-                                                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${cvViewMode === 'edit' ? 'bg-white dark:bg-gray-600 shadow text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleCvViewModeChange('split')}
-                                                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${cvViewMode === 'split' ? 'bg-white dark:bg-gray-600 shadow text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
-                                                        >
-                                                            Split
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleCvViewModeChange('preview')}
-                                                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${cvViewMode === 'preview' ? 'bg-white dark:bg-gray-600 shadow text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
-                                                        >
-                                                            Preview
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {/* Action buttons - positioned on the right */}
-                                                <div className="flex items-center gap-3">
-                                                    {/* Template Selection */}
-                                                    {availableTemplates.length > 0 && (
-                                                        <select
-                                                            value={selectedTemplate}
-                                                            onChange={(e) => setSelectedTemplate(e.target.value)}
-                                                            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                        >
-                                                            {availableTemplates.map((template) => (
-                                                                <option key={template.id} value={template.id}>
-                                                                    {template.name}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    )}
-
-                                                    {/* Download button - always available when CV exists */}
-                                                    <button
-                                                        onClick={handleDownloadCvPdf}
-                                                        disabled={isDownloadingCvPdf || cvViewMode === 'edit'}
-                                                        className="group flex items-center gap-2.5 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-800 dark:active:bg-blue-800 transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md active:shadow-sm transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                                                        title={cvViewMode === 'edit' ? 'Switch to Preview or Split view to download PDF' : 'Download CV as PDF'}
-                                                    >
-                                                        {isDownloadingCvPdf ? (
-                                                            <Spinner size="sm" />
-                                                        ) : (
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                            </svg>
-                                                        )}
-                                                        <span>Download PDF</span>
-                                                    </button>
-
-                                                    {/* Delete CV Button */}
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (window.confirm('Are you sure you want to delete this CV? You will need to regenerate it.')) {
-                                                                if (currentCvId) {
-                                                                    try {
-                                                                        await deleteCv(currentCvId);
-                                                                        setCvData({ basics: {} });
-                                                                        setCurrentCvId(null);
-                                                                        // Optimistic update for legacy check (if any remain)
-                                                                        setJobApplication(prev => prev ? { ...prev, draftCvJson: undefined } : null);
-                                                                        showToast('CV deleted successfully', 'success');
-                                                                    } catch (err: any) {
-                                                                        console.error('Failed to delete CV', err);
-                                                                        showToast(`Failed to delete CV: ${err.message}`, 'error');
-                                                                    }
-                                                                } else if (jobId && jobApplication?.draftCvJson) {
-                                                                    // Legacy cleanup
-                                                                    try {
-                                                                        await updateJob(jobId, { draftCvJson: null });
-                                                                        setCvData({ basics: {} });
-                                                                        setJobApplication(prev => prev ? { ...prev, draftCvJson: undefined } : null);
-                                                                        showToast('CV deleted successfully', 'success');
-                                                                    } catch (err: any) {
-                                                                        console.error('Failed to delete legacy CV', err);
-                                                                        showToast(`Failed to delete CV: ${err.message}`, 'error');
-                                                                    }
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="group flex items-center gap-2.5 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md"
-                                                        title="Delete CV to regenerate with new instructions"
-                                                    >
-                                                        <span className="material-symbols-outlined text-sm">delete</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm border border-blue-100 dark:border-blue-900/30">
-                                                <span className="material-symbols-outlined text-base">info</span>
-                                                <p>
-                                                    To regenerate the CV with different instructions, please delete the current CV using the trash icon above.
-                                                </p>
-                                            </div>
+                                    {/* Analysis error */}
+                                    {analyzeError && (
+                                        <div className="mb-4">
+                                            <ErrorAlert
+                                                message={`Analysis Error: ${analyzeError}`}
+                                                onDismiss={() => setAnalyzeError(null)}
+                                            />
                                         </div>
-
-                                        {analyzeError && (
-                                            <div className="mb-4">
-                                                <ErrorAlert
-                                                    message={`Analysis Error: ${analyzeError}`}
-                                                    onDismiss={() => setAnalyzeError(null)}
-                                                />
-                                            </div>
-                                        )}
-
-                                    </div>
-
-                                    {/* CV Editor with View Modes */}
-                                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                        <div className="p-6">
-                                            {cvViewMode === 'edit' && cvData && (
-                                                <ResumeBuilder
-                                                    data={cvData}
-                                                    onChange={handleCvChange}
-                                                    onImproveSection={handleImproveSection}
-                                                    improvingSections={improvingSections}
-                                                />
-                                            )}
-                                            {cvViewMode === 'preview' && (
-                                                <div style={{ minHeight: '800px' }}>
-                                                    <CvLivePreview
-                                                        ref={cvPreviewRef}
-                                                        data={cvData}
-                                                        templateId={selectedTemplate}
-                                                        onTemplateChange={setSelectedTemplate}
-                                                    />
-                                                </div>
-                                            )}
-                                            {cvViewMode === 'split' && (
-                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                                    <div>
-                                                        {cvData && (
-                                                            <ResumeBuilder
-                                                                data={cvData}
-                                                                onChange={handleCvChange}
-                                                                onImproveSection={handleImproveSection}
-                                                                improvingSections={improvingSections}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                    <div style={{ minHeight: '800px' }}>
-                                                        <CvLivePreview
-                                                            ref={splitViewCvPreviewRef}
-                                                            data={cvData}
-                                                            templateId={selectedTemplate}
-                                                            onTemplateChange={setSelectedTemplate}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </>
+                                    )}
+                                </CvEditorPanel>
                             ) : (
                                 <div>
                                     <div className="mb-6">

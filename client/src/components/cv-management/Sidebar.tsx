@@ -55,10 +55,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div
                 onClick={() => onSelectCv(cv._id)}
                 className={`
-                    group relative p-4 rounded-xl border cursor-pointer transition-all duration-200
+                    group relative p-3 rounded-xl border cursor-pointer transition-all duration-200 w-64 flex-shrink-0
                     ${isActive
                         ? 'bg-white border-blue-500 shadow-sm ring-1 ring-blue-500/20'
-                        : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
+                        : 'bg-white border-gray-50 hover:border-gray-200 hover:shadow-sm'
                     }
                     dark:bg-gray-800 dark:border-gray-700
                 `}
@@ -67,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l-xl" />
                 )}
 
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start mb-1">
                     <h3 className={`font-semibold text-sm line-clamp-1 ${isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-200'}`}>
                         {displayName}
                     </h3>
@@ -81,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     )}
                 </div>
 
-                <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center justify-between mt-2">
                     <span className="text-xs text-gray-400 dark:text-gray-500 self-end">
                         Edited: {getRelativeTime(cv.updatedAt)}
                     </span>
@@ -151,45 +151,59 @@ const Sidebar: React.FC<SidebarProps> = ({
     };
 
     return (
-        <div className={`flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
-            <div className="p-4 space-y-4">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">My Documents</h2>
+        <div className={`flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
+            <div className="flex flex-col gap-4 p-4 border-b border-gray-100 dark:border-gray-700/50">
+                {/* Row 1: Title & Filter */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">My Documents</h2>
 
-                {/* Search */}
-                <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </span>
-                    <input
-                        type="text"
-                        placeholder="Filter CVs..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full py-2 pl-9 pr-4 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-gray-400"
-                    />
+                        {/* Search moved here */}
+                        <div className="relative w-48 flex-shrink-0">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-gray-400">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </span>
+                            <input
+                                type="text"
+                                placeholder="Filter CVs..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full py-1.5 pl-8 pr-3 text-[11px] bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-gray-400 font-medium"
+                            />
+                        </div>
+                    </div>
                 </div>
 
-                {/* Create Branch Button */}
-                {onCreateBranch && (
-                    <button
-                        onClick={onCreateBranch}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Create Branch
-                    </button>
-                )}
-            </div>
+                {/* Row 2: Cards Only */}
+                <div className="flex items-center">
+                    {/* Scrollable Cards */}
+                    <div className="flex-1 overflow-x-auto custom-scrollbar">
+                        <div className="flex items-stretch gap-3 py-1 min-w-max px-1">
+                            {/* Create Branch Card */}
+                            {onCreateBranch && (
+                                <button
+                                    onClick={onCreateBranch}
+                                    className="flex flex-col items-center justify-center gap-2 w-32 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-900/50 bg-blue-50/20 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:border-blue-400 dark:hover:border-blue-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/30 transition-all group"
+                                    title="Create a new CV"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-blue-100/50 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        </svg>
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-tight">New CV</span>
+                                </button>
+                            )}
 
-            <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4 custom-scrollbar">
-                {primaryCv && <CvCard cv={primaryCv} isPrimary />}
-                {filteredBranchCvs.map(cv => (
-                    <CvCard key={cv._id} cv={cv} />
-                ))}
+                            {primaryCv && <CvCard cv={primaryCv} isPrimary />}
+                            {filteredBranchCvs.map(cv => (
+                                <CvCard key={cv._id} cv={cv} />
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

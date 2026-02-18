@@ -101,45 +101,45 @@ const ApplicationPipelineKanban: React.FC<ApplicationPipelineKanbanProps> = ({
   };
 
   const columns: { id: KanbanColumn; title: string; bgColor: string; textColor: string; badgeBg: string; badgeText: string; emptyText: string }[] = [
-    { 
-      id: 'Saved', 
-      title: 'Saved', 
+    {
+      id: 'Saved',
+      title: 'Saved',
       bgColor: 'bg-gray-100 dark:bg-zinc-900/50',
       textColor: 'text-gray-700 dark:text-gray-300',
       badgeBg: 'bg-gray-200 dark:bg-zinc-700',
       badgeText: 'text-gray-800 dark:text-gray-200',
       emptyText: 'text-gray-500 dark:text-gray-400'
     },
-    { 
-      id: 'Applied', 
-      title: 'Applied', 
+    {
+      id: 'Applied',
+      title: 'Applied',
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
       textColor: 'text-blue-800 dark:text-blue-300',
       badgeBg: 'bg-blue-100 dark:bg-blue-900',
       badgeText: 'text-blue-800 dark:text-blue-200',
       emptyText: 'text-blue-700 dark:text-blue-400'
     },
-    { 
-      id: 'Interviewing', 
-      title: 'Interviewing', 
+    {
+      id: 'Interviewing',
+      title: 'Interviewing',
       bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
       textColor: 'text-yellow-800 dark:text-yellow-300',
       badgeBg: 'bg-yellow-100 dark:bg-yellow-900',
       badgeText: 'text-yellow-800 dark:text-yellow-200',
       emptyText: 'text-yellow-700 dark:text-yellow-400'
     },
-    { 
-      id: 'Offer', 
-      title: 'Offer', 
+    {
+      id: 'Offer',
+      title: 'Offer',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
       textColor: 'text-green-800 dark:text-green-300',
       badgeBg: 'bg-green-100 dark:bg-green-900',
       badgeText: 'text-green-800 dark:text-green-200',
       emptyText: 'text-green-700 dark:text-green-400'
     },
-    { 
-      id: 'Rejected', 
-      title: 'Rejected', 
+    {
+      id: 'Rejected',
+      title: 'Rejected',
       bgColor: 'bg-red-50 dark:bg-red-900/20',
       textColor: 'text-red-800 dark:text-red-300',
       badgeBg: 'bg-red-100 dark:bg-red-900',
@@ -180,7 +180,7 @@ const ApplicationPipelineKanban: React.FC<ApplicationPipelineKanbanProps> = ({
               </span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
               {columnJobs.length === 0 ? (
                 <div className={`text-center py-10`}>
                   <p className={`text-sm ${column.emptyText}`}>No applications</p>

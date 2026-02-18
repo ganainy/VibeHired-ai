@@ -154,7 +154,9 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
                 <p className="text-sm text-slate-600 dark:text-slate-300">
                     {percentage >= 100
                         ? "You've hit your weekly applications target! Great job!"
-                        : <>You're on track to hit your weekly applications target. <span className="text-green-600 dark:text-green-400 font-medium">Keep it up!</span></>
+                        : currentWeekCount === 0
+                            ? <>Get started by sending your first application this week!</>
+                            : <>You're on track to hit your weekly applications target. <span className="text-green-600 dark:text-green-400 font-medium">Keep it up!</span></>
                     }
                 </p>
                 <div className="flex justify-between text-xs text-slate-400 mt-4">

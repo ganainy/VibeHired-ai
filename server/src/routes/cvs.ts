@@ -12,7 +12,7 @@ import authMiddleware from '../middleware/authMiddleware';
 import CV, { ICV } from '../models/CV';
 import User from '../models/User';
 import JobApplication from '../models/JobApplication';
-import { generateContentWithFile } from '../utils/aiService';
+import { generateContentWithFile, getProviderStrategy } from '../utils/aiService';
 import { GoogleGenerativeAIError } from '@google/generative-ai';
 import { NotFoundError, ValidationError } from '../utils/errors/AppError';
 import { JsonResumeSchema } from '../types/jsonresume';
@@ -371,6 +371,14 @@ router.post(
             throw new ValidationError('No CV file uploaded.');
         }
 
+        // Guard: PDF/file parsing requires Gemini — other providers don't support file input
+        const providerStrategy = await getProviderStrategy(String(userId));
+        if (providerStrategy.getName().toLowerCase() !== 'gemini') {
+            throw new ValidationError(
+                'PDF upload requires Gemini. Please switch your AI provider to Gemini in Settings.'
+            );
+        }
+
         console.log(`Processing CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
@@ -486,6 +494,14 @@ router.post(
             throw new ValidationError('Category and display name are required.');
         }
 
+        // Guard: PDF/file parsing requires Gemini — other providers don't support file input
+        const branchProviderStrategy = await getProviderStrategy(String(userId));
+        if (branchProviderStrategy.getName().toLowerCase() !== 'gemini') {
+            throw new ValidationError(
+                'PDF upload requires Gemini. Please switch your AI provider to Gemini in Settings.'
+            );
+        }
+
         console.log(`Processing branch CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
@@ -538,8 +554,11 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
     const { cvJson, templateId } = req.body;
 
     if (cvJson) {
-        if (typeof cvJson !== 'object' || !cvJson.basics) {
-            throw new ValidationError('CV data must be a valid object with a basics section.');
+        if (typeof cvJson !== 'object' || Array.isArray(cvJson)) {
+            throw new ValidationError('CV data must be a valid object.');
+        }
+        if (!cvJson.basics) {
+            console.warn(`CV ${cvId} saved without a basics section — allowing save.`);
         }
         cv.cvJson = cvJson;
         cv.analysisCache = null; // Invalidate cache when CV changes

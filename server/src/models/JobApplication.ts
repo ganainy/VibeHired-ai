@@ -88,6 +88,8 @@ export interface IJobApplication extends Document {
             missingKeywords: string[];
         };
     };
+    // --- Favorite Flag ---
+    isFavorite?: boolean; // User can mark job as favorite
     // --- Standard Timestamps ---
     createdAt: Date;
     updatedAt: Date;
@@ -189,7 +191,9 @@ const JobApplicationSchema: Schema = new Schema(
                 matchedKeywords: [{ type: String }],
                 missingKeywords: [{ type: String }]
             }
-        }
+        },
+        // --- Favorite Flag Schema ---
+        isFavorite: { type: Boolean, default: false, index: true }
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );

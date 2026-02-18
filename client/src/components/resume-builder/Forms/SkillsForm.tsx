@@ -82,6 +82,8 @@ export const SkillsForm: React.FC<SkillsFormProps> = ({
             icon={<SkillsIcon />}
             onAdd={addSkillCategory}
             addButtonText="Add Skill Category"
+            isCollapsible
+            defaultExpanded={false}
         >
             {skills.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 italic py-4">

@@ -102,10 +102,7 @@ const getHarvardTemplate = (resume: JsonResumeSchema): string => {
                         <span>${formatDate(edu.startDate)} - ${formatDate(edu.endDate) || 'Present'}</span>
                     </div>
                     <div class="item-subheader">
-                        <span>${edu.studyType} in ${edu.area}</span>
-                    </div>
-                    ${edu.score ? `<div>GPA: ${edu.score}</div>` : ''}
-                    ${edu.courses?.length ? `<div>Relevant Coursework: ${edu.courses.join(', ')}</div>` : ''}
+                        <span>${[edu.studyType, edu.area].filter(Boolean).join(' in ')}</span>
                 </div>
             `).join('')}
         </div>
@@ -118,12 +115,8 @@ const getHarvardTemplate = (resume: JsonResumeSchema): string => {
             ${resume.work.map(job => `
                 <div class="item">
                     <div class="item-header">
-                        <span>${job.company}</span>
+                        <span>${job.name || job.company || ''}</span>
                         <span>${formatDate(job.startDate)} - ${formatDate(job.endDate) || 'Present'}</span>
-                    </div>
-                    <div class="item-subheader">
-                        <span>${job.position}</span>
-                        <span>${job.location || ''}</span>
                     </div>
                     ${job.summary ? `<p>${job.summary}</p>` : ''}
                     ${job.highlights?.length ? `<ul>${job.highlights.map(h => `<li>${h}</li>`).join('')}</ul>` : ''}
@@ -171,7 +164,7 @@ const getHarvardTemplate = (resume: JsonResumeSchema): string => {
             <ul>
                 ${resume.certificates.map(cert => `
                     <li>
-                        <strong>${cert.name}</strong> - ${cert.issuer} (${formatDate(cert.date)})
+                        <strong>${cert.name || ''}</strong>${cert.issuer ? ` - ${cert.issuer}` : ''}${cert.date ? ` (${formatDate(cert.date)})` : ''}
                     </li>
                 `).join('')}
             </ul>
@@ -305,7 +298,7 @@ const getModernAtsTemplate = (resume: JsonResumeSchema): string => {
             ${resume.work.map(job => `
                 <div class="item">
                     <div class="item-header">
-                        <span class="company-name">${job.company}</span>
+                        <span class="company-name">${job.name || job.company || ''}</span>
                         <span class="date-range">${formatDate(job.startDate)} - ${formatDate(job.endDate) || 'Present'}</span>
                     </div>
                     <div class="position-title">${job.position}</div>
@@ -326,7 +319,7 @@ const getModernAtsTemplate = (resume: JsonResumeSchema): string => {
                         <span class="company-name">${edu.institution}</span>
                         <span class="date-range">${formatDate(edu.startDate)} - ${formatDate(edu.endDate) || 'Present'}</span>
                     </div>
-                    <div class="position-title">${edu.studyType} in ${edu.area}</div>
+                    <div class="position-title">${[edu.studyType, edu.area].filter(Boolean).join(' in ')}</div>
                     ${edu.score ? `<div>GPA: ${edu.score}</div>` : ''}
                 </div>
             `).join('')}
@@ -357,7 +350,7 @@ const getModernAtsTemplate = (resume: JsonResumeSchema): string => {
             <div class="section-title">Certifications</div>
             ${resume.certificates.map(cert => `
                 <div class="item" style="margin-bottom: 5px;">
-                    <span class="company-name">${cert.name}</span> - ${cert.issuer} <span class="date-range">(${formatDate(cert.date)})</span>
+                    <span class="company-name">${cert.name || ''}</span>${cert.issuer ? ` - ${cert.issuer}` : ''}${cert.date ? ` <span class="date-range">(${formatDate(cert.date)})</span>` : ''}
                 </div>
             `).join('')}
         </div>
@@ -498,7 +491,7 @@ const getMinimalistTemplate = (resume: JsonResumeSchema): string => {
             ${resume.work.map(job => `
                 <div class="item">
                     <div class="item-header">
-                        <span class="company-name">${job.company}</span>
+                        <span class="company-name">${job.name || job.company || ''}</span>
                         <span class="date-range">${formatDate(job.startDate)} - ${formatDate(job.endDate) || 'Present'}</span>
                     </div>
                     <div class="position-title">${job.position}</div>
@@ -519,7 +512,7 @@ const getMinimalistTemplate = (resume: JsonResumeSchema): string => {
                         <span class="company-name">${edu.institution}</span>
                         <span class="date-range">${formatDate(edu.startDate)} - ${formatDate(edu.endDate) || 'Present'}</span>
                     </div>
-                    <div class="position-title">${edu.studyType} in ${edu.area}</div>
+                    <div class="position-title">${[edu.studyType, edu.area].filter(Boolean).join(' in ')}</div>
                 </div>
             `).join('')}
         </div>
@@ -752,7 +745,7 @@ const getGermanLatexTemplate = (resume: JsonResumeSchema, language: 'en' | 'de' 
                         <div class="item-content">
                             <div>
                                 <strong>${job.position}</strong>
-                                <div class="company">${job.company}</div>
+                                <div class="company">${job.name || job.company || ''}</div>
                             </div>
                             <div class="item-right">
                                 <div>${formatDate(job.startDate)} – ${formatDate(job.endDate) || (language === 'de' ? 'heute' : 'present')}</div>

@@ -5,6 +5,7 @@ import {
   getJobs,
   createJob,
   deleteJob,
+  updateJob,
   JobApplication,
   CreateJobPayload,
   createJobFromTextApi,
@@ -96,6 +97,7 @@ const DashboardPage: React.FC = () => {
   // --- Filtering & Sorting State ---
   const [filterText, setFilterText] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterFavorite, setFilterFavorite] = useState<boolean>(false);
   const [sortKey, setSortKey] = useState<SortableJobKeys>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -203,7 +205,7 @@ const DashboardPage: React.FC = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterText, filterStatus]);
+  }, [filterText, filterStatus, filterFavorite]);
 
   // --- Derived State: Filtered and Sorted Jobs ---
   const displayedJobs = useMemo(() => {
@@ -221,6 +223,11 @@ const DashboardPage: React.FC = () => {
     // Apply Status Filter
     if (filterStatus) {
       filteredJobs = filteredJobs.filter(job => job.status === filterStatus);
+    }
+
+    // Apply Favorite Filter
+    if (filterFavorite) {
+      filteredJobs = filteredJobs.filter(job => job.isFavorite === true);
     }
 
     // Apply Sorting
@@ -249,17 +256,17 @@ const DashboardPage: React.FC = () => {
     }
 
     return filteredJobs;
-  }, [jobs, filterText, filterStatus, sortKey, sortDirection]);
+  }, [jobs, filterText, filterStatus, filterFavorite, sortKey, sortDirection]);
 
   // --- Modal Event Handlers ---
   const handleOpenAddModal = () => {
     const primaryCv = cvs.find(cv => cv.isPrimary);
-    setFormData({ 
-      jobTitle: '', 
-      companyName: '', 
-      status: 'Not Applied', 
-      jobUrl: '', 
-      notes: '', 
+    setFormData({
+      jobTitle: '',
+      companyName: '',
+      status: 'Not Applied',
+      jobUrl: '',
+      notes: '',
       language: 'en',
       baseCvId: primaryCv?._id || null
     });
@@ -331,6 +338,23 @@ const DashboardPage: React.FC = () => {
 
   const handleDeleteCancel = () => {
     setDeleteConfirmModal({ isOpen: false, jobId: null, jobTitle: '' });
+  };
+
+  // --- Toggle Favorite Handler ---
+  const handleToggleFavorite = async (job: JobApplication, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent row click navigation
+    try {
+      const newFavoriteStatus = !job.isFavorite;
+      const updatedJob = await updateJob(job._id, { isFavorite: newFavoriteStatus });
+      setJobs(prevJobs => prevJobs.map(j => j._id === job._id ? updatedJob : j));
+      setToast({
+        message: newFavoriteStatus ? 'Job added to favorites!' : 'Job removed from favorites',
+        type: 'success'
+      });
+    } catch (err: any) {
+      console.error('Failed to toggle favorite:', err);
+      setToast({ message: err.message || 'Failed to update favorite status', type: 'error' });
+    }
   };
 
 
@@ -487,6 +511,12 @@ const DashboardPage: React.FC = () => {
     </svg>
   );
 
+  const StarIcon = ({ filled }: { filled: boolean }) => (
+    <svg className="w-5 h-5" fill={filled ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+    </svg>
+  );
+
   // --- Render Loading State ---
   if (isLoading) {
     return (
@@ -531,8 +561,8 @@ const DashboardPage: React.FC = () => {
               const jobDate = new Date(job.createdAt);
               const today = new Date();
               return jobDate.getDate() === today.getDate() &&
-                     jobDate.getMonth() === today.getMonth() &&
-                     jobDate.getFullYear() === today.getFullYear();
+                jobDate.getMonth() === today.getMonth() &&
+                jobDate.getFullYear() === today.getFullYear();
             }).length;
             return todayCount > 0 ? (
               <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-lg">
@@ -576,21 +606,21 @@ const DashboardPage: React.FC = () => {
                   <label htmlFor="jobUrl" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Job URL(s)
                   </label>
-                  <textarea
+                  <input
                     id="jobUrl"
+                    type="text"
                     value={preExtractionJobUrl}
                     onChange={(e) => setPreExtractionJobUrl(e.target.value)}
                     onBlur={(e) => {
                       const normalized = normalizeMultipleUrls(e.target.value);
                       setPreExtractionJobUrl(normalized);
                     }}
-                    placeholder="https://example.com/job-posting&#10;Multiple URLs allowed (one per line or comma-separated)"
-                    rows={3}
-                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-y"
+                    placeholder="https://example.com/job-posting"
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     disabled={isCreatingFromText}
                   />
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Multiple URLs allowed - separate with newlines or commas
+                  <p className="mt-1.5 text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
+                    Separate multiples with commas or spaces
                   </p>
                 </div>
 
@@ -790,6 +820,19 @@ const DashboardPage: React.FC = () => {
                   ))}
                 </select>
               </div>
+              <div className="w-full md:w-auto">
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Favorites</label>
+                <button
+                  onClick={() => setFilterFavorite(!filterFavorite)}
+                  className={`flex items-center gap-2 px-4 h-10 rounded-md border transition-colors ${filterFavorite
+                      ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300'
+                      : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
+                >
+                  <StarIcon filled={filterFavorite} />
+                  <span>{filterFavorite ? 'Favorites Only' : 'All Jobs'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Table */}
@@ -804,7 +847,7 @@ const DashboardPage: React.FC = () => {
                       </p>
                       <div className="mt-6">
                         <button
-                          onClick={() => { setFilterText(''); setFilterStatus(''); }}
+                          onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); }}
                           className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
                         >
                           Clear Filters
@@ -953,6 +996,16 @@ const DashboardPage: React.FC = () => {
                           </td>
                           <td className="p-4">
                             <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={(e) => handleToggleFavorite(job, e)}
+                                className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${job.isFavorite
+                                    ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70'
+                                    : 'text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50'
+                                  }`}
+                                title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                              >
+                                <StarIcon filled={!!job.isFavorite} />
+                              </button>
                               <button
                                 onClick={(e) => handleDeleteClick(job, e)}
                                 className="flex items-center justify-center w-8 h-8 rounded-md text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
@@ -1207,24 +1260,24 @@ const DashboardPage: React.FC = () => {
 
                   {/* Job URL */}
                   <div className="mb-5">
-                    <label htmlFor="jobUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="jobUrl_modal" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Job URL(s)
                     </label>
-                    <textarea
-                      id="jobUrl"
+                    <input
+                      id="jobUrl_modal"
                       name="jobUrl"
+                      type="text"
                       value={formData.jobUrl || ''}
                       onChange={handleInputChange}
                       onBlur={(e) => {
                         const normalized = normalizeMultipleUrls(e.target.value);
                         setFormData(prev => ({ ...prev, jobUrl: normalized }));
                       }}
-                      placeholder="https://example.com/job-posting&#10;Multiple URLs allowed (one per line or comma-separated)"
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-y"
+                      placeholder="https://example.com/job-posting"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                     />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Multiple URLs allowed - separate with newlines or commas
+                    <p className="mt-1.5 text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500">
+                      Separate multiples with commas or spaces
                     </p>
                   </div>
 
