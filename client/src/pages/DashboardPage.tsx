@@ -5,20 +5,19 @@ import {
   getJobs,
   createJob,
   deleteJob,
-  updateJob,
   JobApplication,
   CreateJobPayload,
   createJobFromTextApi,
   CreateJobFromTextOptions
 } from '../services/jobApi';
 import { getCvBranches, CVDocument } from '../services/cvApi';
-import { parseMultipleUrls, normalizeMultipleUrls, normalizeUrl } from '../lib/utils';
+import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
 
 import JobStatusBadge from '../components/jobs/JobStatusBadge';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import Toast from '../components/common/Toast';
 
-// Define type for the form data used in the Add/Edit modal
+// Define type for the form data used in the Add modal
 type JobFormData = Partial<Omit<JobApplication, '_id' | 'updatedAt' | 'generationStatus' | 'generatedCvFilename' | 'generatedCoverLetterFilename'>>;
 
 // Explicitly list sortable keys for type safety
@@ -48,8 +47,7 @@ const DashboardPage: React.FC = () => {
   const [isLoadingCvs, setIsLoadingCvs] = useState<boolean>(false);
 
   // --- Modal & Form State ---
-  const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [modalMode, setModalMode] = useState<'add' | null>(null);
   const [formData, setFormData] = useState<JobFormData>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -250,36 +248,13 @@ const DashboardPage: React.FC = () => {
       language: 'en',
       baseCvId: primaryCv?._id || null
     });
-    setCurrentJobId(null);
     setModalError(null);
     setModalMode('add');
-  };
-
-  const handleOpenEditModal = (job: JobApplication, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent row click navigation
-    setCurrentJobId(job._id);
-    setFormData({
-      jobTitle: job.jobTitle,
-      companyName: job.companyName,
-      status: job.status,
-      jobUrl: job.jobUrl,
-      notes: job.notes,
-      salary: job.salary,
-      contact: job.contact,
-      dateApplied: job.dateApplied,
-      language: job.language,
-      createdAt: job.createdAt,
-      baseCvId: job.baseCvId,
-      jobType: job.jobType
-    });
-    setModalError(null);
-    setModalMode('edit');
   };
 
   const handleCloseModal = () => {
     if (isSubmitting) return;
     setModalMode(null);
-    setCurrentJobId(null);
     setFormData({});
     setModalError(null);
   };
@@ -298,22 +273,15 @@ const DashboardPage: React.FC = () => {
     }
     setIsSubmitting(true);
     try {
-      if (modalMode === 'add') {
-        const payload = formData as CreateJobPayload;
-        const createdJob = await createJob(payload);
-        setJobs(prevJobs => [createdJob, ...prevJobs]);
-        handleCloseModal();
-        setToast({ message: 'Job application added successfully!', type: 'success' });
-      } else if (modalMode === 'edit' && currentJobId) {
-        const updatedJob = await updateJob(currentJobId, formData);
-        setJobs(prevJobs => prevJobs.map(job => job._id === currentJobId ? updatedJob : job));
-        handleCloseModal();
-        setToast({ message: 'Job application updated successfully!', type: 'success' });
-      }
+      const payload = formData as CreateJobPayload;
+      const createdJob = await createJob(payload);
+      setJobs(prevJobs => [createdJob, ...prevJobs]);
+      handleCloseModal();
+      setToast({ message: 'Job application added successfully!', type: 'success' });
     } catch (err: any) {
-      console.error(`Failed to ${modalMode} job:`, err);
-      setModalError(err.message || `Failed to ${modalMode === 'add' ? 'add' : 'update'} job.`);
-      setToast({ message: err.message || `Failed to ${modalMode === 'add' ? 'add' : 'update'} job.`, type: 'error' });
+      console.error('Failed to add job:', err);
+      setModalError(err.message || 'Failed to add job.');
+      setToast({ message: err.message || 'Failed to add job.', type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -443,12 +411,6 @@ const DashboardPage: React.FC = () => {
     </svg>
   );
 
-
-  const EditIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-    </svg>
-  );
 
   const DeleteIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -943,13 +905,6 @@ const DashboardPage: React.FC = () => {
                           <td className="p-4">
                             <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                               <button
-                                onClick={(e) => handleOpenEditModal(job, e)}
-                                className="flex items-center justify-center w-8 h-8 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                title="Edit"
-                              >
-                                <EditIcon />
-                              </button>
-                              <button
                                 onClick={(e) => handleDeleteClick(job, e)}
                                 className="flex items-center justify-center w-8 h-8 rounded-md text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                                 title="Delete"
@@ -1008,7 +963,7 @@ const DashboardPage: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg mx-4 sm:mx-0 flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                  {modalMode === 'add' ? 'Add New Job Manually' : 'Edit Job Application'}
+                  Add New Job Manually
                 </h2>
                 <button
                   onClick={handleCloseModal}
@@ -1296,14 +1251,14 @@ const DashboardPage: React.FC = () => {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        {modalMode === 'add' ? 'Adding...' : 'Updating...'}
+                        Adding...
                       </>
                     ) : (
                       <>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        {modalMode === 'add' ? 'Add Job' : 'Update Job'}
+                        Add Job
                       </>
                     )}
                   </button>
