@@ -1,50 +1,44 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Job App Assistant Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Single Source of Truth for CV Data
+- The system MUST keep CV persistence grounded in one canonical model and deterministic adapters.
+- Features MUST avoid dual runtime sources of truth for the same CV content.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Unified Editing Experience
+- User-facing CV editing MUST use a single workspace paradigm for a given feature scope.
+- Legacy edit flows MAY exist only during planned migration windows and MUST be removed after cutover.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Authorization and Data Isolation
+- All CV read/write/export operations MUST enforce authenticated ownership checks.
+- Unauthorized edit attempts MUST return explicit forbidden responses and MUST NOT mutate data.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Migration Safety and Auditability
+- Schema/flow migrations MUST be idempotent and safe to re-run.
+- Migration runs MUST produce auditable summaries (processed, migrated, skipped, failed) and failure logs.
+- Cutover MUST include rollback instructions when migration failures are non-zero.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Simplicity and Scope Discipline
+- Implementations MUST prefer the simplest design that meets the approved spec.
+- Teams MUST avoid adding out-of-scope UX features during delivery.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Quality and Security Requirements
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+- APIs MUST validate inputs and return stable error semantics.
+- Release gates MUST include build validation for affected workspaces.
+- New critical paths MUST have explicit acceptance criteria in spec and tasks.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Development Workflow and Gates
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- Spec, plan, and tasks MUST remain consistent before implementation begins.
+- Any high or critical analysis issue MUST be resolved or explicitly waived before implementation.
+- Migration features MUST include dry-run validation and post-migration verification steps.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- This constitution supersedes local planning conventions when conflicts arise.
+- Amendments require a documented rationale and version update in this file.
+- Compliance is verified during specification analysis and task planning.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-02-16 | **Last Amended**: 2026-02-16
