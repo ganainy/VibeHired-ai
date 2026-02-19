@@ -41,6 +41,9 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
     // State for prompt preview modal
     const [showPromptModal, setShowPromptModal] = useState(false);
 
+    // Toggle for collapsing
+    const [isOpen, setIsOpen] = useState(false);
+
     useEffect(() => {
         loadTemplates();
     }, [type]);
@@ -172,66 +175,82 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
     };
 
     return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between">
+        <div className="w-full">
+            <div 
+                className="flex items-center justify-between cursor-pointer group hover:bg-purple-50 dark:hover:bg-purple-900/10 p-2 -mx-2 rounded-lg transition-colors mb-2"
+                onClick={() => setIsOpen(!isOpen)}
+            >
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">tune</span>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{label}</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{label}</h3>
+                    <span className={`material-symbols-outlined text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+                        expand_more
+                    </span>
                 </div>
 
-                {/* Template Controls */}
-                <div className="flex items-center gap-2">
-                    {isLoading ? (
-                        <Spinner size="sm" />
-                    ) : (
-                        <>
-                            <div className="relative flex items-center">
-                                {!selectedTemplateId && (
-                                    <div className="mr-2 flex items-center text-amber-500 animate-pulse" title="Please select a template to proceed">
-                                        <span className="material-symbols-outlined text-xl">warning</span>
-                                    </div>
-                                )}
-                                <select
-                                    value={selectedTemplateId}
-                                    onChange={handleTemplateChange}
-                                    className={`text-sm border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-2 pl-3 pr-10 ${!selectedTemplateId ? 'border-amber-300 ring-1 ring-amber-300 dark:border-amber-700 dark:ring-amber-900' : ''
-                                        }`}
-                                >
-                                    <option value="">Select a template...</option>
-                                    <option value="default-system">Default System Prompt</option>
-                                    {defaultUserPrompt && <option value="default-user">Default User Prompt</option>}
-                                    {templates.map(t => (
-                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {selectedTemplateId && (
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        onClick={handleUpdateTemplate}
-                                        disabled={isSaving}
-                                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded"
-                                        title="Update selected template with current text"
-                                    >
-                                        <span className="material-symbols-outlined text-lg">save</span>
-                                    </button>
-                                    <button
-                                        onClick={handleDeleteTemplate}
-                                        disabled={isSaving}
-                                        className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded"
-                                        title="Delete template"
-                                    >
-                                        <span className="material-symbols-outlined text-lg">delete</span>
-                                    </button>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
+                {!isOpen && selectedTemplateId && (
+                    <div className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1.5 opacity-80 group-hover:opacity-100">
+                        <span className="material-symbols-outlined text-xs">info</span>
+                        {getTemplateName()}
+                    </div>
+                )}
             </div>
 
-            <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-lg border border-purple-100 dark:border-purple-900/20">
+            {isOpen && (
+                <div className="space-y-3 pt-1">
+                    {/* Template Controls */}
+                    <div className="flex items-center justify-end gap-2">
+                        {isLoading ? (
+                            <Spinner size="sm" />
+                        ) : (
+                            <>
+                                <div className="relative flex items-center">
+                                    {!selectedTemplateId && (
+                                        <div className="mr-2 flex items-center text-amber-500 animate-pulse" title="Please select a template to proceed">
+                                            <span className="material-symbols-outlined text-xl">warning</span>
+                                        </div>
+                                    )}
+                                    <select
+                                        value={selectedTemplateId}
+                                        onChange={handleTemplateChange}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className={`text-sm border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-1.5 pl-3 pr-10 ${!selectedTemplateId ? 'border-amber-300 ring-1 ring-amber-300 dark:border-amber-700 dark:ring-amber-900' : ''
+                                            }`}
+                                    >
+                                        <option value="">Select a template...</option>
+                                        <option value="default-system">Default System Prompt</option>
+                                        {defaultUserPrompt && <option value="default-user">Default User Prompt</option>}
+                                        {templates.map(t => (
+                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {selectedTemplateId && (
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleUpdateTemplate(); }}
+                                            disabled={isSaving}
+                                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded"
+                                            title="Update selected template with current text"
+                                        >
+                                            <span className="material-symbols-outlined text-lg">save</span>
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(); }}
+                                            disabled={isSaving}
+                                            className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded"
+                                            title="Delete template"
+                                        >
+                                            <span className="material-symbols-outlined text-lg">delete</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-lg border border-purple-100 dark:border-purple-900/20">
                 <textarea
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
@@ -290,6 +309,8 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                     )}
                 </div>
             </div>
+            </div>
+            )}
 
             {/* Prompt Preview Modal */}
             {showPromptModal && (

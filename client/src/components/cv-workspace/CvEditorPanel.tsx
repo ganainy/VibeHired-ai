@@ -77,15 +77,16 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className={`flex flex-col h-full ${className}`}>
-
-
-
+    <div className={`flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
       {/* ── Page-specific slot (e.g. Tailoring Changes panel) ────────────── */}
-      {children}
+      {children && (
+        <div className="flex-shrink-0 p-4 pb-0 bg-gray-50/30 dark:bg-gray-800/30">
+          {children}
+        </div>
+      )}
 
       {/* ── Split view: editor left, preview right ────────────────────────── */}
-      <div className="flex-1 min-h-0 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
+      <div className="flex-1 min-h-0 flex flex-col">
         {/* Unified Toolbar inside the card */}
         <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">

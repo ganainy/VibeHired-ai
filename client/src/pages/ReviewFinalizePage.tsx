@@ -2745,103 +2745,104 @@ const ReviewFinalizePage: React.FC = () => {
                     {activeTab === 'cover-letter' && (
                         <div>
                             {jobApplication.draftCoverLetterText ? (
-                                <>
-                                    <div className="mb-4">
-                                        {/* Grey rounded card containing title and buttons */}
-                                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700 mb-4">
-                                            <div className="flex items-center justify-between">
-                                                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit Cover Letter</h2>
+                                <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[calc(100vh-280px)] min-h-[800px]">
+                                    {/* Header part */}
+                                    <div className="bg-gray-50 dark:bg-gray-800/80 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                        <div className="flex items-center justify-between">
+                                            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit Cover Letter</h2>
 
-                                                {/* Action buttons - positioned on the right */}
-                                                <div className="flex items-center gap-3">
-                                                    {/* Download Buttons Group */}
-                                                    <div className="flex items-center gap-2">
-                                                        {/* Copy Button */}
-                                                        <button
-                                                            onClick={handleCopyCoverLetter}
-                                                            className="group flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
-                                                            title="Copy to clipboard"
-                                                        >
-                                                            {isClCopied ? (
-                                                                <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-sm">check</span>
-                                                            ) : (
-                                                                <span className="material-symbols-outlined text-sm">content_copy</span>
-                                                            )}
-                                                            <span>{isClCopied ? 'Copied' : 'Copy'}</span>
-                                                        </button>
-
-                                                        {/* Download PDF Button */}
-                                                        <button
-                                                            onClick={finalPdfFiles.cl ? () => handleDownload(finalPdfFiles.cl) : handleGenerateCoverLetterPdf}
-                                                            disabled={isRenderingCoverLetterPdf}
-                                                            className="group flex items-center gap-2 px-3 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-800 dark:active:bg-blue-800 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
-                                                            title="Download as PDF"
-                                                        >
-                                                            {isRenderingCoverLetterPdf ? (
-                                                                <Spinner size="sm" />
-                                                            ) : (
-                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                                                </svg>
-                                                            )}
-                                                            <span>PDF</span>
-                                                        </button>
-
-                                                        {/* Download Word Button */}
-                                                        <button
-                                                            onClick={handleDownloadWord}
-                                                            className="group flex items-center gap-2 px-3 py-2 bg-blue-500 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-600 active:bg-blue-700 dark:active:bg-blue-700 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
-                                                            title="Download as Word Document"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                                            </svg>
-                                                            <span>Word</span>
-                                                        </button>
-
-                                                        {/* Email Format Button */}
-                                                        <button
-                                                            onClick={() => setIsEmailModalOpen(true)}
-                                                            className="group flex items-center gap-2 px-3 py-2 bg-emerald-500 dark:bg-emerald-600 text-white rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-700 active:bg-emerald-700 dark:active:bg-emerald-800 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
-                                                            title="View as Email Format"
-                                                        >
-                                                            <span className="material-symbols-outlined text-sm">mail</span>
-                                                            <span>Email</span>
-                                                        </button>
-                                                    </div>
-
-                                                    {/* Delete Cover Letter Button */}
+                                            {/* Action buttons - positioned on the right */}
+                                            <div className="flex items-center gap-3">
+                                                {/* Download Buttons Group */}
+                                                <div className="flex items-center gap-2">
+                                                    {/* Copy Button */}
                                                     <button
-                                                        onClick={async () => {
-                                                            if (window.confirm('Are you sure you want to delete this cover letter? You will need to regenerate it.')) {
-                                                                if (jobId) {
-                                                                    try {
-                                                                        // Optimistic update
-                                                                        setJobApplication(prev => prev ? { ...prev, draftCoverLetterText: undefined } : null);
-                                                                        // Update backend
-                                                                        await updateJob(jobId, { draftCoverLetterText: null });
-                                                                    } catch (err) {
-                                                                        console.error('Failed to delete cover letter', err);
-                                                                    }
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="group flex items-center gap-2.5 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md"
-                                                        title="Delete cover letter to regenerate with new instructions"
+                                                        onClick={handleCopyCoverLetter}
+                                                        className="group flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
+                                                        title="Copy to clipboard"
                                                     >
-                                                        <span className="material-symbols-outlined text-sm">delete</span>
+                                                        {isClCopied ? (
+                                                            <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-sm">check</span>
+                                                        ) : (
+                                                            <span className="material-symbols-outlined text-sm">content_copy</span>
+                                                        )}
+                                                        <span>{isClCopied ? 'Copied' : 'Copy'}</span>
+                                                    </button>
+
+                                                    {/* Download PDF Button */}
+                                                    <button
+                                                        onClick={finalPdfFiles.cl ? () => handleDownload(finalPdfFiles.cl) : handleGenerateCoverLetterPdf}
+                                                        disabled={isRenderingCoverLetterPdf}
+                                                        className="group flex items-center gap-2 px-3 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-800 dark:active:bg-blue-800 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+                                                        title="Download as PDF"
+                                                    >
+                                                        {isRenderingCoverLetterPdf ? (
+                                                            <Spinner size="sm" />
+                                                        ) : (
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                            </svg>
+                                                        )}
+                                                        <span>PDF</span>
+                                                    </button>
+
+                                                    {/* Download Word Button */}
+                                                    <button
+                                                        onClick={handleDownloadWord}
+                                                        className="group flex items-center gap-2 px-3 py-2 bg-blue-500 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-600 active:bg-blue-700 dark:active:bg-blue-700 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
+                                                        title="Download as Word Document"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                        </svg>
+                                                        <span>Word</span>
+                                                    </button>
+
+                                                    {/* Email Format Button */}
+                                                    <button
+                                                        onClick={() => setIsEmailModalOpen(true)}
+                                                        className="group flex items-center gap-2 px-3 py-2 bg-emerald-500 dark:bg-emerald-600 text-white rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-700 active:bg-emerald-700 dark:active:bg-emerald-800 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
+                                                        title="View as Email Format"
+                                                    >
+                                                        <span className="material-symbols-outlined text-sm">mail</span>
+                                                        <span>Email</span>
                                                     </button>
                                                 </div>
-                                            </div>
 
-                                            <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm border border-blue-100 dark:border-blue-900/30">
-                                                <span className="material-symbols-outlined text-base">info</span>
-                                                <p>
-                                                    To regenerate the cover letter with different instructions, please delete the current cover letter using the trash icon above.
-                                                </p>
+                                                {/* Delete Cover Letter Button */}
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('Are you sure you want to delete this cover letter? You will need to regenerate it.')) {
+                                                            if (jobId) {
+                                                                try {
+                                                                    // Optimistic update
+                                                                    setJobApplication(prev => prev ? { ...prev, draftCoverLetterText: undefined } : null);
+                                                                    // Update backend
+                                                                    await updateJob(jobId, { draftCoverLetterText: null });
+                                                                } catch (err) {
+                                                                    console.error('Failed to delete cover letter', err);
+                                                                }
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="group flex items-center gap-2.5 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md"
+                                                    title="Delete cover letter to regenerate with new instructions"
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">delete</span>
+                                                </button>
                                             </div>
                                         </div>
 
+                                        <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm border border-blue-100 dark:border-blue-900/30">
+                                            <span className="material-symbols-outlined text-base">info</span>
+                                            <p>
+                                                To regenerate the cover letter with different instructions, please delete the current cover letter using the trash icon above.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Editor part */}
+                                    <div className="flex-1 overflow-hidden p-6 bg-gray-50/50 dark:bg-gray-900/20">
                                         {coverLetterError && (
                                             <div className="mb-4">
                                                 <ErrorAlert
@@ -2850,9 +2851,6 @@ const ReviewFinalizePage: React.FC = () => {
                                                 />
                                             </div>
                                         )}
-                                    </div>
-
-                                    <div className="h-[calc(100vh-500px)] min-h-[600px] flex flex-col">
                                         <CoverLetterEditor
                                             value={coverLetterText}
                                             onChange={handleCoverLetterChange}
@@ -2860,7 +2858,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             className="h-full"
                                         />
                                     </div>
-                                </>
+                                </div>
                             ) : (
                                 <div>
                                     <div className="mb-6">

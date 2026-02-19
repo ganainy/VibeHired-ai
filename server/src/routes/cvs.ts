@@ -58,6 +58,8 @@ function parseJsonResponseToSchema(responseText: string): JsonResumeSchema | nul
     if (jsonMatch && jsonMatch[1]) {
         const extractedJsonString = jsonMatch[1].trim();
         try {
+            console.log('--- EXTRACTED JSON STRING ---');
+            console.log(extractedJsonString);
             const parsedObject = JSON.parse(extractedJsonString);
             if (typeof parsedObject === 'object' && parsedObject !== null) {
                 return parsedObject as JsonResumeSchema;
@@ -177,12 +179,19 @@ No text, explanation, or commentary before or after the JSON block.
         );
         const responseText = result.text;
         console.log('Received CV parsing response from AI.');
-
+        console.log('--- AI RAW RESPONSE ---');
+        console.log(responseText);
+        
         const cvJsonResume = parseJsonResponseToSchema(responseText);
 
         if (!cvJsonResume) {
+            console.error('Failed to parse AI response into valid JSON Resume structure.');
             throw new Error('Failed to parse AI response into valid JSON Resume structure.');
         }
+
+        console.log('--- PARSED CV JSON ---');
+        console.log(JSON.stringify(cvJsonResume, null, 2));
+        console.log('--- END OF CV LOGS ---');
 
         return cvJsonResume;
     } finally {
