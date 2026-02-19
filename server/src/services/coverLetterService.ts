@@ -37,8 +37,9 @@ export async function generateCoverLetter(
     const suggestedDocLabel = (language === 'de') ? 'Anschreiben' : 'Cover_Letter';
 
     // Extract user's first and last name from CV
-    const firstName = cvJson.basics?.name?.split(' ')[0] || 'Applicant';
-    const lastName = cvJson.basics?.name?.split(' ').slice(1).join('_') || '';
+    const nameParts = (cvJson.basics?.name || 'Applicant').trim().split(/\s+/);
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join('_') : '';
 
     const prompt = `Act as a professional career consultant and generate a cover letter application package.
 
@@ -53,16 +54,19 @@ REQUIREMENTS FOR COVER LETTER:
 - Do not exaggerate experience
 - No emojis, no bullet points, no Markdown formatting
 - NO header with contact info/date - start with the salutation
+- DO NOT INCLUDE THE FILENAME ANYWHERE IN THE TEXT (e.g. at the bottom)
 - Do not repeat the job description
 
 OUTPUT FORMAT - Return ONLY a valid JSON object with this exact structure:
 {
-    "coverLetterText": "The formal cover letter text (starting with salutation, ending with signature placeholder)",
+    "coverLetterText": "The formal cover letter text (starting with salutation, ending with signature placeholder). EXCLUDE any mention of the filename from this field.",
     "fileName": "FirstName_LastName_${suggestedDocLabel}_Position_Company.pdf",
     "emailSubject": "Application for [Position] – [Company Name]",
     "emailBody": "Email body text with a note about attached CV and certificates",
-    "emailRecipient": "Hiring Manager" or specific name if known
+    "emailRecipient": "Specific name or email only if explicitly stated in the job posting — otherwise null"
 }
+
+IMPORTANT: For emailRecipient, return null if no real recipient name or email is provided in the job posting. Do NOT use generic placeholders like "Hiring Manager", "HR Team", or "Sehr geehrte Damen und Herren".
 
 EMAIL BODY REQUIREMENTS:
 - Start with a brief introduction mentioning the position
@@ -96,6 +100,7 @@ Return ONLY the JSON object, no additional text or markdown.`;
 
         const result = await generateContent(userId, prompt);
         const responseText = result.text.trim();
+        console.log('Raw AI cover letter response:', responseText);
 
         // Parse JSON response
         let coverLetterData: CoverLetterResponse;
@@ -167,12 +172,12 @@ function parseFallbackResponse(
 
     return {
         coverLetterText,
-        fileName: `${firstName}_${lastName}_${suggestedDocLabel}_${sanitizeForFilename(jobTitle)}_${sanitizeForFilename(companyName)}.pdf`,
+        fileName: `${firstName}${lastName ? '_' + lastName : ''}_${suggestedDocLabel}_${sanitizeForFilename(jobTitle)}_${sanitizeForFilename(companyName)}.pdf`,
         emailSubject: language === 'de' 
             ? `Bewerbung als ${jobTitle} – ${companyName}`
             : `Application for ${jobTitle} position – ${companyName}`,
         emailBody: generateDefaultEmailBody(coverLetterText, language),
-        emailRecipient: language === 'de' ? 'Sehr geehrte Damen und Herren' : 'Hiring Manager'
+        emailRecipient: undefined
     };
 }
 

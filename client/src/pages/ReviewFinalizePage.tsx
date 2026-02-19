@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { updateCustomPrompts } from '../services/settingsApi';
 import { getJobById, updateJob, JobApplication, scrapeJobDescriptionApi, extractJobFromTextApi, deleteJob } from '../services/jobApi';
-import { renderFinalPdfs, renderCvPdf, renderCoverLetterPdf, getDownloadUrl, generateDocuments, generateCvOnly, improveSection } from '../services/generatorApi';
+import { renderFinalPdfs, renderCvPdf, renderCoverLetterPdf, getDownloadUrl, generateCvOnly, improveSection } from '../services/generatorApi';
 import { analyzeCv, AnalysisResult, getAnalysis } from '../services/analysisApi';
 import { scanAts, getAtsScores, getAtsForJob, AtsScores, deleteAtsAnalysis } from '../services/atsApi';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
@@ -1405,18 +1405,23 @@ const ReviewFinalizePage: React.FC = () => {
 
             await updateJob(jobId, {
                 draftCoverLetterText: generatedText,
-                suggestedCoverLetterFilename: suggestedFilename
+                suggestedCoverLetterFilename: suggestedFilename,
+                generatedCoverLetterFilename: null
             });
 
             // Optimistic update - update local state immediately
             setCoverLetterText(generatedText);
+            setFinalPdfFiles(prev => ({ ...prev, cl: null }));
             setJobApplication(prev => prev ? { 
                 ...prev, 
                 draftCoverLetterText: generatedText,
-                suggestedCoverLetterFilename: suggestedFilename || prev.suggestedCoverLetterFilename 
+                suggestedCoverLetterFilename: suggestedFilename || prev.suggestedCoverLetterFilename,
+                generatedCoverLetterFilename: undefined
             } : null);
 
             await fetchJobData();
+            // fetchJobData may restore stale cl from DB — keep it cleared
+            setFinalPdfFiles(prev => ({ ...prev, cl: null }));
             showToast('Cover letter generated successfully', 'success');
 
         } catch (error: any) {
@@ -1464,11 +1469,10 @@ const ReviewFinalizePage: React.FC = () => {
 
             const blob = await Packer.toBlob(doc);
 
-            // Filename generation
+            // Use AI-suggested filename (same source as PDF download)
             const sanitize = (str: string) => str?.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_') || 'Unknown';
-            const companyName = sanitize(jobApplication.companyName || 'Company');
-            const docType = (jobApplication.language === 'de') ? 'Anschreiben' : 'Cover_Letter';
-            const filename = `${docType}_${companyName}.docx`;
+            const aiName = (jobApplication.suggestedCoverLetterFilename || '').replace(/\.pdf$/i, '');
+            const filename = (aiName || sanitize(jobApplication.companyName + '_Anschreiben')) + '.docx';
 
             saveAs(blob, filename);
             showToast('Word document downloaded', 'success');

@@ -72,13 +72,14 @@ export const updateJobBodySchema = z.object({
   // Allow updating generation-related fields
   generationStatus: z.enum(['none', 'pending_input', 'pending_generation', 'draft_ready', 'finalized', 'error']).optional(),
   draftCvJson: z.any().optional(),
-  draftCoverLetterText: z.string().optional(),
+  draftCoverLetterText: z.string().nullable().optional(),
   // Cover letter email fields
   coverLetterFileName: z.string().optional(),
   coverLetterEmailSubject: z.string().optional(),
   coverLetterEmailBody: z.string().optional(),
   coverLetterEmailRecipient: z.string().optional(),
   suggestedCoverLetterFilename: z.string().optional(),
+  generatedCoverLetterFilename: z.string().nullable().optional(),
   // Allow updating baseCvId and jobType
   baseCvId: z.string().optional().nullable(),
   jobType: jobTypeEnum.optional().nullable(),
@@ -113,7 +114,7 @@ export const createJobFromUrlBodySchema = z.object({
  */
 export const updateDraftBodySchema = z.object({
   draftCvJson: z.any().optional(), // JsonResumeSchema - using any for flexibility
-  draftCoverLetterText: z.string().optional(),
+  draftCoverLetterText: z.string().nullable().optional(),
 }).refine(
   (data) => data.draftCvJson !== undefined || data.draftCoverLetterText !== undefined,
   {

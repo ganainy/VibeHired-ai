@@ -37,7 +37,7 @@ export interface JobApplication {
     suggestedCoverLetterFilename?: string; // Legacy field for backward compatibility
     generationStatus?: 'none' | 'pending_input' | 'pending_generation' | 'draft_ready' | 'finalized' | 'error'; // Added pending_generation
     generatedCvFilename?: string; // Added
-    generatedCoverLetterFilename?: string; // Added
+    generatedCoverLetterFilename?: string | null; // Added
     baseCvId?: string | null; // Reference to the base CV used for this job
     jobCategory?: string | null; // Category of the job (e.g., "IT Helpdesk", "Programming")
     isFavorite?: boolean; // User can mark job as favorite

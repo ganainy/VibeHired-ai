@@ -129,12 +129,6 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                             <div style={{ fontSize: '10pt', marginBottom: '2px' }}>
                                 {[data.city, data.state].filter(Boolean).join(', ')}
                             </div>
-                            {data.education && data.education[0] && (
-                                <div style={{ fontSize: '10pt', lineHeight: '1.3' }}>
-                                    {data.education[0].degree} {data.education[0].field && `in ${data.education[0].field}`}
-                                    {data.education[1] && ` und ${data.education[1].degree} ${data.education[1].field && `in ${data.education[1].field}`}`}
-                                </div>
-                            )}
                         </div>
                         <div style={{ textAlign: 'right', fontSize: '9pt', lineHeight: '1.4', color: '#000' }}>
                             {data.phone && <div>☎ {data.phone}</div>}
