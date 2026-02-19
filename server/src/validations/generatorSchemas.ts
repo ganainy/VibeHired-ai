@@ -18,6 +18,17 @@ export const generateDocumentsBodySchema = z.object({
 }).optional();
 
 /**
+ * Apply ATS suggestion body schema
+ */
+export const applyAtsSuggestionBodySchema = z.object({
+  cvJson: z.any({
+    required_error: 'CV data is required',
+  }),
+  suggestions: z.array(z.string().min(1)).min(1, 'At least one suggestion is required'),
+  jobDescription: z.string().optional(),
+});
+
+/**
  * Improve section body schema
  */
 export const improveSectionBodySchema = z.object({

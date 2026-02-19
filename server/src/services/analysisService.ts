@@ -427,7 +427,8 @@ export const performAtsAnalysis = async (
     cvJson: JsonResumeSchema,
     analysisId: Types.ObjectId,
     jobDescription?: string,
-    jobApplicationId?: string
+    jobApplicationId?: string,
+    excludeSuggestions?: string[]
 ): Promise<void> => {
     console.log(`Starting Gemini ATS analysis for ID: ${analysisId}`);
     
@@ -439,7 +440,7 @@ export const performAtsAnalysis = async (
     try {
         const userIdStr = userId.toString();
         // Call Gemini ATS service
-        const geminiResult = await analyzeWithGemini(userIdStr, cvJson, jobDescription);
+        const geminiResult = await analyzeWithGemini(userIdStr, cvJson, jobDescription, excludeSuggestions);
 
         // Map Gemini results to database fields
         if (geminiResult.error) {

@@ -12,9 +12,9 @@ import mongoose from 'mongoose';
 import CV from '../models/CV'; // Import Unified CV Model
 import { generateCvPdfFromJsonResume, generateCoverLetterPdf } from '../utils/pdfGenerator'; // Import PDF generators
 import { validateRequest, ValidatedRequest } from '../middleware/validateRequest';
-import { generateDocumentsBodySchema, improveSectionBodySchema } from '../validations/generatorSchemas';
+import { generateDocumentsBodySchema, improveSectionBodySchema, applyAtsSuggestionBodySchema } from '../validations/generatorSchemas';
 import { jobIdParamSchema, filenameParamSchema } from '../validations/commonSchemas';
-import { improveCvSection } from '../controllers/generatorController';
+import { improveCvSection, applyAtsSuggestion } from '../controllers/generatorController';
 import { asyncHandler } from '../utils/asyncHandler';
 
 const router: Router = express.Router();
@@ -713,6 +713,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
 };
 
 // === ROUTE DEFINITIONS (Order Matters!) ===
+router.post('/apply-ats-suggestion', validateRequest({ body: applyAtsSuggestionBodySchema }), asyncHandler(applyAtsSuggestion)); // Apply ATS suggestion to CV
 router.post('/improve-section', validateRequest({ body: improveSectionBodySchema }), asyncHandler(improveCvSection)); // Improve CV section
 router.post('/:jobId/render-pdf', validateRequest({ params: jobIdParamSchema }), renderFinalPdfsHandler); // Render both PDFs
 router.post('/:jobId/render-cv-pdf', validateRequest({ params: jobIdParamSchema }), renderCvPdfHandler); // Render CV PDF only

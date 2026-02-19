@@ -1,11 +1,14 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "engines": {
+    "node": "20.x",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "heroku-postbuild": "npm run build",
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
     "migrate:usernames": "ts-node scripts/migrate-usernames.ts",

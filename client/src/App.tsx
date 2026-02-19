@@ -132,6 +132,10 @@ function App() {
         <Route path="/portfolio-setup" element={<ProtectedRoute><PortfolioSetupPage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route
+          path="/jobs/:jobId/review/ai-review"
+          element={<Navigate to="../cv" relative="path" replace />}
+        />
+        <Route
           path="/jobs/:jobId/review/:tab?"
           element={
             <ProtectedRoute>

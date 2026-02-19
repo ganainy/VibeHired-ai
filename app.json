@@ -2,15 +2,61 @@
   "name": "Job App Assistant Backend",
   "description": "Backend API for Job Application Assistant",
   "repository": "https://github.com/your-username/job-app-assistant",
+  "logo": "https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg",
+  "success_url": "/",
   "buildpacks": [
     {
       "url": "heroku/nodejs"
     }
   ],
+  "environments": {
+    "review": {
+      "addons": ["heroku-mongodb"]
+    }
+  },
   "env": {
     "NODE_ENV": {
-      "required": true,
+      "description": "Environment mode",
       "value": "production"
+    },
+    "MONGODB_URI": {
+      "description": "MongoDB connection string",
+      "required": true
+    },
+    "JWT_SECRET": {
+      "description": "Secret key for JWT tokens",
+      "required": true,
+      "generator": "secret"
+    },
+    "FRONTEND_URL": {
+      "description": "Frontend URL for CORS",
+      "required": true
+    },
+    "OPENAI_API_KEY": {
+      "description": "OpenAI API key for AI features",
+      "required": false
+    },
+    "GOOGLE_AI_API_KEY": {
+      "description": "Google AI API key",
+      "required": false
+    },
+    "CLOUDINARY_CLOUD_NAME": {
+      "description": "Cloudinary cloud name for file storage",
+      "required": false
+    },
+    "CLOUDINARY_API_KEY": {
+      "description": "Cloudinary API key",
+      "required": false
+    },
+    "CLOUDINARY_API_SECRET": {
+      "description": "Cloudinary API secret",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
     }
   }
 }

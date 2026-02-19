@@ -40,6 +40,13 @@ export interface CvEditorPanelProps {
   /** Called when the user clicks Delete (usually only for tailored CVs) */
   onDelete?: () => void;
   className?: string;
+  /**
+   * Optional ATS analysis panel rendered in the right pane when the user
+   * toggles from the live preview. Only shown when provided.
+   */
+  atsPanel?: React.ReactNode;
+  /** Which right-pane view to show by default when atsPanel is provided */
+  defaultRightView?: 'preview' | 'ats';
 }
 
 const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
@@ -55,7 +62,10 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   children,
   onDelete,
   className = '',
+  atsPanel,
+  defaultRightView = 'preview',
 }) => {
+  const [rightView, setRightView] = useState<'preview' | 'ats'>(atsPanel ? defaultRightView : 'preview');
   // ── Template list ─────────────────────────────────────────────────────────
   const [availableTemplates, setAvailableTemplates] = useState<TemplateConfig[]>([]);
   useEffect(() => { setAvailableTemplates(getAllTemplates()); }, []);
@@ -180,14 +190,18 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
             </div>
           </div>
 
-          {/* Preview pane */}
-          <div className="h-full overflow-y-auto p-0" style={{ minHeight: '800px' }}>
-            <CvLivePreview
-              ref={previewRef}
-              data={data}
-              templateId={templateId}
-              onTemplateChange={onTemplateChange}
-            />
+          {/* Preview / ATS pane */}
+          <div className="h-full overflow-y-auto" style={{ minHeight: '800px' }}>
+            {rightView === 'ats' && atsPanel ? (
+              <div className="h-full">{atsPanel}</div>
+            ) : (
+              <CvLivePreview
+                ref={previewRef}
+                data={data}
+                templateId={templateId}
+                onTemplateChange={onTemplateChange}
+              />
+            )}
           </div>
 
         </div>

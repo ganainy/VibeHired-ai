@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Job Application Assistant with AI CV Generation",
   "private": true,
+  "engines": {
+    "node": "20.x",
+    "npm": ">=9.0.0"
+  },
   "workspaces": [
     "server",
     "client"
@@ -14,9 +18,10 @@
     "install:all": "npm install",
     "build:server": "npm run build --workspace=server",
     "build:client": "npm run build --workspace=client",
-    "build": "npm run build --workspace=server",
-    "heroku-postbuild": "npm run build --workspace=server",
-    "start": "cd server && npm start"
+    "build": "npm run build:server",
+    "heroku-postbuild": "npm run build:server",
+    "start": "npm run start --workspace=server",
+    "prestart": "npm run build:server"
   },
   "keywords": [],
   "author": "Ganainy",

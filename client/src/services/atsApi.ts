@@ -96,7 +96,8 @@ export interface AtsScoresResponse {
  */
 export const scanAts = async (
     jobApplicationId?: string,
-    analysisId?: string
+    analysisId?: string,
+    excludeSuggestions?: string[]
 ): Promise<AtsScanResponse> => {
     const token = getAuthToken();
     if (!token) {
@@ -108,7 +109,8 @@ export const scanAts = async (
             `${API_BASE_URL}/ats/scan`,
             {
                 jobApplicationId,
-                analysisId
+                analysisId,
+                ...(excludeSuggestions && excludeSuggestions.length > 0 ? { excludeSuggestions } : {})
             },
             {
                 headers: {

@@ -96,6 +96,8 @@ export interface IJobApplication extends Document {
     };
     // --- Favorite Flag ---
     isFavorite?: boolean; // User can mark job as favorite
+    // --- ATS Applied History ---
+    appliedAtsSuggestions?: string[]; // History of applied ATS improvements (used to exclude from future scans)
     // --- Standard Timestamps ---
     createdAt: Date;
     updatedAt: Date;
@@ -205,7 +207,9 @@ const JobApplicationSchema: Schema = new Schema(
             }
         },
         // --- Favorite Flag Schema ---
-        isFavorite: { type: Boolean, default: false, index: true }
+        isFavorite: { type: Boolean, default: false, index: true },
+        // --- ATS Applied History Schema ---
+        appliedAtsSuggestions: { type: [String], default: [] }
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );

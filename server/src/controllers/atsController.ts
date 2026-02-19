@@ -18,9 +18,7 @@ export const scanAts = async (req: ValidatedRequest, res: Response) => {
         throw new AuthorizationError('User not authenticated');
     }
 
-    const { jobApplicationId, analysisId: providedAnalysisId } = req.validated!.body!;
-
-    // Initialize CV JSON variable - will be set based on data availability
+    const { jobApplicationId, analysisId: providedAnalysisId, excludeSuggestions } = req.validated!.body!;
     let cvJson: JsonResumeSchema;
 
     // If jobApplicationId is provided, fetch job description and potentially the tailored CV
@@ -111,7 +109,8 @@ export const scanAts = async (req: ValidatedRequest, res: Response) => {
         cvJson,
         analysisObjectId,
         jobDescription,
-        jobApplicationObjectId
+        jobApplicationObjectId,
+        excludeSuggestions
     ).catch(error => {
         console.error('Background ATS analysis failed:', error);
     });

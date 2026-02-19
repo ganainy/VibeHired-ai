@@ -115,7 +115,7 @@ function safeNumberWithDefault(value: any, defaultValue: number): number {
 /**
  * Builds the enhanced ATS analysis prompt with chain-of-thought reasoning
  */
-function buildAtsPrompt(cvText: string, cvJsonString: string, jobDescription?: string): string {
+function buildAtsPrompt(cvText: string, cvJsonString: string, jobDescription?: string, excludeSuggestions?: string[]): string {
     // System role and context
     let prompt = `You are an expert ATS (Applicant Tracking System) analyzer with deep knowledge of resume parsing, keyword matching, and hiring systems. Your task is to analyze a CV/resume for ATS compatibility${jobDescription ? ' and match it against a job description' : ''}.
 
@@ -203,6 +203,11 @@ Analyze the CV specifically against this job description. Your score should refl
 - Evaluate overall ATS-friendliness
 - Provide general optimization suggestions
 `;
+    }
+
+    // Add exclusion list if previously applied suggestions exist
+    if (excludeSuggestions && excludeSuggestions.length > 0) {
+        prompt += `\n**Previously Applied Improvements (DO NOT RE-SUGGEST):**\nThe following improvements have already been applied to this CV. Do not include them in your suggestions, actionableFeedback, missingKeywords, or missingSkills:\n${excludeSuggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\n`;
     }
 
     // Add few-shot examples summary
@@ -323,7 +328,8 @@ function calculateWeightedScore(breakdown: ScoreBreakdown | undefined): number |
 export async function analyzeWithGemini(
     userId: string,
     cvJson: JsonResumeSchema,
-    jobDescription?: string
+    jobDescription?: string,
+    excludeSuggestions?: string[]
 ): Promise<{
     score: number | null;
     details: {
@@ -338,7 +344,7 @@ export async function analyzeWithGemini(
         const cvJsonString = JSON.stringify(cvJson, null, 2);
 
         // Build enhanced prompt with chain-of-thought reasoning
-        const prompt = buildAtsPrompt(cvText, cvJsonString, jobDescription);
+        const prompt = buildAtsPrompt(cvText, cvJsonString, jobDescription, excludeSuggestions);
 
         console.log('[ATS] Starting enhanced Gemini analysis with weighted scoring');
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { updateCustomPrompts } from '../services/settingsApi';
 import { getJobById, updateJob, JobApplication, scrapeJobDescriptionApi, extractJobFromTextApi, deleteJob } from '../services/jobApi';
-import { renderFinalPdfs, renderCvPdf, renderCoverLetterPdf, getDownloadUrl, generateCvOnly, improveSection } from '../services/generatorApi';
+import { renderFinalPdfs, renderCvPdf, renderCoverLetterPdf, getDownloadUrl, generateCvOnly, improveSection, applyAtsSuggestion } from '../services/generatorApi';
 import { analyzeCv, AnalysisResult, getAnalysis } from '../services/analysisApi';
 import { scanAts, getAtsScores, getAtsForJob, AtsScores, deleteAtsAnalysis } from '../services/atsApi';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
@@ -12,7 +12,7 @@ import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 import { DEFAULT_CV_PROMPT, DEFAULT_COVER_LETTER_PROMPT } from '../constants/prompts';
 import { generateCoverLetter } from '../services/coverLetterApi';
 import { getMasterCv, previewCv, getCvBranches, CVDocument, getJobCv, createJobCv, updateCv, deleteCv } from '../services/cvApi';
-import AtsReportView from '../components/ats/AtsReportView';
+import AtsInlinePanel from '../components/ats/AtsInlinePanel';
 import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
 import axios from 'axios';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
@@ -100,22 +100,24 @@ const ReviewFinalizePage: React.FC = () => {
     const [atsAnalysisId, setAtsAnalysisId] = useState<string | null>(null);
     const [atsPollingIntervalId, setAtsPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
     const [atsProgressMessage, setAtsProgressMessage] = useState<string>('');
+    const [isApplyingAtsBatch, setIsApplyingAtsBatch] = useState<boolean>(false);
+    const [appliedAtsSuggestions, setAppliedAtsSuggestions] = useState<string[]>([]);
     // --- AI Application Advice State ---
     const [recommendation, setRecommendation] = useState<JobRecommendation | null>(null);
     const [isLoadingRecommendation, setIsLoadingRecommendation] = useState<boolean>(false);
     const [isRefreshingRecommendation, setIsRefreshingRecommendation] = useState<boolean>(false);
     const [isRecommendationModalOpen, setIsRecommendationModalOpen] = useState<boolean>(false);
     const [isClCopied, setIsClCopied] = useState<boolean>(false);
-    const [activeTab, setActiveTab] = useState<'ai-review' | 'job-description' | 'cover-letter' | 'cv'>(() => {
+    const [activeTab, setActiveTab] = useState<'job-description' | 'cover-letter' | 'cv'>(() => {
         // Priority 1: URL Param
-        if (tab && ['ai-review', 'job-description', 'cover-letter', 'cv'].includes(tab)) {
+        if (tab && ['job-description', 'cover-letter', 'cv'].includes(tab)) {
             return tab as any;
         }
         // Priority 2: Local Storage
         if (jobId) {
             try {
                 const saved = localStorage.getItem(`job_tab_${jobId}`);
-                if (saved && ['ai-review', 'job-description', 'cover-letter', 'cv'].includes(saved)) {
+                if (saved && ['job-description', 'cover-letter', 'cv'].includes(saved)) {
                     return saved as any;
                 }
             } catch (e) {
@@ -126,7 +128,7 @@ const ReviewFinalizePage: React.FC = () => {
         return 'job-description';
     });
 
-    const handleTabChange = (newTab: 'ai-review' | 'job-description' | 'cover-letter' | 'cv') => {
+    const handleTabChange = (newTab: 'job-description' | 'cover-letter' | 'cv') => {
         // setActiveTab(newTab); // Not needed as we rely on URL change or we can do optimistic update
         // Let's do optimistic update + navigation
         setActiveTab(newTab);
@@ -138,7 +140,7 @@ const ReviewFinalizePage: React.FC = () => {
 
     // Update active tab when URL param changes
     useEffect(() => {
-        if (tab && ['ai-review', 'job-description', 'cover-letter', 'cv'].includes(tab)) {
+        if (tab && ['job-description', 'cover-letter', 'cv'].includes(tab)) {
             setActiveTab(tab as any);
         } else if (!tab && jobId) {
             // If no tab in URL, check localStorage or default logic (though initial state handles this, 
@@ -152,7 +154,7 @@ const ReviewFinalizePage: React.FC = () => {
     useEffect(() => {
         if (jobId && !tab) { // Only checking localStorage if no tab param is provided
             const saved = localStorage.getItem(`job_tab_${jobId}`);
-            if (saved && ['ai-review', 'job-description', 'cover-letter', 'cv'].includes(saved)) {
+            if (saved && ['job-description', 'cover-letter', 'cv'].includes(saved)) {
                 setActiveTab(saved as any);
             } else {
                 setActiveTab('job-description');
@@ -410,6 +412,10 @@ const ReviewFinalizePage: React.FC = () => {
         try {
             const data = await getJobById(jobId);
             setJobApplication(data);
+            // Seed applied ATS suggestions history from DB
+            if (data.appliedAtsSuggestions && data.appliedAtsSuggestions.length > 0) {
+                setAppliedAtsSuggestions(data.appliedAtsSuggestions);
+            }
 
             // Fetch Job CV from Unified Model
             try {
@@ -797,7 +803,7 @@ const ReviewFinalizePage: React.FC = () => {
         try {
             // Always create a new analysis for a fresh scan (don't reuse existing analysisId)
             // This ensures we get updated results instead of cached values
-            const response = await scanAts(jobId, undefined);
+            const response = await scanAts(jobId, undefined, appliedAtsSuggestions.length > 0 ? appliedAtsSuggestions : undefined);
             setAtsAnalysisId(response.analysisId);
             showToast('ATS scan started. Analyzing your tailored CV...', 'info');
 
@@ -864,6 +870,31 @@ const ReviewFinalizePage: React.FC = () => {
         } catch (error: any) {
             console.error('Error deleting ATS analysis:', error);
             showToast(error.message || 'Failed to delete ATS analysis', 'error');
+        }
+    };
+
+    const handleApplyAtsSuggestionBatch = async (items: { suggestion: string; index: number }[]) => {
+        if (!jobApplication) return;
+        setIsApplyingAtsBatch(true);
+        try {
+            const updatedCv = await applyAtsSuggestion(
+                cvData,
+                items.map(i => i.suggestion),
+                jobApplication.jobDescriptionText ?? undefined
+            );
+            setCvData(updatedCv);
+            // Persist applied suggestions list to DB
+            const newApplied = [...appliedAtsSuggestions, ...items.map(i => i.suggestion)];
+            setAppliedAtsSuggestions(newApplied);
+            await updateJob(jobId!, { appliedAtsSuggestions: newApplied });
+            const count = items.length;
+            showToast(`CV updated — ${count} ATS improvement${count !== 1 ? 's' : ''} applied ✓`, 'success');
+        } catch (error: any) {
+            console.error('Error applying ATS suggestions:', error);
+            showToast(error.message || 'Failed to apply ATS suggestions', 'error');
+            throw error; // re-throw so AtsInlinePanel doesn't mark items as applied
+        } finally {
+            setIsApplyingAtsBatch(false);
         }
     };
 
@@ -2039,182 +2070,9 @@ const ReviewFinalizePage: React.FC = () => {
                                 }`}>Cover Letter</span>
                         </button>
 
-                        {/* Tab 4: AI Review */}
-                        <button
-                            onClick={() => handleTabChange('ai-review')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'ai-review'
-                                ? 'bg-primary text-white shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">smart_toy</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'ai-review'
-                                ? 'text-primary font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>AI Review</span>
-                        </button>
                     </div>
                 </div>      {/* Tab Content */}
                 <div className="px-0 py-6">
-                    {/* Tab 1: AI Review with ATS Report */}
-                    {activeTab === 'ai-review' && (
-                        <div>
-                            {/* Header with Scan ATS button */}
-                            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700 mb-4">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">ATS Analysis</h2>
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            onClick={handleScanAts}
-                                            disabled={isScanningAts || !jobApplication?.jobDescriptionText || (!hasMasterCv && !hasLocalCv)}
-                                            className="group flex items-center gap-2.5 px-4 py-2.5 bg-blue-600 dark:bg-blue-600 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-800 dark:active:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-600 dark:disabled:hover:bg-blue-600 transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md"
-                                            title={!hasMasterCv && !hasLocalCv ? 'Please upload your master CV or generate a tailored CV first' : !jobApplication?.jobDescriptionText ? 'Please scrape the job description first' : 'Run ATS analysis on your tailored CV'}
-                                        >
-                                            {isScanningAts ? (
-                                                <>
-                                                    <Spinner size="sm" />
-                                                    <span>{atsProgressMessage || 'Analyzing...'}</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                                    </svg>
-                                                    <span>{atsScores ? 'Re-scan ATS' : 'Scan ATS'}</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Loading state */}
-                            {isLoadingAts && (
-                                <div className="flex items-center justify-center py-12">
-                                    <Spinner size="lg" />
-                                    <span className="ml-3 text-gray-600 dark:text-gray-400">Loading ATS scores...</span>
-                                </div>
-                            )}
-
-                            {/* Scanning in progress - Show detailed progress */}
-                            {!isLoadingAts && isScanningAts && (
-                                <div className="flex flex-col items-center justify-center py-12 px-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                                    {/* Animated scanning icon */}
-                                    <div className="relative mb-8">
-                                        <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                                            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                            </svg>
-                                        </div>
-                                        {/* Spinning ring */}
-                                        <div className="absolute inset-0 w-24 h-24">
-                                            <svg className="w-full h-full animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 100 100">
-                                                <circle
-                                                    cx="50"
-                                                    cy="50"
-                                                    r="45"
-                                                    stroke="currentColor"
-                                                    strokeWidth="4"
-                                                    fill="none"
-                                                    className="text-blue-200 dark:text-blue-900"
-                                                />
-                                                <circle
-                                                    cx="50"
-                                                    cy="50"
-                                                    r="45"
-                                                    stroke="currentColor"
-                                                    strokeWidth="4"
-                                                    fill="none"
-                                                    strokeDasharray="70 213"
-                                                    strokeLinecap="round"
-                                                    className="text-blue-600 dark:text-blue-400"
-                                                />
-                                            </svg>
-                                        </div>
-                                    </div>
-
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 text-center">
-                                        Analyzing Your CV
-                                    </h2>
-                                    <p className="text-blue-600 dark:text-blue-400 font-medium mb-6">
-                                        {atsProgressMessage || 'Starting analysis...'}
-                                    </p>
-
-                                    {/* Analysis steps */}
-                                    <div className="w-full max-w-md space-y-3">
-                                        <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                                            <span className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            </span>
-                                            <span className="text-green-700 dark:text-green-300 text-sm font-medium">Reading your tailored CV</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 animate-pulse">
-                                            <Spinner size="sm" className="flex-shrink-0" />
-                                            <span className="text-blue-700 dark:text-blue-300 text-sm font-medium">Matching skills against job requirements</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <span className="flex-shrink-0 w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                                                <span className="text-gray-500 dark:text-gray-400 text-xs font-bold">3</span>
-                                            </span>
-                                            <span className="text-gray-500 dark:text-gray-400 text-sm">Identifying missing keywords</span>
-                                        </div>
-                                        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                            <span className="flex-shrink-0 w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                                                <span className="text-gray-500 dark:text-gray-400 text-xs font-bold">4</span>
-                                            </span>
-                                            <span className="text-gray-500 dark:text-gray-400 text-sm">Generating recommendations</span>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-6 text-center">
-                                        This usually takes 15-30 seconds. Please wait...
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* No ATS scores yet - Show prompt to scan */}
-                            {!isLoadingAts && !atsScores && !isScanningAts && (
-                                <div className="flex flex-col items-center justify-center py-16 px-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                                    <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-6">
-                                        <svg className="w-10 h-10 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                        </svg>
-                                    </div>
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 text-center">
-                                        ATS Compatibility Analysis
-                                    </h2>
-                                    <p className="text-gray-600 dark:text-gray-400 text-center max-w-md mb-8">
-                                        Run an ATS scan to analyze how well your tailored CV matches this job's requirements. Get actionable feedback to improve your match score.
-                                    </p>
-                                    {!hasMasterCv && !hasLocalCv && (
-                                        <p className="text-amber-600 dark:text-amber-400 text-sm mb-4">
-                                            ⚠️ Please upload your master CV on the <Link to="/manage-cv" className="underline">CV Management page</Link> or generate a tailored CV first.
-                                        </p>
-                                    )}
-                                    {hasMasterCv && !jobApplication?.jobDescriptionText && (
-                                        <p className="text-amber-600 dark:text-amber-400 text-sm mb-4">
-                                            ⚠️ Please scrape the job description first using the "Refresh Job Details" button.
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* ATS Report */}
-                            {!isLoadingAts && atsScores && (
-                                <AtsReportView
-                                    atsScores={atsScores}
-                                    onEditCv={() => {
-                                        handleTabChange('cv');
-                                    }}
-                                    onDelete={handleDeleteAts}
-                                />
-                            )}
-                        </div>
-                    )}
 
                     {/* Tab 2: Job Description */}
                     {activeTab === 'job-description' && (
@@ -3060,7 +2918,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     {/* Tailoring Changes Panel - Show what AI changed */}
                                     {tailoringChanges && tailoringChanges.length > 0 && (
                                         <div className="mb-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                                            <details className="group" open>
+                                            <details className="group">
                                                 <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-transparent group-open:border-slate-100 dark:group-open:border-slate-800">
                                                     <div className="flex items-center gap-3">
                                                         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm">
@@ -3105,6 +2963,70 @@ const ReviewFinalizePage: React.FC = () => {
                                             </details>
                                         </div>
                                     )}
+
+                                    {/* ATS Analysis Card */}
+                                    <div className="mb-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                                        <details className="group">
+                                            <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-transparent group-open:border-slate-100 dark:group-open:border-slate-800">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-500 text-white shadow-sm">
+                                                        <span className="material-symbols-outlined text-[20px]">troubleshoot</span>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">ATS Analysis</h3>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {isScanningAts ? 'Scanning…' : atsScores ? (() => {
+                                                                const total =
+                                                                    (atsScores.complianceDetails?.actionableFeedback?.length ?? 0) +
+                                                                    (atsScores.complianceDetails?.keywordsMissing?.length ?? 0) +
+                                                                    (atsScores.skillMatchDetails?.missingSkills?.length ?? 0);
+                                                                return total > 0 ? `${total} improvement${total !== 1 ? 's' : ''} available` : 'Looking good — no issues found';
+                                                            })() : 'Run a scan to check compatibility'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    {atsScores && (
+                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                                            (atsScores.score ?? 0) >= 80 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                                                            : (atsScores.score ?? 0) >= 60 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                                                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                                        }`}>
+                                                            {Math.round(atsScores.score ?? 0)}%
+                                                        </span>
+                                                    )}
+                                                    {atsScores && (
+                                                        <button
+                                                            onClick={(e) => { e.preventDefault(); handleScanAts(); }}
+                                                            className="flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 transition-all"
+                                                            title="Re-scan ATS"
+                                                        >
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                            </svg>
+                                                            Re-scan
+                                                        </button>
+                                                    )}
+                                                    <span className="text-slate-400 group-open:rotate-180 transition-transform duration-200">
+                                                        <span className="material-symbols-outlined text-[20px]">expand_more</span>
+                                                    </span>
+                                                </div>
+                                            </summary>
+                                            <AtsInlinePanel
+                                                atsScores={atsScores}
+                                                isScanning={isScanningAts}
+                                                isLoading={isLoadingAts}
+                                                progressMessage={atsProgressMessage}
+                                                hasJobDescription={!!jobApplication?.jobDescriptionText}
+                                                isApplyingBatch={isApplyingAtsBatch}
+                                                onScan={handleScanAts}
+                                                onRescan={handleScanAts}
+                                                onApplyBatch={handleApplyAtsSuggestionBatch}
+                                                onDelete={atsScores ? handleDeleteAts : undefined}
+                                                hideHeader
+                                            />
+                                        </details>
+                                    </div>
 
                                     {/* Analysis error */}
                                     {analyzeError && (

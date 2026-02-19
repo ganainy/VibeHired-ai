@@ -41,6 +41,7 @@ export interface JobApplication {
     baseCvId?: string | null; // Reference to the base CV used for this job
     jobCategory?: string | null; // Category of the job (e.g., "IT Helpdesk", "Programming")
     isFavorite?: boolean; // User can mark job as favorite
+    appliedAtsSuggestions?: string[]; // History of applied ATS improvements
     createdAt: string; // Dates are often strings in JSON
     updatedAt: string; // Dates are often strings in JSON
     extractedData?: {
