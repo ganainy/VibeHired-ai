@@ -10,9 +10,7 @@ import * as cheerio from 'cheerio';
  */
 export function cleanHtmlForAi(htmlContent: string, maxLength: number = 100000): string {
     try {
-        const $ = cheerio.load(htmlContent, {
-            lowerCaseAttributeNames: false
-        });
+        const $ = cheerio.load(htmlContent);
 
         // Remove completely unnecessary elements
         $('script, style, noscript, iframe, embed, object, svg, canvas').remove();
@@ -62,7 +60,8 @@ export function cleanHtmlForAi(htmlContent: string, maxLength: number = 100000):
             '.entry-content'
         ];
 
-        let mainContent = $('body');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let mainContent: any = $('body');
         let foundMainContent = false;
 
         // Try to find a main content container
