@@ -27,7 +27,7 @@ import { JobChatWindow, FloatingChatButton } from '../components/chat';
 import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
 
 import PromptCustomizer from '../components/common/PromptCustomizer';
-import { PromptTemplateSelector } from '../components/common/PromptTemplateSelector';
+import PromptChecklist from '../components/common/PromptChecklist';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { getBaseCoverLetters, applyBaseCoverLetterToJob, uploadCoverLetterForJob, saveCurrentCoverLetterForJob, CoverLetterBase } from '../services/coverLetterBaseApi';
@@ -3129,14 +3129,9 @@ const ReviewFinalizePage: React.FC = () => {
                                         </div>
 
                                         {/* Custom Instructions */}
-                                        <PromptTemplateSelector
+                                        <PromptChecklist
                                             type="coverLetter"
-                                            value={clCustomInstructions}
                                             onChange={setClCustomInstructions}
-                                            label="Custom Instructions"
-                                            placeholder="e.g. Focus on my project management skills and keep the tone professional..."
-                                            defaultContent={DEFAULT_COVER_LETTER_PROMPT}
-                                            defaultSystemPrompt={DEFAULT_COVER_LETTER_PROMPT}
                                         />
 
                                         {/* Footer Actions */}
@@ -3449,15 +3444,9 @@ const ReviewFinalizePage: React.FC = () => {
                                             </div>
 
                                             {/* Custom Instructions - Full Width */}
-                                            {/* Custom Instructions - Full Width */}
-                                            <PromptTemplateSelector
+                                            <PromptChecklist
                                                 type="cv"
-                                                value={customInstructions}
                                                 onChange={setCustomInstructions}
-                                                label="Custom Instructions"
-                                                placeholder="e.g. Highlight my experience with Python and emphasize leadership skills..."
-                                                defaultContent={DEFAULT_CV_PROMPT}
-                                                defaultSystemPrompt={DEFAULT_CV_PROMPT}
                                             />
                                         </div>
                                     </div>

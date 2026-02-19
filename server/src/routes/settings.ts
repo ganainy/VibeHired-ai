@@ -557,5 +557,49 @@ router.put('/custom-prompts/templates', asyncHandler(async (req: Request, res: R
   });
 }));
 
+/**
+ * GET /api/settings/prompt-checklists
+ * Get user's prompt checklist items for cv and coverLetter
+ */
+router.get('/prompt-checklists', asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user || !req.user._id) {
+    throw new ValidationError('User not authenticated');
+  }
+  const userId = req.user._id.toString();
+  const profile = await Profile.findOne({ userId });
+
+  res.json({
+    checklists: profile?.promptChecklists || { cv: null, coverLetter: null }
+  });
+}));
+
+/**
+ * PUT /api/settings/prompt-checklists
+ * Save user's prompt checklist items (cv and/or coverLetter)
+ */
+router.put('/prompt-checklists', asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user || !req.user._id) {
+    throw new ValidationError('User not authenticated');
+  }
+  const userId = req.user._id.toString();
+  const { cv, coverLetter } = req.body;
+
+  const update: Record<string, any> = {};
+  if (Array.isArray(cv)) update['promptChecklists.cv'] = cv;
+  if (Array.isArray(coverLetter)) update['promptChecklists.coverLetter'] = coverLetter;
+
+  await Profile.findOneAndUpdate(
+    { userId },
+    { $set: update },
+    { new: true, upsert: true }
+  );
+
+  const updatedProfile = await Profile.findOne({ userId });
+  res.json({
+    message: 'Prompt checklists updated successfully',
+    checklists: updatedProfile?.promptChecklists || {}
+  });
+}));
+
 export default router;
 

@@ -259,3 +259,47 @@ export const updatePromptTemplates = async (templates: PromptTemplate[]): Promis
   }
 };
 
+export interface PromptChecklistItem {
+  id: string;
+  text: string;
+  enabled: boolean;
+  isDefault?: boolean;
+}
+
+export interface PromptChecklists {
+  cv?: PromptChecklistItem[] | null;
+  coverLetter?: PromptChecklistItem[] | null;
+}
+
+/**
+ * Get user's saved prompt checklist items
+ */
+export const getPromptChecklists = async (): Promise<PromptChecklists> => {
+  const token = getAuthToken();
+  if (!token) throw new Error('No authentication token found.');
+  try {
+    const response = await axios.get<{ checklists: PromptChecklists }>(`${API_BASE_URL}/settings/prompt-checklists`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return response.data.checklists;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch prompt checklists');
+  }
+};
+
+/**
+ * Save user's prompt checklist items (partial update — pass only the type you're updating)
+ */
+export const updatePromptChecklists = async (payload: { cv?: PromptChecklistItem[]; coverLetter?: PromptChecklistItem[] }): Promise<PromptChecklists> => {
+  const token = getAuthToken();
+  if (!token) throw new Error('No authentication token found.');
+  try {
+    const response = await axios.put<{ checklists: PromptChecklists }>(`${API_BASE_URL}/settings/prompt-checklists`, payload, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+    return response.data.checklists;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to update prompt checklists');
+  }
+};
+

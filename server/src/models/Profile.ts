@@ -129,6 +129,10 @@ export interface IProfile extends Document {
     createdAt?: Date;
     updatedAt?: Date;
   }>;
+  promptChecklists?: {
+    cv?: Array<{ id: string; text: string; enabled: boolean; isDefault?: boolean }>;
+    coverLetter?: Array<{ id: string; text: string; enabled: boolean; isDefault?: boolean }>;
+  };
   isPublished?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -408,6 +412,24 @@ const ProfileSchema: Schema = new Schema(
         updatedAt: { type: Date, default: Date.now }
       }
     ],
+    promptChecklists: {
+      cv: [
+        {
+          id: { type: String, required: true },
+          text: { type: String, required: true },
+          enabled: { type: Boolean, default: true },
+          isDefault: { type: Boolean, default: false }
+        }
+      ],
+      coverLetter: [
+        {
+          id: { type: String, required: true },
+          text: { type: String, required: true },
+          enabled: { type: Boolean, default: true },
+          isDefault: { type: Boolean, default: false }
+        }
+      ]
+    },
     isPublished: {
       type: Boolean,
       default: false,
