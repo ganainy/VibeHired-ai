@@ -1,6 +1,7 @@
 // server/src/routes/jobApplications.ts
 import express, { Router, Request, Response, RequestHandler } from 'express';
 import JobApplication from '../models/JobApplication';
+import CV from '../models/CV';
 import authMiddleware from '../middleware/authMiddleware'; // Import the middleware
 import { ScraperService } from '../services/scraperService';
 import { extractJobDataFromUrl, extractJobDataFromText, ExtractedJobData } from '../utils/aiExtractor';
@@ -20,6 +21,52 @@ import {
 import { objectIdParamSchema, jobIdParamSchema, filenameParamSchema } from '../validations/commonSchemas';
 
 const router: Router = express.Router();
+
+/**
+ * Helper: After a job is saved, fire-and-forget an independent CV copy from the base CV.
+ * This ensures each job always has its own isolated CV document in the CV collection.
+ */
+async function autoCreateJobCvCopy(
+    userId: string,
+    jobId: string,
+    baseCvId: string
+): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(baseCvId)) return;
+
+    // Load source CV (including original binary)
+    const sourceCv = await CV.findOne({ _id: baseCvId, userId }).select('+originalPdf');
+    if (!sourceCv) {
+        // Fall back to primary CV if the specified base is not found
+        const primaryCv = await CV.getPrimaryCv(userId);
+        if (!primaryCv) return;
+        await CV.create({
+            userId,
+            isMasterCv: false,
+            isPrimary: false,
+            displayName: `Job CV (auto-copy from primary)`,
+            jobApplicationId: new mongoose.Types.ObjectId(jobId),
+            cvJson: JSON.parse(JSON.stringify(primaryCv.cvJson)),
+            originalPdf: (primaryCv as any).originalPdf ? Buffer.from((primaryCv as any).originalPdf) : null,
+            filename: primaryCv.filename,
+            templateId: primaryCv.templateId || null,
+        });
+        return;
+    }
+
+    await CV.create({
+        userId,
+        isMasterCv: false,
+        isPrimary: false,
+        displayName: `Job CV (copy of ${sourceCv.displayName})`,
+        jobApplicationId: new mongoose.Types.ObjectId(jobId),
+        // Deep-copy JSON so edits to the base CV won't affect this copy
+        cvJson: JSON.parse(JSON.stringify(sourceCv.cvJson)),
+        // Deep-copy binary so the file is fully independent
+        originalPdf: (sourceCv as any).originalPdf ? Buffer.from((sourceCv as any).originalPdf) : null,
+        filename: sourceCv.filename,
+        templateId: sourceCv.templateId || null,
+    });
+}
 
 // --- Apply authMiddleware to all routes defined AFTER this line ---
 // Explicitly cast to RequestHandler to potentially resolve type inference issues
@@ -88,6 +135,15 @@ const createJobHandler: RequestHandler = async (req: ValidatedRequest, res) => {
     const newJob = new JobApplication(jobData);
 
     const savedJob = await newJob.save();
+
+    // Auto-create an independent job CV copy from the selected base CV (fire-and-forget)
+    if (baseCvId && mongoose.Types.ObjectId.isValid(baseCvId)) {
+      autoCreateJobCvCopy(
+        (req.user._id as mongoose.Types.ObjectId).toString(),
+        (savedJob._id as mongoose.Types.ObjectId).toString(),
+        baseCvId
+      ).catch(err => console.error(`Failed to auto-create job CV for job ${savedJob._id}:`, err));
+    }
 
     if (savedJob.jobDescriptionText && savedJob.jobDescriptionText.trim().length > 0) {
       const userId = req.user._id as mongoose.Types.ObjectId;
@@ -615,6 +671,15 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
     // 3. Save the document
     const savedJob = await newJob.save();
     console.log(`Successfully created job ${savedJob._id} from pasted text`);
+
+    // Auto-create an independent job CV copy from the selected base CV (fire-and-forget)
+    if (baseCvId && mongoose.Types.ObjectId.isValid(String(baseCvId))) {
+      autoCreateJobCvCopy(
+        userIdString,
+        (savedJob._id as mongoose.Types.ObjectId).toString(),
+        String(baseCvId)
+      ).catch(err => console.error(`Failed to auto-create job CV for job ${savedJob._id}:`, err));
+    }
 
     if (savedJob.jobDescriptionText && savedJob.jobDescriptionText.trim().length > 0) {
       const jobId = savedJob._id as mongoose.Types.ObjectId;

@@ -466,6 +466,8 @@ router.post(
             displayName: 'Primary CV',
             cvJson: cvJsonResume,
             filename: req.file.originalname,
+            // Store the original binary so job copies are fully isolated
+            originalPdf: req.file.buffer,
             templateId: null, // Will inherit from user settings
         });
 
@@ -586,6 +588,8 @@ router.post(
             displayName: displayName.trim(),
             cvJson: cvJsonResume,
             filename: req.file.originalname,
+            // Store original binary for isolation
+            originalPdf: req.file.buffer,
             templateId: null, // Will inherit from user settings
         });
 
@@ -603,6 +607,130 @@ router.post(
                 createdAt: newCv.createdAt,
                 updatedAt: newCv.updatedAt,
             }
+        });
+    })
+);
+
+/**
+ * POST /api/cvs/job/:jobId/from-base
+ * Attach a base CV to a job as a fully independent copy.
+ * If a job CV already exists, it is replaced.
+ * Selecting from the base CV list copies both JSON and the original binary.
+ */
+router.post('/job/:jobId/from-base', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id;
+    const { jobId } = req.params;
+    const { baseCvId, templateId } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+        throw new ValidationError('Invalid job ID');
+    }
+
+    const job = await JobApplication.findOne({ _id: jobId, userId });
+    if (!job) throw new NotFoundError('Job application not found');
+
+    // Determine source CV: explicit baseCvId or the user\'s primary CV
+    let sourceId = baseCvId;
+    if (!sourceId || !mongoose.Types.ObjectId.isValid(sourceId)) {
+        const primary = await CV.getPrimaryCv(userId as string);
+        if (!primary) throw new ValidationError('No primary CV found. Please upload a CV first.');
+        sourceId = String(primary._id);
+    }
+
+    // Load source CV including original binary (select: false field)
+    const sourceCv = await CV.findOne({ _id: sourceId, userId }).select('+originalPdf');
+    if (!sourceCv) throw new NotFoundError('Source CV not found.');
+
+    // Remove existing job CV if present
+    await CV.deleteOne({ jobApplicationId: jobId });
+
+    // Create fully independent copy
+    const jobCv = await CV.create({
+        userId,
+        isMasterCv: false,
+        isPrimary: false,
+        displayName: `Job CV – ${job.jobTitle} at ${job.companyName}`,
+        jobApplicationId: new mongoose.Types.ObjectId(jobId),
+        cvJson: JSON.parse(JSON.stringify(sourceCv.cvJson)), // deep-copy JSON
+        // Deep-copy binary so job CV is independent of the source file
+        originalPdf: sourceCv.originalPdf ? Buffer.from(sourceCv.originalPdf) : null,
+        filename: sourceCv.filename,
+        templateId: templateId || sourceCv.templateId || null,
+    });
+
+    // Update baseCvId reference on the job
+    await JobApplication.updateOne({ _id: jobId }, { $set: { baseCvId: sourceId } });
+
+    res.status(201).json({
+        message: 'Base CV copied to job as independent document.',
+        cv: {
+            _id: jobCv._id,
+            jobApplicationId: jobCv.jobApplicationId,
+            displayName: jobCv.displayName,
+            cvJson: jobCv.cvJson,
+            filename: jobCv.filename,
+            templateId: jobCv.templateId,
+            createdAt: jobCv.createdAt,
+        },
+    });
+}));
+
+/**
+ * POST /api/cvs/job/:jobId/upload
+ * Upload a PDF/DOCX CV file directly for a specific job.
+ * Parses the file, stores JSON + binary as an independent job CV.
+ */
+router.post(
+    '/job/:jobId/upload',
+    upload.single('cvFile'),
+    asyncHandler(async (req: Request, res: Response) => {
+        const userId = req.user!._id;
+        const { jobId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(jobId)) {
+            throw new ValidationError('Invalid job ID');
+        }
+
+        if (!req.file) throw new ValidationError('No CV file uploaded.');
+
+        const providerStrategy = await getProviderStrategy(String(userId));
+        if (providerStrategy.getName().toLowerCase() !== 'gemini') {
+            throw new ValidationError(
+                'PDF upload requires Gemini. Please switch your AI provider to Gemini in Settings.'
+            );
+        }
+
+        const job = await JobApplication.findOne({ _id: jobId, userId });
+        if (!job) throw new NotFoundError('Job application not found.');
+
+        console.log(`Parsing job CV file: ${req.file.originalname}`);
+        const cvJson = await parseUploadedCv(req.file, String(userId));
+
+        // Replace existing job CV if present
+        await CV.deleteOne({ jobApplicationId: jobId });
+
+        const jobCv = await CV.create({
+            userId,
+            isMasterCv: false,
+            isPrimary: false,
+            displayName: `Job CV – ${job.jobTitle} at ${job.companyName}`,
+            jobApplicationId: new mongoose.Types.ObjectId(jobId),
+            cvJson,
+            filename: req.file.originalname,
+            originalPdf: req.file.buffer, // Preserve raw file for isolation
+            templateId: req.body.templateId || null,
+        });
+
+        res.status(201).json({
+            message: 'CV file uploaded for job.',
+            cv: {
+                _id: jobCv._id,
+                jobApplicationId: jobCv.jobApplicationId,
+                displayName: jobCv.displayName,
+                cvJson: jobCv.cvJson,
+                filename: jobCv.filename,
+                createdAt: jobCv.createdAt,
+            },
         });
     })
 );

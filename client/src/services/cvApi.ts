@@ -324,6 +324,61 @@ export const createJobCv = async (
 };
 
 /**
+ * Copy a base CV to a job as a fully independent document.
+ * Both the JSON and the original binary are deep-copied so future edits or
+ * deletion of the base CV will NOT affect this job's CV.
+ */
+export const createJobCvFromBase = async (
+    jobId: string,
+    baseCvId?: string,
+    templateId?: string
+): Promise<UpdateCvResponse> => {
+    try {
+        const response = await axios.post<UpdateCvResponse>(
+            `${API_BASE_URL}/job/${jobId}/from-base`,
+            { baseCvId: baseCvId || null, templateId: templateId || null }
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error('Create job CV from base API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred copying the base CV to the job.' };
+    }
+};
+
+/**
+ * Upload a PDF/DOCX CV file directly for a specific job.
+ * The file is parsed and stored as an independent job CV document.
+ * Accepts PDF and DOCX formats only.
+ */
+export const uploadCvForJob = async (
+    jobId: string,
+    file: File,
+    templateId?: string
+): Promise<UpdateCvResponse> => {
+    const formData = new FormData();
+    formData.append('cvFile', file);
+    if (templateId) formData.append('templateId', templateId);
+
+    try {
+        const response = await axios.post<UpdateCvResponse>(
+            `${API_BASE_URL}/job/${jobId}/upload`,
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error('Upload CV for job API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred uploading the CV for this job.' };
+    }
+};
+
+/**
  * Update a CV by ID
  */
 export const updateCv = async (

@@ -13,6 +13,7 @@ import cvsRoutes from './routes/cvs'; // Unified CV routes
 import generatorRoutes from './routes/generator';
 import analysisRoutes from './routes/analysis'; // Import is correct
 import coverLetterRoutes from './routes/coverLetter';
+import coverLetterBasesRoutes from './routes/coverLetterBases'; // Base CL templates + job isolation
 import atsRoutes from './routes/atsRoutes';
 import analyticsRoutes from './routes/analytics';
 import githubRoutes from './routes/github';
@@ -81,6 +82,7 @@ app.use('/api/job-applications', protect, jobApplicationRoutes); // Protect Job 
 app.use('/api/generator', protect, generatorRoutes); // Protect Generator routes
 app.use('/api/analysis', analysisRoutes); // Mounting looks correct
 app.use('/api/cover-letter', protect, coverLetterRoutes); // Protect Cover Letter routes
+app.use('/api/cover-letter-bases', protect, coverLetterBasesRoutes); // Base CLs + job isolation
 app.use('/api/ats', protect, atsRoutes); // Protect ATS routes
 app.use('/api/analytics', protect, analyticsRoutes); // Protect Analytics routes
 app.use('/api/github', githubRoutes); // GitHub routes (public for viewing, protected for actions)

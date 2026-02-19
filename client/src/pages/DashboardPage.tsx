@@ -1,5 +1,5 @@
 // client/src/pages/DashboardPage.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   getJobs,
@@ -13,7 +13,7 @@ import {
   checkJobUrlDuplicateApi,
   DuplicateJobError,
 } from '../services/jobApi';
-import { getCvBranches, CVDocument } from '../services/cvApi';
+import { getCvBranches, CVDocument, uploadCvForJob } from '../services/cvApi';
 import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
 
 import JobStatusBadge from '../components/jobs/JobStatusBadge';
@@ -103,6 +103,12 @@ const DashboardPage: React.FC = () => {
       return '';
     }
   });
+
+  // --- CV File Upload for New Job ---
+  // Users can either select an existing CV branch OR upload a new file.
+  // If a file is provided it takes precedence and is attached after job creation.
+  const [preExtractionCvFile, setPreExtractionCvFile] = useState<File | null>(null);
+  const cvFileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Filtering & Sorting State ---
   const [filterText, setFilterText] = useState<string>('');
@@ -412,6 +418,21 @@ const DashboardPage: React.FC = () => {
     setCreateFromTextError(null);
     try {
       const newJob = await createJobFromTextApi(text, options);
+
+      // If the user selected a CV file to upload instead of a base CV, do it now
+      if (preExtractionCvFile) {
+        try {
+          await uploadCvForJob(newJob._id, preExtractionCvFile);
+        } catch (cvErr: any) {
+          console.error('CV file upload failed after job creation:', cvErr);
+          // Non-fatal: show warning but continue
+          setToast({ message: `Job created but CV upload failed: ${cvErr.message || 'Unknown error'}`, type: 'error' });
+        } finally {
+          setPreExtractionCvFile(null);
+          if (cvFileInputRef.current) cvFileInputRef.current.value = '';
+        }
+      }
+
       setJobs(prevJobs => [newJob, ...prevJobs]);
       setJobTextInput('');
       setPreExtractionJobUrl('');
@@ -590,25 +611,78 @@ const DashboardPage: React.FC = () => {
             <form onSubmit={handleCreateFromTextSubmit} className="w-full">
               {/* Pre-Extraction Form Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                {/* CV Branch Selection */}
+                {/* CV Selection or Upload */}
                 <div>
                   <label htmlFor="cvBranch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     CV Branch
                   </label>
-                  <select
-                    id="cvBranch"
-                    value={selectedCvBranchId || ''}
-                    onChange={(e) => setSelectedCvBranchId(e.target.value || null)}
-                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    disabled={isCreatingFromText}
-                  >
-                    <option value="">Select CV (optional)</option>
-                    {cvs.filter(cv => !cv.jobApplication).map(cv => (
-                      <option key={cv._id} value={cv._id}>
-                        {cv.displayName || cv.category || 'CV'} {cv.isPrimary ? '(Primary)' : ''}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Existing CV dropdown – hidden when a file is chosen */}
+                  {!preExtractionCvFile && (
+                    <select
+                      id="cvBranch"
+                      value={selectedCvBranchId || ''}
+                      onChange={(e) => setSelectedCvBranchId(e.target.value || null)}
+                      className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      disabled={isCreatingFromText}
+                    >
+                      <option value="">Select CV (optional)</option>
+                      {cvs.filter(cv => !cv.jobApplication).map(cv => (
+                        <option key={cv._id} value={cv._id}>
+                          {cv.displayName || cv.category || 'CV'} {cv.isPrimary ? '(Primary)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {/* File chosen – show name and remove button */}
+                  {preExtractionCvFile && (
+                    <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-300 dark:border-indigo-700 rounded-md px-3 py-2">
+                      <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span className="text-xs text-indigo-700 dark:text-indigo-300 truncate flex-1">{preExtractionCvFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => { setPreExtractionCvFile(null); if (cvFileInputRef.current) cvFileInputRef.current.value = ''; }}
+                        className="text-slate-400 hover:text-red-500 transition-colors"
+                        title="Remove file"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={cvFileInputRef}
+                    type="file"
+                    accept=".pdf,.docx"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      if (f) {
+                        setPreExtractionCvFile(f);
+                        setSelectedCvBranchId(null); // clear dropdown when file chosen
+                      }
+                    }}
+                  />
+
+                  {/* Upload button */}
+                  {!preExtractionCvFile && (
+                    <button
+                      type="button"
+                      onClick={() => cvFileInputRef.current?.click()}
+                      disabled={isCreatingFromText}
+                      className="mt-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 disabled:opacity-40 flex items-center gap-1"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      Or upload PDF / DOCX
+                    </button>
+                  )}
                 </div>
 
                 {/* Job URL */}

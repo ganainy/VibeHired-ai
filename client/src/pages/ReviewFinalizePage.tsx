@@ -30,6 +30,7 @@ import PromptCustomizer from '../components/common/PromptCustomizer';
 import { PromptTemplateSelector } from '../components/common/PromptTemplateSelector';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
+import { getBaseCoverLetters, applyBaseCoverLetterToJob, uploadCoverLetterForJob, saveCurrentCoverLetterForJob, CoverLetterBase } from '../services/coverLetterBaseApi';
 
 interface ToastState {
     message: string;
@@ -229,6 +230,16 @@ const ReviewFinalizePage: React.FC = () => {
         return 'master';
     });
 
+    // Cover Letter Library Panel State
+    const [baseCoverLetters, setBaseCoverLetters] = useState<CoverLetterBase[]>([]);
+    const [showClLibraryPanel, setShowClLibraryPanel] = useState<boolean>(false);
+    const [clCreationMode, setClCreationMode] = useState<'ai' | 'import'>('ai');
+    const [selectedBaseClId, setSelectedBaseClId] = useState<string>('');
+    const [clUploadFile, setClUploadFile] = useState<File | null>(null);
+    const [isApplyingBaseCl, setIsApplyingBaseCl] = useState<boolean>(false);
+    const [applyClError, setApplyClError] = useState<string | null>(null);
+    const clUploadFileRef = useRef<HTMLInputElement>(null);
+
     // Extract with AI State
     const [pastedJobText, setPastedJobText] = useState<string>('');
     const [isExtractingWithAi, setIsExtractingWithAi] = useState<boolean>(false);
@@ -264,6 +275,50 @@ const ReviewFinalizePage: React.FC = () => {
             } catch (e) {
                 console.error("Error saving selectedClBaseCvId to localStorage", e);
             }
+        }
+    };
+
+    // Load base cover letters when the library panel opens or import mode is selected
+    useEffect(() => {
+        if (!showClLibraryPanel && clCreationMode !== 'import') return;
+        getBaseCoverLetters()
+            .then(setBaseCoverLetters)
+            .catch((err: any) => console.error('Failed to load base cover letters', err));
+    }, [showClLibraryPanel, clCreationMode]);
+
+    // Apply / upload a base cover letter to this job
+    const handleApplyBaseCoverLetter = async () => {
+        if (!jobId) return;
+        setIsApplyingBaseCl(true);
+        setApplyClError(null);
+        try {
+            if (clUploadFile) {
+                await uploadCoverLetterForJob(jobId, clUploadFile, (jobApplication?.language as 'en' | 'de') ?? 'en');
+                setClUploadFile(null);
+            } else if (selectedBaseClId) {
+                await applyBaseCoverLetterToJob(jobId, selectedBaseClId);
+            } else {
+                setApplyClError('Please select a cover letter or upload a file.');
+                return;
+            }
+            await fetchJobData();
+            setShowClLibraryPanel(false);
+            showToast('Cover letter attached to this job', 'success');
+        } catch (err: any) {
+            setApplyClError(err?.response?.data?.message || err?.message || 'Failed to apply cover letter.');
+        } finally {
+            setIsApplyingBaseCl(false);
+        }
+    };
+
+    // Snapshot the current cover letter text as an independent document
+    const handleSaveClSnapshot = async () => {
+        if (!jobId) return;
+        try {
+            await saveCurrentCoverLetterForJob(jobId);
+            showToast('Cover letter snapshot saved', 'success');
+        } catch (err: any) {
+            showToast('Failed to save snapshot', 'error');
         }
     };
 
@@ -1424,7 +1479,10 @@ const ReviewFinalizePage: React.FC = () => {
 
             // Determine Base CV Data for Cover Letter
             let baseCvDataToUse = undefined;
-            if (selectedClBaseCvId !== 'master') {
+            if (selectedClBaseCvId === '__job_cv__') {
+                // Use the job-specific CV that was uploaded/attached to this job
+                baseCvDataToUse = cvData;
+            } else if (selectedClBaseCvId !== 'master') {
                 const selectedOption = availableCvs.find(cv => cv.id === selectedClBaseCvId);
                 if (selectedOption) {
                     baseCvDataToUse = selectedOption.data;
@@ -2679,6 +2737,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                                 try {
                                                                     // Optimistic update
                                                                     setJobApplication(prev => prev ? { ...prev, draftCoverLetterText: undefined } : null);
+                                                                    setClCreationMode('ai');
                                                                     // Update backend
                                                                     await updateJob(jobId, { draftCoverLetterText: null });
                                                                 } catch (err) {
@@ -2701,6 +2760,97 @@ const ReviewFinalizePage: React.FC = () => {
                                                 To regenerate the cover letter with different instructions, please delete the current cover letter using the trash icon above.
                                             </p>
                                         </div>
+
+                                        {/* Cover Letter Library Panel */}
+                                        {showClLibraryPanel && (
+                                            <div className="mt-4 p-4 border border-purple-200 dark:border-purple-700/50 bg-purple-50 dark:bg-purple-900/20 rounded-xl space-y-4">
+                                                <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-200 flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-base">folder_open</span>
+                                                    Attach Cover Letter from Library
+                                                </h3>
+
+                                                {applyClError && (
+                                                    <p className="text-xs text-red-600 dark:text-red-400">{applyClError}</p>
+                                                )}
+
+                                                {/* Select from existing base cover letters */}
+                                                <div className="space-y-1">
+                                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Select from library</label>
+                                                    <select
+                                                        value={selectedBaseClId}
+                                                        onChange={(e) => { setSelectedBaseClId(e.target.value); setClUploadFile(null); }}
+                                                        disabled={!!clUploadFile || isApplyingBaseCl}
+                                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 disabled:opacity-50"
+                                                    >
+                                                        <option value="">— choose a cover letter —</option>
+                                                        {baseCoverLetters.map(cl => (
+                                                            <option key={cl._id} value={cl._id}>{cl.displayName}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* OR divider */}
+                                                <div className="flex items-center gap-3">
+                                                    <hr className="flex-1 border-gray-300 dark:border-gray-600" />
+                                                    <span className="text-xs text-gray-400">OR</span>
+                                                    <hr className="flex-1 border-gray-300 dark:border-gray-600" />
+                                                </div>
+
+                                                {/* Upload a file */}
+                                                <div className="space-y-1">
+                                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Upload a file (PDF / DOCX)</label>
+                                                    <input
+                                                        type="file"
+                                                        accept=".pdf,.docx"
+                                                        ref={clUploadFileRef}
+                                                        className="hidden"
+                                                        onChange={(e) => { const f = e.target.files?.[0] ?? null; setClUploadFile(f); if (f) setSelectedBaseClId(''); }}
+                                                    />
+                                                    {clUploadFile ? (
+                                                        <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm">
+                                                            <span className="material-symbols-outlined text-base text-gray-500">description</span>
+                                                            <span className="flex-1 truncate text-gray-800 dark:text-gray-200">{clUploadFile.name}</span>
+                                                            <button onClick={() => { setClUploadFile(null); if (clUploadFileRef.current) clUploadFileRef.current.value = ''; }} className="text-gray-400 hover:text-red-500 transition-colors">
+                                                                <span className="material-symbols-outlined text-base">close</span>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => clUploadFileRef.current?.click()}
+                                                            disabled={isApplyingBaseCl}
+                                                            className="flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors disabled:opacity-50"
+                                                        >
+                                                            <span className="material-symbols-outlined text-base">upload_file</span>
+                                                            Choose file…
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Isolation notice */}
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1">
+                                                    <span className="material-symbols-outlined text-base shrink-0">lock</span>
+                                                    A full independent copy will be stored for this job. Editing or deleting the original will not affect this application.
+                                                </p>
+
+                                                {/* Actions */}
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={handleApplyBaseCoverLetter}
+                                                        disabled={isApplyingBaseCl || (!selectedBaseClId && !clUploadFile)}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {isApplyingBaseCl ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
+                                                        Attach to Job
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setShowClLibraryPanel(false); setApplyClError(null); }}
+                                                        className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Editor part */}
@@ -2723,13 +2873,168 @@ const ReviewFinalizePage: React.FC = () => {
                                 </div>
                             ) : (
                                 <div>
-                                    <div className="mb-6">
-                                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Create Cover Letter</h2>
+                                    <div className="mb-8">
+                                        <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Cover Letter</h2>
                                         <p className="text-gray-600 dark:text-gray-400 text-lg">
-                                            Generate a tailored cover letter in seconds. Review the job details and add any specific instructions below.
+                                            How would you like to add a cover letter for this job?
                                         </p>
                                     </div>
 
+                                    {/* ── Option picker ── */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                        {/* Option A – AI Generate */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setClCreationMode('ai')}
+                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
+                                                clCreationMode === 'ai'
+                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
+                                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
+                                            }`}
+                                        >
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                                <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-900 dark:text-gray-100">Generate with AI</p>
+                                                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Let the AI write a tailored cover letter based on your CV and the job description.</p>
+                                            </div>
+                                            {clCreationMode === 'ai' && (
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full bg-purple-600 text-white">
+                                                    <span className="material-symbols-outlined text-[14px]">check</span>
+                                                </span>
+                                            )}
+                                        </button>
+
+                                        {/* Option B – Upload / Library */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setClCreationMode('import')}
+                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
+                                                clCreationMode === 'import'
+                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
+                                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
+                                            }`}
+                                        >
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'import' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                                <span className="material-symbols-outlined text-[22px]">upload_file</span>
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-900 dark:text-gray-100">Use my own cover letter</p>
+                                                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Upload a PDF / DOCX file or pick an existing one from your library.</p>
+                                            </div>
+                                            {clCreationMode === 'import' && (
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full bg-purple-600 text-white">
+                                                    <span className="material-symbols-outlined text-[14px]">check</span>
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {/* ── Option B form: Import / Upload ── */}
+                                    {clCreationMode === 'import' && (
+                                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-6">
+                                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">folder_open</span>
+                                                Attach Cover Letter
+                                            </h3>
+
+                                            {applyClError && (
+                                                <ErrorAlert message={applyClError} onDismiss={() => setApplyClError(null)} />
+                                            )}
+
+                                            {/* Upload a file */}
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Upload a file <span className="text-gray-400 font-normal">(PDF or DOCX)</span></label>
+                                                <input
+                                                    type="file"
+                                                    accept=".pdf,.docx"
+                                                    ref={clUploadFileRef}
+                                                    className="hidden"
+                                                    onChange={(e) => { const f = e.target.files?.[0] ?? null; setClUploadFile(f); if (f) setSelectedBaseClId(''); }}
+                                                />
+                                                {clUploadFile ? (
+                                                    <div className="flex items-center gap-3 px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700/50 rounded-xl">
+                                                        <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">description</span>
+                                                        <span className="flex-1 truncate text-sm text-gray-800 dark:text-gray-200 font-medium">{clUploadFile.name}</span>
+                                                        <button
+                                                            onClick={() => { setClUploadFile(null); if (clUploadFileRef.current) clUploadFileRef.current.value = ''; }}
+                                                            className="text-gray-400 hover:text-red-500 transition-colors"
+                                                        >
+                                                            <span className="material-symbols-outlined text-base">close</span>
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => clUploadFileRef.current?.click()}
+                                                        disabled={isApplyingBaseCl}
+                                                        className="flex items-center gap-3 w-full px-4 py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all disabled:opacity-50"
+                                                    >
+                                                        <span className="material-symbols-outlined text-2xl">upload_file</span>
+                                                        <span className="text-sm font-medium">Click to choose a PDF or DOCX file…</span>
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* OR divider */}
+                                            <div className="flex items-center gap-4">
+                                                <hr className="flex-1 border-gray-200 dark:border-gray-700" />
+                                                <span className="text-sm font-medium text-gray-400">OR</span>
+                                                <hr className="flex-1 border-gray-200 dark:border-gray-700" />
+                                            </div>
+
+                                            {/* Select from library */}
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select from your library</label>
+                                                <div className="relative">
+                                                    <select
+                                                        value={selectedBaseClId}
+                                                        onChange={(e) => { setSelectedBaseClId(e.target.value); setClUploadFile(null); if (clUploadFileRef.current) clUploadFileRef.current.value = ''; }}
+                                                        disabled={!!clUploadFile || isApplyingBaseCl}
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all disabled:opacity-50"
+                                                    >
+                                                        <option value="">— choose a saved cover letter —</option>
+                                                        {baseCoverLetters.map(cl => (
+                                                            <option key={cl._id} value={cl._id}>{cl.displayName}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                                        <span className="material-symbols-outlined">expand_more</span>
+                                                    </div>
+                                                </div>
+                                                {baseCoverLetters.length === 0 && (
+                                                    <p className="text-xs text-gray-400 dark:text-gray-500">No saved cover letters yet. You can upload a file above.</p>
+                                                )}
+                                            </div>
+
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1.5">
+                                                <span className="material-symbols-outlined text-base shrink-0">lock</span>
+                                                A full independent copy will be stored for this job. Editing or deleting the original will not affect this application.
+                                            </p>
+
+                                            {/* Actions */}
+                                            <div className="flex items-center justify-end gap-3 pt-2">
+                                                <button
+                                                    onClick={() => { setClCreationMode('ai'); setApplyClError(null); setClUploadFile(null); setSelectedBaseClId(''); }}
+                                                    className="px-5 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-colors"
+                                                >
+                                                    Switch to AI Generate
+                                                </button>
+                                                <button
+                                                    onClick={handleApplyBaseCoverLetter}
+                                                    disabled={isApplyingBaseCl || (!selectedBaseClId && !clUploadFile)}
+                                                    className="flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {isApplyingBaseCl ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
+                                                    Attach to Job
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* ── Option A form: AI Generate ── */}
+                                    {clCreationMode === 'ai' && (
+                                    <>
                                     {coverLetterError && (
                                         <div className="mb-6">
                                             <ErrorAlert
@@ -2805,6 +3110,9 @@ const ReviewFinalizePage: React.FC = () => {
                                                         onChange={(e) => handleSelectedClBaseCvIdChange(e.target.value)}
                                                         className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
                                                     >
+                                                        {currentCvId && hasLocalCv && (
+                                                            <option value="__job_cv__">📄 This Job's CV (attached)</option>
+                                                        )}
                                                         {availableCvs.map(cv => (
                                                             <option key={cv.id} value={cv.id}>{cv.name}</option>
                                                         ))}
@@ -2866,6 +3174,8 @@ const ReviewFinalizePage: React.FC = () => {
                                             </div>
                                         )}
                                     </div>
+                                    </>
+                                    )}
                                 </div>
                             )}
                         </div>
