@@ -11,7 +11,6 @@ import * as cheerio from 'cheerio';
 export function cleanHtmlForAi(htmlContent: string, maxLength: number = 100000): string {
     try {
         const $ = cheerio.load(htmlContent, {
-            decodeEntities: false,
             lowerCaseAttributeNames: false
         });
 
@@ -35,7 +34,7 @@ export function cleanHtmlForAi(htmlContent: string, maxLength: number = 100000):
         
         // Remove forms (application forms, newsletter signups, etc.) - but keep their text content if needed
         // We'll be more selective - remove forms that are likely not job description content
-        $('form').each(function(this: cheerio.Element) {
+        $('form').each(function(this: any) {
             const form = $(this);
             // Keep forms that might contain job description, remove others
             const formText = form.text().toLowerCase();

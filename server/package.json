@@ -20,6 +20,13 @@
   "description": "",
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.15.2",
+    "@types/node-cron": "^3.0.11",
     "axios": "^1.9.0",
     "bcryptjs": "^3.0.2",
     "cheerio": "^1.0.0",
@@ -36,14 +43,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/cheerio": "^0.22.35",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.1",
-    "@types/jsonwebtoken": "^9.0.9",
-    "@types/multer": "^1.4.12",
-    "@types/node": "^22.15.2",
-    "@types/node-cron": "^3.0.11",
     "concurrently": "^9.1.2",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
