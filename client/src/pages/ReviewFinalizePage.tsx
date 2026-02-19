@@ -11,7 +11,7 @@ import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 // import { downloadCvAsPdf } from '../services/pdfService'; // Removed as we use react-to-print now
 import { DEFAULT_CV_PROMPT, DEFAULT_COVER_LETTER_PROMPT } from '../constants/prompts';
 import { generateCoverLetter } from '../services/coverLetterApi';
-import { getMasterCv, previewCv, getCvBranches, CVDocument, getJobCv, createJobCv, updateCv, deleteCv } from '../services/cvApi';
+import { getMasterCv, previewCv, getCvBranches, CVDocument, getJobCv, createJobCv, createJobCvFromBase, uploadCvForJob, updateCv, deleteCv } from '../services/cvApi';
 import AtsInlinePanel from '../components/ats/AtsInlinePanel';
 import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
 import axios from 'axios';
@@ -240,6 +240,14 @@ const ReviewFinalizePage: React.FC = () => {
     const [applyClError, setApplyClError] = useState<string | null>(null);
     const clUploadFileRef = useRef<HTMLInputElement>(null);
 
+    // CV creation mode state (for the CV tab picker)
+    const [cvCreationMode, setCvCreationMode] = useState<'ai' | 'import'>('ai');
+    const [cvImportFile, setCvImportFile] = useState<File | null>(null);
+    const [selectedBaseCvIdForImport, setSelectedBaseCvIdForImport] = useState<string>('');
+    const [isApplyingBaseCv, setIsApplyingBaseCv] = useState<boolean>(false);
+    const [applyCvError, setApplyCvError] = useState<string | null>(null);
+    const cvImportFileRef = useRef<HTMLInputElement>(null);
+
     // Extract with AI State
     const [pastedJobText, setPastedJobText] = useState<string>('');
     const [isExtractingWithAi, setIsExtractingWithAi] = useState<boolean>(false);
@@ -308,6 +316,34 @@ const ReviewFinalizePage: React.FC = () => {
             setApplyClError(err?.response?.data?.message || err?.message || 'Failed to apply cover letter.');
         } finally {
             setIsApplyingBaseCl(false);
+        }
+    };
+
+    // Apply / upload a CV for this job without AI tailoring
+    const handleApplyBaseCv = async () => {
+        if (!jobId) return;
+        setIsApplyingBaseCv(true);
+        setApplyCvError(null);
+        try {
+            let result;
+            if (cvImportFile) {
+                result = await uploadCvForJob(jobId, cvImportFile);
+                setCvImportFile(null);
+                if (cvImportFileRef.current) cvImportFileRef.current.value = '';
+            } else if (selectedBaseCvIdForImport) {
+                result = await createJobCvFromBase(jobId, selectedBaseCvIdForImport === 'master' ? undefined : selectedBaseCvIdForImport);
+            } else {
+                setApplyCvError('Please select a CV or upload a file.');
+                return;
+            }
+            setCvData(result.cv.cvJson);
+            setCurrentCvId(result.cv._id);
+            setSelectedBaseCvIdForImport('');
+            showToast('CV attached to this job', 'success');
+        } catch (err: any) {
+            setApplyCvError(err?.response?.data?.message || err?.message || 'Failed to attach CV.');
+        } finally {
+            setIsApplyingBaseCv(false);
         }
     };
 
@@ -1463,7 +1499,7 @@ const ReviewFinalizePage: React.FC = () => {
             }
 
             if (!hasMasterCv) {
-                setCoverLetterError('Please upload your master CV first at the CV Management page.');
+                setCoverLetterError('Please upload a CV first at the CV Management page.');
                 return;
             }
 
@@ -1606,7 +1642,7 @@ const ReviewFinalizePage: React.FC = () => {
             }
 
             if (!hasMasterCv) {
-                setGenerateCvError('Please upload your master CV first at the CV Management page.');
+                setGenerateCvError('Please upload a CV first at the CV Management page.');
                 return;
             }
 
@@ -3164,7 +3200,7 @@ const ReviewFinalizePage: React.FC = () => {
                                         {!hasMasterCv && (
                                             <div className="mt-4 text-center">
                                                 <p className="text-sm text-amber-600 dark:text-amber-400">
-                                                    ⚠️ You need to upload your master CV first. Go to <Link to="/manage-cv" className="underline font-medium">CV Management</Link> to upload it.
+                                                    ⚠️ You need to upload a CV first. Go to <Link to="/manage-cv" className="underline font-medium">CV Management</Link> to upload it.
                                                 </p>
                                             </div>
                                         )}
@@ -3348,10 +3384,165 @@ const ReviewFinalizePage: React.FC = () => {
                                     <div className="mb-6">
                                         <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Tailor Your CV</h2>
                                         <p className="text-gray-600 dark:text-gray-400 text-lg">
-                                            Create a job-specific resume in seconds. Fill in the details below to let our AI optimize your profile.
+                                            Choose how you want to create this job's CV.
                                         </p>
                                     </div>
 
+                                    {/* ── Option picker ── */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                        {/* Option A – AI Generate */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setCvCreationMode('ai')}
+                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
+                                                cvCreationMode === 'ai'
+                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
+                                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
+                                            }`}
+                                        >
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                                <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-900 dark:text-gray-100">Generate with AI</p>
+                                                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Let the AI tailor your CV to the job description automatically.</p>
+                                            </div>
+                                            {cvCreationMode === 'ai' && (
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full bg-purple-600 text-white">
+                                                    <span className="material-symbols-outlined text-[14px]">check</span>
+                                                </span>
+                                            )}
+                                        </button>
+
+                                        {/* Option B – Upload / Library */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setCvCreationMode('import')}
+                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
+                                                cvCreationMode === 'import'
+                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
+                                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
+                                            }`}
+                                        >
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'import' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                                <span className="material-symbols-outlined text-[22px]">upload_file</span>
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-900 dark:text-gray-100">Use my own CV</p>
+                                                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Upload a PDF / DOCX file or pick an existing one from your library.</p>
+                                            </div>
+                                            {cvCreationMode === 'import' && (
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full bg-purple-600 text-white">
+                                                    <span className="material-symbols-outlined text-[14px]">check</span>
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {/* ── Option B form: Import / Upload ── */}
+                                    {cvCreationMode === 'import' && (
+                                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-6">
+                                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">folder_open</span>
+                                                Attach CV
+                                            </h3>
+
+                                            {applyCvError && (
+                                                <ErrorAlert message={applyCvError} onDismiss={() => setApplyCvError(null)} />
+                                            )}
+
+                                            {/* Upload a file */}
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Upload a file <span className="text-gray-400 font-normal">(PDF or DOCX)</span></label>
+                                                <input
+                                                    type="file"
+                                                    accept=".pdf,.docx"
+                                                    ref={cvImportFileRef}
+                                                    className="hidden"
+                                                    onChange={(e) => { const f = e.target.files?.[0] ?? null; setCvImportFile(f); if (f) setSelectedBaseCvIdForImport(''); }}
+                                                />
+                                                {cvImportFile ? (
+                                                    <div className="flex items-center gap-3 px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700/50 rounded-xl">
+                                                        <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">description</span>
+                                                        <span className="flex-1 truncate text-sm text-gray-800 dark:text-gray-200 font-medium">{cvImportFile.name}</span>
+                                                        <button
+                                                            onClick={() => { setCvImportFile(null); if (cvImportFileRef.current) cvImportFileRef.current.value = ''; }}
+                                                            className="text-gray-400 hover:text-red-500 transition-colors"
+                                                        >
+                                                            <span className="material-symbols-outlined text-base">close</span>
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => cvImportFileRef.current?.click()}
+                                                        disabled={isApplyingBaseCv}
+                                                        className="flex items-center gap-3 w-full px-4 py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all disabled:opacity-50"
+                                                    >
+                                                        <span className="material-symbols-outlined text-2xl">upload_file</span>
+                                                        <span className="text-sm font-medium">Click to choose a PDF or DOCX file…</span>
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* OR divider */}
+                                            <div className="flex items-center gap-4">
+                                                <hr className="flex-1 border-gray-200 dark:border-gray-700" />
+                                                <span className="text-sm font-medium text-gray-400">OR</span>
+                                                <hr className="flex-1 border-gray-200 dark:border-gray-700" />
+                                            </div>
+
+                                            {/* Select from library */}
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select from your library</label>
+                                                <div className="relative">
+                                                    <select
+                                                        value={selectedBaseCvIdForImport}
+                                                        onChange={(e) => { setSelectedBaseCvIdForImport(e.target.value); setCvImportFile(null); if (cvImportFileRef.current) cvImportFileRef.current.value = ''; }}
+                                                        disabled={!!cvImportFile || isApplyingBaseCv}
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all disabled:opacity-50"
+                                                    >
+                                                        <option value="">— choose a saved CV —</option>
+                                                        {availableCvs.map(cv => (
+                                                            <option key={cv.id} value={cv.id}>{cv.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                                        <span className="material-symbols-outlined">expand_more</span>
+                                                    </div>
+                                                </div>
+                                                {availableCvs.length === 0 && (
+                                                    <p className="text-xs text-gray-400 dark:text-gray-500">No saved CVs yet. You can upload a file above.</p>
+                                                )}
+                                            </div>
+
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1.5">
+                                                <span className="material-symbols-outlined text-base shrink-0">lock</span>
+                                                A full independent copy will be stored for this job. Editing or deleting the original will not affect this application.
+                                            </p>
+
+                                            {/* Actions */}
+                                            <div className="flex items-center justify-end gap-3 pt-2">
+                                                <button
+                                                    onClick={() => { setCvCreationMode('ai'); setApplyCvError(null); setCvImportFile(null); setSelectedBaseCvIdForImport(''); }}
+                                                    className="px-5 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-colors"
+                                                >
+                                                    Switch to AI Generate
+                                                </button>
+                                                <button
+                                                    onClick={handleApplyBaseCv}
+                                                    disabled={isApplyingBaseCv || (!selectedBaseCvIdForImport && !cvImportFile)}
+                                                    className="flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {isApplyingBaseCv ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
+                                                    Attach to Job
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* ── Option A form: AI Generate ── */}
+                                    {cvCreationMode === 'ai' && (
+                                    <>
                                     {generateCvError && (
                                         <div className="mb-6">
                                             <ErrorAlert
@@ -3477,6 +3668,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             )}
                                         </button>
                                     </div>
+                                    </>)}
                                 </div>
                             )}
                         </div>
@@ -3674,9 +3866,9 @@ const ReviewFinalizePage: React.FC = () => {
                                 <div className="flex items-start gap-3 py-4">
                                     <span className="material-symbols-outlined text-amber-500 dark:text-amber-400 mt-0.5">upload_file</span>
                                     <div>
-                                        <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">Master CV Required</p>
+                                        <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">CV Required</p>
                                         <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
-                                            Please upload your master CV first to get AI-powered application advice.
+                                            Please upload a CV first to get AI-powered application advice.
                                         </p>
                                         <Link
                                             to="/manage-cv"
@@ -3684,7 +3876,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-amber-600 text-white hover:bg-amber-700 transition-colors"
                                         >
                                             <span className="material-symbols-outlined text-sm">description</span>
-                                            <span>Upload Master CV</span>
+                                            <span>Upload CV</span>
                                         </Link>
                                     </div>
                                 </div>

@@ -233,36 +233,37 @@ router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * GET /api/cvs/master
- * Get the primary CV for the current user (formerly master CV)
+ * Get the most recently created base CV for the current user
  */
 router.get('/master', asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id as string;
 
-    const primaryCv = await CV.getPrimaryCv(userId);
+    // Return most recently created base CV (no job association)
+    const baseCv = await CV.findOne({ userId, jobApplicationId: null }).sort({ createdAt: -1 });
 
-    if (!primaryCv) {
+    if (!baseCv) {
         res.json({
             cv: null,
-            message: 'No primary CV found'
+            message: 'No base CV found'
         });
         return;
     }
 
     // Get user's default template if CV doesn't have one
     const user = await User.findById(userId).select('selectedTemplate');
-    const effectiveTemplate = primaryCv.templateId || user?.selectedTemplate || 'modern-clean';
+    const effectiveTemplate = baseCv.templateId || user?.selectedTemplate || 'modern-clean';
 
     res.json({
         cv: {
-            _id: primaryCv._id,
-            isPrimary: true,
+            _id: baseCv._id,
+            isPrimary: baseCv.isPrimary,
             isMasterCv: true, // Keep for backward compatibility
-            cvJson: primaryCv.cvJson,
+            cvJson: baseCv.cvJson,
             templateId: effectiveTemplate,
-            filename: primaryCv.filename,
-            analysisCache: primaryCv.analysisCache,
-            createdAt: primaryCv.createdAt,
-            updatedAt: primaryCv.updatedAt,
+            filename: baseCv.filename,
+            analysisCache: baseCv.analysisCache,
+            createdAt: baseCv.createdAt,
+            updatedAt: baseCv.updatedAt,
         }
     });
 }));
@@ -456,14 +457,11 @@ router.post(
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
 
-        // Set all existing CVs as non-primary and create new primary CV
-        await CV.updateMany({ userId }, { isPrimary: false });
-
         const newCv = await CV.create({
             userId,
-            isPrimary: true,
+            isPrimary: false,
             category: 'General',
-            displayName: 'Primary CV',
+            displayName: req.file.originalname.replace(/\.[^.]+$/, '') || 'Uploaded CV',
             cvJson: cvJsonResume,
             filename: req.file.originalname,
             // Store the original binary so job copies are fully isolated
@@ -477,7 +475,7 @@ router.post(
             message: 'CV uploaded and parsed successfully.',
             cv: {
                 _id: newCv._id,
-                isPrimary: true,
+                isPrimary: false,
                 category: newCv.category,
                 displayName: newCv.displayName,
                 cvJson: cvJsonResume,

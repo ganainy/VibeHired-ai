@@ -412,7 +412,7 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
                                         <option value="">-- Select base CV --</option>
                                         {baseCvList.map(cv => (
                                             <option key={cv._id} value={cv._id}>
-                                                {cv.displayName || cv.category || 'CV'}{cv.isPrimary ? ' (Primary)' : ''}
+                                                {cv.displayName || cv.category || 'CV'}
                                             </option>
                                         ))}
                                     </select>

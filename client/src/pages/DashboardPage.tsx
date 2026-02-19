@@ -276,7 +276,7 @@ const DashboardPage: React.FC = () => {
 
   // --- Modal Event Handlers ---
   const handleOpenAddModal = () => {
-    const primaryCv = cvs.find(cv => cv.isPrimary);
+    const firstCv = cvs[0];
     setFormData({
       jobTitle: '',
       companyName: '',
@@ -284,7 +284,7 @@ const DashboardPage: React.FC = () => {
       jobUrl: '',
       notes: '',
       language: 'en',
-      baseCvId: primaryCv?._id || null
+      baseCvId: firstCv?._id || null
     });
     setModalError(null);
     setModalMode('add');

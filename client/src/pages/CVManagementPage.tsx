@@ -10,7 +10,6 @@ import {
   CVDocument,
   getCvBranches,
   createCvBranch,
-  setCvPrimary,
   renameCvBranch,
   uploadCvBranch
 } from '../services/cvApi';
@@ -102,9 +101,9 @@ const CVManagementPage: React.FC = () => {
     return errorMessage?.toLowerCase().includes('api key');
   };
 
-  // Derived state from allCvs (updated for branch system)
-  const primaryCv = useMemo(() => allCvs.find(cv => cv.isPrimary), [allCvs]);
-  const branchCvs = useMemo(() => allCvs.filter(cv => !cv.isPrimary), [allCvs]);
+  // Derived state from allCvs
+  // Base CVs: no job association (jobApplicationId is null/undefined)
+  const baseCvs = useMemo(() => allCvs.filter(cv => !cv.jobApplicationId), [allCvs]);
   const masterCv = useMemo(() => allCvs.find(cv => cv.isMasterCv), [allCvs]); // Keep for backward compatibility
   const jobCvs = useMemo(() => allCvs.filter(cv => !cv.isMasterCv), [allCvs]); // Keep for backward compatibility
 
@@ -375,10 +374,10 @@ const CVManagementPage: React.FC = () => {
         const response = await getCvBranches();
         setAllCvs(response.branches);
 
-        // Set activeCvId to primary CV if not set yet
-        const primary = response.branches.find(cv => cv.isPrimary);
-        if (primary && !activeCvId) {
-          setActiveCvId(primary._id);
+        // Set activeCvId to first base CV if not set yet
+        const firstBase = response.branches.find(cv => !cv.jobApplicationId);
+        if (firstBase && !activeCvId) {
+          setActiveCvId(firstBase._id);
         }
       } catch (error: any) {
         console.error("Error fetching CV branches:", error);
@@ -665,62 +664,30 @@ const CVManagementPage: React.FC = () => {
 
 
   const handleDeleteCv = async (cvId: string) => {
-    // Find the CV to determine if it's primary or branch
-    const cvToDelete = allCvs.find(cv => cv._id === cvId);
-    const isPrimary = cvToDelete?.isPrimary;
-
-    if (isPrimary) {
-      setToast({ message: 'Cannot delete primary CV. Set another CV as primary first.', type: 'error' });
-      return;
-    }
-
-    const confirmMessage = 'Are you sure you want to delete this CV branch? This action cannot be undone.';
-
-    if (!window.confirm(confirmMessage)) {
+    if (!window.confirm('Are you sure you want to delete this CV? This action cannot be undone.')) {
       return;
     }
 
     setIsDeleting(true);
     try {
-      // Use unified deleteCv API
       await deleteCv(cvId);
 
       // Update local state - remove the CV from allCvs list
-      setAllCvs((prev: CVDocument[]) => prev.filter((cv: CVDocument) => cv._id !== cvId));
+      const remaining = allCvs.filter((cv: CVDocument) => cv._id !== cvId);
+      setAllCvs(remaining);
 
-      // Switch to primary CV if we were viewing the deleted branch
-      if (activeCvId === cvId && primaryCv) {
-        setActiveCvId(primaryCv._id);
+      // Switch to another CV if we were viewing the deleted one
+      if (activeCvId === cvId) {
+        const nextCv = remaining.find(cv => !cv.jobApplicationId) || remaining[0] || null;
+        setActiveCvId(nextCv?._id || null);
       }
 
-      setToast({ message: 'CV branch deleted successfully.', type: 'success' });
+      setToast({ message: 'CV deleted successfully.', type: 'success' });
     } catch (error: any) {
       console.error("Error deleting CV:", error);
       setToast({ message: error.message || 'Failed to delete CV.', type: 'error' });
     } finally {
       setIsDeleting(false);
-    }
-  };
-  const handleSetPrimary = async (cvId: string) => {
-    if (!window.confirm('Are you sure you want to set this CV as your primary? This will replace your current primary CV.')) {
-      return;
-    }
-
-    try {
-      await setCvPrimary(cvId);
-
-      // Update local state
-      setAllCvs((prev: CVDocument[]) =>
-        prev.map((cv: CVDocument) => ({
-          ...cv,
-          isPrimary: cv._id === cvId
-        }))
-      );
-
-      setToast({ message: 'CV set as primary successfully.', type: 'success' });
-    } catch (error: any) {
-      console.error("Error setting CV as primary:", error);
-      setToast({ message: error.message || 'Failed to set CV as primary.', type: 'error' });
     }
   };
 
@@ -894,8 +861,7 @@ const CVManagementPage: React.FC = () => {
       {/* Left Sidebar */}
       {!isReplacing && (
         <Sidebar
-          primaryCv={primaryCv || null}
-          branchCvs={branchCvs}
+          cvs={baseCvs}
           activeCvId={activeCvId}
           onSelectCv={setActiveCvId}
           onAddNewCv={() => {
@@ -909,7 +875,6 @@ const CVManagementPage: React.FC = () => {
             setCreationMode('upload');
           }}
           onDeleteCv={handleDeleteCv}
-          onSetPrimary={handleSetPrimary}
           onRenameBranch={handleRenameBranch}
           onCreateBranch={() => setIsCreateBranchModalOpen(true)}
           className="w-full flex-shrink-0 z-20"
@@ -926,7 +891,7 @@ const CVManagementPage: React.FC = () => {
               <button
                 onClick={() => {
                   // Select the primary CV if available, otherwise select the first CV
-                  const cvToSelect = primaryCv || allCvs[0];
+                  const cvToSelect = allCvs.find(cv => !cv.jobApplicationId) || allCvs[0];
                   if (cvToSelect) {
                     setActiveCvId(cvToSelect._id);
                     setIsReplacing(false);

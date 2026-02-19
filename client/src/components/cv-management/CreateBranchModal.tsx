@@ -182,7 +182,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                                 <option value="">Select a CV to copy from</option>
                                 {availableSourceCvs.map((cv) => (
                                     <option key={cv._id} value={cv._id}>
-                                        {cv.isPrimary ? '⭐ Primary CV' : cv.displayName || cv.category || 'Unnamed CV'}
+                                        {cv.displayName || cv.category || 'Unnamed CV'}
                                     </option>
                                 ))}
                             </select>

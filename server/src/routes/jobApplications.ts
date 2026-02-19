@@ -36,19 +36,19 @@ async function autoCreateJobCvCopy(
     // Load source CV (including original binary)
     const sourceCv = await CV.findOne({ _id: baseCvId, userId }).select('+originalPdf');
     if (!sourceCv) {
-        // Fall back to primary CV if the specified base is not found
-        const primaryCv = await CV.getPrimaryCv(userId);
-        if (!primaryCv) return;
+        // Fall back to most recent base CV if the specified base is not found
+        const fallbackCv = await CV.findOne({ userId, jobApplicationId: null }).sort({ createdAt: -1 }).select('+originalPdf');
+        if (!fallbackCv) return;
         await CV.create({
             userId,
             isMasterCv: false,
             isPrimary: false,
-            displayName: `Job CV (auto-copy from primary)`,
+            displayName: `Job CV (auto-copy)`,
             jobApplicationId: new mongoose.Types.ObjectId(jobId),
-            cvJson: JSON.parse(JSON.stringify(primaryCv.cvJson)),
-            originalPdf: (primaryCv as any).originalPdf ? Buffer.from((primaryCv as any).originalPdf) : null,
-            filename: primaryCv.filename,
-            templateId: primaryCv.templateId || null,
+            cvJson: JSON.parse(JSON.stringify(fallbackCv.cvJson)),
+            originalPdf: (fallbackCv as any).originalPdf ? Buffer.from((fallbackCv as any).originalPdf) : null,
+            filename: fallbackCv.filename,
+            templateId: fallbackCv.templateId || null,
         });
         return;
     }
