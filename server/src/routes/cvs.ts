@@ -122,6 +122,20 @@ You are a precise CV/resume data extractor. Analyze the attached CV file (${reqF
 - Example of INCORRECT skills entry (DO NOT do this):
   { "name": "Skills", "keywords": ["Kenntnisse in TCP/IP, DNS, DHCP, HTTP/HTTPS sowie grundlegender Netzwerkdiagnose"] }
 - If the CV lists skills as a long paragraph, split each individual skill/term into its own keyword string.
+- **DEDUPLICATION**: If the CV has both a compact skills list (e.g. a tag cloud or comma-separated bar) AND a detailed skills section with bullet-point descriptions, extract skills ONLY ONCE. Prefer the detailed version. Do NOT create two separate skill groups containing the same technologies.
+
+**projects[] vs skills[] — CRITICAL DISTINCTION**
+- A "Project" is a named block of work the candidate has done, described with bullet points explaining WHAT they did (actions, outcomes, responsibilities). These go into projects[].
+- A "Skill" is a technology name, tool, or competency area. These go into skills[].
+- If the CV has a section with titled blocks (e.g. "Technische Fehleranalyse & 1st-Level-Support", "Windows-Administration") each containing descriptive bullet points about what was done — those are PROJECTS, not skills. Extract them into projects[].
+- Do NOT convert project titles into skill category names.
+- Example: A block titled "Microsoft 365 & Benutzerverwaltung" with bullets like "Kenntnisse in Microsoft 365 (Outlook, Teams...)" is a PROJECT entry demonstrating that skill area — add it to projects[], and separately add "Microsoft 365", "Outlook", "Teams" etc. as keywords in skills[].
+
+**projects[]**
+- "name" = project title only.
+- "description" = brief one-line description (plain text, no heading labels).
+- "highlights" = array of individual bullet strings describing what was done.
+- "url" = GitHub or live URL if present — ONLY if the URL contains a real path beyond the domain (e.g. "https://github.com/username/repo" is valid, "https://github.com/" is NOT). Omit the field entirely if no real URL is present.
 
 **languages[]**
 - EACH language entry MUST have exactly two separate fields:
@@ -131,11 +145,10 @@ You are a precise CV/resume data extractor. Analyze the attached CV file (${reqF
 - Example of CORRECT entry: { "language": "Deutsch", "fluency": "C1" }
 - Example of INCORRECT entry: { "language": "DeutschC1", "fluency": "" }
 
-**projects[]**
-- "name" = project title only.
-- "description" = brief one-line description (plain text, no heading labels).
-- "highlights" = array of individual bullet strings describing what was done.
-- "url" = GitHub or live URL if present, otherwise omit.
+**basics.profiles**
+- ONLY extract profile URLs that contain a real, specific path (e.g. "https://linkedin.com/in/username" or "https://github.com/username").
+- NEVER include generic placeholder URLs (e.g. "https://linkedin.com/", "https://github.com/", "https://www.portfolio.com/").
+- If the CV shows a platform icon or label but no real URL, omit that profile entirely.
 
 **General rules**
 - Parse the ENTIRE document — do not skip any section.
@@ -143,7 +156,6 @@ You are a precise CV/resume data extractor. Analyze the attached CV file (${reqF
 - Format all dates as YYYY-MM or YYYY. Use "Present" for ongoing. Omit date fields that are not found.
 - If an entire section is absent from the CV, omit that top-level key entirely.
 - If a specific field is not found, omit it (do not set to null or empty string unless required).
-- For 'basics.profiles', extract LinkedIn, GitHub, Portfolio URLs with "network" = platform name.
 - **DO NOT include any JavaScript/JSON comments (// or /* */) anywhere in the output.**
 
 === OUTPUT FORMAT ===
