@@ -1,10 +1,43 @@
-import { forwardRef } from "react";
+import { forwardRef, ReactNode } from "react";
 import { ResumeData } from "../utils/cvDataTransform";
 
 interface GermanLatexResumeProps {
     data: ResumeData;
     language?: 'en' | 'de';
 }
+
+/**
+ * Parse text with markdown bold syntax (**text**) and convert to React elements
+ */
+const parseMarkdownBold = (text: string): ReactNode[] => {
+    const parts: ReactNode[] = [];
+    const boldRegex = /\*\*(.+?)\*\*/g;
+    let lastIndex = 0;
+    let match;
+    let key = 0;
+
+    while ((match = boldRegex.exec(text)) !== null) {
+        // Add text before the match
+        if (match.index > lastIndex) {
+            parts.push(text.slice(lastIndex, match.index));
+        }
+        // Add the bold text
+        parts.push(<strong key={key++}>{match[1]}</strong>);
+        lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text after the last match
+    if (lastIndex < text.length) {
+        parts.push(text.slice(lastIndex));
+    }
+
+    // If no matches found, return the original text
+    if (parts.length === 0) {
+        return [text];
+    }
+
+    return parts;
+};
 
 const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
     ({ data, language = 'de' }, ref) => {
@@ -91,7 +124,7 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                             {lang.professionalProfile}
                         </h2>
                         <p style={{ textAlign: 'justify', margin: '0', fontSize: '10pt' }}>
-                            {data.summary}
+                            {parseMarkdownBold(data.summary || '')}
                         </p>
                     </div>
                 )}
@@ -129,7 +162,7 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                                         <div style={{ fontSize: '10pt', marginTop: '4px' }}>
                                             {experience.description.split('\n').filter(line => line.trim()).map((line, idx) => (
                                                 <div key={idx} style={{ marginBottom: '2px' }}>
-                                                    – {line.replace(/^[•-]\s*/, '')}
+                                                    – {parseMarkdownBold(line.replace(/^[•-]\s*/, ''))}
                                                 </div>
                                             ))}
                                         </div>
@@ -202,12 +235,12 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                                         )}
                                     </div>
                                     <div style={{ fontSize: '10pt' }}>
-                                        {project.description}
+                                        {parseMarkdownBold(project.description || '')}
                                     </div>
                                     {project.highlights && project.highlights.length > 0 && (
                                         <ul style={{ marginTop: '2px', marginBottom: '0', paddingLeft: '15px' }}>
                                             {project.highlights.map((highlight, idx) => (
-                                                <li key={idx} style={{ fontSize: '10pt' }}>{highlight}</li>
+                                                <li key={idx} style={{ fontSize: '10pt' }}>{parseMarkdownBold(highlight)}</li>
                                             ))}
                                         </ul>
                                     )}
@@ -238,7 +271,7 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                                     <div style={{ fontSize: '10pt' }}>
                                         {section.content.split('\n').filter(line => line.trim()).map((line, lineIdx) => (
                                             <div key={lineIdx} style={{ marginBottom: '2px' }}>
-                                                {line.replace(/^[•-]\s*/, '')}
+                                                {parseMarkdownBold(line.replace(/^[•-]\s*/, ''))}
                                             </div>
                                         ))}
                                     </div>
@@ -247,7 +280,7 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                     </div>
                 )}
 
-                {/* Technical Skills */}
+                {/* Technical Skills - Multi-column layout to reduce height */}
                 {data.skills && data.skills.length > 0 && (
                     <div style={{ marginBottom: '15px' }}>
                         <h2 style={{
@@ -261,13 +294,20 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                         }}>
                             {lang.technicalSkills}
                         </h2>
-                        <ul style={{ margin: '0', paddingLeft: '20px', listStyleType: 'disc' }}>
+                        <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '4px 12px',
+                            fontSize: '10pt',
+                        }}>
                             {data.skills.map((skill, index) => (
-                                <li key={index} style={{ marginBottom: '3px', fontSize: '10pt' }}>
-                                    {skill}
-                                </li>
+                                <span key={index} style={{
+                                    whiteSpace: 'nowrap',
+                                }}>
+                                    • {skill}
+                                </span>
                             ))}
-                        </ul>
+                        </div>
                     </div>
                 )}
 

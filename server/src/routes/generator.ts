@@ -560,6 +560,21 @@ const renderFinalPdfsHandler: RequestHandler = async (req: ValidatedRequest, res
             return;
         }
 
+        // --- MODIFICATION: Ensure name is available for filenames (check Master CV fallback) ---
+        const currentName1 = cvJsonData.basics?.name;
+        if (!currentName1 || currentName1 === 'Applicant') {
+            const masterCv = await CV.findOne({ userId, isMasterCv: true });
+            const masterName = masterCv?.cvJson?.basics?.name;
+            if (masterName) {
+                if (!cvJsonData.basics) {
+                    cvJsonData.basics = { name: masterName, profiles: [] } as any;
+                } else {
+                    cvJsonData.basics.name = masterName;
+                }
+                console.log(`Using name from Master CV for filenames: ${cvJsonData.basics?.name}`);
+            }
+        }
+
         if (!job.draftCoverLetterText || typeof job.draftCoverLetterText !== 'string') {
             res.status(400).json({ message: 'Missing or invalid draft cover letter text.' });
             return;
@@ -608,15 +623,44 @@ const renderFinalPdfsHandler: RequestHandler = async (req: ValidatedRequest, res
 
         // 3. Prepare Filenames for New PDFs
         const sanitize = (str: string) => str?.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_') || 'Unknown';
-        // cvJsonData is already set above
-        // const applicantName = sanitize(cvJsonData?.basics?.name || 'Applicant'); // Removed from filename
-        const companySanitized = sanitize(job.companyName);
-        // const titleSanitized = sanitize(job.jobTitle); // Removed from filename
-        // const baseFilename = `${applicantName}_${companySanitized}_${titleSanitized}`; // Simplified
+        
+        // --- MODIFICATION: New filename format based on AI suggestion or manual logic ---
+        let clFilenamePrefix = '';
+        
+        if (job.suggestedCoverLetterFilename) {
+            // Use AI suggested filename, remove extension if present
+            clFilenamePrefix = job.suggestedCoverLetterFilename.replace(/\.[^/.]+$/, "");
+            console.log(`Using AI-suggested cover letter filename: ${clFilenamePrefix}`);
+        } else {
+            // Manual fallback logic
+            const nameParts = (cvJsonData?.basics?.name || 'Applicant').trim().split(/\s+/);
+            const firstName = sanitize(nameParts[0]);
+            const lastName = sanitize(nameParts.slice(1).join('_') || 'Unknown');
+            
+            const documentLabel = (language === 'de') ? 'Anschreiben' : 'coverletter';
+            
+            // Determine employment type label based on language and jobType
+            let employmentTypeLabel = 'job';
+            if (job.jobType === 'working-student') {
+                employmentTypeLabel = (language === 'de') ? 'Werkstudent' : 'working-student';
+            } else if (job.jobType === 'full-time') {
+                employmentTypeLabel = (language === 'de') ? 'Vollzeit' : 'full-time';
+            } else if (job.jobType === 'internship') {
+                employmentTypeLabel = (language === 'de') ? 'Praktikum' : 'internship';
+            } else if (job.jobType === 'part-time') {
+                employmentTypeLabel = (language === 'de') ? 'Teilzeit' : 'part-time';
+            } else if (job.jobType) {
+                employmentTypeLabel = sanitize(job.jobType);
+            }
+
+            const companySanitized = sanitize(job.companyName);
+            const titleSanitized = sanitize(job.jobTitle);
+
+            clFilenamePrefix = `${firstName}_${lastName}_${documentLabel}_${employmentTypeLabel}_${titleSanitized}_${companySanitized}`;
+        }
 
         const langSuffix = language.toUpperCase();
-        const cvFilenamePrefix = `CV_${companySanitized}_${langSuffix}`;
-        const clFilenamePrefix = (language === 'de') ? `Anschreiben_${companySanitized}` : `Cover_Letter_${companySanitized}`;
+        const cvFilenamePrefix = `CV_${sanitize(job.companyName)}_${langSuffix}`;
 
         // 4. Call PDF Generators
         console.log(`Generating final CV PDF for job ${jobId}...`);
@@ -629,7 +673,7 @@ const renderFinalPdfsHandler: RequestHandler = async (req: ValidatedRequest, res
         const generatedClFilename = await generateCoverLetterPdf(
             job.draftCoverLetterText!, // Add non-null assertion as it was validated
             cvJsonData,
-            `${clFilenamePrefix}_${language}`
+            clFilenamePrefix
         );
 
         // 5. Update Job Status and Store NEW Filenames
@@ -742,6 +786,21 @@ const renderCvPdfHandler: RequestHandler = async (req: ValidatedRequest, res): P
             return;
         }
 
+        // --- MODIFICATION: Ensure name is available for filenames (check Master CV fallback) ---
+        const currentName2 = cvJsonData.basics?.name;
+        if (!currentName2 || currentName2 === 'Applicant') {
+            const masterCv = await CV.findOne({ userId, isMasterCv: true });
+            const masterName = masterCv?.cvJson?.basics?.name;
+            if (masterName) {
+                if (!cvJsonData.basics) {
+                    cvJsonData.basics = { name: masterName, profiles: [] } as any;
+                } else {
+                    cvJsonData.basics.name = masterName;
+                }
+                console.log(`Using name from Master CV for filenames: ${cvJsonData.basics?.name}`);
+            }
+        }
+
         const language = (job.language === 'en' || job.language === 'de') ? job.language : 'en';
 
         // Delete old CV PDF if exists
@@ -827,6 +886,21 @@ const renderCoverLetterPdfHandler: RequestHandler = async (req: ValidatedRequest
         // But generateCoverLetterPdf expects it.
         if (!cvJsonData) cvJsonData = {} as JsonResumeSchema;
 
+        // --- MODIFICATION: Ensure name is available for filenames (check Master CV fallback) ---
+        const currentName3 = cvJsonData.basics?.name;
+        if (!currentName3 || currentName3 === 'Applicant') {
+            const masterCv = await CV.findOne({ userId, isMasterCv: true });
+            const masterName = masterCv?.cvJson?.basics?.name;
+            if (masterName) {
+                if (!cvJsonData.basics) {
+                    cvJsonData.basics = { name: masterName, profiles: [] } as any;
+                } else {
+                    cvJsonData.basics.name = masterName;
+                }
+                console.log(`Using name from Master CV for filenames: ${cvJsonData.basics?.name}`);
+            }
+        }
+
         // Delete old Cover Letter PDF if exists
         if (job.generatedCoverLetterFilename) {
             const oldClPath = path.join(TEMP_PDF_DIR, path.basename(job.generatedCoverLetterFilename));
@@ -842,11 +916,46 @@ const renderCoverLetterPdfHandler: RequestHandler = async (req: ValidatedRequest
 
         // Generate new Cover Letter PDF
         const sanitize = (str: string) => str?.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_') || 'Unknown';
-        // cvJsonData set above
-        // const applicantName = sanitize(cvJsonData?.basics?.name || 'Applicant');
+        
+        // --- MODIFICATION: New filename format based on user request ---
+        // firstname_familyname_Anschreiben/coverletter_Werkstudent/fulltime_jobtype_companyname.pdf
+        const nameParts = (cvJsonData?.basics?.name || 'Applicant').trim().split(/\s+/);
+        const firstName = sanitize(nameParts[0]);
+        const lastName = sanitize(nameParts.slice(1).join('_') || 'Unknown');
+        
+        const documentLabel = (language === 'de') ? 'Anschreiben' : 'coverletter';
+        
+        // Determine employment type label based on language and jobType
+        let employmentTypeLabel = 'job';
+        if (job.jobType === 'working-student') {
+            employmentTypeLabel = (language === 'de') ? 'Werkstudent' : 'working-student';
+        } else if (job.jobType === 'full-time') {
+            employmentTypeLabel = (language === 'de') ? 'Vollzeit' : 'full-time';
+        } else if (job.jobType === 'internship') {
+            employmentTypeLabel = (language === 'de') ? 'Praktikum' : 'internship';
+        } else if (job.jobType === 'part-time') {
+            employmentTypeLabel = (language === 'de') ? 'Teilzeit' : 'part-time';
+        } else if (job.jobType) {
+            employmentTypeLabel = sanitize(job.jobType);
+        }
+
         const companySanitized = sanitize(job.companyName);
-        // const titleSanitized = sanitize(job.jobTitle);
-        const clFilenamePrefix = (language === 'de') ? `Anschreiben_${companySanitized}` : `Cover_Letter_${companySanitized}`;
+        const titleSanitized = sanitize(job.jobTitle);
+
+        let clFilenamePrefix = `${firstName}_${lastName}_${documentLabel}_${employmentTypeLabel}_${titleSanitized}_${companySanitized}`;
+        
+        // --- MODIFICATION: Use AI-suggested filename if available ---
+        if (job.suggestedCoverLetterFilename) {
+            // AI returns full filename with extension, but we need prefix for generateCoverLetterPdf
+            // We also want to strip .pdf if it exists
+            let aiFilename = job.suggestedCoverLetterFilename;
+            if (aiFilename.toLowerCase().endsWith('.pdf')) {
+                aiFilename = aiFilename.substring(0, aiFilename.length - 4);
+            }
+            // Sanitize it just in case, but keep it mostly as-is
+            clFilenamePrefix = sanitize(aiFilename);
+            console.log(`Using AI-suggested filename prefix for Cover Letter: ${clFilenamePrefix}`);
+        }
 
         const generatedClFilename = await generateCoverLetterPdf(
             job.draftCoverLetterText,

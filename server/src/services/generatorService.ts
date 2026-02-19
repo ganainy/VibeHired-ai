@@ -164,10 +164,12 @@ Job Details:
 Tasks:
 1. Write a compelling, humanized cover letter that:
    - Shows genuine interest in the company (use their mission/values)
-   - Highlights relevant experience
+   - Highlights relevant experience (DO NOT LIE: Use ONLY info from resume. If a skill is missing, mention basics or willingness to learn.)
    - Demonstrates cultural fit
    - Is personalized, not generic
    - Is 250-350 words
+   - NO HEADER: Skip name, address, contact info and date. Start with the salutation.
+   - NO MARKDOWN: Output only plain text (no ** for bold, etc).
    
 2. Calculate a skill match score (1-5 scale):
    - 5: Exceptional match, candidate exceeds requirements
@@ -177,6 +179,7 @@ Tasks:
    - 1: Weak match, limited alignment
 
 3. Provide a brief reason for the score (1-2 sentences).
+   - Use plain text (no markdown).
 
 Return a JSON object:
 {

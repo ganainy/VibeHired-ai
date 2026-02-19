@@ -22,6 +22,7 @@ import Toast from '../components/common/Toast';
 import JobStatusBadge from '../components/jobs/JobStatusBadge';
 import { getJobRecommendation, JobRecommendation } from '../services/jobRecommendationApi';
 import CoverLetterEditor from '../components/CoverLetterEditor';
+import EmailFormatModal from '../components/EmailFormatModal';
 import { JobChatWindow, FloatingChatButton } from '../components/chat';
 import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
 
@@ -166,8 +167,9 @@ const ReviewFinalizePage: React.FC = () => {
     const [previewPdfBase64, setPreviewPdfBase64] = useState<string | null>(null);
     const [isGeneratingPreview, setIsGeneratingPreview] = useState<boolean>(false);
     const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false);
 
-    const [selectedTemplate, setSelectedTemplate] = useState<string>('modern-clean');
+    const [selectedTemplate, setSelectedTemplate] = useState<string>('german-latex');
     const [cvSaveStatus, setCvSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
     // Ref for accessing the CV preview element for PDF generation
@@ -287,6 +289,31 @@ const ReviewFinalizePage: React.FC = () => {
             }
         }
     }, [jobId]);
+
+    // Sync selected CV IDs from job's baseCvId when job is loaded (if no localStorage entry exists)
+    useEffect(() => {
+        if (!jobApplication || !jobId) return;
+
+        try {
+            // Check if we already have a saved selection in localStorage
+            const savedBaseCvId = localStorage.getItem(`job_selectedBaseCvId_${jobId}`);
+            const savedClBaseCvId = localStorage.getItem(`job_selectedClBaseCvId_${jobId}`);
+
+            // If job has a baseCvId and we don't have a saved selection, sync from job
+            if (jobApplication.baseCvId) {
+                if (!savedBaseCvId) {
+                    setSelectedBaseCvId(jobApplication.baseCvId);
+                    localStorage.setItem(`job_selectedBaseCvId_${jobId}`, jobApplication.baseCvId);
+                }
+                if (!savedClBaseCvId) {
+                    setSelectedClBaseCvId(jobApplication.baseCvId);
+                    localStorage.setItem(`job_selectedClBaseCvId_${jobId}`, jobApplication.baseCvId);
+                }
+            }
+        } catch (e) {
+            console.error("Error syncing CV selection from job:", e);
+        }
+    }, [jobApplication, jobId]);
 
     const ATS_POLLING_INTERVAL_MS = 3000; // Poll more frequently for ATS
     const ATS_POLLING_TIMEOUT_MS = 120000; // 2 minutes timeout
@@ -1373,15 +1400,21 @@ const ReviewFinalizePage: React.FC = () => {
                 }
             }
 
-            const generatedText = await generateCoverLetter(jobId, language as 'en' | 'de', baseCvDataToUse);
+            const response = await generateCoverLetter(jobId, language as 'en' | 'de', baseCvDataToUse);
+            const { text: generatedText, suggestedFilename } = response;
 
             await updateJob(jobId, {
-                draftCoverLetterText: generatedText
+                draftCoverLetterText: generatedText,
+                suggestedCoverLetterFilename: suggestedFilename
             });
 
             // Optimistic update - update local state immediately
             setCoverLetterText(generatedText);
-            setJobApplication(prev => prev ? { ...prev, draftCoverLetterText: generatedText } : null);
+            setJobApplication(prev => prev ? { 
+                ...prev, 
+                draftCoverLetterText: generatedText,
+                suggestedCoverLetterFilename: suggestedFilename || prev.suggestedCoverLetterFilename 
+            } : null);
 
             await fetchJobData();
             showToast('Cover letter generated successfully', 'success');
@@ -2765,6 +2798,16 @@ const ReviewFinalizePage: React.FC = () => {
                                                             </svg>
                                                             <span>Word</span>
                                                         </button>
+
+                                                        {/* Email Format Button */}
+                                                        <button
+                                                            onClick={() => setIsEmailModalOpen(true)}
+                                                            className="group flex items-center gap-2 px-3 py-2 bg-emerald-500 dark:bg-emerald-600 text-white rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-700 active:bg-emerald-700 dark:active:bg-emerald-800 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
+                                                            title="View as Email Format"
+                                                        >
+                                                            <span className="material-symbols-outlined text-sm">mail</span>
+                                                            <span>Email</span>
+                                                        </button>
                                                     </div>
 
                                                     {/* Delete Cover Letter Button */}
@@ -3548,6 +3591,21 @@ const ReviewFinalizePage: React.FC = () => {
                     </div>
                 )
             }
+
+            {/* Email Format Modal */}
+            <EmailFormatModal
+                isOpen={isEmailModalOpen}
+                onClose={() => setIsEmailModalOpen(false)}
+                coverLetterText={coverLetterText}
+                jobTitle={jobApplication?.jobTitle || ''}
+                companyName={jobApplication?.companyName || ''}
+                language={jobApplication?.language || 'en'}
+                hiringManagerName={jobApplication?.hiringManagerName}
+                contactEmail={jobApplication?.contactEmail}
+                emailSubject={jobApplication?.coverLetterEmailSubject}
+                emailBody={jobApplication?.coverLetterEmailBody}
+                emailRecipient={jobApplication?.coverLetterEmailRecipient}
+            />
         </div >
     );
 };

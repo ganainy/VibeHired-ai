@@ -5,7 +5,7 @@ import JobApplication from '../models/JobApplication';
 import User, { IUser } from '../models/User';
 import CV from '../models/CV';
 import Profile from '../models/Profile';
-import { generateCoverLetter } from '../services/coverLetterService';
+import { generateCoverLetter, CoverLetterResponse } from '../services/coverLetterService';
 import { JsonResumeSchema } from '../types/jsonresume';
 import mongoose from 'mongoose';
 
@@ -20,6 +20,7 @@ interface AuthenticatedUser {
 /**
  * POST /api/cover-letter/:jobId
  * Generate a cover letter for a specific job application
+ * Returns structured data including email subject, body, and filename
  */
 const generateCoverLetterHandler: RequestHandler = async (req, res) => {
     const user = req.user as AuthenticatedUser;
@@ -74,9 +75,9 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
         const profile = await Profile.findOne({ userId: userId });
         const customPrompt = profile?.customPrompts?.coverLetterPrompt;
 
-        // 4. Generate Cover Letter
+        // 4. Generate Cover Letter with structured response
         console.log(`Generating cover letter for job ${jobId}...`);
-        const coverLetterText = await generateCoverLetter(
+        const coverLetterData: CoverLetterResponse = await generateCoverLetter(
             userId,
             baseCvJson,
             job.jobDescriptionText,
@@ -86,10 +87,28 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
             customPrompt
         );
 
-        // 5. Return the generated cover letter
+        // 5. Update Job with all cover letter data
+        await JobApplication.updateOne({ _id: jobId, userId: userId }, {
+            $set: {
+                draftCoverLetterText: coverLetterData.coverLetterText,
+                coverLetterFileName: coverLetterData.fileName,
+                coverLetterEmailSubject: coverLetterData.emailSubject,
+                coverLetterEmailBody: coverLetterData.emailBody,
+                coverLetterEmailRecipient: coverLetterData.emailRecipient || null,
+                suggestedCoverLetterFilename: coverLetterData.fileName // Keep for backward compatibility
+            }
+        });
+
+        // 6. Return the structured cover letter data
         res.status(200).json({
             success: true,
-            coverLetterText: coverLetterText,
+            coverLetterText: coverLetterData.coverLetterText,
+            fileName: coverLetterData.fileName,
+            emailSubject: coverLetterData.emailSubject,
+            emailBody: coverLetterData.emailBody,
+            emailRecipient: coverLetterData.emailRecipient,
+            // Keep for backward compatibility
+            suggestedFilename: coverLetterData.fileName,
             language: requestedLanguage
         });
 
@@ -122,4 +141,3 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
 router.post('/:jobId', generateCoverLetterHandler);
 
 export default router;
-

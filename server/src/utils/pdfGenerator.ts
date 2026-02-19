@@ -117,7 +117,7 @@ export const generateCvPdfFromJsonResume = async (
     console.log(`Attempting to generate CV PDF using template: ${template}...`);
 
     const browser = await getBrowser();
-    const uniqueFilename = `${filenamePrefix}_${Date.now()}.pdf`;
+    const uniqueFilename = `${filenamePrefix}.pdf`;
     const filePath = path.join(TEMP_PDF_DIR, uniqueFilename);
 
     try {
@@ -164,7 +164,7 @@ export const generateCoverLetterPdf = async (
 
     let page: Page | undefined;
     const browser = await getBrowser();
-    const uniqueFilename = `${filenamePrefix}_${Date.now()}.pdf`;
+    const uniqueFilename = `${filenamePrefix}.pdf`;
     const filePath = path.join(TEMP_PDF_DIR, uniqueFilename);
 
     try {

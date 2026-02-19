@@ -42,7 +42,7 @@ const CVManagementPage: React.FC = () => {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('modern-clean');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('german-latex');
   const [creationMode, setCreationMode] = useState<'choose' | 'upload' | 'scratch'>('choose');
 
   // Analysis state

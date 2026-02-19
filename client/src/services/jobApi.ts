@@ -29,6 +29,12 @@ export interface JobApplication {
     jobType?: 'full-time' | 'part-time' | 'working-student' | 'internship' | 'contract' | 'freelance' | null; // Employment type
     draftCvJson?: any | null; // Use JsonResumeSchema if imported, else any
     draftCoverLetterText?: string | null;
+    // Email fields for cover letter
+    coverLetterFileName?: string;
+    coverLetterEmailSubject?: string;
+    coverLetterEmailBody?: string;
+    coverLetterEmailRecipient?: string;
+    suggestedCoverLetterFilename?: string; // Legacy field for backward compatibility
     generationStatus?: 'none' | 'pending_input' | 'pending_generation' | 'draft_ready' | 'finalized' | 'error'; // Added pending_generation
     generatedCvFilename?: string; // Added
     generatedCoverLetterFilename?: string; // Added

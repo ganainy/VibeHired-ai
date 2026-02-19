@@ -117,7 +117,7 @@ function splitName(name?: string): { firstName: string; lastName: string } {
 }
 
 function extractLinkedIn(profiles?: Array<{ network?: string; url?: string }>): string {
-  if (!profiles || !Array.isArray) return '';
+  if (!profiles || !Array.isArray(profiles)) return '';
   const linkedInProfile = profiles.find(p =>
     p.network && p.network.toLowerCase().includes('linkedin')
   );
@@ -125,14 +125,30 @@ function extractLinkedIn(profiles?: Array<{ network?: string; url?: string }>): 
 }
 
 function extractWebsite(basics?: { url?: string; profiles?: Array<{ network?: string; url?: string }> }): string {
-  if (basics?.url) return basics.url;
-  if (basics?.profiles && Array.isArray(basics.profiles)) {
-    const websiteProfile = basics.profiles.find(p =>
-      p.network && !p.network.toLowerCase().includes('linkedin')
-    );
-    return websiteProfile?.url || '';
+  if (basics?.url && !basics.url.toLowerCase().includes('linkedin.com') && !basics.url.toLowerCase().includes('github.com')) {
+    return basics.url;
   }
-  return '';
+  
+  if (basics?.profiles && Array.isArray(basics.profiles)) {
+    // 1. Try to find portfolio or personal website first
+    const portfolioProfile = basics.profiles.find(p =>
+      p.network && (
+        p.network.toLowerCase().includes('portfolio') || 
+        p.network.toLowerCase().includes('personal') ||
+        p.network.toLowerCase().includes('website')
+      )
+    );
+    if (portfolioProfile?.url) return portfolioProfile.url;
+
+    // 2. Fallback to any network that isn't LinkedIn or GitHub
+    const websiteProfile = basics.profiles.find(p =>
+      p.network && 
+      !p.network.toLowerCase().includes('linkedin') && 
+      !p.network.toLowerCase().includes('github')
+    );
+    return websiteProfile?.url || (basics?.url || '');
+  }
+  return basics?.url || '';
 }
 
 function formatDescription(workItem: { summary?: string; highlights?: string[] }): string {
@@ -150,7 +166,7 @@ function formatDescription(workItem: { summary?: string; highlights?: string[] }
 
 
 function extractGitHub(profiles?: Array<{ network?: string; url?: string }>): string {
-  if (!profiles || !Array.isArray) return '';
+  if (!profiles || !Array.isArray(profiles)) return '';
   const githubProfile = profiles.find(p =>
     p.network && p.network.toLowerCase().includes('github')
   );
@@ -167,7 +183,7 @@ export interface Project {
   endDate?: string;
 }
 
-export function transformJsonResumeToResumeData(jsonResume: JsonResumeSchema, selectedTemplate: string = 'modern-clean'): ResumeData {
+export function transformJsonResumeToResumeData(jsonResume: JsonResumeSchema, selectedTemplate: string = 'german-latex'): ResumeData {
   const basics = jsonResume.basics || {};
   const location = basics.location || {};
   const { firstName, lastName } = splitName(basics.name);

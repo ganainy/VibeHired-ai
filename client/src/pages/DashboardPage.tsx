@@ -38,6 +38,16 @@ const JOB_TYPE_OPTIONS = [
   { value: 'freelance', label: 'Freelance' },
 ];
 
+// Status options for filter dropdown
+const STATUS_OPTIONS = [
+  { value: 'Not Applied', label: 'Not Applied', icon: '🕗' },
+  { value: 'Applied', label: 'Applied', icon: '📤' },
+  { value: 'Interview', label: 'Interview', icon: '💬' },
+  { value: 'Assessment', label: 'Assessment', icon: '📝' },
+  { value: 'Offer', label: 'Offer', icon: '🎉' },
+  { value: 'Rejected', label: 'Rejected', icon: '❌' },
+];
+
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -459,7 +469,7 @@ const DashboardPage: React.FC = () => {
   };
 
   // Define status options for filter dropdown
-  const statusOptions: JobApplication['status'][] = ['Not Applied', 'Applied', 'Interview', 'Assessment', 'Rejected', 'Closed', 'Offer'];
+  const statusOptions: JobApplication['status'][] = ['Not Applied', 'Applied', 'Interview', 'Assessment', 'Rejected', 'Offer'];
 
   // Icon components
   const AddIcon = () => (
@@ -642,7 +652,6 @@ const DashboardPage: React.FC = () => {
                     <option value="Assessment">Assessment</option>
                     <option value="Offer">Offer</option>
                     <option value="Rejected">Rejected</option>
-                    <option value="Closed">Closed</option>
                   </select>
                 </div>
 
@@ -891,7 +900,6 @@ const DashboardPage: React.FC = () => {
                         </th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Type</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Contact</th>
-                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Link</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -966,36 +974,41 @@ const DashboardPage: React.FC = () => {
                               )
                             ) : '-'}
                           </td>
-                          <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                            {job.jobUrl ? (
-                              <div className="flex items-center gap-1">
-                                {parseMultipleUrls(job.jobUrl).slice(0, 3).map((url, idx, arr) => (
-                                  <a
-                                    key={idx}
-                                    href={url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center justify-center w-8 h-8 rounded-md text-indigo-500 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
-                                    title={`Open: ${url}`}
-                                  >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
-                                    {arr.length > 1 && <span className="text-xs ml-0.5">{idx + 1}</span>}
-                                  </a>
-                                ))}
-                                {parseMultipleUrls(job.jobUrl).length > 3 && (
-                                  <span className="text-xs text-slate-500 dark:text-slate-400 ml-1" title={parseMultipleUrls(job.jobUrl).slice(3).join('\n')}>
-                                    +{parseMultipleUrls(job.jobUrl).length - 3} more
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-slate-400 dark:text-slate-500">-</span>
-                            )}
-                          </td>
                           <td className="p-4">
-                            <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                              {/* Note indicator */}
+                              {job.notes && job.notes.trim() && (
+                                <span
+                                  className="flex items-center justify-center w-8 h-8 text-blue-500 dark:text-blue-400"
+                                  title={`Note: ${job.notes.length > 100 ? job.notes.substring(0, 100) + '...' : job.notes}`}
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </span>
+                              )}
+                              {/* Link icons */}
+                              {job.jobUrl && parseMultipleUrls(job.jobUrl).slice(0, 2).map((url, idx, arr) => (
+                                <a
+                                  key={idx}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center w-8 h-8 rounded-md text-indigo-500 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                                  title={`Open: ${url}`}
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                  {arr.length > 1 && <span className="text-xs ml-0.5">{idx + 1}</span>}
+                                </a>
+                              ))}
+                              {job.jobUrl && parseMultipleUrls(job.jobUrl).length > 2 && (
+                                <span className="text-xs text-slate-500 dark:text-slate-400 px-1" title={parseMultipleUrls(job.jobUrl).slice(2).join('\n')}>
+                                  +{parseMultipleUrls(job.jobUrl).length - 2}
+                                </span>
+                              )}
+                              {/* Favorite button */}
                               <button
                                 onClick={(e) => handleToggleFavorite(job, e)}
                                 className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${job.isFavorite
@@ -1006,6 +1019,7 @@ const DashboardPage: React.FC = () => {
                               >
                                 <StarIcon filled={!!job.isFavorite} />
                               </button>
+                              {/* Delete button */}
                               <button
                                 onClick={(e) => handleDeleteClick(job, e)}
                                 className="flex items-center justify-center w-8 h-8 rounded-md text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"

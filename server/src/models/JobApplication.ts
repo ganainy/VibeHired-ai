@@ -61,10 +61,16 @@ export interface IJobApplication extends Document {
     // --- New Fields for Drafts & Status ---
     draftCvJson?: JsonResumeSchema | mongoose.Schema.Types.Mixed; // Store draft CV data
     draftCoverLetterText?: string; // Store draft Cover Letter text
+    // Email fields for cover letter
+    coverLetterFileName?: string; // Suggested filename for downloads
+    coverLetterEmailSubject?: string; // Email subject line
+    coverLetterEmailBody?: string; // Email body with attachment note
+    coverLetterEmailRecipient?: string; // Email recipient
     generationStatus?: GenerationStatus; // Track the generation process
     // --- New Fields for Final Filenames ---
     generatedCvFilename?: string; // Store the filename of the latest generated CV PDF
     generatedCoverLetterFilename?: string; // Store the filename of the latest generated CL PDF
+    suggestedCoverLetterFilename?: string; // AI-suggested filename based on job/user name
     // --- New Fields for CV Branch System ---
     jobCategory?: string | null;   // e.g., "Software Engineering" (free text)
     baseCvId?: mongoose.Schema.Types.ObjectId | null;  // Which CV branch was used as base
@@ -157,6 +163,11 @@ const JobApplicationSchema: Schema = new Schema(
         // --- Schema Definitions for New Fields ---
         draftCvJson: { type: Schema.Types.Mixed, required: false },
         draftCoverLetterText: { type: String, required: false },
+        // Email fields for cover letter
+        coverLetterFileName: { type: String, required: false },
+        coverLetterEmailSubject: { type: String, required: false },
+        coverLetterEmailBody: { type: String, required: false },
+        coverLetterEmailRecipient: { type: String, required: false },
         generationStatus: {
             type: String,
             enum: ['none', 'pending_input', 'pending_generation', 'draft_ready', 'finalized', 'error'], // Added pending_generation
@@ -165,6 +176,7 @@ const JobApplicationSchema: Schema = new Schema(
         // --- Schema Definitions for New Fields ---
         generatedCvFilename: { type: String, required: false },
         generatedCoverLetterFilename: { type: String, required: false },
+        suggestedCoverLetterFilename: { type: String, required: false },
         // --- Schema Definitions for CV Branch System ---
         jobCategory: { type: String, default: null, maxlength: 50 },
         baseCvId: { type: Schema.Types.ObjectId, ref: 'CV', default: null },

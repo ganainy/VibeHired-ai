@@ -458,7 +458,7 @@ const SettingsPage: React.FC = () => {
               <KeyIcon />
             </div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              API Keys Settings
+              Integration & AI Settings
             </h1>
           </div>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 ml-12">
@@ -962,7 +962,7 @@ const SettingsPage: React.FC = () => {
               ) : (
                 <>
                   <CheckIcon />
-                  <span>Save API Keys</span>
+                    <span>Save Changes</span>
                 </>
               )}
             </button>
