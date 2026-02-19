@@ -13,7 +13,6 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@chakra-ui/react', '@emotion/react', '@emotion/styled', 'framer-motion'],
           pdf: ['@pdfme/common', '@pdfme/generator', '@pdfme/schemas', '@pdfme/ui', 'jspdf', 'html2canvas'],
           charts: ['recharts']
         }
