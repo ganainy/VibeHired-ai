@@ -2,16 +2,9 @@ import { ForwardRefExoticComponent, RefAttributes } from 'react';
 import { ResumeData } from '../utils/cvDataTransform';
 import ModernCleanResume from './ModernCleanResume';
 import ATSOptimizedResume from './ATSOptimizedResume';
-
-import MinimalistResume from './MinimalistResume';
-import BoldCreativeResume from './BoldCreativeResume';
 import CorporateProfessionalResume from './CorporateProfessionalResume';
 import CreativeDesignResume from './CreativeDesignResume';
 import ElegantMinimalistResume from './ElegantMinimalistResume';
-import ElitePremiumResume from './ElitePremiumResume';
-import EngineeringResume from './EngineeringResume';
-import ModernA4Resume from './ModernA4Resume';
-import ModernTwoColumnResume from './ModernTwoColumnResume';
 import SoftwareEngineerResume from './SoftwareEngineerResume';
 import GermanLatexResume from './GermanLatexResume';
 
@@ -39,21 +32,6 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
     category: 'ats-optimized',
     component: ATSOptimizedResume,
   },
-
-  'minimalist': {
-    id: 'minimalist',
-    name: 'Minimalist',
-    description: 'Simple and elegant minimalist design',
-    category: 'minimalist',
-    component: MinimalistResume,
-  },
-  'bold-creative': {
-    id: 'bold-creative',
-    name: 'Bold Creative',
-    description: 'Bold and creative design for creative professionals',
-    category: 'creative',
-    component: BoldCreativeResume,
-  },
   'corporate-professional': {
     id: 'corporate-professional',
     name: 'Corporate Professional',
@@ -74,34 +52,6 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
     description: 'Elegant minimalist design',
     category: 'minimalist',
     component: ElegantMinimalistResume,
-  },
-  'elite-premium': {
-    id: 'elite-premium',
-    name: 'Elite Premium',
-    description: 'Premium design for executives',
-    category: 'professional',
-    component: ElitePremiumResume,
-  },
-  'engineering': {
-    id: 'engineering',
-    name: 'Engineering',
-    description: 'Designed for engineering professionals',
-    category: 'professional',
-    component: EngineeringResume,
-  },
-  'modern-a4': {
-    id: 'modern-a4',
-    name: 'Modern A4',
-    description: 'Modern A4 format design',
-    category: 'modern',
-    component: ModernA4Resume,
-  },
-  'modern-two-column': {
-    id: 'modern-two-column',
-    name: 'Modern Two Column',
-    description: 'Modern two-column layout',
-    category: 'modern',
-    component: ModernTwoColumnResume,
   },
   'software-engineer': {
     id: 'software-engineer',
@@ -130,4 +80,3 @@ export const getAllTemplates = (): TemplateConfig[] => {
 export const getTemplatesByCategory = (category: TemplateConfig['category']): TemplateConfig[] => {
   return Object.values(TEMPLATES).filter(template => template.category === category);
 };
-

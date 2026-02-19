@@ -100,13 +100,19 @@ const ATSOptimizedResume = forwardRef<HTMLDivElement, { data: ResumeData }>(({ d
               fontSize: '24px',
               fontWeight: 'bold',
               letterSpacing: '2px',
-              marginBottom: '15px',
+              marginBottom: '5px',
               textTransform: 'uppercase'
             }}
             data-preserve="true"
           >
             {data.firstName} {data.lastName}
           </div>
+
+          {data.jobTitle && (
+            <div style={{ fontSize: '14px', fontWeight: 'bold', fontStyle: 'italic', marginBottom: '10px', color: '#333' }}>
+              {data.jobTitle}
+            </div>
+          )}
 
           <div
             style={{
@@ -124,8 +130,11 @@ const ATSOptimizedResume = forwardRef<HTMLDivElement, { data: ResumeData }>(({ d
             }}
             data-preserve="true"
           >
-            {[data.city, data.state].filter(Boolean).join(', ')} {data.zipCode && `${data.zipCode}`} • {data.phone} • {data.email} •<br />
-            {data.linkedIn && <><strong>LinkedIn:</strong> {data.linkedIn} • </>}{data.website && <><strong>WWW:</strong> {data.website}</>}
+            {[data.city, data.state].filter(Boolean).join(', ')} {data.zipCode && `${data.zipCode}`} • {data.phone} • {data.email}
+            {(data.linkedIn || data.website || data.github) && <br />}
+            {data.linkedIn && <> • <strong>LinkedIn:</strong> {data.linkedIn.replace(/^https?:\/\//, '').replace(/^www\./, '')}</>}
+            {data.github && <> • <strong>GitHub:</strong> {data.github.replace(/^https?:\/\//, '').replace(/^www\./, '')}</>}
+            {data.website && <> • <strong>Portfolio:</strong> {data.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}</>}
           </div>
         </div>
 

@@ -112,7 +112,7 @@ const SoftwareEngineerResume = forwardRef<HTMLDivElement, { data: ResumeData }>(
           </div>
 
           <div className="text-gray-300 mb-3" style={{ fontSize: '12px', fontWeight: '500' }}>
-            {data.experiences && data.experiences.length > 0 ? data.experiences[0].title : 'Professional'}
+            {data.jobTitle || (data.experiences && data.experiences.length > 0 ? data.experiences[0].title : 'Software Engineer')}
           </div>
 
           <div className="grid grid-cols-2 gap-1 text-xs mb-3" style={{ background: '#111827', padding: '8px', borderRadius: '4px', fontFamily: 'monospace' }} data-preserve="true">
@@ -137,19 +137,31 @@ const SoftwareEngineerResume = forwardRef<HTMLDivElement, { data: ResumeData }>(
             {data.website && (
               <div className="flex items-center gap-1" style={{ color: '#a78bfa' }} data-preserve="true">
                 <Globe className="h-3 w-3" />
-                <span>website: "{data.website}"</span>
+                <span>website: "</span>
+                <a href={data.website.startsWith('http') ? data.website : `https://${data.website}`} className="hover:underline">
+                  {data.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                </a>
+                <span>"</span>
               </div>
             )}
             {data.linkedIn && (
               <div className="flex items-center gap-1" style={{ color: '#22d3ee' }} data-preserve="true">
                 <Linkedin className="h-3 w-3" />
-                <span>linkedin: "{data.linkedIn}"</span>
+                <span>linkedin: "</span>
+                <a href={data.linkedIn.startsWith('http') ? data.linkedIn : `https://${data.linkedIn}`} className="hover:underline">
+                  {data.linkedIn.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                </a>
+                <span>"</span>
               </div>
             )}
             {data.github && (
               <div className="flex items-center gap-1" style={{ color: '#e5e7eb' }} data-preserve="true">
                 <Github className="h-3 w-3" />
-                <span>github: "{data.github}"</span>
+                <span>github: "</span>
+                <a href={data.github.startsWith('http') ? data.github : `https://${data.github}`} className="hover:underline">
+                  {data.github.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                </a>
+                <span>"</span>
               </div>
             )}
           </div>

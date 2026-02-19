@@ -62,6 +62,7 @@ export interface SectionLabels {
 export interface ResumeData {
   firstName: string;
   lastName: string;
+  jobTitle: string;
   email: string;
   phone: string;
   address: string;
@@ -187,6 +188,11 @@ export function transformJsonResumeToResumeData(jsonResume: JsonResumeSchema, se
   const basics = jsonResume.basics || {};
   const location = basics.location || {};
   const { firstName, lastName } = splitName(basics.name);
+
+  // EXTRA AGGRESSIVE LOGGING
+  console.log('--- CV_TRANSFORM DEBUG START ---');
+  console.log('Full JSON Resume basics:', JSON.stringify(basics, null, 2));
+  console.log('JSON Resume basics.profiles:', JSON.stringify(basics.profiles, null, 2));
 
   const experiences: Experience[] = (jsonResume.work || []).map((workItem, index) => {
     const company = workItem.name || workItem.company || '';
@@ -325,6 +331,7 @@ export function transformJsonResumeToResumeData(jsonResume: JsonResumeSchema, se
   return {
     firstName,
     lastName,
+    jobTitle: basics.label || '',
     email: basics.email || '',
     phone: basics.phone || '',
     address: location.address || '',

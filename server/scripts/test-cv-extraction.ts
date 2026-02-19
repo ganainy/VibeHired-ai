@@ -83,14 +83,19 @@ You are a precise CV/resume data extractor. Analyze the attached CV file (${file
 - Example of CORRECT entry: { "language": "Deutsch", "fluency": "C1" }
 - Example of INCORRECT entry: { "language": "DeutschC1", "fluency": "" }
 
-**basics.profiles**
-- ONLY extract profile URLs that contain a real, specific path (e.g. "https://linkedin.com/in/username" or "https://github.com/username").
-- NEVER include generic placeholder URLs (e.g. "https://linkedin.com/", "https://github.com/", "https://www.portfolio.com/").
-- If the CV shows a platform icon or label but no real URL, omit that profile entirely.
+**basics.profiles & basics.url**
+- Extract common social/professional profiles like LinkedIn, GitHub, and Portfolio.
+- **IMPORTANT**: Extract the FULL URL for each profile.
+- **NEVER GUESS HANDLES**: DO NOT construct URLs based on the candidate's name. Only extract a profile if a specific username or link is explicitly written next to the icon/label.
+- If the CV contains a specific handle (e.g. "@amrelg") next to an icon, construct the full URL (e.g. "github.com/amrelg").
+- **STRICT NO PLACEHOLDERS**: NEVER extract generic URLs like "https://linkedin.com/", "https://github.com/", or URLs that obviously lacks a unique handle.
+- If no specific profile info is present, omit the field entirely.
+- Map LinkedIn to "network": "LinkedIn", GitHub to "network": "GitHub", and Portfolio sites to "network": "Portfolio" or "Website".
 
 **General rules**
 - Parse the ENTIRE document — do not skip any section.
 - NEVER include section heading labels (e.g. "Skills & Technologies", "Berufserfahrung") as field values.
+- NEVER use generic placeholders for any field. If the information isn't in the CV, leave the field out.
 - Format all dates as YYYY-MM or YYYY. Use "Present" for ongoing. Omit date fields that are not found.
 - If an entire section is absent from the CV, omit that top-level key entirely.
 - If a specific field is not found, omit it (do not set to null or empty string unless required).

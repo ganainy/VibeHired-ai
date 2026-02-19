@@ -20,39 +20,48 @@ const CorporateProfessionalResume = forwardRef<HTMLDivElement, { data: ResumeDat
   return (
     <div ref={ref} className="bg-white text-black mx-auto p-6" style={{ fontFamily: "'Inter', 'Arial', sans-serif", fontSize: '12px', lineHeight: '1.5', maxWidth: '8.27in', width: '100%' }}>
       <header className="mb-6 text-center">
-        <h1 className="text-xl font-bold text-gray-900 mb-2" style={{ fontSize: '20px' }}>
+        <h1 className="text-xl font-bold text-gray-900 mb-1" style={{ fontSize: '20px' }}>
           {data.firstName} {data.lastName}
         </h1>
+        {data.jobTitle && (
+          <div className="text-gray-700 font-bold italic mb-3" style={{ fontSize: '12px' }}>
+            {data.jobTitle}
+          </div>
+        )}
 
-        <div className="flex flex-wrap justify-center items-center gap-4 text-sm text-gray-600">
+        <div className="flex flex-wrap justify-center items-center gap-4 text-xs text-gray-600">
           {data.email && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Mail className="h-4 w-4" />
               <span>{data.email}</span>
             </div>
           )}
           {data.phone && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Phone className="h-4 w-4" />
               <span>{data.phone}</span>
             </div>
           )}
           {(data.city || data.state) && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
               <span>{[data.city, data.state].filter(Boolean).join(', ')}</span>
             </div>
           )}
           {data.website && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Globe className="h-4 w-4" />
-              <span>{data.website}</span>
+              <a href={data.website.startsWith('http') ? data.website : `https://${data.website}`} className="hover:underline">
+                {data.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+              </a>
             </div>
           )}
           {data.linkedIn && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Linkedin className="h-4 w-4" />
-              <span>{data.linkedIn}</span>
+              <a href={data.linkedIn.startsWith('http') ? data.linkedIn : `https://${data.linkedIn}`} className="hover:underline">
+                {data.linkedIn.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+              </a>
             </div>
           )}
         </div>

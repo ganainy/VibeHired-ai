@@ -36,6 +36,11 @@ const ElegantMinimalistResume = forwardRef<HTMLDivElement, { data: ResumeData }>
         <h1 className="text-lg font-bold mb-1" style={{ color: '#1f2937' }}>
           {data.firstName} {data.lastName}
         </h1>
+        {data.jobTitle && (
+          <div className="text-sm italic font-medium mb-2" style={{ color: '#059669' }}>
+            {data.jobTitle}
+          </div>
+        )}
 
         <div className="flex flex-wrap justify-center gap-3 text-xs text-gray-600 mb-2">
           {data.email && (
@@ -62,13 +67,25 @@ const ElegantMinimalistResume = forwardRef<HTMLDivElement, { data: ResumeData }>
           {data.linkedIn && (
             <div className="flex items-center gap-1">
               <Linkedin className="h-3 w-3" style={{ color: '#059669' }} />
-              <span>{data.linkedIn}</span>
+              <a href={data.linkedIn.startsWith('http') ? data.linkedIn : `https://${data.linkedIn}`} className="hover:underline">
+                {data.linkedIn.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+              </a>
             </div>
           )}
           {data.website && (
             <div className="flex items-center gap-1">
               <Globe className="h-3 w-3" style={{ color: '#059669' }} />
-              <span>{data.website}</span>
+              <a href={data.website.startsWith('http') ? data.website : `https://${data.website}`} className="hover:underline">
+                {data.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+              </a>
+            </div>
+          )}
+          {data.github && (
+            <div className="flex items-center gap-1">
+              <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/github.svg" alt="GitHub" className="h-3 w-3" style={{ filter: 'invert(37%) sepia(93%) saturate(442%) hue-rotate(113deg) brightness(92%) contrast(92%)' }} />
+              <a href={data.github.startsWith('http') ? data.github : `https://${data.github}`} className="hover:underline">
+                {data.github.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+              </a>
             </div>
           )}
         </div>

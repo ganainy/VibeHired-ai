@@ -45,9 +45,9 @@ const CreativeDesignResume = forwardRef<HTMLDivElement, { data: ResumeData }>(({
           <h1 className="text-lg font-bold mb-1 uppercase tracking-wide">
             {data.firstName} {data.lastName}
           </h1>
-          {data.experiences && data.experiences.length > 0 && data.experiences.some(exp => exp.company || exp.title || exp.description || exp.startDate || exp.endDate) && (
-            <p className="text-sm mb-2">
-              {data.experiences[0].title}
+          {data.jobTitle && (
+            <p className="text-sm mb-2 font-medium italic opacity-90">
+              {data.jobTitle}
             </p>
           )}
           
@@ -61,7 +61,17 @@ const CreativeDesignResume = forwardRef<HTMLDivElement, { data: ResumeData }>(({
             {data.linkedIn && (
               <div className="flex items-center gap-1">
                 <Linkedin className="h-3 w-3" />
-                <span>{data.linkedIn}</span>
+                <a href={data.linkedIn.startsWith('http') ? data.linkedIn : `https://${data.linkedIn}`} className="hover:underline">
+                  {data.linkedIn.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                </a>
+              </div>
+            )}
+            {data.website && (
+              <div className="flex items-center gap-1">
+                <Globe className="h-3 w-3" />
+                <a href={data.website.startsWith('http') ? data.website : `https://${data.website}`} className="hover:underline">
+                  {data.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                </a>
               </div>
             )}
             {(data.city || data.state) && (

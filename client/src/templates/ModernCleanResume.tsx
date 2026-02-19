@@ -11,9 +11,14 @@ const ModernCleanResume = forwardRef<HTMLDivElement, { data: ResumeData }>((prop
   return (
     <div ref={ref} className="bg-white text-black p-4 w-full max-w-[210mm] mx-auto" style={{ minHeight: '11in' }}>
       <header className="mb-3 text-center">
-        <h1 className="text-lg font-bold text-gray-900 mb-1">
+        <h1 className="text-xl font-bold text-gray-900 mb-1">
           {data.firstName} {data.lastName}
         </h1>
+        {data.jobTitle && (
+          <div className="text-sm font-semibold text-blue-600 mb-2 uppercase tracking-wide">
+            {data.jobTitle}
+          </div>
+        )}
 
         <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-600 mb-3">
           {data.email && (
@@ -40,19 +45,25 @@ const ModernCleanResume = forwardRef<HTMLDivElement, { data: ResumeData }>((prop
           {data.linkedIn && (
             <div className="flex items-center gap-1">
               <Linkedin className="h-3 w-3" />
-              <span>{data.linkedIn}</span>
+              <a href={data.linkedIn.startsWith('http') ? data.linkedIn : `https://${data.linkedIn}`} className="hover:underline">
+                {data.linkedIn.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+              </a>
             </div>
           )}
           {data.github && (
             <div className="flex items-center gap-1">
               <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/github.svg" alt="GitHub" className="h-3 w-3" />
-              <span>{data.github}</span>
+              <a href={data.github.startsWith('http') ? data.github : `https://${data.github}`} className="hover:underline">
+                {data.github.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+              </a>
             </div>
           )}
           {data.website && (
             <div className="flex items-center gap-1">
               <Globe className="h-3 w-3" />
-              <span>{data.website}</span>
+              <a href={data.website.startsWith('http') ? data.website : `https://${data.website}`} className="hover:underline">
+                {data.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+              </a>
             </div>
           )}
         </div>

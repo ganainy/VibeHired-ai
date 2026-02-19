@@ -41,6 +41,18 @@ const parseMarkdownBold = (text: string): ReactNode[] => {
 
 const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
     ({ data, language = 'de' }, ref) => {
+        // Debugging logs
+        console.log('--- TEMPLATE RENDER DEBUG ---');
+        console.log('Template Data Props:', {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            linkedIn: data.linkedIn,
+            github: data.github,
+            website: data.website
+        });
+        console.log('-----------------------------');
+
         const t = {
             en: {
                 professionalProfile: 'Professional Profile',
@@ -75,9 +87,29 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                     width: '100%',
                     marginLeft: 'auto',
                     marginRight: 'auto',
+                    position: 'relative',
                 }}
                 data-preserve="true"
             >
+                {/* Temporary Debug Overlay - will be removed after fixing */}
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    fontSize: '8px',
+                    color: 'red',
+                    background: 'rgba(255,255,255,0.8)',
+                    padding: '2px',
+                    border: '1px solid red',
+                    zIndex: 100,
+                    display: 'none', // Toggle to 'block' to see on screen
+                }}>
+                    L: {data.linkedIn ? 'Y' : 'N'} | 
+                    G: {data.github ? 'Y' : 'N'} | 
+                    W: {data.website ? 'Y' : 'N'} |
+                    T: {data.jobTitle ? 'Y' : 'N'}
+                </div>
+
                 {/* Header */}
                 <div style={{ marginBottom: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -89,6 +121,11 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                             }}>
                                 {data.firstName} {data.lastName}
                             </h1>
+                            {data.jobTitle && (
+                                <div style={{ fontSize: '11pt', fontWeight: 'bold', fontStyle: 'italic', marginBottom: '2px' }}>
+                                    {data.jobTitle}
+                                </div>
+                            )}
                             <div style={{ fontSize: '10pt', marginBottom: '2px' }}>
                                 {[data.city, data.state].filter(Boolean).join(', ')}
                             </div>
@@ -102,9 +139,27 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                         <div style={{ textAlign: 'right', fontSize: '9pt', lineHeight: '1.4', color: '#000' }}>
                             {data.phone && <div>☎ {data.phone}</div>}
                             {data.email && <div>✉ {data.email}</div>}
-                            {data.website && <div><a href={data.website} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>🔗 Portfolio</a></div>}
-                            {data.linkedIn && <div><a href={data.linkedIn} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>LinkedIn</a></div>}
-                            {data.github && <div><a href={data.github} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>GitHub</a></div>}
+                            {data.website && (
+                                <div>
+                                    <a href={data.website.startsWith('http') ? data.website : `https://${data.website}`} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                                        {data.website.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                                    </a>
+                                </div>
+                            )}
+                            {data.linkedIn && (
+                                <div>
+                                    <a href={data.linkedIn.startsWith('http') ? data.linkedIn : `https://${data.linkedIn}`} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                                        {data.linkedIn.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                                    </a>
+                                </div>
+                            )}
+                            {data.github && (
+                                <div>
+                                    <a href={data.github.startsWith('http') ? data.github : `https://${data.github}`} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                                        {data.github.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
