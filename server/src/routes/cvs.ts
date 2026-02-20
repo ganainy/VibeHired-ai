@@ -13,6 +13,7 @@ import CV, { ICV } from '../models/CV';
 import User from '../models/User';
 import JobApplication from '../models/JobApplication';
 import { generateContentWithFile, getProviderStrategy } from '../utils/aiService';
+import { generateDescriptorFromJson, improveDynamicSectionWithAi } from '../services/generatorService';
 import { GoogleGenerativeAIError } from '@google/generative-ai';
 import { NotFoundError, ValidationError } from '../utils/errors/AppError';
 import { JsonResumeSchema } from '../types/jsonresume';
@@ -222,6 +223,8 @@ router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
             displayName: cv.displayName,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
+            cvDescriptor: cv.cvDescriptor ?? null,
+            cvData: cv.cvData ?? null,
             templateId: cv.templateId,
             filename: cv.filename,
             analysisCache: cv.analysisCache,
@@ -259,6 +262,8 @@ router.get('/master', asyncHandler(async (req: Request, res: Response) => {
             isPrimary: baseCv.isPrimary,
             isMasterCv: true, // Keep for backward compatibility
             cvJson: baseCv.cvJson,
+            cvDescriptor: baseCv.cvDescriptor ?? null,
+            cvData: baseCv.cvData ?? null,
             templateId: effectiveTemplate,
             filename: baseCv.filename,
             analysisCache: baseCv.analysisCache,
@@ -294,13 +299,15 @@ router.post('/create-branch', asyncHandler(async (req: Request, res: Response) =
         throw new NotFoundError('Source CV not found');
     }
 
-    // Create new branch
+    // Create new branch (deep-copy descriptor + data as well)
     const newBranch = await CV.create({
         userId,
         isPrimary: false,
         category,
         displayName,
         cvJson: JSON.parse(JSON.stringify(sourceCv.cvJson)), // Deep copy
+        cvDescriptor: sourceCv.cvDescriptor ? JSON.parse(JSON.stringify(sourceCv.cvDescriptor)) : null,
+        cvData: sourceCv.cvData ? JSON.parse(JSON.stringify(sourceCv.cvData)) : null,
         templateId: sourceCv.templateId,
     });
 
@@ -312,6 +319,8 @@ router.post('/create-branch', asyncHandler(async (req: Request, res: Response) =
             category: newBranch.category,
             displayName: newBranch.displayName,
             cvJson: newBranch.cvJson,
+            cvDescriptor: newBranch.cvDescriptor ?? null,
+            cvData: newBranch.cvData ?? null,
             templateId: newBranch.templateId,
             createdAt: newBranch.createdAt,
             updatedAt: newBranch.updatedAt,
@@ -375,6 +384,8 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
             jobApplicationId: cv.jobApplicationId,
             jobApplication: (cv as any).jobApplication || null,
             cvJson: cv.cvJson,
+            cvDescriptor: cv.cvDescriptor ?? null,
+            cvData: cv.cvData ?? null,
             templateId: effectiveTemplate,
             filename: cv.filename,
             analysisCache: cv.analysisCache,
@@ -422,6 +433,8 @@ router.get('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
             isMasterCv: cv.isMasterCv,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
+            cvDescriptor: cv.cvDescriptor ?? null,
+            cvData: cv.cvData ?? null,
             templateId: effectiveTemplate,
             filename: cv.filename,
             tailoringChanges: cv.tailoringChanges || null,
@@ -457,12 +470,26 @@ router.post(
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
 
+        // Generate AI-driven descriptor + structured data in one additional call.
+        // Errors here are non-fatal: the CV is still created with the legacy cvJson.
+        let cvDescriptor = null;
+        let cvData = null;
+        try {
+            const payload = await generateDescriptorFromJson(cvJsonResume as Record<string, any>, String(userId));
+            cvDescriptor = payload.descriptor;
+            cvData = payload.data;
+        } catch (descErr: any) {
+            console.warn('Descriptor generation failed (non-fatal):', descErr.message);
+        }
+
         const newCv = await CV.create({
             userId,
             isPrimary: false,
             category: 'General',
             displayName: req.file.originalname.replace(/\.[^.]+$/, '') || 'Uploaded CV',
             cvJson: cvJsonResume,
+            cvDescriptor,
+            cvData,
             filename: req.file.originalname,
             // Store the original binary so job copies are fully isolated
             originalPdf: req.file.buffer,
@@ -479,6 +506,8 @@ router.post(
                 category: newCv.category,
                 displayName: newCv.displayName,
                 cvJson: cvJsonResume,
+                cvDescriptor: newCv.cvDescriptor ?? null,
+                cvData: newCv.cvData ?? null,
                 filename: newCv.filename,
                 createdAt: newCv.createdAt,
                 updatedAt: newCv.updatedAt,
@@ -579,12 +608,24 @@ router.post(
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
 
+        let branchCvDescriptor = null;
+        let branchCvData = null;
+        try {
+            const payload = await generateDescriptorFromJson(cvJsonResume as Record<string, any>, String(userId));
+            branchCvDescriptor = payload.descriptor;
+            branchCvData = payload.data;
+        } catch (descErr: any) {
+            console.warn('Descriptor generation failed for branch (non-fatal):', descErr.message);
+        }
+
         const newCv = await CV.create({
             userId,
             isPrimary: false,
             category: category.trim(),
             displayName: displayName.trim(),
             cvJson: cvJsonResume,
+            cvDescriptor: branchCvDescriptor,
+            cvData: branchCvData,
             filename: req.file.originalname,
             // Store original binary for isolation
             originalPdf: req.file.buffer,
@@ -601,6 +642,8 @@ router.post(
                 category: newCv.category,
                 displayName: newCv.displayName,
                 cvJson: cvJsonResume,
+                cvDescriptor: newCv.cvDescriptor ?? null,
+                cvData: newCv.cvData ?? null,
                 filename: newCv.filename,
                 createdAt: newCv.createdAt,
                 updatedAt: newCv.updatedAt,
@@ -650,6 +693,8 @@ router.post('/job/:jobId/from-base', asyncHandler(async (req: Request, res: Resp
         displayName: `Job CV – ${job.jobTitle} at ${job.companyName}`,
         jobApplicationId: new mongoose.Types.ObjectId(jobId),
         cvJson: JSON.parse(JSON.stringify(sourceCv.cvJson)), // deep-copy JSON
+        cvDescriptor: sourceCv.cvDescriptor ? JSON.parse(JSON.stringify(sourceCv.cvDescriptor)) : null,
+        cvData: sourceCv.cvData ? JSON.parse(JSON.stringify(sourceCv.cvData)) : null,
         // Deep-copy binary so job CV is independent of the source file
         originalPdf: sourceCv.originalPdf ? Buffer.from(sourceCv.originalPdf) : null,
         filename: sourceCv.filename,
@@ -704,6 +749,16 @@ router.post(
         console.log(`Parsing job CV file: ${req.file.originalname}`);
         const cvJson = await parseUploadedCv(req.file, String(userId));
 
+        let jobUploadDescriptor = null;
+        let jobUploadCvData = null;
+        try {
+            const payload = await generateDescriptorFromJson(cvJson as Record<string, any>, String(userId));
+            jobUploadDescriptor = payload.descriptor;
+            jobUploadCvData = payload.data;
+        } catch (descErr: any) {
+            console.warn('Descriptor generation failed for job CV upload (non-fatal):', descErr.message);
+        }
+
         // Replace existing job CV if present
         await CV.deleteOne({ jobApplicationId: jobId });
 
@@ -714,6 +769,8 @@ router.post(
             displayName: `Job CV – ${job.jobTitle} at ${job.companyName}`,
             jobApplicationId: new mongoose.Types.ObjectId(jobId),
             cvJson,
+            cvDescriptor: jobUploadDescriptor,
+            cvData: jobUploadCvData,
             filename: req.file.originalname,
             originalPdf: req.file.buffer, // Preserve raw file for isolation
             templateId: req.body.templateId || null,
@@ -750,7 +807,7 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
         throw new NotFoundError('CV not found');
     }
 
-    const { cvJson, templateId } = req.body;
+    const { cvJson, cvDescriptor, cvData, templateId } = req.body;
 
     if (cvJson) {
         if (typeof cvJson !== 'object' || Array.isArray(cvJson)) {
@@ -761,6 +818,14 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
         }
         cv.cvJson = cvJson;
         cv.analysisCache = null; // Invalidate cache when CV changes
+    }
+
+    // Persist dynamic descriptor + data when provided
+    if (cvDescriptor !== undefined) {
+        cv.cvDescriptor = Array.isArray(cvDescriptor) ? cvDescriptor : null;
+    }
+    if (cvData !== undefined) {
+        cv.cvData = cvData && typeof cvData === 'object' && !Array.isArray(cvData) ? cvData : null;
     }
 
     if (templateId !== undefined) {
@@ -778,6 +843,8 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
             isMasterCv: cv.isMasterCv,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
+            cvDescriptor: cv.cvDescriptor ?? null,
+            cvData: cv.cvData ?? null,
             templateId: cv.templateId,
             updatedAt: cv.updatedAt,
         }
@@ -910,6 +977,69 @@ router.patch('/:id/rename', asyncHandler(async (req: Request, res: Response) => 
             displayName: cv.displayName,
             updatedAt: cv.updatedAt,
         }
+    });
+}));
+
+/**
+ * POST /api/cvs/:id/restructure
+ * Re-generate the AI descriptor and data from the stored cvJson.
+ * Useful for legacy CVs or when the user wants to re-analyse structure.
+ */
+router.post('/:id/restructure', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id as string;
+    const cvId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(cvId)) {
+        throw new ValidationError('Invalid CV ID');
+    }
+
+    const cv = await CV.findOne({ _id: cvId, userId });
+    if (!cv) throw new NotFoundError('CV not found');
+
+    const payload = await generateDescriptorFromJson(cv.cvJson as Record<string, any>, userId);
+    cv.cvDescriptor = payload.descriptor as any;
+    cv.cvData = payload.data;
+    await cv.save();
+
+    res.json({
+        message: 'CV restructured successfully.',
+        cvDescriptor: cv.cvDescriptor,
+        cvData: cv.cvData,
+    });
+}));
+
+/**
+ * POST /api/cvs/:id/improve-section-dynamic
+ * Improve a specific section of a dynamic CV using AI.
+ * Body: { descriptor: CvSectionDescriptor, sectionData: any, customInstructions?: string }
+ */
+router.post('/:id/improve-section-dynamic', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id as string;
+    const cvId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(cvId)) {
+        throw new ValidationError('Invalid CV ID');
+    }
+
+    const cv = await CV.findOne({ _id: cvId, userId });
+    if (!cv) throw new NotFoundError('CV not found');
+
+    const { descriptor, sectionData, customInstructions } = req.body;
+
+    if (!descriptor || !descriptor.key) {
+        throw new ValidationError('Section descriptor is required');
+    }
+
+    const improved = await improveDynamicSectionWithAi(
+        userId,
+        descriptor,
+        sectionData,
+        customInstructions,
+    );
+
+    res.json({
+        message: 'Section improved successfully.',
+        improvedData: improved,
     });
 }));
 

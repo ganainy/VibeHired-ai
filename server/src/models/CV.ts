@@ -1,6 +1,7 @@
 // server/src/models/CV.ts
 import mongoose, { Document, Schema, Types } from 'mongoose';
 import { JsonResumeSchema } from '../types/jsonresume';
+import { CvSectionDescriptor } from '../types/cvDescriptor';
 
 /**
  * Unified CV Model
@@ -24,6 +25,18 @@ export interface ICV extends Document {
     
     jobApplicationId?: Types.ObjectId | null;
     cvJson: JsonResumeSchema;
+    /**
+     * AI-generated structural descriptor produced once at upload time.
+     * When present, the UI and PDF are built dynamically from this + cvData.
+     * Null for legacy CVs that have not been re-processed.
+     */
+    cvDescriptor?: CvSectionDescriptor[] | null;
+    /**
+     * Free-form content keyed by CvSectionDescriptor.key.
+     * Used together with cvDescriptor to drive the dynamic editor & template.
+     * Null for legacy CVs.
+     */
+    cvData?: Record<string, any> | null;
     templateId?: string | null;  // null = use user's default template
     filename?: string | null;    // Original uploaded filename
     analysisCache?: Record<string, unknown> | null;
@@ -81,6 +94,14 @@ const CVSchema = new Schema<ICV>(
         cvJson: {
             type: Schema.Types.Mixed,
             required: true,
+        },
+        cvDescriptor: {
+            type: Schema.Types.Mixed,
+            default: null,
+        },
+        cvData: {
+            type: Schema.Types.Mixed,
+            default: null,
         },
         templateId: {
             type: String,

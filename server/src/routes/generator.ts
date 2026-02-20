@@ -5,7 +5,7 @@ import authMiddleware from '../middleware/authMiddleware';
 import JobApplication from '../models/JobApplication';
 import User, { IUser } from '../models/User'; // Import IUser interface
 import Profile from '../models/Profile';
-import { generateContent } from '../utils/aiService';
+import { generateContent, generateStructuredResponse } from '../utils/aiService';
 import { GoogleGenerativeAIError } from '@google/generative-ai';
 import { JsonResumeSchema } from '../types/jsonresume';
 import mongoose from 'mongoose';
@@ -16,6 +16,7 @@ import { generateDocumentsBodySchema, improveSectionBodySchema, applyAtsSuggesti
 import { jobIdParamSchema, filenameParamSchema } from '../validations/commonSchemas';
 import { improveCvSection, applyAtsSuggestion } from '../controllers/generatorController';
 import { asyncHandler } from '../utils/asyncHandler';
+import { generateDescriptorFromJson } from '../services/generatorService';
 
 const router: Router = express.Router();
 router.use(authMiddleware as RequestHandler); // Apply auth to all routes in this file
@@ -600,34 +601,48 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         `;
         }
 
-        // 3. Generate CV using AI service
+        // 3. Generate CV using AI service (structured mode → API-level JSON enforcement)
         console.log(`Generating ${languageName} CV only for job ${jobId}...`);
         await JobApplication.updateOne({ _id: jobId, userId: userId }, { $set: { generationStatus: 'pending_generation' } });
 
-        const result = await generateContent(userId, prompt, { maxTokens: maxOutputTokens }); // Pass maxTokens if provided
-        const responseText = result.text;
-        console.log("Received CV generation response from AI.");
+        // Use a minimum of 8192 output tokens so large CVs aren't truncated mid-JSON
+        const tokenLimit = maxOutputTokens ?? 8192;
 
-        // 4. Parse Response (extract JSON from ```json block)
-        let jsonStringToParse = responseText.trim();
-        const prefix = "```json";
-        const suffix = "```";
-
-        if (jsonStringToParse.startsWith(prefix) && jsonStringToParse.endsWith(suffix)) {
-            jsonStringToParse = jsonStringToParse.substring(prefix.length, jsonStringToParse.length - suffix.length).trim();
-        } else if (jsonStringToParse.startsWith(prefix)) {
-            jsonStringToParse = jsonStringToParse.substring(prefix.length).trim();
-        }
-
-        let parsedResponse;
+        let parsedResponse: any;
         try {
-            parsedResponse = JSON.parse(jsonStringToParse);
-        } catch (parseError: any) {
-            console.error("Failed to parse CV JSON:", parseError.message);
-            throw new Error("AI failed to return valid JSON for CV.");
+            parsedResponse = await generateStructuredResponse<any>(userId, prompt, { maxTokens: tokenLimit });
+        } catch (structuredErr: any) {
+            // Fallback: raw text generation + manual extraction (handles providers without JSON mode)
+            console.warn('Structured response failed, falling back to raw generation:', structuredErr.message);
+            const result = await generateContent(userId, prompt, { maxTokens: tokenLimit });
+            const responseText = result.text;
+            let jsonStringToParse = responseText.trim();
+            const fencedMatch = jsonStringToParse.match(/```json\s*([\s\S]*?)```/);
+            if (fencedMatch) {
+                jsonStringToParse = fencedMatch[1].trim();
+            } else {
+                const plainFence = jsonStringToParse.match(/^```\s*([\s\S]*?)```\s*$/);
+                if (plainFence) {
+                    jsonStringToParse = plainFence[1].trim();
+                } else {
+                    const firstBrace = jsonStringToParse.indexOf('{');
+                    const lastBrace = jsonStringToParse.lastIndexOf('}');
+                    if (firstBrace !== -1 && lastBrace > firstBrace) {
+                        jsonStringToParse = jsonStringToParse.substring(firstBrace, lastBrace + 1);
+                    }
+                }
+            }
+            try {
+                parsedResponse = JSON.parse(jsonStringToParse);
+            } catch (parseError: any) {
+                console.error('Failed to parse CV JSON:', parseError.message);
+                console.error('Raw AI response (first 500 chars):', responseText.substring(0, 500));
+                throw new Error('AI failed to return valid JSON for CV.');
+            }
         }
+        console.log('Received CV generation response from AI.');
 
-        // 5. Handle both new format (with changes) and legacy format (direct CV)
+        // 4. Handle both new format (with changes) and legacy format (direct CV)
         let tailoredCvJson;
         let tailoringChanges: Array<{ section: string; description: string; reason: string }> | null = null;
 
@@ -645,7 +660,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             throw new Error("AI response missing expected structure.");
         }
 
-        // Validate CV structure
+        // 5. Validate CV structure
         if (!tailoredCvJson || typeof tailoredCvJson !== 'object' || !tailoredCvJson.basics) {
             console.error("Parsed CV JSON is invalid or missing basics:", tailoredCvJson);
             throw new Error("Parsed CV JSON is invalid or missing the 'basics' section.");
@@ -691,6 +706,19 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         }
 
         console.log(`CV draft saved successfully for job ${jobId}. Saved to unified CV model.`);
+
+        // Non-fatally generate the dynamic descriptor so the /review/cv tab
+        // can immediately render the dynamic editor after the CV is tailored.
+        try {
+            const descriptorPayload = await generateDescriptorFromJson(tailoredCvJson, userId);
+            await CV.findOneAndUpdate(
+                { jobApplicationId: jobId, userId: userId },
+                { $set: { cvDescriptor: descriptorPayload.descriptor, cvData: descriptorPayload.data } },
+            );
+            console.log(`Dynamic descriptor saved for CV (job ${jobId}).`);
+        } catch (descErr: any) {
+            console.warn(`Descriptor generation failed (non-fatal): ${descErr.message}`);
+        }
 
         res.status(200).json({
             status: "draft_ready",

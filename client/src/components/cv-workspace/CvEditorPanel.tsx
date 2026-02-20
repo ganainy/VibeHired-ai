@@ -2,16 +2,18 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
+import { CvSectionDescriptor, CvDynamicPayload } from '../../types/cvDescriptor';
 import { TemplateConfig, getAllTemplates } from '../../templates/config';
 import { ResumeBuilder } from '../resume-builder';
 import CvLivePreview from '../cv-editor/CvLivePreview';
+import DynamicCvForm from '../cv-editor/dynamic/DynamicCvForm';
 
 export type CvSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 export interface CvEditorPanelProps {
-  /** Current CV data */
+  /** Current CV data (legacy JsonResume path) */
   data: JsonResumeSchema | null;
-  /** Called on every edit in the form */
+  /** Called on every edit in the legacy form */
   onChange: (data: JsonResumeSchema) => void;
   /** Called when the user clicks Save */
   onSave: () => Promise<void> | void;
@@ -23,30 +25,47 @@ export interface CvEditorPanelProps {
   templateId: string;
   /** Called when the user picks a different template */
   onTemplateChange: (id: string) => void;
-  /** Forwarded to ResumeBuilder for AI section improvement */
+  /** Forwarded to ResumeBuilder for AI section improvement (legacy path) */
   onImproveSection?: (
     sectionName: string,
     sectionIndex: number,
     originalData: any,
     customInstructions?: string,
   ) => void;
-  /** Which sections are currently being improved */
+  /** Which sections are currently being improved (legacy path) */
   improvingSections?: Record<string, boolean>;
   /**
    * Optional content rendered above the editor panel.
-   * Useful for page-specific additions like the Tailoring Changes panel.
    */
   children?: React.ReactNode;
-  /** Called when the user clicks Delete (usually only for tailored CVs) */
+  /** Called when the user clicks Delete */
   onDelete?: () => void;
   className?: string;
   /**
-   * Optional ATS analysis panel rendered in the right pane when the user
-   * toggles from the live preview. Only shown when provided.
+   * Optional ATS analysis panel rendered in the right pane.
    */
   atsPanel?: React.ReactNode;
   /** Which right-pane view to show by default when atsPanel is provided */
   defaultRightView?: 'preview' | 'ats';
+
+  // ── Dynamic (AI-driven) editor props ────────────────────────────────────
+  /**
+   * The MongoDB _id of the CV document. Required for dynamic section AI improvement.
+   */
+  cvId?: string;
+  /**
+   * AI-generated structural descriptor. When provided together with cvData,
+   * the dynamic editor is shown instead of ResumeBuilder.
+   */
+  cvDescriptor?: CvSectionDescriptor[] | null;
+  /**
+   * Free-form CV content keyed by section key.
+   */
+  cvData?: Record<string, any> | null;
+  /**
+   * Called when the user edits any field in the dynamic editor.
+   */
+  onDynamicChange?: (payload: CvDynamicPayload) => void;
 }
 
 const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
@@ -64,11 +83,22 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   className = '',
   atsPanel,
   defaultRightView = 'preview',
+  cvId,
+  cvDescriptor,
+  cvData,
+  onDynamicChange,
 }) => {
   const [rightView, setRightView] = useState<'preview' | 'ats'>(atsPanel ? defaultRightView : 'preview');
-  // ── Template list ─────────────────────────────────────────────────────────
   const [availableTemplates, setAvailableTemplates] = useState<TemplateConfig[]>([]);
   useEffect(() => { setAvailableTemplates(getAllTemplates()); }, []);
+
+  // Determine whether to use the AI-driven dynamic editor
+  const isDynamic = Boolean(cvDescriptor && cvDescriptor.length > 0 && cvData && cvId);
+
+  // Build the CvDynamicPayload for preview when in dynamic mode
+  const dynamicPayload: CvDynamicPayload | null = isDynamic
+    ? { descriptor: cvDescriptor!, data: cvData! }
+    : null;
 
 
 
@@ -100,8 +130,8 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
         {/* Unified Toolbar inside the card */}
         <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            {/* Template selector */}
-            {availableTemplates.length > 0 && (
+            {/* Template selector — only show when more than one template is available */}
+            {availableTemplates.length > 1 && (
               <select
                 value={templateId}
                 onChange={(e) => onTemplateChange(e.target.value)}
@@ -179,13 +209,31 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
           {/* Editor pane */}
           <div className="h-full overflow-y-auto p-6">
             <div className="w-full pb-6">
-              {data && (
+              {/* Dynamic AI-driven editor */}
+              {isDynamic && cvId && cvData && cvDescriptor && onDynamicChange && (
+                <DynamicCvForm
+                  cvId={cvId}
+                  descriptor={cvDescriptor}
+                  data={cvData}
+                  onChange={onDynamicChange}
+                />
+              )}
+
+              {/* Legacy JsonResume editor (shown when descriptor not yet generated) */}
+              {!isDynamic && data && (
                 <ResumeBuilder
                   data={data}
                   onChange={onChange}
                   onImproveSection={onImproveSection}
                   improvingSections={improvingSections}
                 />
+              )}
+
+              {/* Intermediate state: CV loaded but descriptor still generating */}
+              {!isDynamic && !data && (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-sm">Loading CV editor…</p>
+                </div>
               )}
             </div>
           </div>
@@ -200,6 +248,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                 data={data}
                 templateId={templateId}
                 onTemplateChange={onTemplateChange}
+                dynamicPayload={dynamicPayload}
               />
             )}
           </div>

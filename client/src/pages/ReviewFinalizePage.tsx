@@ -12,6 +12,7 @@ import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 import { DEFAULT_CV_PROMPT, DEFAULT_COVER_LETTER_PROMPT } from '../constants/prompts';
 import { generateCoverLetter } from '../services/coverLetterApi';
 import { getMasterCv, previewCv, getCvBranches, CVDocument, getJobCv, createJobCv, createJobCvFromBase, uploadCvForJob, updateCv, deleteCv } from '../services/cvApi';
+import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
 import AtsInlinePanel from '../components/ats/AtsInlinePanel';
 import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
 import axios from 'axios';
@@ -60,6 +61,8 @@ const ReviewFinalizePage: React.FC = () => {
     const [jobApplication, setJobApplication] = useState<JobApplication | null>(null);
     const [cvData, setCvData] = useState<JsonResumeSchema>({ basics: {} });
     const [currentCvId, setCurrentCvId] = useState<string | null>(null);
+    const [liveCvDescriptor, setLiveCvDescriptor] = useState<CvSectionDescriptor[] | null>(null);
+    const [liveCvData, setLiveCvData] = useState<Record<string, any> | null>(null);
     const [coverLetterText, setCoverLetterText] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -516,6 +519,8 @@ const ReviewFinalizePage: React.FC = () => {
                     setCurrentCvId(cvResponse.cv._id);
                     setTailoringChanges(cvResponse.cv.tailoringChanges || null);
                     lastSavedCvDataRef.current = JSON.stringify(cvResponse.cv.cvJson);
+                    setLiveCvDescriptor(cvResponse.cv.cvDescriptor ?? null);
+                    setLiveCvData(cvResponse.cv.cvData ?? null);
                 } else {
                     // Fallback to legacy draftCvJson if no CV document yet
                     if (data.draftCvJson) {
@@ -1453,7 +1458,11 @@ const ReviewFinalizePage: React.FC = () => {
         if (!currentCvId || !cvData) return;
         setCvSaveStatus('saving');
         try {
-            await updateCv(currentCvId, { cvJson: cvData });
+            await updateCv(currentCvId, {
+                cvJson: cvData,
+                cvDescriptor: liveCvDescriptor ?? undefined,
+                cvData: liveCvData ?? undefined,
+            });
             lastSavedCvDataRef.current = JSON.stringify(cvData);
             setCvSaveStatus('saved');
             setTimeout(() => setCvSaveStatus('idle'), 3000);
@@ -1464,6 +1473,14 @@ const ReviewFinalizePage: React.FC = () => {
             setTimeout(() => setCvSaveStatus('idle'), 5000);
         }
     };
+
+    const handleDynamicChange = useCallback((payload: CvDynamicPayload) => {
+        setLiveCvDescriptor(payload.descriptor);
+        setLiveCvData(payload.data);
+        setCvSaveStatus('idle');
+        // Auto-save after a short debounce
+        setTimeout(() => handleManualSaveCv(), 800);
+    }, [liveCvDescriptor, liveCvData]);
 
     const handleGenerateCoverLetter = async () => {
 
@@ -3229,6 +3246,10 @@ const ReviewFinalizePage: React.FC = () => {
                                     onTemplateChange={setSelectedTemplate}
                                     onImproveSection={handleImproveSection}
                                     improvingSections={improvingSections}
+                                    cvId={currentCvId ?? undefined}
+                                    cvDescriptor={liveCvDescriptor}
+                                    cvData={liveCvData}
+                                    onDynamicChange={handleDynamicChange}
                                     onDelete={async () => {
                                         if (window.confirm('Are you sure you want to delete this CV? You will need to regenerate it.')) {
                                             if (currentCvId) {

@@ -1,4 +1,123 @@
 import { generateStructuredResponse, generateContent } from '../utils/aiService';
+import { CvDynamicPayload, CvSectionDescriptor } from '../types/cvDescriptor';
+
+// ─── Dynamic CV descriptor generation ──────────────────────────────────────
+
+/**
+ * Generates a CvDynamicPayload (descriptor + data) by asking the AI to analyse
+ * a CV that has already been parsed into JsonResumeSchema format.
+ *
+ * Strategy: call the AI with the JSON text of the already-extracted CV and ask
+ * it to return the descriptor + data in one shot.  This works with every
+ * provider (no file upload needed) and can also be used by the migration
+ * script to back-fill existing CVs.
+ */
+export const generateDescriptorFromJson = async (
+    cvJson: Record<string, any>,
+    userId: string,
+): Promise<CvDynamicPayload> => {
+    const prompt = `You are a CV structure expert. Analyse the CV data below and return a structured descriptor that describes every section of the CV plus the actual content for each section.
+
+CV data (JSON Resume format):
+${JSON.stringify(cvJson, null, 2)}
+
+=== YOUR TASK ===
+Return a JSON object with exactly two top-level keys:
+
+1. "descriptor" – an array of CvSectionDescriptor objects, one per section.
+   Each object must have:
+   - key           (string)  – unique machine-readable key, e.g. "basics", "work", "education", "skills", "projects", "languages", "certificates", "awards", "volunteer", "publications", "interests", "references", or any custom key
+   - label         (string)  – human-readable heading in the same language as the CV
+   - sectionType   (string)  – one of: "single-object" | "object-list" | "string-list" | "freetext"
+   - displayStyle  (string)  – one of: "contact-block" | "text-block" | "timeline" | "tag-cloud" | "plain-list" | "two-column-list"
+   - fields        (array)   – array of FieldDef objects (see rules below). Empty array for string-list and freetext.
+   - order         (number)  – display order, starting at 0
+   - visible       (boolean) – true for all sections that have data
+
+   FieldDef rules:
+   - key      (string)  – property name in the data object
+   - label    (string)  – human-readable label
+   - type     (string)  – one of: "text" | "textarea" | "date" | "url" | "email" | "phone" | "string-list"
+   - placeholder (string, optional) – hint text
+   - required (boolean, optional)
+
+   Display style guidelines:
+   - basics / contact info    → sectionType: "single-object", displayStyle: "contact-block"
+   - summary / objective      → sectionType: "freetext", displayStyle: "text-block"
+   - work / education         → sectionType: "object-list", displayStyle: "timeline"
+   - skills with keywords     → sectionType: "object-list", displayStyle: "tag-cloud"
+   - languages                → sectionType: "object-list", displayStyle: "tag-cloud"
+   - projects / volunteer     → sectionType: "object-list", displayStyle: "timeline"
+   - certificates / awards    → sectionType: "object-list", displayStyle: "plain-list"
+   - interests / hobbies      → sectionType: "string-list", displayStyle: "tag-cloud"
+   - references               → sectionType: "object-list", displayStyle: "plain-list"
+
+2. "data" – an object keyed by the same keys as in descriptor.
+   - For single-object sections: the value is a plain object with field values
+   - For object-list sections: the value is an array of objects
+   - For string-list sections: the value is an array of strings
+   - For freetext sections: the value is a string
+   Preserve all content from the original CV. Do NOT invent or omit data.
+
+=== IMPORTANT ===
+- Only include sections that have actual content in the CV. Omit empty sections from both descriptor and data.
+- The "basics" section (name, contact info) MUST always be first (order: 0).
+- Put summary/objective second if present (order: 1).
+- Return ONLY the JSON object. No markdown, no explanation.`;
+
+    const payload = await generateStructuredResponse<CvDynamicPayload>(userId, prompt);
+
+    if (!payload || !Array.isArray(payload.descriptor) || typeof payload.data !== 'object') {
+        throw new Error('AI did not return a valid CvDynamicPayload');
+    }
+
+    // Guarantee stable ordering
+    payload.descriptor.sort((a, b) => a.order - b.order);
+    payload.descriptor.forEach((s, i) => { s.order = i; });
+
+    // Default visible to true when absent
+    payload.descriptor.forEach(s => { if (s.visible === undefined) s.visible = true; });
+
+    return payload;
+};
+
+// ─── Dynamic section improvement ────────────────────────────────────────────
+
+/**
+ * Improve a single section using AI while honouring the CvSectionDescriptor
+ * structure so the returned data can be dropped directly back into cvData.
+ */
+export const improveDynamicSectionWithAi = async (
+    userId: string,
+    descriptor: CvSectionDescriptor,
+    sectionData: any,
+    customInstructions?: string,
+): Promise<any> => {
+    const prompt = `You are a professional CV writing expert. Improve the following CV section.
+
+Section descriptor:
+${JSON.stringify(descriptor, null, 2)}
+
+Current section data:
+${JSON.stringify(sectionData, null, 2)}
+
+${customInstructions ? `\nUSER INSTRUCTIONS (highest priority):\n"${customInstructions}"\n` : ''}
+Rules:
+1. Return ONLY the improved data for this section – same type and structure as the input.
+2. For object-list sections: return an array with the same number of entries.
+3. For single-object sections: return a plain object with the same keys.
+4. For string-list sections: return an array of strings.
+5. For freetext sections: return a string.
+6. Use strong action verbs, quantify achievements where possible, keep language professional.
+7. Preserve names, dates, company names, and factual information. Only improve descriptions.
+8. Return ONLY the JSON value (no wrapper object, no markdown).`;
+
+    const improved = await generateStructuredResponse<any>(userId, prompt);
+    if (improved === null || improved === undefined) {
+        throw new Error('AI did not return improved section data');
+    }
+    return improved;
+};
 
 /**
  * Improves a CV section using AI

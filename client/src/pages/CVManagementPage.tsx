@@ -14,6 +14,7 @@ import {
   uploadCvBranch
 } from '../services/cvApi';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
+import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
 import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 import Toast from '../components/common/Toast';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
@@ -30,6 +31,10 @@ const CVManagementPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [currentCvData, setCurrentCvData] = useState<JsonResumeSchema | null>(null);
   const [masterCvId, setMasterCvId] = useState<string | null>(null); // Store master CV's MongoDB ID
+
+  // Dynamic (AI-driven) editor state — the live editing payload for the active CV
+  const [liveCvDescriptor, setLiveCvDescriptor] = useState<CvSectionDescriptor[] | null>(null);
+  const [liveCvData, setLiveCvData] = useState<Record<string, any> | null>(null);
   const [isLoadingCv, setIsLoadingCv] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -123,6 +128,17 @@ const CVManagementPage: React.FC = () => {
     if (!activeCv) return currentCvData; // Fallback to legacy state during transition
     return activeCv.cvJson || null;
   }, [activeCv, currentCvData]);
+
+  // Sync live dynamic state when the active CV changes
+  useEffect(() => {
+    if (activeCv?.cvDescriptor && activeCv.cvData) {
+      setLiveCvDescriptor(activeCv.cvDescriptor);
+      setLiveCvData(activeCv.cvData);
+    } else {
+      setLiveCvDescriptor(null);
+      setLiveCvData(null);
+    }
+  }, [activeCv?._id]); // Only when the active CV identity changes, not on every render
 
   // Calculate unsaved changes
   const hasUnsavedChanges = useMemo(() => {
@@ -518,6 +534,9 @@ const CVManagementPage: React.FC = () => {
       originalCvDataRef.current = cvData ? JSON.parse(JSON.stringify(cvData)) : null;
       // Reset save trigger to ensure proper comparison
       setSaveTrigger(0);
+      // Sync dynamic descriptor state from upload response
+      setLiveCvDescriptor(response.cv?.cvDescriptor ?? null);
+      setLiveCvData(response.cv?.cvData ?? null);
 
       setUploadProgress(90);
 
@@ -621,6 +640,8 @@ const CVManagementPage: React.FC = () => {
       // Use unified updateCv API for both master and job CVs
       const response = await updateCv(activeCv._id, {
         cvJson: activeCvData,
+        cvDescriptor: liveCvDescriptor ?? undefined,
+        cvData: liveCvData ?? undefined,
         templateId: activeCv.isMasterCv ? selectedTemplate : undefined
       });
       message = response.message || message;
@@ -660,8 +681,26 @@ const CVManagementPage: React.FC = () => {
         setIsSaving(false);
       }
     }
-  }, [activeCvData, activeCv, selectedTemplate]);
+  }, [activeCvData, activeCv, selectedTemplate, liveCvDescriptor, liveCvData]);
 
+  const handleDynamicChange = useCallback((payload: CvDynamicPayload) => {
+    setLiveCvDescriptor(payload.descriptor);
+    setLiveCvData(payload.data);
+    setSaveStatus('idle');
+    // Keep allCvs in sync for consistency
+    if (activeCvId) {
+      setAllCvs((prev: CVDocument[]) => prev.map((cv: CVDocument) =>
+        cv._id === activeCvId
+          ? { ...cv, cvDescriptor: payload.descriptor, cvData: payload.data }
+          : cv
+      ));
+    }
+    // Trigger auto-save if enabled
+    if (autoSaveEnabled) {
+      if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = setTimeout(() => handleSaveCv(true), 500);
+    }
+  }, [activeCvId, autoSaveEnabled, handleSaveCv]);
 
   const handleDeleteCv = async (cvId: string) => {
     if (!window.confirm('Are you sure you want to delete this CV? This action cannot be undone.')) {
@@ -1016,6 +1055,10 @@ const CVManagementPage: React.FC = () => {
             onImproveSection={handleImproveSection}
             improvingSections={improvingSections}
             className="h-full"
+            cvId={activeCv?._id}
+            cvDescriptor={liveCvDescriptor}
+            cvData={liveCvData}
+            onDynamicChange={handleDynamicChange}
           />
         )}
       </div>

@@ -7,6 +7,7 @@
  */
 import axios from 'axios';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
+import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
 
 const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api'}/cvs`;
 
@@ -29,6 +30,10 @@ export interface CVDocument {
         jobUrl?: string;
     } | null;
     cvJson: JsonResumeSchema;
+    /** AI-generated structural descriptor. Null for legacy CVs. */
+    cvDescriptor?: CvSectionDescriptor[] | null;
+    /** Free-form content keyed by descriptor section key. Null for legacy CVs. */
+    cvData?: Record<string, any> | null;
     templateId?: string | null;
     filename?: string | null;
     analysisCache?: Record<string, unknown> | null;
@@ -383,7 +388,7 @@ export const uploadCvForJob = async (
  */
 export const updateCv = async (
     cvId: string,
-    data: { cvJson?: JsonResumeSchema; templateId?: string }
+    data: { cvJson?: JsonResumeSchema; cvDescriptor?: CvSectionDescriptor[]; cvData?: Record<string, any>; templateId?: string }
 ): Promise<UpdateCvResponse> => {
     try {
         const response = await axios.put<UpdateCvResponse>(`${API_BASE_URL}/${cvId}`, data);
@@ -394,6 +399,47 @@ export const updateCv = async (
             throw error.response.data;
         }
         throw { message: 'An unknown error occurred updating CV.' };
+    }
+};
+
+/**
+ * Re-generate descriptor and data from the stored cvJson (for legacy CVs or manual refresh).
+ */
+export const restructureCv = async (cvId: string): Promise<{ message: string; cvDescriptor: CvSectionDescriptor[]; cvData: Record<string, any> }> => {
+    try {
+        const response = await axios.post(`${API_BASE_URL}/${cvId}/restructure`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Restructure CV API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred restructuring the CV.' };
+    }
+};
+
+/**
+ * Improve a single dynamic section using AI.
+ */
+export const improveSectionDynamic = async (
+    cvId: string,
+    descriptor: CvSectionDescriptor,
+    sectionData: any,
+    customInstructions?: string
+): Promise<{ message: string; improvedData: any }> => {
+    try {
+        const response = await axios.post(`${API_BASE_URL}/${cvId}/improve-section-dynamic`, {
+            descriptor,
+            sectionData,
+            customInstructions,
+        });
+        return response.data;
+    } catch (error: any) {
+        console.error('Improve dynamic section API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred improving the section.' };
     }
 };
 

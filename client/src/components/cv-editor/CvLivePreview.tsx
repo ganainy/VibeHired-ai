@@ -1,13 +1,21 @@
-import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, useEffect, useState, forwardRef } from 'react';
 import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
 import { getTemplate, TemplateConfig } from '../../templates/config';
 import { TemplateWrapper } from '../../templates/TemplateWrapper';
+import { CvDynamicPayload } from '../../types/cvDescriptor';
+import DynamicTemplate from '../../templates/DynamicTemplate';
 
 interface CvLivePreviewProps {
   data: JsonResumeSchema | null;
   templateId: string;
   onTemplateChange?: (templateId: string) => void;
   className?: string;
+  /**
+   * When provided (for CVs that have been analysed by the AI), the preview
+   * is rendered via DynamicTemplate and the legacy TemplateWrapper path is
+   * skipped entirely.
+   */
+  dynamicPayload?: CvDynamicPayload | null;
 }
 
 /** Ref API exposed by CvLivePreview */
@@ -18,30 +26,37 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
   templateId,
   onTemplateChange,
   className = '',
+  dynamicPayload,
 }, ref) => {
   const previewRef = useRef<HTMLDivElement>(null);
-  const previewContainerRef = useRef<HTMLDivElement>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateConfig | null>(null);
-  const [availableTemplates, setAvailableTemplates] = useState<TemplateConfig[]>([]);
-
-  // Expose the preview element via ref - Forwarding direct DOM ref now for react-to-print
-  // useImperativeHandle(ref, () => ({
-  //   getPreviewElement: () => previewContainerRef.current,
-  // }), []);
 
   useEffect(() => {
-    const template = getTemplate(templateId);
-    if (template) {
-      setSelectedTemplate(template);
+    // Only need the legacy template when dynamicPayload is absent
+    if (!dynamicPayload) {
+      const template = getTemplate(templateId);
+      if (template) setSelectedTemplate(template);
     }
-  }, [templateId]);
+  }, [templateId, dynamicPayload]);
 
-  useEffect(() => {
-    import('../../templates/config').then((module) => {
-      setAvailableTemplates(module.getAllTemplates());
-    });
-  }, []);
+  // ── Dynamic path ───────────────────────────────────────────────────────────
+  if (dynamicPayload) {
+    return (
+      <div className={`flex flex-col h-full ${className}`}>
+        <div className="flex-1 overflow-auto bg-white dark:bg-gray-800 p-0">
+          <div
+            ref={ref as React.RefObject<HTMLDivElement>}
+            className="bg-white mx-auto w-full"
+            id="cv-preview-container"
+          >
+            <DynamicTemplate ref={previewRef} payload={dynamicPayload} templateId={templateId} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  // ── Legacy path (JsonResume → TemplateWrapper) ─────────────────────────────
   if (!data) {
     return (
       <div className={`flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg ${className}`}>
@@ -62,16 +77,8 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
     );
   }
 
-  const handleTemplateChange = (newTemplateId: string) => {
-    if (onTemplateChange) {
-      onTemplateChange(newTemplateId);
-    }
-  };
-
   return (
     <div className={`flex flex-col h-full ${className}`}>
-
-
       <div className="flex-1 overflow-auto bg-white dark:bg-gray-800 p-0">
         <div
           ref={ref as React.RefObject<HTMLDivElement>}
@@ -95,3 +102,4 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
 CvLivePreview.displayName = 'CvLivePreview';
 
 export default CvLivePreview;
+
