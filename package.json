@@ -20,8 +20,7 @@
     "build:client": "npm run build --workspace=client",
     "build": "npm run build:server",
     "heroku-postbuild": "npm run build:server",
-    "start": "npm run start --workspace=server",
-    "prestart": "npm run build:server"
+    "start": "npm run start --workspace=server"
   },
   "keywords": [],
   "author": "Ganainy",

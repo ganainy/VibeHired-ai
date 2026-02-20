@@ -38,7 +38,7 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
         const fetchCv = async () => {
             try {
                 const res = await getJobCv(jobApplication._id);
-                if (res.cv) {
+                if (res.cv && res.cv.cvJson) {
                     setCvData(res.cv.cvJson);
                     setCurrentCvId(res.cv._id);
                     originalCvDataRef.current = JSON.parse(JSON.stringify(res.cv.cvJson));
