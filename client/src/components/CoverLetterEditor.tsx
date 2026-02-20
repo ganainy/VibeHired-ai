@@ -125,7 +125,7 @@ const CoverLetterEditor: React.FC<CoverLetterEditorProps> = ({
     return (
         <div className={`flex flex-col h-full min-h-0 ${className}`}>
             {/* Formatting Toolbar */}
-            <div className="flex gap-1 mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-t border-b border-gray-300 dark:border-gray-600 flex-shrink-0">
+            <div className="flex gap-1 mb-2 p-2 bg-gray-100 dark:bg-gray-600 rounded-t border-b border-gray-300 dark:border-gray-600 flex-shrink-0">
                 <button
                     type="button"
                     onClick={() => applyFormat('bold')}

@@ -29,7 +29,7 @@ export interface CVDocument {
         status: string;
         jobUrl?: string;
     } | null;
-    cvJson: JsonResumeSchema;
+    cvJson?: JsonResumeSchema | null;
     /** AI-generated structural descriptor. Null for legacy CVs. */
     cvDescriptor?: CvSectionDescriptor[] | null;
     /** Free-form content keyed by descriptor section key. Null for legacy CVs. */
@@ -288,6 +288,22 @@ export const getJobCv = async (jobId: string): Promise<GetCvResponse> => {
 };
 
 /**
+ * Get the original PDF binary (base64-encoded) for a CV stored as raw PDF.
+ */
+export const getCvOriginalPdf = async (cvId: string): Promise<{ pdfBase64: string }> => {
+    try {
+        const response = await axios.get<{ pdfBase64: string }>(`${API_BASE_URL}/${cvId}/original-pdf`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Get CV original PDF API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred fetching the original PDF.' };
+    }
+};
+
+/**
  * Upload a new CV file (creates/replaces master CV)
  */
 export const uploadCV = async (file: File): Promise<UploadCvResponse> => {
@@ -350,6 +366,22 @@ export const createJobCvFromBase = async (
             throw error.response.data;
         }
         throw { message: 'An unknown error occurred copying the base CV to the job.' };
+    }
+};
+
+/**
+ * Remove the CV attached to a specific job (deletes by jobApplicationId — more robust than by _id).
+ */
+export const detachJobCv = async (jobId: string): Promise<{ message: string; deletedCount: number }> => {
+    try {
+        const response = await axios.delete<{ message: string; deletedCount: number }>(`${API_BASE_URL}/job/${jobId}`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Detach job CV API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred removing the CV for this job.' };
     }
 };
 

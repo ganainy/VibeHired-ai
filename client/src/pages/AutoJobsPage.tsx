@@ -903,7 +903,7 @@ const AutoJobsPage: React.FC = () => {
                                 max="1000"
                                 value={settings.maxJobs || 100}
                                 onChange={handleMaxJobsChange}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-indigo-600"
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600 accent-indigo-600"
                             />
                             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Maximum number of jobs to process per run (20-1000, default: 100)
@@ -922,7 +922,7 @@ const AutoJobsPage: React.FC = () => {
                                     setSettings(newSettings);
                                     debouncedAutoSave(newSettings);
                                 }}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.avoidDuplicates ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.avoidDuplicates ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-600'
                                     }`}
                             >
                                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.avoidDuplicates ? 'translate-x-6' : 'translate-x-1'
@@ -936,7 +936,7 @@ const AutoJobsPage: React.FC = () => {
                 {workflowProgress && (
                     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-8 relative overflow-hidden">
                         {/* Top Progress Bar */}
-                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-200 dark:bg-gray-700">
+                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-200 dark:bg-gray-600">
                             <div
                                 className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500 ease-out"
                                 style={{ width: `${workflowProgress.progress.percentage}%` }}
@@ -1030,7 +1030,7 @@ const AutoJobsPage: React.FC = () => {
                                                 <div className="absolute top-5 left-[60%] right-0 h-0.5 -z-10">
                                                     <div className={`h-full transition-all duration-500 ${isCompleted || isBeforeRunning
                                                         ? 'bg-green-500 dark:bg-green-400'
-                                                        : 'bg-gray-200 dark:bg-gray-700'
+                                                        : 'bg-gray-200 dark:bg-gray-600'
                                                         }`} style={{ width: '100%' }} />
                                                 </div>
                                             )}
@@ -1045,7 +1045,7 @@ const AutoJobsPage: React.FC = () => {
                                                         ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/50 animate-pulse'
                                                         : isFailed
                                                             ? 'bg-red-500 text-white shadow-lg shadow-red-500/50'
-                                                            : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'}
+                                                            : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500'}
                                             `}>
                                                 {isCompleted ? (
                                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1090,7 +1090,7 @@ const AutoJobsPage: React.FC = () => {
 
                                             {/* Progress Bar for Running Step */}
                                             {isRunning && (
-                                                <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-2">
+                                                <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden mt-2">
                                                     <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: '60%' }} />
                                                 </div>
                                             )}

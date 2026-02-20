@@ -47,7 +47,7 @@ const DynamicObjectEntry: React.FC<DynamicObjectEntryProps> = ({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-600/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
       >
         <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate pr-4">
           {titleValue}

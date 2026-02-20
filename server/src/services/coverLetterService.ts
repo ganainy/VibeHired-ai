@@ -26,18 +26,19 @@ export interface CoverLetterResponse {
  */
 export async function generateCoverLetter(
     userId: string,
-    cvJson: JsonResumeSchema,
+    cvJson: JsonResumeSchema | null,
     jobDescription: string,
     jobTitle: string,
     companyName: string,
     language: 'en' | 'de' = 'en',
-    customPrompt?: string
+    customPrompt?: string,
+    rawCvText?: string
 ): Promise<CoverLetterResponse> {
     const languageName = language === 'de' ? 'German' : 'English';
     const suggestedDocLabel = (language === 'de') ? 'Anschreiben' : 'Cover_Letter';
 
-    // Extract user's first and last name from CV
-    const nameParts = (cvJson.basics?.name || 'Applicant').trim().split(/\s+/);
+    // Extract user's first and last name from CV (fall back to generic if raw text only)
+    const nameParts = (cvJson?.basics?.name || 'Applicant').trim().split(/\s+/);
     const firstName = nameParts[0];
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join('_') : '';
 
@@ -81,9 +82,9 @@ ${language === 'de'
     : '"Dear Hiring Manager,\n\nI am writing to express my interest in the [Position] role at [Company].\n\nPlease find attached my CV along with my certificates.\n\nBest regards,\n[Your Name]"'}
 
 USER'S CV:
-\`\`\`json
-${JSON.stringify(cvJson, null, 2)}
-\`\`\`
+${rawCvText
+    ? `\`\`\`\n${rawCvText}\n\`\`\``
+    : `\`\`\`json\n${JSON.stringify(cvJson, null, 2)}\n\`\`\``}
 
 JOB DESCRIPTION:
 ---

@@ -11,7 +11,7 @@ import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 // import { downloadCvAsPdf } from '../services/pdfService'; // Removed as we use react-to-print now
 import { DEFAULT_CV_PROMPT, DEFAULT_COVER_LETTER_PROMPT } from '../constants/prompts';
 import { generateCoverLetter } from '../services/coverLetterApi';
-import { getMasterCv, previewCv, getCvBranches, CVDocument, getJobCv, createJobCv, createJobCvFromBase, uploadCvForJob, updateCv, deleteCv } from '../services/cvApi';
+import { getMasterCv, previewCv, getCvBranches, CVDocument, getJobCv, createJobCv, createJobCvFromBase, uploadCvForJob, updateCv, deleteCv, getCvOriginalPdf, detachJobCv } from '../services/cvApi';
 import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
 import AtsInlinePanel from '../components/ats/AtsInlinePanel';
 import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
@@ -61,6 +61,7 @@ const ReviewFinalizePage: React.FC = () => {
     const [jobApplication, setJobApplication] = useState<JobApplication | null>(null);
     const [cvData, setCvData] = useState<JsonResumeSchema>({ basics: {} });
     const [currentCvId, setCurrentCvId] = useState<string | null>(null);
+    const [currentCvFilename, setCurrentCvFilename] = useState<string | null>(null);
     const [liveCvDescriptor, setLiveCvDescriptor] = useState<CvSectionDescriptor[] | null>(null);
     const [liveCvData, setLiveCvData] = useState<Record<string, any> | null>(null);
     const [coverLetterText, setCoverLetterText] = useState<string>('');
@@ -172,6 +173,7 @@ const ReviewFinalizePage: React.FC = () => {
     const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
     const [previewPdfBase64, setPreviewPdfBase64] = useState<string | null>(null);
     const [isGeneratingPreview, setIsGeneratingPreview] = useState<boolean>(false);
+    const [isLoadingRawPdf, setIsLoadingRawPdf] = useState<boolean>(false);
     const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
     const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false);
 
@@ -339,8 +341,9 @@ const ReviewFinalizePage: React.FC = () => {
                 setApplyCvError('Please select a CV or upload a file.');
                 return;
             }
-            setCvData(result.cv.cvJson);
+            if (result.cv.cvJson) setCvData(result.cv.cvJson);
             setCurrentCvId(result.cv._id);
+            setCurrentCvFilename(result.cv.filename ?? null);
             setSelectedBaseCvIdForImport('');
             showToast('CV attached to this job', 'success');
         } catch (err: any) {
@@ -515,28 +518,40 @@ const ReviewFinalizePage: React.FC = () => {
             try {
                 const cvResponse = await getJobCv(jobId);
                 if (cvResponse.cv) {
-                    setCvData(cvResponse.cv.cvJson);
+                    setCvData(cvResponse.cv.cvJson ?? null);
                     setCurrentCvId(cvResponse.cv._id);
+                    setCurrentCvFilename(cvResponse.cv.filename ?? null);
                     setTailoringChanges(cvResponse.cv.tailoringChanges || null);
                     lastSavedCvDataRef.current = JSON.stringify(cvResponse.cv.cvJson);
                     setLiveCvDescriptor(cvResponse.cv.cvDescriptor ?? null);
                     setLiveCvData(cvResponse.cv.cvData ?? null);
                 } else {
+                    // No CV document — clear all CV state first
+                    setCurrentCvId(null);
+                    setCurrentCvFilename(null);
+                    setLiveCvDescriptor(null);
+                    setLiveCvData(null);
+                    setTailoringChanges(null);
                     // Fallback to legacy draftCvJson if no CV document yet
                     if (data.draftCvJson) {
                         setCvData(data.draftCvJson);
                         lastSavedCvDataRef.current = JSON.stringify(data.draftCvJson);
                     } else {
+                        setCvData({ basics: {} });
                         lastSavedCvDataRef.current = JSON.stringify({ basics: {} });
                     }
-                    setTailoringChanges(null);
                 }
             } catch (err) {
-                // If 404 or other error, fallback to legacy
+                // If 404 or other error, clear CV state and fallback to legacy
+                setCurrentCvId(null);
+                setCurrentCvFilename(null);
+                setLiveCvDescriptor(null);
+                setLiveCvData(null);
                 if (data.draftCvJson) {
                     setCvData(data.draftCvJson);
                     lastSavedCvDataRef.current = JSON.stringify(data.draftCvJson);
                 } else {
+                    setCvData({ basics: {} });
                     lastSavedCvDataRef.current = JSON.stringify({ basics: {} });
                 }
             }
@@ -582,10 +597,11 @@ const ReviewFinalizePage: React.FC = () => {
         }
     }, [jobApplication, isLoading]);
 
-    // Check if we have a valid CV loaded (either from unified model or legacy fallback)
+    // A CV doc is attached when currentCvId is set (even raw-PDF-only with no JSON)
     const hasLocalCv = React.useMemo(() => {
+        if (currentCvId) return true;
         return !!(cvData && cvData.basics && Object.keys(cvData.basics).length > 0);
-    }, [cvData]);
+    }, [cvData, currentCvId]);
 
     // Sync state with jobApplication for the Tailor Form
     useEffect(() => {
@@ -2029,9 +2045,7 @@ const ReviewFinalizePage: React.FC = () => {
                         {/* Status Column */}
                         <div className="text-center">
                             <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Status</p>
-                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                {jobApplication.status}
-                            </p>
+                            <JobStatusBadge type="application" status={jobApplication.status} />
                         </div>
 
                         {/* Match Column - Clickable or Calculate Button */}
@@ -2128,7 +2142,7 @@ const ReviewFinalizePage: React.FC = () => {
                 {/* Tabs Navigation with Integrated Progress Indicators */}
                 <div className="mb-6 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-4">
                     <div className="relative flex items-center justify-between w-full max-w-4xl mx-auto">
-                        <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-700 -z-10 transform -translate-y-1/2"></div>
+                        <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-600 -z-10 transform -translate-y-1/2"></div>
 
                         {/* Tab 1: Job Details */}
                         <button
@@ -2137,7 +2151,7 @@ const ReviewFinalizePage: React.FC = () => {
                         >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'job-description'
                                 ? 'bg-primary text-white shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
                                 }`}>
                                 <span className="material-symbols-outlined text-sm">check</span>
                             </div>
@@ -2154,7 +2168,7 @@ const ReviewFinalizePage: React.FC = () => {
                         >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'cv'
                                 ? 'bg-primary text-white shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
                                 }`}>
                                 <span className="material-symbols-outlined text-sm">article</span>
                             </div>
@@ -2171,7 +2185,7 @@ const ReviewFinalizePage: React.FC = () => {
                         >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'cover-letter'
                                 ? 'bg-primary text-white shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
                                 }`}>
                                 <span className="material-symbols-outlined text-sm">mail</span>
                             </div>
@@ -2238,7 +2252,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     type="text"
                                                     value={jobDetailsForm.jobTitle}
                                                     onChange={(e) => handleJobDetailsInputChange('jobTitle', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 />
                                             </div>
                                             <div>
@@ -2247,7 +2261,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     type="text"
                                                     value={jobDetailsForm.companyName}
                                                     onChange={(e) => handleJobDetailsInputChange('companyName', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 />
                                             </div>
                                         </div>
@@ -2258,7 +2272,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <select
                                                     value={jobDetailsForm.status}
                                                     onChange={(e) => handleJobDetailsInputChange('status', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 >
                                                     {jobStatusOptions.map(status => (
                                                         <option key={status} value={status}>{status}</option>
@@ -2270,7 +2284,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <select
                                                     value={jobDetailsForm.language}
                                                     onChange={(e) => handleJobDetailsInputChange('language', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 >
                                                     <option value="en">English</option>
                                                     <option value="de">German</option>
@@ -2285,7 +2299,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         const nextDate = e.target.value ? new Date(`${e.target.value}T12:00:00`).toISOString() : '';
                                                         handleJobDetailsInputChange('createdAt', nextDate);
                                                     }}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 />
                                             </div>
                                         </div>
@@ -2296,7 +2310,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <select
                                                     value={jobDetailsForm.jobType || ''}
                                                     onChange={(e) => handleJobDetailsInputChange('jobType', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 >
                                                     <option value="">Not specified</option>
                                                     <option value="full-time">Full-time</option>
@@ -2312,7 +2326,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <select
                                                     value={jobDetailsForm.baseCvId}
                                                     onChange={(e) => handleJobDetailsInputChange('baseCvId', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 >
                                                     <option value="">Use master/primary CV</option>
                                                     {jobDetailsForm.baseCvId && !availableCvs.some(cv => cv.id === jobDetailsForm.baseCvId) && (
@@ -2337,7 +2351,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                             onChange={(e) => handleJobUrlFieldChange(idx, e.target.value)}
                                                             onBlur={(e) => handleJobUrlFieldChange(idx, normalizeMultipleUrls(e.target.value))}
                                                             placeholder={`Job URL ${idx + 1}`}
-                                                            className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                            className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                         />
                                                         {jobDetailsForm.jobUrls.length > 1 && (
                                                             <button
@@ -2370,7 +2384,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     value={jobDetailsForm.salary}
                                                     onChange={(e) => handleJobDetailsInputChange('salary', e.target.value)}
                                                     placeholder="e.g., 50k-70k, $80,000"
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 />
                                             </div>
                                             <div>
@@ -2380,7 +2394,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     value={jobDetailsForm.contactEmail}
                                                     onChange={(e) => handleJobDetailsInputChange('contactEmail', e.target.value)}
                                                     placeholder="name@company.com"
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 />
                                             </div>
                                         </div>
@@ -2393,7 +2407,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     value={jobDetailsForm.contactPhone}
                                                     onChange={(e) => handleJobDetailsInputChange('contactPhone', e.target.value)}
                                                     placeholder="+49 ..."
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 />
                                             </div>
                                             <div>
@@ -2403,7 +2417,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     value={jobDetailsForm.hiringManagerName}
                                                     onChange={(e) => handleJobDetailsInputChange('hiringManagerName', e.target.value)}
                                                     placeholder="Recruiter or manager name"
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 />
                                             </div>
                                             <div>
@@ -2413,7 +2427,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     value={jobDetailsForm.applicationUrl}
                                                     onChange={(e) => handleJobDetailsInputChange('applicationUrl', e.target.value)}
                                                     placeholder="https://company.com/apply"
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 />
                                             </div>
                                         </div>
@@ -2425,7 +2439,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 onChange={(e) => handleJobDetailsInputChange('notes', e.target.value)}
                                                 rows={3}
                                                 placeholder="Add notes for this application"
-                                                className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm resize-y"
+                                                className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm resize-y"
                                             />
                                         </div>
                                     </div>
@@ -2460,7 +2474,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     {/* Contact Information */}
                                     {jobApplication.contactEmail && (
                                         <li className="flex items-start gap-3">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
                                             <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
                                                 <strong className="text-text-main-light dark:text-text-main-dark">Contact Email:</strong>{' '}
                                                 <a href={`mailto:${jobApplication.contactEmail}`} className="text-indigo-500 dark:text-indigo-400 hover:underline">
@@ -2471,7 +2485,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     )}
                                     {jobApplication.contactPhone && (
                                         <li className="flex items-start gap-3">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
                                             <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
                                                 <strong className="text-text-main-light dark:text-text-main-dark">Contact Phone:</strong> {jobApplication.contactPhone}
                                             </span>
@@ -2479,7 +2493,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     )}
                                     {jobApplication.hiringManagerName && (
                                         <li className="flex items-start gap-3">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
                                             <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
                                                 <strong className="text-text-main-light dark:text-text-main-dark">Hiring Manager:</strong> {jobApplication.hiringManagerName}
                                             </span>
@@ -2487,7 +2501,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     )}
                                     {jobApplication.applicationUrl && (
                                         <li className="flex items-start gap-3">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0"></span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
                                             <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
                                                 <strong className="text-text-main-light dark:text-text-main-dark">Application Portal:</strong>{' '}
                                                 <a href={jobApplication.applicationUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-500 dark:text-indigo-400 hover:underline">
@@ -2653,7 +2667,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={pastedJobText}
                                                         onChange={(e) => setPastedJobText(e.target.value)}
                                                         placeholder="Paste job description here..."
-                                                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 disabled:opacity-50 resize-y min-h-[120px] text-sm transition-all"
+                                                        className="w-full bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 disabled:opacity-50 resize-y min-h-[120px] text-sm transition-all"
                                                         rows={5}
                                                         disabled={isExtractingWithAi}
                                                     />
@@ -2720,7 +2734,7 @@ const ReviewFinalizePage: React.FC = () => {
                             {jobApplication.draftCoverLetterText ? (
                                 <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[calc(100vh-280px)] min-h-[800px]">
                                     {/* Header part */}
-                                    <div className="bg-gray-50 dark:bg-gray-800/80 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                    <div className="bg-gray-50 dark:bg-gray-600/80 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                                         <div className="flex items-center justify-between">
                                             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit Cover Letter</h2>
 
@@ -2833,7 +2847,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={selectedBaseClId}
                                                         onChange={(e) => { setSelectedBaseClId(e.target.value); setClUploadFile(null); }}
                                                         disabled={!!clUploadFile || isApplyingBaseCl}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 disabled:opacity-50"
+                                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 disabled:opacity-50"
                                                     >
                                                         <option value="">— choose a cover letter —</option>
                                                         {baseCoverLetters.map(cl => (
@@ -2860,7 +2874,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         onChange={(e) => { const f = e.target.files?.[0] ?? null; setClUploadFile(f); if (f) setSelectedBaseClId(''); }}
                                                     />
                                                     {clUploadFile ? (
-                                                        <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm">
+                                                        <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-sm">
                                                             <span className="material-symbols-outlined text-base text-gray-500">description</span>
                                                             <span className="flex-1 truncate text-gray-800 dark:text-gray-200">{clUploadFile.name}</span>
                                                             <button onClick={() => { setClUploadFile(null); if (clUploadFileRef.current) clUploadFileRef.current.value = ''; }} className="text-gray-400 hover:text-red-500 transition-colors">
@@ -2945,7 +2959,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
                                             }`}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
                                                 <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
                                             </div>
                                             <div>
@@ -2969,7 +2983,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
                                             }`}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'import' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'import' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
                                                 <span className="material-symbols-outlined text-[22px]">upload_file</span>
                                             </div>
                                             <div>
@@ -3044,7 +3058,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={selectedBaseClId}
                                                         onChange={(e) => { setSelectedBaseClId(e.target.value); setClUploadFile(null); if (clUploadFileRef.current) clUploadFileRef.current.value = ''; }}
                                                         disabled={!!clUploadFile || isApplyingBaseCl}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all disabled:opacity-50"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all disabled:opacity-50"
                                                     >
                                                         <option value="">— choose a saved cover letter —</option>
                                                         {baseCoverLetters.map(cl => (
@@ -3113,7 +3127,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         type="text"
                                                         value={tailoredJobTitle}
                                                         onChange={(e) => setTailoredJobTitle(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
                                                         placeholder="e.g. Senior Product Manager"
                                                     />
                                                 </div>
@@ -3125,7 +3139,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         type="text"
                                                         value={tailoredCompanyName}
                                                         onChange={(e) => setTailoredCompanyName(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
                                                         placeholder="e.g. Acme Innovations"
                                                     />
                                                 </div>
@@ -3144,7 +3158,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <textarea
                                                     value={tailoredJobDescription}
                                                     onChange={(e) => setTailoredJobDescription(e.target.value)}
-                                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100 min-h-[200px]"
+                                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100 min-h-[200px]"
                                                     placeholder="Paste the full job description here... Our AI will analyze key requirements."
                                                 ></textarea>
                                             </div>
@@ -3161,7 +3175,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     <select
                                                         value={selectedClBaseCvId}
                                                         onChange={(e) => handleSelectedClBaseCvIdChange(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
                                                     >
                                                         {currentCvId && hasLocalCv && (
                                                             <option value="__job_cv__">📄 This Job's CV (attached)</option>
@@ -3232,7 +3246,79 @@ const ReviewFinalizePage: React.FC = () => {
                     {/* Tab 4: CV */}
                     {activeTab === 'cv' && (
                         <div>
-                            {hasLocalCv ? (
+                            {/* Raw PDF attached — no JSON, show placeholder */}
+                            {hasLocalCv && (!cvData || !cvData.basics || Object.keys(cvData.basics).length === 0) && !liveCvDescriptor ? (
+                                <div className="p-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center gap-4 text-center">
+                                    <span className="material-symbols-outlined text-5xl text-purple-400">description</span>
+                                    <div>
+                                        <p className="text-base font-semibold text-gray-800 dark:text-gray-200">CV attached as PDF</p>
+                                        {currentCvFilename && (
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-mono">{currentCvFilename}</p>
+                                        )}
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                            This CV was stored as-is. No in-app editing is available for raw PDF attachments.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            disabled={isLoadingRawPdf}
+                                            onClick={async () => {
+                                                if (!currentCvId) return;
+                                                setIsLoadingRawPdf(true);
+                                                try {
+                                                    const { pdfBase64 } = await getCvOriginalPdf(currentCvId);
+                                                    setPreviewPdfBase64(pdfBase64);
+                                                    setIsPreviewOpen(true);
+                                                } catch {
+                                                    showToast('Failed to load PDF preview', 'error');
+                                                } finally {
+                                                    setIsLoadingRawPdf(false);
+                                                }
+                                            }}
+                                            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg transition-colors disabled:opacity-50"
+                                        >
+                                            {isLoadingRawPdf ? (
+                                                <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                                            ) : (
+                                                <span className="material-symbols-outlined text-base">visibility</span>
+                                            )}
+                                            Preview PDF
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                if (!window.confirm('Remove this attached CV? You can re-attach another one.')) return;
+                                                try {
+                                                    if (jobId) {
+                                                        await detachJobCv(jobId);
+                                                    } else if (currentCvId) {
+                                                        await deleteCv(currentCvId);
+                                                    }
+                                                } catch (err: any) {
+                                                    // 'No CV attached' is not a real error — proceed anyway
+                                                    const msg: string = err?.message ?? '';
+                                                    if (!msg.toLowerCase().includes('no cv was attached') && !msg.toLowerCase().includes('not found')) {
+                                                        showToast(`Failed to remove CV: ${msg}`, 'error');
+                                                        return;
+                                                    }
+                                                }
+                                                setCvData({ basics: {} });
+                                                setCurrentCvId(null);
+                                                setCurrentCvFilename(null);
+                                                setLiveCvDescriptor(null);
+                                                setLiveCvData(null);
+                                                setTailoringChanges(null);
+                                                showToast('CV removed', 'success');
+                                            }}
+                                            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors"
+                                        >
+                                            <span className="material-symbols-outlined text-base">delete</span>
+                                            Remove &amp; re-attach
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : hasLocalCv ? (
                                 <CvEditorPanel
                                     data={cvData}
                                     onChange={handleCvChange}
@@ -3257,6 +3343,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     await deleteCv(currentCvId);
                                                     setCvData({ basics: {} });
                                                     setCurrentCvId(null);
+                                                    setCurrentCvFilename(null);
                                                     setJobApplication(prev => prev ? { ...prev, draftCvJson: undefined } : null);
                                                     showToast('CV deleted successfully', 'success');
                                                 } catch (err: any) {
@@ -3360,7 +3447,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     {atsScores && (
                                                         <button
                                                             onClick={(e) => { e.preventDefault(); handleScanAts(); }}
-                                                            className="flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 transition-all"
+                                                            className="flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 transition-all"
                                                             title="Re-scan ATS"
                                                         >
                                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3421,7 +3508,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
                                             }`}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
                                                 <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
                                             </div>
                                             <div>
@@ -3445,7 +3532,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
                                             }`}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'import' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'import' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
                                                 <span className="material-symbols-outlined text-[22px]">upload_file</span>
                                             </div>
                                             <div>
@@ -3520,7 +3607,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={selectedBaseCvIdForImport}
                                                         onChange={(e) => { setSelectedBaseCvIdForImport(e.target.value); setCvImportFile(null); if (cvImportFileRef.current) cvImportFileRef.current.value = ''; }}
                                                         disabled={!!cvImportFile || isApplyingBaseCv}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all disabled:opacity-50"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all disabled:opacity-50"
                                                     >
                                                         <option value="">— choose a saved CV —</option>
                                                         {availableCvs.map(cv => (
@@ -3589,7 +3676,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         type="text"
                                                         value={tailoredJobTitle}
                                                         onChange={(e) => setTailoredJobTitle(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
                                                         placeholder="e.g. Senior Product Manager"
                                                     />
                                                 </div>
@@ -3601,7 +3688,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         type="text"
                                                         value={tailoredCompanyName}
                                                         onChange={(e) => setTailoredCompanyName(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
                                                         placeholder="e.g. Acme Innovations"
                                                     />
                                                 </div>
@@ -3620,7 +3707,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <textarea
                                                     value={tailoredJobDescription}
                                                     onChange={(e) => setTailoredJobDescription(e.target.value)}
-                                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100 min-h-[200px]"
+                                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100 min-h-[200px]"
                                                     placeholder="Paste the full job description here... Our AI will analyze key requirements and skills."
                                                 ></textarea>
                                             </div>
@@ -3638,7 +3725,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         <select
                                                             value={selectedBaseCvId}
                                                             onChange={(e) => handleSelectedBaseCvIdChange(e.target.value)}
-                                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
                                                         >
                                                             {availableCvs.map(cv => (
                                                                 <option key={cv.id} value={cv.id}>{cv.name}</option>
@@ -3740,7 +3827,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-purple-100 dark:bg-gray-700">
+                                        <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-purple-100 dark:bg-gray-600">
                                             <div style={{ width: `${generationProgress}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-600 transition-all duration-500 ease-out"></div>
                                         </div>
                                     </div>
@@ -3838,7 +3925,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     <button
                                         onClick={handleRefreshRecommendation}
                                         disabled={isLoadingRecommendation || isRefreshingRecommendation || !jobApplication?.jobDescriptionText}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                         title={!jobApplication?.jobDescriptionText ? 'Job description required' : 'Refresh analysis'}
                                     >
                                         {isRefreshingRecommendation ? (

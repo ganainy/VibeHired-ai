@@ -135,7 +135,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
               <select
                 value={templateId}
                 onChange={(e) => onTemplateChange(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px]"
+                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px]"
               >
                 {availableTemplates.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
@@ -160,7 +160,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
               disabled={!hasUnsavedChanges || saveStatus === 'saving'}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${hasUnsavedChanges && saveStatus !== 'saving'
                 ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 }`}
             >
               {saveStatus === 'saving' ? (
@@ -190,7 +190,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
             {/* Delete button (Tailored CVs only) */}
             {onDelete && (
               <>
-                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
+                <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" />
                 <button
                   onClick={onDelete}
                   className="flex items-center gap-2 px-4 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-all border border-red-100 dark:border-red-900/30"

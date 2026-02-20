@@ -396,6 +396,34 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 /**
+ * DELETE /api/cvs/job/:jobId
+ * Remove the CV attached to a specific job (deletes by jobApplicationId, not by CV _id).
+ * More robust than deleting by _id when the client state may be stale.
+ */
+router.delete('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id;
+    const { jobId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+        throw new ValidationError('Invalid job ID');
+    }
+
+    // Verify job belongs to user
+    const job = await JobApplication.findOne({ _id: jobId, userId });
+    if (!job) throw new NotFoundError('Job application not found.');
+
+    const result = await CV.deleteOne({ jobApplicationId: jobId, userId });
+
+    if (result.deletedCount === 0) {
+        // Already gone — treat as success
+        return res.json({ message: 'No CV was attached to this job.', deletedCount: 0 });
+    }
+
+    console.log(`Job CV detached for job ${jobId} by user ${req.user!.email}`);
+    return res.json({ message: 'Job CV removed successfully.', deletedCount: result.deletedCount });
+}));
+
+/**
  * GET /api/cvs/job/:jobId
  * Get the CV for a specific job application
  */
@@ -720,8 +748,8 @@ router.post('/job/:jobId/from-base', asyncHandler(async (req: Request, res: Resp
 
 /**
  * POST /api/cvs/job/:jobId/upload
- * Upload a PDF/DOCX CV file directly for a specific job.
- * Parses the file, stores JSON + binary as an independent job CV.
+ * Attach a PDF/DOCX CV file to a specific job as-is (no AI parsing).
+ * The raw binary is stored so the original file is always downloadable.
  */
 router.post(
     '/job/:jobId/upload',
@@ -736,53 +764,34 @@ router.post(
 
         if (!req.file) throw new ValidationError('No CV file uploaded.');
 
-        const providerStrategy = await getProviderStrategy(String(userId));
-        if (providerStrategy.getName().toLowerCase() !== 'gemini') {
-            throw new ValidationError(
-                'PDF upload requires Gemini. Please switch your AI provider to Gemini in Settings.'
-            );
-        }
-
         const job = await JobApplication.findOne({ _id: jobId, userId });
         if (!job) throw new NotFoundError('Job application not found.');
-
-        console.log(`Parsing job CV file: ${req.file.originalname}`);
-        const cvJson = await parseUploadedCv(req.file, String(userId));
-
-        let jobUploadDescriptor = null;
-        let jobUploadCvData = null;
-        try {
-            const payload = await generateDescriptorFromJson(cvJson as Record<string, any>, String(userId));
-            jobUploadDescriptor = payload.descriptor;
-            jobUploadCvData = payload.data;
-        } catch (descErr: any) {
-            console.warn('Descriptor generation failed for job CV upload (non-fatal):', descErr.message);
-        }
 
         // Replace existing job CV if present
         await CV.deleteOne({ jobApplicationId: jobId });
 
+        // Store raw file only — no AI parsing
         const jobCv = await CV.create({
             userId,
             isMasterCv: false,
             isPrimary: false,
             displayName: `Job CV – ${job.jobTitle} at ${job.companyName}`,
             jobApplicationId: new mongoose.Types.ObjectId(jobId),
-            cvJson,
-            cvDescriptor: jobUploadDescriptor,
-            cvData: jobUploadCvData,
+            cvJson: null,
+            cvDescriptor: null,
+            cvData: null,
             filename: req.file.originalname,
-            originalPdf: req.file.buffer, // Preserve raw file for isolation
+            originalPdf: req.file.buffer,
             templateId: req.body.templateId || null,
         });
 
         res.status(201).json({
-            message: 'CV file uploaded for job.',
+            message: 'CV file attached to job.',
             cv: {
                 _id: jobCv._id,
                 jobApplicationId: jobCv.jobApplicationId,
                 displayName: jobCv.displayName,
-                cvJson: jobCv.cvJson,
+                cvJson: null,
                 filename: jobCv.filename,
                 createdAt: jobCv.createdAt,
             },
@@ -926,6 +935,10 @@ router.post('/:id/preview', asyncHandler(async (req: Request, res: Response) => 
     const { template } = req.body;
     const templateId = template || cv.templateId || 'modern-clean';
 
+    if (!cv.cvJson) {
+        return res.status(400).json({ message: 'This CV has no JSON data to generate a PDF preview from.' });
+    }
+
     try {
         const pdfBuffer = await generateCvPdfBuffer(cv.cvJson, templateId as CVTemplate);
         const pdfBase64 = pdfBuffer.toString('base64');
@@ -978,6 +991,28 @@ router.patch('/:id/rename', asyncHandler(async (req: Request, res: Response) => 
             updatedAt: cv.updatedAt,
         }
     });
+}));
+
+/**
+ * GET /api/cvs/:id/original-pdf
+ * Return the raw stored PDF binary as base64 for in-browser preview.
+ */
+router.get('/:id/original-pdf', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id as string;
+    const cvId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(cvId)) {
+        throw new ValidationError('Invalid CV ID');
+    }
+
+    const cv = await CV.findOne({ _id: cvId, userId }).select('+originalPdf');
+    if (!cv) throw new NotFoundError('CV not found');
+    if (!cv.originalPdf) {
+        return res.status(404).json({ message: 'No original PDF stored for this CV.' });
+    }
+
+    const pdfBase64 = (cv.originalPdf as Buffer).toString('base64');
+    return res.json({ pdfBase64 });
 }));
 
 /**

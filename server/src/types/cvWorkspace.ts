@@ -2,7 +2,7 @@ import { JsonResumeSchema } from './jsonresume';
 
 export interface EditableCvWorkingCopyDTO {
   cvId: string;
-  cvJson: JsonResumeSchema;
+  cvJson: JsonResumeSchema | null;
   templateId: string;
   snapshotVersion: number;
   lastEditedAt: Date;

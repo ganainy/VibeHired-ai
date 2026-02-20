@@ -95,7 +95,7 @@ const SortableProjectItem: React.FC<SortableProjectItemProps> = ({ project, onTo
               {project.technologies.slice(0, 3).map((tech, idx) => (
                 <span
                   key={idx}
-                  className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
+                  className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded"
                 >
                   {tech}
                 </span>
@@ -111,7 +111,7 @@ const SortableProjectItem: React.FC<SortableProjectItemProps> = ({ project, onTo
           onChange={() => onToggleVisibility(project._id, project.isVisibleInPortfolio ?? true)}
           className="sr-only peer"
         />
-        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
       </label>
     </div>
   );
@@ -675,7 +675,7 @@ const PortfolioSetupPage: React.FC = () => {
                 Step {activeTab + 1} of 5: {stepNames[activeTab]}
               </p>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
               <div
                 className="bg-primary h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progressPercentage}%` }}
@@ -707,7 +707,7 @@ const PortfolioSetupPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* GitHub Card */}
                     <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 rounded-xl p-6 flex flex-col items-center text-center shadow-sm hover:shadow-lg transition-shadow duration-300">
-                      <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                      <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center mb-4">
                         <svg className="w-10 h-10 text-gray-800 dark:text-white" fill="currentColor" viewBox="0 0 16 16">
                           <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
                         </svg>
@@ -728,7 +728,7 @@ const PortfolioSetupPage: React.FC = () => {
                             setGithubUsername(username);
                           }}
                           placeholder="https://github.com/username"
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                         <div className="space-y-1">
                           <input
@@ -737,7 +737,7 @@ const PortfolioSetupPage: React.FC = () => {
                             value={githubToken}
                             onChange={(e) => setGithubToken(e.target.value)}
                             placeholder="GitHub Personal Access Token (Optional)"
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                           />
                           <div className="text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
                             <p>Optional - Only needed for higher rate limits</p>
@@ -796,7 +796,7 @@ const PortfolioSetupPage: React.FC = () => {
                           value={linkedinUrl}
                           onChange={(e) => setLinkedinUrl(e.target.value)}
                           placeholder="https://linkedin.com/in/username"
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                         <button
                           onClick={handleSyncLinkedIn}
@@ -970,7 +970,7 @@ const PortfolioSetupPage: React.FC = () => {
                           type="text"
                           value={linkedInData.name}
                           onChange={(e) => setLinkedInData({ ...linkedInData, name: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                           placeholder="Your full name"
                         />
                       </div>
@@ -983,7 +983,7 @@ const PortfolioSetupPage: React.FC = () => {
                           type="text"
                           value={linkedInData.title}
                           onChange={(e) => setLinkedInData({ ...linkedInData, title: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                           placeholder="e.g., Software Engineer, Product Manager"
                         />
                       </div>
@@ -996,7 +996,7 @@ const PortfolioSetupPage: React.FC = () => {
                           value={linkedInData.bio}
                           onChange={(e) => setLinkedInData({ ...linkedInData, bio: e.target.value })}
                           rows={4}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                           placeholder="Write a brief summary about yourself..."
                         />
                       </div>
@@ -1009,7 +1009,7 @@ const PortfolioSetupPage: React.FC = () => {
                           type="text"
                           value={linkedInData.location}
                           onChange={(e) => setLinkedInData({ ...linkedInData, location: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                           placeholder="e.g., San Francisco, CA"
                         />
                       </div>
@@ -1032,7 +1032,7 @@ const PortfolioSetupPage: React.FC = () => {
                             onChange={(e) => setLinkedInSettings({ ...linkedInSettings, showLinkedInName: e.target.checked })}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                         </label>
                       </label>
 
@@ -1048,7 +1048,7 @@ const PortfolioSetupPage: React.FC = () => {
                             onChange={(e) => setLinkedInSettings({ ...linkedInSettings, showLinkedInExperience: e.target.checked })}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                         </label>
                       </label>
 
@@ -1064,7 +1064,7 @@ const PortfolioSetupPage: React.FC = () => {
                             onChange={(e) => setLinkedInSettings({ ...linkedInSettings, showLinkedInSkills: e.target.checked })}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                         </label>
                       </label>
 
@@ -1080,7 +1080,7 @@ const PortfolioSetupPage: React.FC = () => {
                             onChange={(e) => setLinkedInSettings({ ...linkedInSettings, showLinkedInLanguages: e.target.checked })}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                         </label>
                       </label>
                     </div>
@@ -1141,7 +1141,7 @@ const PortfolioSetupPage: React.FC = () => {
                               </svg>
                             </div>
                           ) : (
-                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-600">
                               <svg className="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                               </svg>
@@ -1251,7 +1251,7 @@ const PortfolioSetupPage: React.FC = () => {
                             className="absolute -bottom-8 left-6 w-16 h-16 rounded-full border-4 border-white dark:border-gray-800 object-cover"
                           />
                         ) : (
-                          <div className="absolute -bottom-8 left-6 w-16 h-16 rounded-full border-4 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xl font-bold text-gray-500">
+                          <div className="absolute -bottom-8 left-6 w-16 h-16 rounded-full border-4 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xl font-bold text-gray-500">
                             {profile.name?.charAt(0) || profile.username.charAt(0)}
                           </div>
                         )}

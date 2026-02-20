@@ -68,7 +68,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.name || ''}
                             onChange={(e) => handleChange('name', e.target.value)}
                             placeholder="Your Full Name"
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                         />
                     </div>
 
@@ -81,7 +81,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.label || ''}
                             onChange={(e) => handleChange('label', e.target.value)}
                             placeholder="e.g., Software Engineer"
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                         />
                     </div>
 
@@ -94,7 +94,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.email || ''}
                             onChange={(e) => handleChange('email', e.target.value)}
                             placeholder="your.email@example.com"
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                         />
                     </div>
 
@@ -107,7 +107,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.phone || ''}
                             onChange={(e) => handleChange('phone', e.target.value)}
                             placeholder="+1 123-456-7890"
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                         />
                     </div>
 
@@ -120,7 +120,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.url || ''}
                             onChange={(e) => handleChange('url', e.target.value)}
                             placeholder="https://your-portfolio.com"
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                         />
                     </div>
 
@@ -133,7 +133,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.location?.address || ''}
                             onChange={(e) => handleLocationChange('address', e.target.value)}
                             placeholder="123 Main St"
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                         />
                     </div>
 
@@ -146,7 +146,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.location?.postalCode || ''}
                             onChange={(e) => handleLocationChange('postalCode', e.target.value)}
                             placeholder="90210"
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                         />
                     </div>
 
@@ -159,7 +159,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.location?.city || ''}
                             onChange={(e) => handleLocationChange('city', e.target.value)}
                             placeholder="Beverly Hills"
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                         />
                     </div>
 
@@ -172,7 +172,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.location?.countryCode || ''}
                             onChange={(e) => handleLocationChange('countryCode', e.target.value)}
                             placeholder="US"
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                         />
                     </div>
 
@@ -185,7 +185,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.location?.region || ''}
                             onChange={(e) => handleLocationChange('region', e.target.value)}
                             placeholder="California"
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                         />
                     </div>
 
@@ -197,7 +197,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                             value={data.summary || ''}
                             onChange={(e) => handleChange('summary', e.target.value)}
                             placeholder="A brief summary about yourself..."
-                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                            className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                             rows={3}
                         />
                     </div>
@@ -208,7 +208,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                         {data.profiles && data.profiles.length > 0 ? (
                             <ul className="space-y-2">
                                 {data.profiles.map((profile: JsonResumeProfile, index: number) => (
-                                    <li key={index} className="p-2 border dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 space-y-1">
+                                    <li key={index} className="p-2 border dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-600 space-y-1">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
                                             <div>
                                                 <label htmlFor={`profile-network-${index}`} className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Network</label>
@@ -218,7 +218,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                                                     value={profile.network || ''}
                                                     onChange={(e) => handleProfileChange(index, 'network', e.target.value)}
                                                     placeholder="e.g., LinkedIn, GitHub"
-                                                    className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                                                    className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                                                 />
                                             </div>
                                             <div>
@@ -229,7 +229,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                                                     value={profile.username || ''}
                                                     onChange={(e) => handleProfileChange(index, 'username', e.target.value)}
                                                     placeholder="Your username"
-                                                    className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                                                    className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                                                 />
                                             </div>
                                             <div className="md:col-span-2">
@@ -240,7 +240,7 @@ const BasicsEditor: React.FC<BasicsEditorProps> = ({ data = {}, onChange, analys
                                                     value={profile.url || ''}
                                                     onChange={(e) => handleProfileChange(index, 'url', e.target.value)}
                                                     placeholder="https://linkedin.com/in/yourprofile"
-                                                    className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs"
+                                                    className="w-full px-1.5 py-0.5 border dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 text-xs"
                                                 />
                                             </div>
                                         </div>

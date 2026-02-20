@@ -141,7 +141,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                 <form onSubmit={handleSubmit} className="px-6 py-4">
                     {/* Mode Toggle */}
                     <div className="mb-4">
-                        <div className="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-1">
+                        <div className="flex rounded-lg bg-gray-100 dark:bg-gray-600 p-1">
                             <button
                                 type="button"
                                 onClick={() => setMode('existing')}
@@ -176,7 +176,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                                 value={sourceCvId}
                                 onChange={(e) => setSourceCvId(e.target.value)}
                                 disabled={isLoading}
-                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.sourceCvId ? 'border-red-500' : 'border-gray-300'
+                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-600 ${errors.sourceCvId ? 'border-red-500' : 'border-gray-300'
                                     } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <option value="">Select a CV to copy from</option>
@@ -201,7 +201,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                                     accept=".pdf,.docx,.rtf"
                                     onChange={handleFileChange}
                                     disabled={isLoading}
-                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-l-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-300 ${errors.uploadedFile ? 'border-red-500' : 'border-gray-300'
+                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-l-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-300 ${errors.uploadedFile ? 'border-red-500' : 'border-gray-300'
                                         } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 />
                                 {uploadedFile && (
@@ -235,7 +235,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                             onChange={(e) => setCategory(e.target.value)}
                             disabled={isLoading}
                             placeholder="e.g., IT Helpdesk, Programming, Cybersecurity"
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.category ? 'border-red-500' : 'border-gray-300'
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-600 ${errors.category ? 'border-red-500' : 'border-gray-300'
                                 } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
                         {errors.category && (
@@ -255,7 +255,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                             onChange={(e) => setDisplayName(e.target.value)}
                             disabled={isLoading}
                             placeholder="e.g., Backend Developer CV"
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.displayName ? 'border-red-500' : 'border-gray-300'
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-600 ${errors.displayName ? 'border-red-500' : 'border-gray-300'
                                 } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
                         {errors.displayName && (

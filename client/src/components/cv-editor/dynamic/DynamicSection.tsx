@@ -24,9 +24,19 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
   onDelete,
   improving = false,
 }) => {
-  const [open, setOpen] = useState(true);
   const [showImproveInput, setShowImproveInput] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
+
+  const [open, setOpen] = useState<boolean>(() => {
+    const stored = localStorage.getItem(`cv_section_expanded_${descriptor.key}`);
+    if (stored !== null) return stored === 'true';
+    return false;
+  });
+
+  const handleToggleOpen = (newOpen: boolean) => {
+    setOpen(newOpen);
+    localStorage.setItem(`cv_section_expanded_${descriptor.key}`, String(newOpen));
+  };
 
   const handleImprove = async () => {
     if (!onImprove) return;
@@ -84,7 +94,7 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/40 border-b border-gray-200 dark:border-gray-700">
         <button
           type="button"
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => handleToggleOpen(!open)}
           className="flex items-center gap-2 text-left group min-w-0"
         >
           <svg
@@ -191,7 +201,7 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
               disabled={improving}
               rows={5}
               placeholder={`Enter ${descriptor.label}…`}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y transition-colors"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y transition-colors"
             />
           )}
 
@@ -220,7 +230,7 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
                     value={item}
                     onChange={(e) => handleStringListItemChange(idx, e.target.value)}
                     disabled={improving}
-                    className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                     placeholder={`Item ${idx + 1}`}
                   />
                   <button

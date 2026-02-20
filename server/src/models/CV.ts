@@ -24,7 +24,7 @@ export interface ICV extends Document {
     displayName: string;           // User-friendly name: "My SE Resume", "Cyber CV"
     
     jobApplicationId?: Types.ObjectId | null;
-    cvJson: JsonResumeSchema;
+    cvJson?: JsonResumeSchema | null;
     /**
      * AI-generated structural descriptor produced once at upload time.
      * When present, the UI and PDF are built dynamically from this + cvData.
@@ -93,7 +93,8 @@ const CVSchema = new Schema<ICV>(
         },
         cvJson: {
             type: Schema.Types.Mixed,
-            required: true,
+            required: false,
+            default: null,
         },
         cvDescriptor: {
             type: Schema.Types.Mixed,

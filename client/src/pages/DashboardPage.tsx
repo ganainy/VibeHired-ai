@@ -16,10 +16,52 @@ import {
 import { getCvBranches, CVDocument, uploadCvForJob } from '../services/cvApi';
 import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
 
-import JobStatusBadge from '../components/jobs/JobStatusBadge';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import Toast from '../components/common/Toast';
 import DuplicateJobWarningModal from '../components/jobs/DuplicateJobWarningModal';
+
+type JobPlatform = 'linkedin' | 'indeed' | 'xing' | 'jobstone' | null;
+
+const getJobPlatform = (url: string): JobPlatform => {
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.includes('linkedin.com')) return 'linkedin';
+  if (lowerUrl.includes('indeed.com') || lowerUrl.includes('indeed.')) return 'indeed';
+  if (lowerUrl.includes('xing.com') || lowerUrl.includes('xing.')) return 'xing';
+  if (lowerUrl.includes('jobstone.com') || lowerUrl.includes('jobstone.')) return 'jobstone';
+  return null;
+};
+
+const PlatformIcon: React.FC<{ platform: JobPlatform; className?: string }> = ({ platform, className = '' }) => {
+  if (platform === 'linkedin') {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="#0077b5">
+        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+      </svg>
+    );
+  }
+  if (platform === 'indeed') {
+    return (
+      <svg className={className} viewBox="0 0 84 84" fill="#2164f3">
+        <path d="M42 0C18.8 0 0 18.8 0 42s18.8 42 42 42 42-18.8 42-42S65.2 0 42 0zm-8 62H24V36h10v26zm28 0H52V44c0-5.5 2-8 7-8s6 2.5 6 8v18h-10V46c0-3-1-5-3-5s-3 1.5-3 5v16h-10V36h10v26z"/>
+      </svg>
+    );
+  }
+  if (platform === 'xing') {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="#0e6e46">
+        <path d="M19.668 2.17H4.332C2.912 2.17 1.75 3.332 1.75 4.752v14.496c0 1.42 1.162 2.582 2.582 2.582h15.336c1.42 0 2.582-1.162 2.582-2.582V4.752c0-1.42-1.162-2.582-2.582-2.582zM8.17 17.17H5.83v-6.335h2.34v6.335zm-.39-7.555c-.768 0-1.39-.622-1.39-1.39 0-.768.622-1.39 1.39-1.39.768 0 1.39.622 1.39 1.39 0 .768-.622 1.39-1.39 1.39zm10.439 7.555h-2.34v-3.467c0-1.235-.468-2.083-1.592-2.083-1.014 0-1.592.78-1.592 2.083v3.467h-2.34V9.835h2.34v1.04h.039c.468-.78 1.404-1.56 2.868-1.56 2.548 0 3.015 1.688 3.015 3.835v4.16z"/>
+      </svg>
+    );
+  }
+  if (platform === 'jobstone') {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="#f60">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+      </svg>
+    );
+  }
+  return null;
+};
 
 // Define type for the form data used in the Add modal
 type JobFormData = Partial<Omit<JobApplication, '_id' | 'updatedAt' | 'generationStatus' | 'generatedCvFilename' | 'generatedCoverLetterFilename'>>;
@@ -491,6 +533,86 @@ const DashboardPage: React.FC = () => {
 
   // Define status options for filter dropdown
   const statusOptions: JobApplication['status'][] = ['Not Applied', 'Applied', 'Interview', 'Assessment', 'Rejected', 'Offer'];
+
+  // Status colors for dropdown badge
+  const statusColors: Record<JobApplication['status'], string> = {
+    'Not Applied': 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+    'Applied': 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+    'Interview': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    'Assessment': 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+    'Rejected': 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+    'Closed': 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+    'Offer': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  };
+
+  // Per-status colors for the dropdown option rows (dot + label)
+  const statusOptionColors: Record<JobApplication['status'], { dot: string; text: string }> = {
+    'Not Applied': { dot: 'bg-slate-400',   text: 'text-slate-500 dark:text-slate-300' },
+    'Applied':     { dot: 'bg-green-400',   text: 'text-green-700 dark:text-green-300' },
+    'Interview':   { dot: 'bg-blue-400',    text: 'text-blue-700  dark:text-blue-300' },
+    'Assessment':  { dot: 'bg-purple-400',  text: 'text-purple-700 dark:text-purple-300' },
+    'Rejected':    { dot: 'bg-red-400',     text: 'text-red-700   dark:text-red-300' },
+    'Closed':      { dot: 'bg-gray-500',    text: 'text-gray-600  dark:text-gray-400' },
+    'Offer':       { dot: 'bg-emerald-400', text: 'text-emerald-700 dark:text-emerald-300' },
+  };
+
+  // Handle status change
+  const handleStatusChange = async (jobId: string, newStatus: JobApplication['status']) => {
+    try {
+      await updateJob(jobId, { status: newStatus });
+      setJobs(prev => prev.map(j => j._id === jobId ? { ...j, status: newStatus } : j));
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
+  // Status dropdown component
+  const StatusDropdown: React.FC<{ job: JobApplication }> = ({ job }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all hover:shadow-sm ${statusColors[job.status] || statusColors['Not Applied']}`}
+        >
+          {job.status}
+          <svg className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {isOpen && (
+          <div className="absolute z-50 mt-1 w-44 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 overflow-hidden">
+            {statusOptions.map((status) => (
+              <button
+                key={status}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStatusChange(job._id, status);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${job.status === status ? 'bg-gray-100 dark:bg-gray-800' : ''} ${statusOptionColors[status]?.text ?? 'text-gray-700 dark:text-gray-200'}`}
+              >
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusOptionColors[status]?.dot ?? 'bg-gray-400'}`} />
+                {status}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Icon components
   const AddIcon = () => (
@@ -985,9 +1107,22 @@ const DashboardPage: React.FC = () => {
                           className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
                         >
                           <td className="p-4 font-medium text-slate-800 dark:text-slate-100">{job.jobTitle}</td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400">{job.companyName}</td>
+                          <td className="p-4 text-slate-600 dark:text-slate-400">
+                            <div className="flex items-center gap-2">
+                              {job.jobUrl && (() => {
+                                const urls = parseMultipleUrls(job.jobUrl);
+                                const platform = urls.length > 0 ? getJobPlatform(urls[0]) : null;
+                                return platform ? (
+                                  <span className="flex-shrink-0" title={platform.charAt(0).toUpperCase() + platform.slice(1)}>
+                                    <PlatformIcon platform={platform} className="w-4 h-4" />
+                                  </span>
+                                ) : null;
+                              })()}
+                              <span>{job.companyName}</span>
+                            </div>
+                          </td>
                           <td className="p-4">
-                            <JobStatusBadge type="application" status={job.status} />
+                            <StatusDropdown job={job} />
                           </td>
                           <td className="p-4 text-slate-600 dark:text-slate-400">
                             <div className="flex flex-col">
@@ -1186,7 +1321,7 @@ const DashboardPage: React.FC = () => {
                       value={formData.jobTitle || ''}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                     />
                   </div>
 
@@ -1202,7 +1337,7 @@ const DashboardPage: React.FC = () => {
                       value={formData.companyName || ''}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                     />
                   </div>
 
@@ -1218,10 +1353,10 @@ const DashboardPage: React.FC = () => {
                         name="status"
                         value={formData.status || 'Not Applied'}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
                       >
                         {statusOptions.map(status => (
-                          <option key={status} value={status} className="bg-white dark:bg-gray-700">{status}</option>
+                          <option key={status} value={status} className="bg-white dark:bg-gray-600">{status}</option>
                         ))}
                       </select>
                     </div>
@@ -1236,10 +1371,10 @@ const DashboardPage: React.FC = () => {
                         name="language"
                         value={formData.language || 'en'}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
                       >
-                        <option value="en" className="bg-white dark:bg-gray-700">English</option>
-                        <option value="de" className="bg-white dark:bg-gray-700">German</option>
+                        <option value="en" className="bg-white dark:bg-gray-600">English</option>
+                        <option value="de" className="bg-white dark:bg-gray-600">German</option>
                       </select>
                     </div>
                   </div>
@@ -1255,13 +1390,13 @@ const DashboardPage: React.FC = () => {
                       value={formData.baseCvId || ''}
                       onChange={handleInputChange}
                       disabled={isLoadingCvs}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer disabled:opacity-50"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer disabled:opacity-50"
                     >
                       <option value="">
                         {isLoadingCvs ? 'Loading CVs...' : 'Select a CV (optional)'}
                       </option>
                       {cvs.map(cv => (
-                        <option key={cv._id} value={cv._id} className="bg-white dark:bg-gray-700">
+                        <option key={cv._id} value={cv._id} className="bg-white dark:bg-gray-600">
                           {cv.displayName || cv.category || 'Unnamed CV'}
                           {cv.isPrimary ? ' (Primary)' : ''}
                         </option>
@@ -1282,7 +1417,7 @@ const DashboardPage: React.FC = () => {
                       name="jobType"
                       value={formData.jobType || ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
                     >
                       <option value="">Not specified</option>
                       <option value="full-time">Full-time</option>
@@ -1340,7 +1475,7 @@ const DashboardPage: React.FC = () => {
                               setFormData(prev => ({ ...prev, createdAt: newDate.toISOString() }));
                             }
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                         />
                       </div>
                     );
@@ -1362,7 +1497,7 @@ const DashboardPage: React.FC = () => {
                         setFormData(prev => ({ ...prev, jobUrl: normalized }));
                       }}
                       placeholder="https://example.com/job-posting"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                     />
                     <p className="mt-1.5 text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500">
                       Separate multiples with commas or spaces
@@ -1382,7 +1517,7 @@ const DashboardPage: React.FC = () => {
                         name="salary"
                         value={formData.salary || ''}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                         placeholder="e.g., 50k-70k, $80,000"
                       />
                     </div>
@@ -1398,7 +1533,7 @@ const DashboardPage: React.FC = () => {
                         name="contact"
                         value={formData.contact || ''}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                         placeholder="Email, link, or name"
                       />
                     </div>
@@ -1415,7 +1550,7 @@ const DashboardPage: React.FC = () => {
                       rows={3}
                       value={formData.notes || ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none"
                     />
                   </div>
                 </div>
@@ -1426,7 +1561,7 @@ const DashboardPage: React.FC = () => {
                     type="button"
                     onClick={handleCloseModal}
                     disabled={isSubmitting}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
                   >
                     Cancel
                   </button>
@@ -1475,13 +1610,13 @@ const DashboardPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md mb-4">
+              <div className="bg-gray-50 dark:bg-gray-600/50 p-3 rounded-md mb-4">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{deleteConfirmModal.jobTitle}</p>
               </div>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={handleDeleteCancel}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
                 >
                   Cancel
                 </button>

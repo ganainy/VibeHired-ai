@@ -128,16 +128,16 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
-        className={`w-full px-4 py-2.5 pr-10 text-left border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+        className={`w-full px-4 py-2.5 pr-10 text-left border rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
           disabled
             ? 'opacity-50 cursor-not-allowed border-slate-300 dark:border-slate-600'
             : 'border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500'
-        } ${showPlaceholder ? 'text-slate-400 dark:text-slate-500' : ''}`}
+        } ${showPlaceholder ? 'text-slate-400 dark:text-slate-300' : ''}`}
       >
         <span className="block truncate">{displayValue}</span>
         <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
           <svg
-            className={`w-5 h-5 text-slate-400 transition-transform ${isOpen ? 'transform rotate-180' : ''}`}
+            className={`w-5 h-5 text-slate-500 dark:text-slate-300 transition-transform ${isOpen ? 'transform rotate-180' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -149,9 +149,9 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
       {/* Dropdown Menu */}
       {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-60 overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 rounded-lg shadow-lg max-h-60 overflow-hidden">
           {/* Search Input */}
-          <div className="p-2 border-b border-slate-200 dark:border-slate-700">
+          <div className="p-2 border-b border-slate-200 dark:border-slate-600">
             <input
               ref={inputRef}
               type="text"
@@ -162,7 +162,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
               }}
               onKeyDown={handleKeyDown}
               placeholder="Search models..."
-              className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-500 rounded-md bg-white dark:bg-slate-600 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -173,7 +173,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
             role="listbox"
           >
             {filteredOptions.length === 0 ? (
-              <li className="px-4 py-2 text-sm text-slate-500 dark:text-slate-400">
+              <li className="px-4 py-2 text-sm text-slate-500 dark:text-slate-300">
                 No models found
               </li>
             ) : (
@@ -188,8 +188,8 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                     value === option
                       ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
                       : highlightedIndex === index
-                      ? 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      ? 'bg-slate-100 dark:bg-slate-600 text-slate-900 dark:text-white'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600'
                   }`}
                 >
                   {option}

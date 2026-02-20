@@ -8,6 +8,16 @@ import Profile from '../models/Profile';
 import { generateCoverLetter, CoverLetterResponse } from '../services/coverLetterService';
 import { JsonResumeSchema } from '../types/jsonresume';
 import mongoose from 'mongoose';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const pdfParse = require('pdf-parse') as (buffer: Buffer, options?: object) => Promise<{ text: string }>;
+
+/**
+ * Extract plain text from a PDF buffer using pdf-parse.
+ */
+async function extractTextFromPdf(buffer: Buffer): Promise<string> {
+    const data = await pdfParse(buffer);
+    return data.text.trim();
+}
 
 const router: Router = express.Router();
 router.use(authMiddleware as RequestHandler); // Apply auth to all routes in this file
@@ -66,9 +76,42 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
             }
         }
 
+        let rawCvText: string | undefined;
+
         if (!baseCvJson?.basics) {
-            res.status(400).json({ message: 'Valid base CV with basics section not found. Please create a CV first or provide base CV data.' });
-            return;
+            // Try to extract plain text from a stored raw PDF (job CV or master CV)
+            let pdfBuffer: Buffer | null = null;
+
+            // Check job-specific CV first
+            const jobCv = await CV.findOne({ jobApplicationId: jobId, userId }).select('+originalPdf');
+            if (jobCv?.originalPdf) {
+                pdfBuffer = Buffer.from(jobCv.originalPdf as Buffer);
+            }
+
+            // Fall back to master CV's original PDF
+            if (!pdfBuffer) {
+                const masterCvWithPdf = await CV.findOne({ userId, isMasterCv: true }).select('+originalPdf');
+                if (masterCvWithPdf?.originalPdf) {
+                    pdfBuffer = Buffer.from(masterCvWithPdf.originalPdf as Buffer);
+                }
+            }
+
+            if (!pdfBuffer) {
+                res.status(400).json({ message: 'Valid base CV with basics section not found. Please create a CV first or provide base CV data.' });
+                return;
+            }
+
+            try {
+                rawCvText = await extractTextFromPdf(pdfBuffer);
+                console.log(`Extracted ${rawCvText.length} chars of plain text from stored PDF for cover letter (Job: ${jobId})`);
+            } catch (pdfErr) {
+                console.error('Failed to extract text from stored PDF:', pdfErr);
+                res.status(400).json({ message: 'Could not extract text from the attached PDF. Please attach a text-based (non-scanned) PDF or create a structured CV.' });
+                return;
+            }
+
+            // Use null cvJson — the service will use rawCvText instead
+            baseCvJson = null;
         }
 
         // 3. Fetch Custom Prompt (if any)
@@ -84,7 +127,8 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
             job.jobTitle,
             job.companyName,
             requestedLanguage,
-            customPrompt
+            customPrompt,
+            rawCvText
         );
 
         // 5. Update Job with all cover letter data

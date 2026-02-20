@@ -51,7 +51,7 @@ export async function getJobRecommendation(
         }
 
         // Use the Base CV selected for this job (baseCvId field)
-        let cvToUse: { cvJson: JsonResumeSchema } | null = null;
+        let cvToUse: { cvJson?: JsonResumeSchema | null } | null = null;
 
         if (job.baseCvId) {
             // Use the specific Base CV selected for this job

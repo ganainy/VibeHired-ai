@@ -105,7 +105,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
                             onChange={(e) => setNotes(e.target.value)}
                             rows={12}
                             placeholder="Add your notes about this job application..."
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-colors"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-colors"
                             disabled={isSaving}
                         />
                         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -119,7 +119,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
                     <button
                         onClick={handleCancel}
                         disabled={isSaving}
-                        className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         Cancel
                     </button>

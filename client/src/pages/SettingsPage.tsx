@@ -8,62 +8,62 @@ import SearchableSelect from '../components/common/SearchableSelect';
 
 // Icon Components
 const EyeIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
   </svg>
 );
 
 const EyeOffIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
   </svg>
 );
 
 const KeyIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
   </svg>
 );
 
 const TrashIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
   </svg>
 );
 
 const CheckIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
   </svg>
 );
 
 const XIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
 const ChevronDownIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
   </svg>
 );
 
 const ChevronUpIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
   </svg>
 );
 
 const InfoIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 
 const LockIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
   </svg>
 );
@@ -98,7 +98,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg font-medium transition-colors"
+            className="px-4 py-2 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg font-medium transition-colors"
           >
             {cancelText}
           </button>
@@ -573,7 +573,7 @@ const SettingsPage: React.FC = () => {
                       Configured
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-400">
                       Not Configured
                     </span>
                   )}
@@ -605,7 +605,7 @@ const SettingsPage: React.FC = () => {
                     }}
                     onBlur={() => setApifyTokenTouched(true)}
                     placeholder={isApifyConfigured ? `Current: ${apiKeys?.apify?.accessToken || '****'}` : 'Enter your Apify token (starts with apify_api_) - Optional'}
-                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${apifyValidation?.valid === false
+                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${apifyValidation?.valid === false
                       ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
                       : apifyValidation?.valid === true
                         ? 'border-green-300 dark:border-green-700 focus:ring-green-500'
@@ -677,12 +677,12 @@ const SettingsPage: React.FC = () => {
                   id="default-provider"
                   value={defaultProvider}
                   onChange={(e) => setDefaultProvider(e.target.value as 'gemini' | 'openrouter' | 'ollama' | '')}
-                  className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select a provider...</option>
-                  <option value="gemini">Gemini</option>
-                  <option value="openrouter">OpenRouter</option>
-                  <option value="ollama">Ollama</option>
+                  <option value="" className="dark:bg-slate-600">Select a provider...</option>
+                  <option value="gemini" className="dark:bg-slate-600">Gemini</option>
+                  <option value="openrouter" className="dark:bg-slate-600">OpenRouter</option>
+                  <option value="ollama" className="dark:bg-slate-600">Ollama</option>
                 </select>
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                   Select your preferred AI provider. You must select a provider to use AI features.
@@ -733,7 +733,7 @@ const SettingsPage: React.FC = () => {
                         Configured
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-400">
                         Not Configured
                       </span>
                     )}
@@ -759,7 +759,7 @@ const SettingsPage: React.FC = () => {
                     }}
                     onBlur={() => setGeminiKeyTouched(true)}
                     placeholder={isGeminiConfigured ? `Current: ${apiKeys?.gemini?.accessToken || apiKeys?.aiProviders?.providers?.gemini?.accessToken || '****'}` : 'Enter your Gemini API key (starts with AIza)'}
-                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${geminiValidation?.valid === false
+                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${geminiValidation?.valid === false
                       ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
                       : geminiValidation?.valid === true
                         ? 'border-green-300 dark:border-green-700 focus:ring-green-500'
@@ -818,7 +818,7 @@ const SettingsPage: React.FC = () => {
                     }}
                     onBlur={() => setOpenRouterKeyTouched(true)}
                     placeholder={isOpenRouterConfigured ? `Current: ${apiKeys?.aiProviders?.providers?.openrouter?.accessToken || '****'}` : 'Enter your OpenRouter API key (starts with sk-or-v1- or sk-)'}
-                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${openRouterValidation?.valid === false
+                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${openRouterValidation?.valid === false
                       ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
                       : openRouterValidation?.valid === true
                         ? 'border-green-300 dark:border-green-700 focus:ring-green-500'
@@ -886,7 +886,7 @@ const SettingsPage: React.FC = () => {
                     }}
                     onBlur={() => setOllamaUrlTouched(true)}
                     placeholder="http://localhost:11434"
-                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${ollamaValidation?.valid === false
+                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${ollamaValidation?.valid === false
                       ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
                       : ollamaValidation?.valid === true
                         ? 'border-green-300 dark:border-green-700 focus:ring-green-500'

@@ -59,7 +59,7 @@ export const saveWorkspace = async (
 function mapToWorkspaceDTO(cv: ICV): EditableCvWorkingCopyDTO {
     return {
         cvId: cv._id.toString(),
-        cvJson: cv.cvJson,
+        cvJson: cv.cvJson ?? null,
         templateId: cv.templateId || 'modern-clean', // Default fallback
         snapshotVersion: cv.snapshotVersion || 1,
         lastEditedAt: cv.lastEditedAt || cv.updatedAt,
