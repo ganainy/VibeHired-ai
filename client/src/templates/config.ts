@@ -2,7 +2,6 @@ import { ForwardRefExoticComponent, RefAttributes } from 'react';
 import { ResumeData } from '../utils/cvDataTransform';
 import ModernCleanResume from './ModernCleanResume';
 import ATSOptimizedResume from './ATSOptimizedResume';
-import SoftwareEngineerResume from './SoftwareEngineerResume';
 import GermanLatexResume from './GermanLatexResume';
 
 export interface TemplateConfig {
@@ -28,13 +27,6 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
     description: 'A clean, modern design with excellent readability',
     category: 'modern',
     component: ModernCleanResume,
-  },
-  'software-engineer': {
-    id: 'software-engineer',
-    name: 'Software Engineer',
-    description: 'Optimized for software engineers',
-    category: 'professional',
-    component: SoftwareEngineerResume,
   },
   'german-latex': {
     id: 'german-latex',

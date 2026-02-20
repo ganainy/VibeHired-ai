@@ -280,7 +280,19 @@ const ATSOptimizedResume = forwardRef<HTMLDivElement, { data: ResumeData }>(({ d
                 {section.heading}
               </h2>
               <div style={{ whiteSpace: 'pre-wrap' }} data-preserve="true">
-                {section.content}
+                {section.content.split('\n').map((line, i) => {
+                  const parts = line.split(/(\*\*.*?\*\*)/g);
+                  return (
+                    <div key={i} style={{ minHeight: '1.2em' }}>
+                      {parts.map((part, j) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                          return <strong key={j}>{part.slice(2, -2)}</strong>;
+                        }
+                        return <span key={j}>{part}</span>;
+                      })}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}

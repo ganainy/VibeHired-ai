@@ -59,6 +59,35 @@ export interface SectionLabels {
   references?: string;
 }
 
+const GERMAN_SECTION_LABELS: SectionLabels = {
+  summary: 'Zusammenfassung',
+  work: 'Berufserfahrung',
+  education: 'Ausbildung',
+  skills: 'Fähigkeiten & Technologien',
+  languages: 'Sprachen',
+  projects: 'Projekte',
+  certificates: 'Zertifikate',
+  awards: 'Auszeichnungen',
+  volunteer: 'Ehrenamt',
+  interests: 'Interessen',
+  references: 'Referenzen',
+};
+
+/** Detect German-language content via umlauts/ß or common German stopwords */
+function detectGermanContent(jsonResume: JsonResumeSchema): boolean {
+  const texts: string[] = [
+    jsonResume.basics?.summary ?? '',
+    jsonResume.basics?.label ?? '',
+    ...(jsonResume.work ?? []).map(w => [w.summary ?? '', ...(w.highlights ?? [])].join(' ')),
+    ...(jsonResume.education ?? []).map(e => [e.area ?? '', e.studyType ?? ''].join(' ')),
+    ...(jsonResume.projects ?? []).map(p => [p.name ?? '', p.description ?? ''].join(' ')),
+  ];
+  const combined = texts.join(' ');
+  // Unique German characters or high-frequency German stopwords
+  return /[äöüßÄÖÜ]/.test(combined) ||
+    /\b(und|oder|mit|von|für|auf|der|die|das|im|ist|sein|habe|haben|durch|sowie|bei|nach|als|werden|wurde)\b/i.test(combined);
+}
+
 export interface ResumeData {
   firstName: string;
   lastName: string;
@@ -256,8 +285,10 @@ export function transformJsonResumeToResumeData(jsonResume: JsonResumeSchema, se
     };
   });
 
-  // Extract section labels from meta if available
-  const sectionLabels: SectionLabels | undefined = (jsonResume as any).meta?.sectionLabels;
+  // Extract section labels from meta if available; fall back to German defaults when content is detected as German
+  const metaSectionLabels: SectionLabels | undefined = (jsonResume as any).meta?.sectionLabels;
+  const sectionLabels: SectionLabels | undefined =
+    metaSectionLabels ?? (detectGermanContent(jsonResume) ? GERMAN_SECTION_LABELS : undefined);
 
   // Parse projects into structured data
   const projects: Project[] = (jsonResume.projects || []).map(project => ({
