@@ -1,0 +1,145 @@
+import { generateStructuredResponse } from '../utils/aiService';
+import JobApplication from '../models/JobApplication';
+import { NotFoundError, AuthorizationError } from '../utils/errors/AppError';
+
+const LANGUAGE_NAMES: Record<string, string> = {
+    en: 'English',
+    de: 'German',
+};
+
+function getLanguageName(lang?: string): string {
+    return LANGUAGE_NAMES[lang ?? 'en'] ?? 'English';
+}
+
+interface InterviewQuestionsResponse {
+    questions: string[];
+}
+
+interface EvaluationResponse {
+    score: number;
+    strengths: string[];
+    improvements: string[];
+    modelAnswer: string;
+}
+
+/**
+ * Fetch a job application, verify ownership, and return it.
+ */
+async function getOwnedJob(jobId: string, userId: string) {
+    const job = await JobApplication.findById(jobId);
+    if (!job) throw new NotFoundError('Job application not found');
+    if (job.userId.toString() !== userId.toString()) {
+        throw new AuthorizationError('You do not have access to this job application');
+    }
+    return job;
+}
+
+/**
+ * Generate 6-8 interview questions tailored to the job description.
+ * Questions are produced in the same language as the job posting.
+ */
+export async function generateQuestions(
+    userId: string,
+    jobId: string
+): Promise<string[]> {
+    const job = await getOwnedJob(jobId, userId);
+
+    const languageName = getLanguageName(job.language);
+    const jobContext = [
+        `Job Title: ${job.jobTitle}`,
+        `Company: ${job.companyName}`,
+        job.jobDescriptionText
+            ? `Job Description:\n${job.jobDescriptionText.slice(0, 4000)}`
+            : '',
+        job.jobPrerequisites
+            ? `Key Requirements:\n${job.jobPrerequisites.slice(0, 1500)}`
+            : '',
+    ]
+        .filter(Boolean)
+        .join('\n\n');
+
+    const prompt = `You are an expert interviewer preparing a mock interview for a candidate applying to the following position.
+
+${jobContext}
+
+Generate exactly 7 interview questions that cover a mix of:
+- Behavioral questions (e.g. "Tell me about a time when...")
+- Technical / role-specific questions based on the job requirements
+- Situational / motivational questions
+
+Rules:
+1. All questions MUST be written entirely in ${languageName} — no other language.
+2. Questions should be relevant to the specific role and company described above.
+3. Questions should be open-ended and encourage detailed answers.
+4. Do NOT include any numbering, prefixes, or labels — just the question text.
+
+Respond with a JSON object matching this exact schema:
+{
+  "questions": ["question 1", "question 2", "question 3", "question 4", "question 5", "question 6", "question 7"]
+}`;
+
+    const result = await generateStructuredResponse<InterviewQuestionsResponse>(userId, prompt);
+    if (!Array.isArray(result?.questions) || result.questions.length === 0) {
+        throw new Error('AI returned an invalid questions list');
+    }
+    return result.questions;
+}
+
+/**
+ * Evaluate a candidate's answer to an interview question.
+ * Feedback is provided in the same language as the job posting.
+ */
+export async function evaluateAnswer(
+    userId: string,
+    jobId: string,
+    question: string,
+    answer: string
+): Promise<EvaluationResponse> {
+    const job = await getOwnedJob(jobId, userId);
+
+    const languageName = getLanguageName(job.language);
+    const jobContext = [
+        `Job Title: ${job.jobTitle}`,
+        `Company: ${job.companyName}`,
+        job.jobDescriptionText
+            ? `Job Description (excerpt):\n${job.jobDescriptionText.slice(0, 2000)}`
+            : '',
+    ]
+        .filter(Boolean)
+        .join('\n\n');
+
+    const prompt = `You are an expert interviewer evaluating a candidate's response during a mock interview.
+
+Context:
+${jobContext}
+
+Interview Question:
+"${question}"
+
+Candidate's Answer:
+"${answer}"
+
+Evaluate the answer and respond ENTIRELY in ${languageName} — no other language.
+
+Score the answer from 0 to 10 where:
+- 0-3: Poor — missing key points, very vague, or off-topic
+- 4-6: Acceptable — covers the basics but lacks depth or concrete examples
+- 7-8: Good — solid answer with relevant examples
+- 9-10: Excellent — comprehensive, specific, and tailored to the role
+
+Respond with a JSON object matching this exact schema:
+{
+  "score": <integer 0-10>,
+  "strengths": ["strength 1", "strength 2"],
+  "improvements": ["improvement 1", "improvement 2"],
+  "modelAnswer": "<a concise ideal answer in 3-5 sentences>"
+}
+
+All text values (strengths, improvements, modelAnswer) must be in ${languageName}.`;
+
+    const result = await generateStructuredResponse<EvaluationResponse>(userId, prompt);
+    if (typeof result?.score !== 'number') {
+        throw new Error('AI returned an invalid evaluation response');
+    }
+    return result;
+}

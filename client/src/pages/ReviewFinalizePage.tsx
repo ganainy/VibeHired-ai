@@ -29,6 +29,7 @@ import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
 
 import PromptCustomizer from '../components/common/PromptCustomizer';
 import PromptChecklist from '../components/common/PromptChecklist';
+import MockInterviewPanel from '../components/jobs/MockInterviewPanel';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { getBaseCoverLetters, applyBaseCoverLetterToJob, uploadCoverLetterForJob, saveCurrentCoverLetterForJob, CoverLetterBase } from '../services/coverLetterBaseApi';
@@ -113,17 +114,19 @@ const ReviewFinalizePage: React.FC = () => {
     const [isRefreshingRecommendation, setIsRefreshingRecommendation] = useState<boolean>(false);
     const [isRecommendationModalOpen, setIsRecommendationModalOpen] = useState<boolean>(false);
     const [isClCopied, setIsClCopied] = useState<boolean>(false);
-    const [activeTab, setActiveTab] = useState<'job-description' | 'cover-letter' | 'cv'>(() => {
+    const VALID_TABS = ['job-description', 'cover-letter', 'cv', 'mock-interview'] as const;
+    type ActiveTab = typeof VALID_TABS[number];
+    const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
         // Priority 1: URL Param
-        if (tab && ['job-description', 'cover-letter', 'cv'].includes(tab)) {
-            return tab as any;
+        if (tab && (VALID_TABS as readonly string[]).includes(tab)) {
+            return tab as ActiveTab;
         }
         // Priority 2: Local Storage
         if (jobId) {
             try {
                 const saved = localStorage.getItem(`job_tab_${jobId}`);
-                if (saved && ['job-description', 'cover-letter', 'cv'].includes(saved)) {
-                    return saved as any;
+                if (saved && (VALID_TABS as readonly string[]).includes(saved)) {
+                    return saved as ActiveTab;
                 }
             } catch (e) {
                 console.error("Error reading tab from localStorage", e);
@@ -133,9 +136,7 @@ const ReviewFinalizePage: React.FC = () => {
         return 'job-description';
     });
 
-    const handleTabChange = (newTab: 'job-description' | 'cover-letter' | 'cv') => {
-        // setActiveTab(newTab); // Not needed as we rely on URL change or we can do optimistic update
-        // Let's do optimistic update + navigation
+    const handleTabChange = (newTab: ActiveTab) => {
         setActiveTab(newTab);
         if (jobId) {
             localStorage.setItem(`job_tab_${jobId}`, newTab);
@@ -145,8 +146,8 @@ const ReviewFinalizePage: React.FC = () => {
 
     // Update active tab when URL param changes
     useEffect(() => {
-        if (tab && ['job-description', 'cover-letter', 'cv'].includes(tab)) {
-            setActiveTab(tab as any);
+        if (tab && (VALID_TABS as readonly string[]).includes(tab)) {
+            setActiveTab(tab as ActiveTab);
         } else if (!tab && jobId) {
             // If no tab in URL, check localStorage or default logic (though initial state handles this, 
             // this handles navigation from /review/cv to /review)
@@ -159,8 +160,8 @@ const ReviewFinalizePage: React.FC = () => {
     useEffect(() => {
         if (jobId && !tab) { // Only checking localStorage if no tab param is provided
             const saved = localStorage.getItem(`job_tab_${jobId}`);
-            if (saved && ['job-description', 'cover-letter', 'cv'].includes(saved)) {
-                setActiveTab(saved as any);
+            if (saved && (VALID_TABS as readonly string[]).includes(saved)) {
+                setActiveTab(saved as ActiveTab);
             } else {
                 setActiveTab('job-description');
             }
@@ -517,8 +518,8 @@ const ReviewFinalizePage: React.FC = () => {
             // Fetch Job CV from Unified Model
             try {
                 const cvResponse = await getJobCv(jobId);
-                if (cvResponse.cv) {
-                    setCvData(cvResponse.cv.cvJson ?? null);
+                if (cvResponse.cv && cvResponse.cv.cvJson) {
+                    setCvData(cvResponse.cv.cvJson);
                     setCurrentCvId(cvResponse.cv._id);
                     setCurrentCvFilename(cvResponse.cv.filename ?? null);
                     setTailoringChanges(cvResponse.cv.tailoringChanges || null);
@@ -2195,6 +2196,23 @@ const ReviewFinalizePage: React.FC = () => {
                                 }`}>Cover Letter</span>
                         </button>
 
+                        {/* Tab 4: Mock Interview */}
+                        <button
+                            onClick={() => handleTabChange('mock-interview')}
+                            className="group flex flex-col items-center focus:outline-none"
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'mock-interview'
+                                ? 'bg-violet-600 text-white shadow-lg scale-125'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">mic</span>
+                            </div>
+                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'mock-interview'
+                                ? 'text-violet-600 dark:text-violet-400 font-bold'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}>Interview</span>
+                        </button>
+
                     </div>
                 </div>      {/* Tab Content */}
                 <div className="px-0 py-6">
@@ -3780,6 +3798,11 @@ const ReviewFinalizePage: React.FC = () => {
                                 </div>
                             )}
                         </div>
+                    )}
+
+                    {/* Tab 5: Mock Interview */}
+                    {activeTab === 'mock-interview' && jobApplication && (
+                        <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} />
                     )}
                 </div>
 

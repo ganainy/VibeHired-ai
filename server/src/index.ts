@@ -23,6 +23,7 @@ import projectRoutes from './routes/projects';
 import settingsRoutes from './routes/settings';
 import autoJobRoutes from './routes/autoJobRoutes';
 import chatRoutes from './routes/chat';
+import interviewRoutes from './routes/interview';
 // Correct the import for the default export
 import protect from './middleware/authMiddleware'; // Import default export and alias it as 'protect'
 import { errorHandler } from './middleware/errorHandler';
@@ -92,6 +93,7 @@ app.use('/api/projects', projectRoutes); // Project routes (public viewing, prot
 app.use('/api/settings', settingsRoutes); // Settings routes (protected)
 app.use('/api/auto-jobs', autoJobRoutes); // Auto-jobs routes (protected)
 app.use('/api/chat', protect, chatRoutes); // Chat routes (protected)
+app.use('/api/interview', protect, interviewRoutes); // Mock interview routes (protected)
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
