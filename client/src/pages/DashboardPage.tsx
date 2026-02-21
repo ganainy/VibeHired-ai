@@ -16,49 +16,37 @@ import {
 import { getCvBranches, CVDocument, uploadCvForJob } from '../services/cvApi';
 import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
 
+import linkedinLogo from '../assets/linkedin-svgrepo-com.svg';
+import indeedLogo from '../assets/indeed-svgrepo-com.svg';
+import xingLogo from '../assets/xing-logo-svgrepo-com.svg';
+import stepstoneLogo from '../assets/stepstone-svgrepo-com.svg';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import Toast from '../components/common/Toast';
 import DuplicateJobWarningModal from '../components/jobs/DuplicateJobWarningModal';
 
-type JobPlatform = 'linkedin' | 'indeed' | 'xing' | 'jobstone' | null;
+type JobPlatform = 'linkedin' | 'indeed' | 'xing' | 'stepstone' | null;
 
 const getJobPlatform = (url: string): JobPlatform => {
   const lowerUrl = url.toLowerCase();
   if (lowerUrl.includes('linkedin.com')) return 'linkedin';
   if (lowerUrl.includes('indeed.com') || lowerUrl.includes('indeed.')) return 'indeed';
   if (lowerUrl.includes('xing.com') || lowerUrl.includes('xing.')) return 'xing';
-  if (lowerUrl.includes('jobstone.com') || lowerUrl.includes('jobstone.')) return 'jobstone';
+  if (lowerUrl.includes('stepstone.de') || lowerUrl.includes('stepstone.com') || lowerUrl.includes('stepstone.')) return 'stepstone';
   return null;
 };
 
 const PlatformIcon: React.FC<{ platform: JobPlatform; className?: string }> = ({ platform, className = '' }) => {
   if (platform === 'linkedin') {
-    return (
-      <svg className={className} viewBox="0 0 24 24" fill="#0077b5">
-        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-      </svg>
-    );
+    return <img src={linkedinLogo} className={className} alt="LinkedIn" />;
   }
   if (platform === 'indeed') {
-    return (
-      <svg className={className} viewBox="0 0 84 84" fill="#2164f3">
-        <path d="M42 0C18.8 0 0 18.8 0 42s18.8 42 42 42 42-18.8 42-42S65.2 0 42 0zm-8 62H24V36h10v26zm28 0H52V44c0-5.5 2-8 7-8s6 2.5 6 8v18h-10V46c0-3-1-5-3-5s-3 1.5-3 5v16h-10V36h10v26z"/>
-      </svg>
-    );
+    return <img src={indeedLogo} className={className} alt="Indeed" />;
   }
   if (platform === 'xing') {
-    return (
-      <svg className={className} viewBox="0 0 24 24" fill="#0e6e46">
-        <path d="M19.668 2.17H4.332C2.912 2.17 1.75 3.332 1.75 4.752v14.496c0 1.42 1.162 2.582 2.582 2.582h15.336c1.42 0 2.582-1.162 2.582-2.582V4.752c0-1.42-1.162-2.582-2.582-2.582zM8.17 17.17H5.83v-6.335h2.34v6.335zm-.39-7.555c-.768 0-1.39-.622-1.39-1.39 0-.768.622-1.39 1.39-1.39.768 0 1.39.622 1.39 1.39 0 .768-.622 1.39-1.39 1.39zm10.439 7.555h-2.34v-3.467c0-1.235-.468-2.083-1.592-2.083-1.014 0-1.592.78-1.592 2.083v3.467h-2.34V9.835h2.34v1.04h.039c.468-.78 1.404-1.56 2.868-1.56 2.548 0 3.015 1.688 3.015 3.835v4.16z"/>
-      </svg>
-    );
+    return <img src={xingLogo} className={className} alt="Xing" />;
   }
-  if (platform === 'jobstone') {
-    return (
-      <svg className={className} viewBox="0 0 24 24" fill="#f60">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-      </svg>
-    );
+  if (platform === 'stepstone') {
+    return <img src={stepstoneLogo} className="h-5 w-auto" alt="Stepstone" />;
   }
   return null;
 };
