@@ -51,7 +51,7 @@ const JobRecommendationBadge: React.FC<JobRecommendationBadgeProps> = ({
                     <button
                         onClick={handleRetry}
                         disabled={isRetrying}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed"
+                        className="btn-primary text-xs rounded-md px-2.5 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Calculate skill match"
                     >
                         {isRetrying ? (
@@ -125,7 +125,7 @@ const JobRecommendationBadge: React.FC<JobRecommendationBadgeProps> = ({
                     <button
                         onClick={handleRetry}
                         disabled={isRetrying}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed"
+                        className="btn-primary text-xs rounded-md px-2.5 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Retry skill match calculation"
                     >
                         {isRetrying ? (
@@ -190,13 +190,13 @@ const JobRecommendationBadge: React.FC<JobRecommendationBadgeProps> = ({
         };
     } else if (recommendation.score >= 50) {
         badgeConfig = {
-            bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-            textColor: 'text-yellow-800 dark:text-yellow-300',
+            bgColor: '',
+            textColor: '',
             borderColor: 'border-transparent',
-            progressColor: 'bg-yellow-500',
+            progressColor: 'bg-gold-500',
             label: 'Moderate Match',
             icon: (
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20" style={{color:'var(--accent)'}}>
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
             )
@@ -222,7 +222,8 @@ const JobRecommendationBadge: React.FC<JobRecommendationBadgeProps> = ({
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
         >
-            <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeConfig.bgColor} ${badgeConfig.textColor} ${badgeConfig.borderColor} cursor-help transition-all hover:opacity-80`}>
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeConfig.bgColor} ${badgeConfig.textColor} ${badgeConfig.borderColor} cursor-help transition-all hover:opacity-80`}
+             style={recommendation.score >= 50 && recommendation.score < 70 ? {background:'var(--accent-bg)', color:'var(--accent)', borderColor:'var(--accent-dim)'} : {}}>
                 {badgeConfig.icon}
                 <span>{recommendation.score}%</span>
                 <span className="opacity-75">•</span>
@@ -231,7 +232,7 @@ const JobRecommendationBadge: React.FC<JobRecommendationBadgeProps> = ({
 
             {showTooltip && (
                 <div className="absolute z-[100] right-full top-1/2 transform -translate-y-1/2 mr-2 w-72 pointer-events-none">
-                    <div className="bg-slate-900 dark:bg-slate-800 text-white rounded-lg shadow-xl overflow-hidden">
+                    <div className="bg-slate-900 dark:bg-slate-800 text-white rounded-lg shadow-xl overflow-hidden" style={{background:'var(--bg-raised)', color:'var(--text-primary)'}}>
                         {/* Header */}
                         <div className={`px-4 py-2 ${badgeConfig.progressColor} bg-opacity-90`}>
                             <div className="flex items-center justify-between">
@@ -243,13 +244,13 @@ const JobRecommendationBadge: React.FC<JobRecommendationBadgeProps> = ({
                         {/* Content */}
                         <div className="px-4 py-3 space-y-2">
                             <div>
-                                <div className="text-xs font-semibold text-slate-300 mb-1">Recommendation</div>
-                                <div className="text-sm leading-relaxed">{recommendation.reason}</div>
+                                <div className="text-xs font-semibold mb-1" style={{color:'var(--text-muted)'}}>Recommendation</div>
+                                <div className="text-sm leading-relaxed" style={{color:'var(--text-secondary)'}}>{recommendation.reason}</div>
                             </div>
 
                             {recommendation.cached && recommendation.cachedAt && (
-                                <div className="pt-2 border-t border-slate-700">
-                                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                                <div className="pt-2 border-t" style={{borderColor:'var(--border)'}}>
+                                    <div className="flex items-center gap-1.5 text-xs" style={{color:'var(--text-muted)'}}>
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
@@ -268,7 +269,7 @@ const JobRecommendationBadge: React.FC<JobRecommendationBadgeProps> = ({
 
                     {/* Arrow pointing right */}
                     <div className="absolute top-1/2 left-full transform -translate-y-1/2 -ml-1">
-                        <div className="border-8 border-transparent border-l-slate-900 dark:border-l-slate-800"></div>
+                        <div className="border-8 border-transparent" style={{borderLeftColor:'var(--bg-raised)'}}></div>
                     </div>
                 </div>
             )}

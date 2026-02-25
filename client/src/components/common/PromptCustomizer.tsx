@@ -231,7 +231,7 @@ const PromptCustomizer: React.FC<PromptCustomizerProps> = ({
                 </svg>
                 <span>Customize {label} Prompt</span>
                 {useCustom && (
-                    <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-full">
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full text-ink-950" style={{background:"var(--accent)"}}>
                         Custom
                     </span>
                 )}
@@ -255,7 +255,7 @@ const PromptCustomizer: React.FC<PromptCustomizerProps> = ({
                                             type="checkbox"
                                             checked={useCustom}
                                             onChange={(e) => setUseCustom(e.target.checked)}
-                                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                            className="w-4 h-4 accent-gold-500 border-gray-300 rounded"
                                         />
                                         <span className="text-sm text-gray-700 dark:text-gray-300">Use custom prompt</span>
                                     </label>
@@ -265,7 +265,7 @@ const PromptCustomizer: React.FC<PromptCustomizerProps> = ({
                                             value={selectedTemplateId}
                                             onChange={handleTemplateChange}
                                             disabled={!useCustom}
-                                            className="text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                            className="text-sm border-gray-300 rounded-md shadow-sm focus:border-gold-400 focus:ring focus:ring-gold-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                         >
                                             <option value="">-- Select Template --</option>
                                             <option value="default">Default System Prompt</option>
@@ -294,7 +294,7 @@ const PromptCustomizer: React.FC<PromptCustomizerProps> = ({
                                             <button
                                                 onClick={handleUpdateTemplate}
                                                 disabled={isSavingTemplate}
-                                                className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200 mr-2"
+                                                className="text-xs text-gold-600 hover:text-gold-800 dark:text-gold-400 dark:hover:text-gold-200 mr-2"
                                             >
                                                 Update Template
                                             </button>
@@ -302,7 +302,7 @@ const PromptCustomizer: React.FC<PromptCustomizerProps> = ({
                                         {!showSaveTemplateInput ? (
                                             <button
                                                 onClick={() => setShowSaveTemplateInput(true)}
-                                                className="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+                                                className="text-xs text-gold-600 hover:text-gold-800 dark:text-gold-400 dark:hover:text-gold-200"
                                             >
                                                 + Save as new template
                                             </button>
@@ -318,7 +318,7 @@ const PromptCustomizer: React.FC<PromptCustomizerProps> = ({
                                                 <button
                                                     onClick={handleSaveTemplate}
                                                     disabled={isSavingTemplate || !newTemplateName.trim()}
-                                                    className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 disabled:opacity-50"
+                                                    className="text-xs px-2 py-1 rounded disabled:opacity-50" style={{background:"var(--accent-bg)", color:"var(--accent)"}}
                                                 >
                                                     {isSavingTemplate ? 'Saving...' : 'Save'}
                                                 </button>
@@ -346,7 +346,7 @@ const PromptCustomizer: React.FC<PromptCustomizerProps> = ({
                                 }}
                                 disabled={!useCustom}
                                 placeholder="Enter your custom prompt here..."
-                                className="w-full h-48 px-3 py-2 text-sm font-mono text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed resize-y"
+                                className="w-full h-48 px-3 py-2 text-sm font-mono text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 disabled:opacity-50 disabled:cursor-not-allowed resize-y"
                             />
 
                             <div className="flex items-center justify-between mt-3">
@@ -373,7 +373,7 @@ const PromptCustomizer: React.FC<PromptCustomizerProps> = ({
                                     <button
                                         onClick={handleSave}
                                         disabled={isSaving}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                        className="btn-primary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
                                         {isSaving ? (
                                             <>

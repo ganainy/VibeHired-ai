@@ -227,9 +227,10 @@ const PromptChecklist: React.FC<PromptChecklistProps> = ({ type, onChange }) => 
                             onClick={() => toggleItem(item.id)}
                             className={`mt-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
                                 item.enabled
-                                    ? 'bg-purple-600 border-purple-600 text-white'
+                                    ? 'text-ink-950 border-transparent'
                                     : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
                             }`}
+                            style={item.enabled ? {background:'var(--accent)'} : {}}
                             aria-checked={item.enabled}
                             role="checkbox"
                         >
@@ -248,7 +249,7 @@ const PromptChecklist: React.FC<PromptChecklistProps> = ({ type, onChange }) => 
                                     onBlur={commitEdit}
                                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit(); } if (e.key === 'Escape') { setEditingId(null); } }}
                                     rows={2}
-                                    className="w-full text-sm bg-purple-50 dark:bg-purple-900/20 border border-purple-300 dark:border-purple-600 rounded-lg px-2 py-1 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                                    className="w-full text-sm rounded-lg px-2 py-1 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-gold-500/30 border" style={{background:'var(--accent-bg)', borderColor:'var(--accent-dim)'}}
                                 />
                             ) : (
                                 <span
@@ -271,7 +272,7 @@ const PromptChecklist: React.FC<PromptChecklistProps> = ({ type, onChange }) => 
                                 <button
                                     type="button"
                                     onClick={() => startEdit(item)}
-                                    className="p-1 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors rounded"
+                                    className="p-1 text-gray-400 hover:text-gold-600 dark:hover:text-gold-400 transition-colors rounded"
                                     title="Edit"
                                 >
                                     <span className="material-symbols-outlined text-base">edit</span>
@@ -304,7 +305,7 @@ const PromptChecklist: React.FC<PromptChecklistProps> = ({ type, onChange }) => 
                         <button
                             type="button"
                             onClick={addItem}
-                            className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors whitespace-nowrap"
+                            className="text-xs font-medium text-gold-600 dark:text-gold-400 hover:text-gold-800 dark:hover:text-gold-300 transition-colors whitespace-nowrap"
                         >
                             Add
                         </button>

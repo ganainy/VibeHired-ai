@@ -220,7 +220,7 @@ const Projects: React.FC<ProjectsProps> = ({ projects, isDarkMode = false }) => 
         <div className="mt-12 text-center">
           <button
             onClick={() => setShowAll(true)}
-            className="px-6 py-3 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="px-6 py-3 bg-primary text-ink-950 font-semibold rounded-lg shadow-md hover:bg-gold-600 transition-all duration-300 hover:scale-105 hover:shadow-lg"
           >
             Load More Projects
           </button>

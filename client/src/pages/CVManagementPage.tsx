@@ -950,12 +950,12 @@ const CVManagementPage: React.FC = () => {
             {creationMode === 'choose' && (
               <div className="max-w-3xl mx-auto mt-10">
                 <div className="text-center mb-8">
-                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-lg" style={{background: 'linear-gradient(135deg, var(--accent-dim), var(--accent))'}}>
+                    <svg className="w-8 h-8 text-ink-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>
                     {masterCv ? 'Update Your CV' : 'Create Your CV'}
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto text-lg">
@@ -1002,7 +1002,7 @@ const CVManagementPage: React.FC = () => {
             {creationMode === 'upload' && (
               <div className="max-w-2xl mx-auto mt-10">
                 <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Import Your CV</h2>
+                  <h2 className="text-2xl font-bold" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>Import Your CV</h2>
                   <p className="text-gray-600 dark:text-gray-400">Upload a PDF, DOCX, or RTF file.</p>
                 </div>
 

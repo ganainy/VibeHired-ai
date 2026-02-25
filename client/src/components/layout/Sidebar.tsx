@@ -1,57 +1,90 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
-const BagFilledIcon = () => (
-    <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M20 6h-3V4c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM9 4h6v2H9V4zm11 15H4V10h2v1h2v-1h6v1h2v-1h2v9z" />
+// ── Icons ────────────────────────────────────────────────────────────────────
+
+const Logo = () => (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="28" height="28" rx="8" fill="currentColor" fillOpacity="0.12" />
+        <path d="M8 10h12M10 7h8M7 10v11a1 1 0 001 1h12a1 1 0 001-1V10M11 14h6M11 17h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
 const DashboardIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
     </svg>
 );
 
 const WorkIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
-);
-
-const SettingsIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-);
-
-const LogoutIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-    </svg>
-);
-
-const AnalyticsIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
     </svg>
 );
 
 const AutoJobsIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+);
+
+const AnalyticsIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 8V6m-4 6V8M8 16v-4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
     </svg>
 );
 
 const PortfolioIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="7" r="4" />
+        <path d="M5 21v-1a7 7 0 0114 0v1" />
     </svg>
 );
+
+const SettingsIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+    </svg>
+);
+
+const SunIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+);
+
+const MoonIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+    </svg>
+);
+
+const LogoutIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 21H5a1 1 0 01-1-1V4a1 1 0 011-1h4m7 14l5-5m0 0l-5-5m5 5H9" />
+    </svg>
+);
+
+const ChevronLeftIcon = ({ size = 14 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+    </svg>
+);
+
+const ChevronRightIcon = ({ size = 14 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 18l6-6-6-6" />
+    </svg>
+);
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 const Sidebar = () => {
     const { user, logout } = useAuth();
@@ -66,9 +99,7 @@ const Sidebar = () => {
     };
 
     const isActiveRoute = (path: string) => {
-        if (path === '/dashboard') {
-            return location.pathname === '/dashboard';
-        }
+        if (path === '/dashboard') return location.pathname === '/dashboard';
         return location.pathname.startsWith(path);
     };
 
@@ -81,111 +112,167 @@ const Sidebar = () => {
         { path: '/settings', label: 'Settings', icon: SettingsIcon },
     ];
 
+    const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : 'U';
+    const userLabel = user?.email?.split('@')[0] || 'User';
+
     return (
-        <div
-            className={`flex flex-col h-screen ${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 relative`}
+        <aside
+            style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+            className={`hidden md:flex flex-col h-screen flex-shrink-0 transition-all duration-300 relative border-r
+                ${isCollapsed ? 'w-[72px]' : 'w-[230px]'}`}
         >
-            {/* Toggle Button */}
+            {/* Collapse toggle */}
             <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="absolute -right-3 top-9 w-6 h-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 shadow-sm z-50 transition-colors"
+                style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                className="absolute -right-3.5 top-[52px] w-7 h-7 rounded-full border flex items-center justify-center z-50 transition-all hover:border-gold-400 group shadow-ink-sm"
+                aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-                {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                <span style={{ color: 'var(--text-muted)' }} className="group-hover:text-accent transition-colors">
+                    {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+                </span>
             </button>
 
-            {/* Brand */}
+            {/* ── Brand ── */}
             <Link
                 to="/dashboard"
-                className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-6'} h-20 border-b border-slate-100 dark:border-slate-800/50 transition-all duration-300 overflow-hidden whitespace-nowrap hover:bg-slate-50 dark:hover:bg-slate-800/50`}
+                className="flex items-center h-[64px] border-b overflow-hidden transition-colors hover:opacity-80"
+                style={{ borderColor: 'var(--border)', paddingLeft: isCollapsed ? '0' : '20px', justifyContent: isCollapsed ? 'center' : 'flex-start' }}
             >
-                <div className="text-purple-600 dark:text-purple-400 shrink-0">
-                    <BagFilledIcon />
-                </div>
+                <span style={{ color: 'var(--accent)' }} className="shrink-0">
+                    <Logo />
+                </span>
                 {!isCollapsed && (
-                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-purple-400 dark:from-purple-400 dark:to-purple-200 duration-200">
+                    <span
+                        className="ml-2.5 font-display font-semibold tracking-tight text-[1.1rem] transition-opacity duration-200"
+                        style={{ color: 'var(--text-primary)', fontFamily: 'Fraunces, Georgia, serif' }}
+                    >
                         VibeHired
                     </span>
                 )}
             </Link>
 
-            {/* Navigation */}
-            <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-                {navItems.map((item) => {
-                    const ActiveIcon = item.icon;
-                    const isActive = isActiveRoute(item.path);
-                    return (
-                        <Link
-                            key={item.path}
-                            to={item.path}
-                            title={isCollapsed ? item.label : ''}
-                            className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg text-sm font-medium transition-all duration-200 group
-                ${isActive
-                                    ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 shadow-sm'
-                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-purple-600 dark:hover:text-purple-400'
-                                }`}
-                        >
-                            <ActiveIcon />
-                            {!isCollapsed && <span>{item.label}</span>}
-                            {isActive && !isCollapsed && (
-                                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-600 dark:bg-purple-400" />
-                            )}
-                        </Link>
-                    );
-                })}
+            {/* ── Navigation ── */}
+            <nav className="flex-1 py-5 overflow-y-auto overflow-x-hidden">
+                <div className={`space-y-0.5 ${isCollapsed ? 'px-2.5' : 'px-3'}`}>
+                    {navItems.map((item) => {
+                        const isActive = isActiveRoute(item.path);
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                title={isCollapsed ? item.label : undefined}
+                                className="flex items-center rounded-lg transition-all duration-150 group relative"
+                                style={{
+                                    padding: isCollapsed ? '10px' : '9px 12px',
+                                    justifyContent: isCollapsed ? 'center' : 'flex-start',
+                                    gap: isCollapsed ? '0' : '10px',
+                                    backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.09))' : 'transparent',
+                                    color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (!isActive) {
+                                        (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-elevated)';
+                                        (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)';
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!isActive) {
+                                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                        (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
+                                    }
+                                }}
+                            >
+                                {/* Active indicator pill */}
+                                {isActive && (
+                                    <span
+                                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
+                                        style={{ backgroundColor: 'var(--accent)' }}
+                                    />
+                                )}
+                                <item.icon />
+                                {!isCollapsed && (
+                                    <span className="text-[0.875rem] font-medium tracking-[-0.01em]">{item.label}</span>
+                                )}
+                            </Link>
+                        );
+                    })}
+                </div>
             </nav>
 
-            {/* Footer Actions */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-                {/* User Profile */}
-                <div className={`flex items-center ${isCollapsed ? 'justify-center p-2' : 'gap-3 px-4 py-3'} rounded-lg bg-slate-50 dark:bg-slate-800/50 transition-all duration-300`}>
-                    <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center font-bold text-purple-700 dark:text-purple-300 text-xs shadow-sm border border-purple-200 dark:border-purple-700 shrink-0">
-                        {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+            {/* ── Footer ── */}
+            <div
+                className="border-t px-3 py-4 space-y-2"
+                style={{ borderColor: 'var(--border)' }}
+            >
+                {/* User chip */}
+                <div
+                    className="flex items-center rounded-lg overflow-hidden"
+                    style={{
+                        padding: isCollapsed ? '8px' : '8px 10px',
+                        justifyContent: isCollapsed ? 'center' : 'flex-start',
+                        gap: isCollapsed ? '0' : '10px',
+                        backgroundColor: 'var(--bg-elevated)',
+                    }}
+                >
+                    <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 font-mono"
+                        style={{ backgroundColor: 'var(--accent-bg, rgba(232,184,68,0.15))', color: 'var(--accent)', border: '1px solid rgba(232,184,68,0.25)' }}
+                    >
+                        {userInitial}
                     </div>
                     {!isCollapsed && (
-                        <div className="flex-1 min-w-0 overflow-hidden">
-                            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
-                                {user?.email || 'User'}
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[0.8125rem] font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                                {userLabel}
                             </p>
                         </div>
                     )}
                 </div>
 
-                <div className={`flex ${isCollapsed ? 'flex-col' : ''} gap-2`}>
-                    {/* Theme Toggle */}
+                {/* Actions row */}
+                <div className={`flex gap-1.5 ${isCollapsed ? 'flex-col items-center' : ''}`}>
                     <button
                         onClick={toggleTheme}
-                        title={isCollapsed ? (theme === 'dark' ? 'Light Mode' : 'Dark Mode') : ''}
-                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700`}
-                        aria-label="Toggle dark mode"
+                        className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 px-2.5 text-xs font-medium transition-all duration-150"
+                        style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                        onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)';
+                            (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-bright, var(--border))';
+                        }}
+                        onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
+                            (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
+                        }}
+                        aria-label="Toggle theme"
+                        title={isCollapsed ? (theme === 'dark' ? 'Light mode' : 'Dark mode') : undefined}
                     >
-                        {theme === 'dark' ? (
-                            <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                                {!isCollapsed && <span>Light</span>}
-                            </>
-                        ) : (
-                            <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                </svg>
-                                {!isCollapsed && <span>Dark</span>}
-                            </>
-                        )}
+                        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                        {!isCollapsed && <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>}
                     </button>
 
-                    {/* Logout */}
                     <button
                         onClick={handleLogout}
-                        className="flex items-center justify-center p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors border border-slate-200 dark:border-slate-700"
-                        aria-label="Logout"
+                        className="flex items-center justify-center rounded-lg p-2 transition-all duration-150"
+                        style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                        onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--rose-bg, rgba(244,100,100,0.08))';
+                            (e.currentTarget as HTMLElement).style.color = 'var(--rose, #f46464)';
+                            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(244,100,100,0.25)';
+                        }}
+                        onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-elevated)';
+                            (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)';
+                            (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
+                        }}
+                        aria-label="Sign out"
+                        title="Sign out"
                     >
                         <LogoutIcon />
                     </button>
                 </div>
             </div>
-        </div>
+        </aside>
     );
 };
 

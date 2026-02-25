@@ -526,8 +526,8 @@ const DashboardPage: React.FC = () => {
   const statusColors: Record<JobApplication['status'], string> = {
     'Not Applied': 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
     'Applied': 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-    'Interview': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-    'Assessment': 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+    'Interview': 'bg-gold-100 text-gold-700 dark:bg-gold-900/40 dark:text-gold-300',
+    'Assessment': 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
     'Rejected': 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
     'Closed': 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
     'Offer': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -537,8 +537,8 @@ const DashboardPage: React.FC = () => {
   const statusOptionColors: Record<JobApplication['status'], { dot: string; text: string }> = {
     'Not Applied': { dot: 'bg-slate-400',   text: 'text-slate-500 dark:text-slate-300' },
     'Applied':     { dot: 'bg-green-400',   text: 'text-green-700 dark:text-green-300' },
-    'Interview':   { dot: 'bg-blue-400',    text: 'text-blue-700  dark:text-blue-300' },
-    'Assessment':  { dot: 'bg-purple-400',  text: 'text-purple-700 dark:text-purple-300' },
+    'Interview':   { dot: 'bg-gold-400',    text: 'text-gold-700  dark:text-gold-300' },
+    'Assessment':  { dot: 'bg-amber-400',   text: 'text-amber-700 dark:text-amber-300' },
     'Rejected':    { dot: 'bg-red-400',     text: 'text-red-700   dark:text-red-300' },
     'Closed':      { dot: 'bg-gray-500',    text: 'text-gray-600  dark:text-gray-400' },
     'Offer':       { dot: 'bg-emerald-400', text: 'text-emerald-700 dark:text-emerald-300' },
@@ -581,7 +581,7 @@ const DashboardPage: React.FC = () => {
           </svg>
         </button>
         {isOpen && (
-          <div className="absolute z-50 mt-1 w-44 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 overflow-hidden">
+          <div className="absolute z-50 mt-1 w-44 rounded-xl shadow-xl py-1 overflow-hidden" style={{background: 'var(--bg-elevated)', border: '1px solid var(--border)'}}>
             {statusOptions.map((status) => (
               <button
                 key={status}
@@ -590,7 +590,8 @@ const DashboardPage: React.FC = () => {
                   handleStatusChange(job._id, status);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${job.status === status ? 'bg-gray-100 dark:bg-gray-800' : ''} ${statusOptionColors[status]?.text ?? 'text-gray-700 dark:text-gray-200'}`}
+                className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 transition-colors ${statusOptionColors[status]?.text ?? 'text-gray-700 dark:text-gray-200'}`}
+                style={job.status === status ? {background: 'var(--bg-raised)'} : undefined}
               >
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusOptionColors[status]?.dot ?? 'bg-gray-400'}`} />
                 {status}
@@ -688,14 +689,15 @@ const DashboardPage: React.FC = () => {
 
   // --- Main Dashboard Content ---
   return (
-    <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-950">
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6">
-        <div className="mb-2 flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Job Dashboard</h1>
-            <p className="mt-1 text-slate-600 dark:text-slate-400">Manage your job applications and track your progress.</p>
+      <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="space-y-1">
+            <h1 className="page-title">Job Dashboard</h1>
+            <p style={{color: 'var(--text-secondary)'}}>Manage your job applications and track your progress</p>
           </div>
           {(() => {
             const todayCount = jobs.filter(job => {
@@ -706,17 +708,37 @@ const DashboardPage: React.FC = () => {
                 jobDate.getFullYear() === today.getFullYear();
             }).length;
             return todayCount > 0 ? (
-              <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-lg">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Today's Applications:</span>
-                <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{todayCount}</span>
+              <div className="flex items-center gap-3 bg-zinc-900 dark:bg-white px-5 py-3 rounded-xl shadow-lg">
+                <span className="text-sm text-zinc-400 dark:text-zinc-500">Today's Applications</span>
+                <span className="text-2xl font-bold text-white dark:text-zinc-900">{todayCount}</span>
               </div>
             ) : null;
           })()}
         </div>
 
+        {/* Stats Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-stagger">
+          <div className="stat-card">
+            <div className="stat-card-value">{jobs.length}</div>
+            <div className="stat-card-label">Total Applications</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-value">{jobs.filter(j => j.status === 'Applied').length}</div>
+            <div className="stat-card-label">Applied</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-value">{jobs.filter(j => j.status === 'Interview').length}</div>
+            <div className="stat-card-label">Interviews</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-value">{jobs.filter(j => j.status === 'Offer').length}</div>
+            <div className="stat-card-label">Offers</div>
+          </div>
+        </div>
+
 
         {/* Add Job Section */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 space-y-6">
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-6">
           <div className="flex flex-col gap-4">
             <form onSubmit={handleCreateFromTextSubmit} className="w-full">
               {/* Pre-Extraction Form Fields */}
@@ -732,7 +754,7 @@ const DashboardPage: React.FC = () => {
                       id="cvBranch"
                       value={selectedCvBranchId || ''}
                       onChange={(e) => setSelectedCvBranchId(e.target.value || null)}
-                      className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500"
                       disabled={isCreatingFromText}
                     >
                       <option value="">Select CV (optional)</option>
@@ -746,11 +768,11 @@ const DashboardPage: React.FC = () => {
 
                   {/* File chosen – show name and remove button */}
                   {preExtractionCvFile && (
-                    <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-300 dark:border-indigo-700 rounded-md px-3 py-2">
-                      <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)'}}>
+                      <svg className="w-4 h-4 flex-shrink-0" style={{color: 'var(--accent)'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span className="text-xs text-indigo-700 dark:text-indigo-300 truncate flex-1">{preExtractionCvFile.name}</span>
+                      <span className="text-xs truncate flex-1" style={{color: 'var(--accent)'}}>{preExtractionCvFile.name}</span>
                       <button
                         type="button"
                         onClick={() => { setPreExtractionCvFile(null); if (cvFileInputRef.current) cvFileInputRef.current.value = ''; }}
@@ -785,7 +807,7 @@ const DashboardPage: React.FC = () => {
                       type="button"
                       onClick={() => cvFileInputRef.current?.click()}
                       disabled={isCreatingFromText}
-                      className="mt-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 disabled:opacity-40 flex items-center gap-1"
+                      className="mt-1.5 text-xs disabled:opacity-40 flex items-center gap-1 transition-opacity" style={{color: 'var(--accent)'}}
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -810,7 +832,7 @@ const DashboardPage: React.FC = () => {
                       setPreExtractionJobUrl(normalized);
                     }}
                     placeholder="https://example.com/job-posting"
-                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white focus:border-transparent transition-all"
                     disabled={isCreatingFromText}
                   />
                   <p className="mt-1.5 text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
@@ -827,7 +849,7 @@ const DashboardPage: React.FC = () => {
                     id="status"
                     value={preExtractionStatus}
                     onChange={(e) => setPreExtractionStatus(e.target.value)}
-                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white focus:border-transparent transition-all"
                     disabled={isCreatingFromText}
                   >
                     <option value="Not Applied">Not Applied</option>
@@ -848,7 +870,7 @@ const DashboardPage: React.FC = () => {
                     id="jobType"
                     value={preExtractionJobType}
                     onChange={(e) => setPreExtractionJobType(e.target.value)}
-                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white focus:border-transparent transition-all"
                     disabled={isCreatingFromText}
                   >
                     <option value="">Auto-detect</option>
@@ -872,22 +894,22 @@ const DashboardPage: React.FC = () => {
                   onChange={(e) => { setJobTextInput(e.target.value); setCreateFromTextError(null); }}
                   placeholder="Paste job description here..."
                   title="Ctrl+A to select all, Ctrl+C to copy from job site, then Ctrl+V here"
-                  className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-600 dark:focus:border-indigo-500 focus:ring-indigo-600 dark:focus:ring-indigo-500 rounded-md pl-12 py-4 pr-4 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50 resize-y min-h-[160px] transition-all"
+                  className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-white focus:ring-zinc-900 dark:focus:ring-white rounded-xl pl-12 py-4 pr-4 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 disabled:opacity-50 resize-y min-h-[160px] transition-all"
                   rows={6}
                   disabled={isCreatingFromText}
                 />
                 {/* Loading overlay */}
                 {isCreatingFromText && (
-                  <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-md flex flex-col items-center justify-center gap-3">
+                  <div className="absolute inset-0 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-3" style={{background: 'color-mix(in srgb, var(--bg-surface) 85%, transparent)'}}>
                     <div className="relative">
-                      <svg className="animate-spin h-10 w-10 text-indigo-600 dark:text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin h-10 w-10" style={{color: 'var(--accent)'}} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Extracting job details...</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">AI is analyzing the job description</p>
+                      <p className="text-sm font-semibold" style={{color: 'var(--text-primary)'}}>Extracting job details...</p>
+                      <p className="text-xs mt-1" style={{color: 'var(--text-muted)'}}>AI is analyzing the job description</p>
                     </div>
                   </div>
                 )}
@@ -896,7 +918,7 @@ const DashboardPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
                 <button
                   type="submit"
-                  className="w-full sm:w-auto bg-indigo-600 dark:bg-indigo-600 text-white font-medium py-2.5 px-6 rounded-md text-sm hover:bg-indigo-700 dark:hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold py-3 px-6 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg flex items-center justify-center gap-2"
                   disabled={isCreatingFromText || !jobTextInput || jobTextInput.trim().length < 50}
                 >
                   {isCreatingFromText ? (
@@ -920,7 +942,7 @@ const DashboardPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleOpenAddModal}
-                  className="w-full sm:w-auto text-slate-600 dark:text-slate-400 font-medium py-2.5 px-4 rounded-md text-sm hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 font-medium py-3 px-6 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2"
                   disabled={isSubmitting || isCreatingFromText}
                 >
                   <AddIcon />
@@ -979,14 +1001,14 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Job List Section */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 space-y-6">
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-6">
           {/* Filter Controls */}
           <div>
             <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
               <div className="w-full md:w-1/3">
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1" htmlFor="filter-title">Filter by Title/Company</label>
+                <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2" htmlFor="filter-title">Filter by Title/Company</label>
                 <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500">
                     <SearchIcon />
                   </div>
                   <input
@@ -994,18 +1016,18 @@ const DashboardPage: React.FC = () => {
                     id="filter-title"
                     value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
-                    placeholder="Enter text..."
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-600 dark:focus:border-indigo-500 focus:ring-indigo-600 dark:focus:ring-indigo-500 rounded-md pl-10 h-10 text-slate-900 dark:text-slate-100"
+                    placeholder="Search..."
+                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-white focus:ring-zinc-900 dark:focus:ring-white rounded-xl pl-11 h-12 text-zinc-900 dark:text-zinc-100 transition-all"
                   />
                 </div>
               </div>
               <div className="w-full md:w-auto">
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1" htmlFor="filter-status">Filter by Status</label>
+                <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2" htmlFor="filter-status">Filter by Status</label>
                 <select
                   id="filter-status"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-600 dark:focus:border-indigo-500 focus:ring-indigo-600 dark:focus:ring-indigo-500 rounded-md h-10 px-3 text-slate-900 dark:text-slate-100"
+                  className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-white focus:ring-zinc-900 dark:focus:ring-white rounded-xl h-12 px-4 text-zinc-900 dark:text-zinc-100 transition-all"
                 >
                   <option value="">All Statuses</option>
                   {statusOptions.map(status => (
@@ -1041,7 +1063,7 @@ const DashboardPage: React.FC = () => {
                       <div className="mt-6">
                         <button
                           onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); }}
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                          className="btn-primary"
                         >
                           Clear Filters
                         </button>
@@ -1056,10 +1078,10 @@ const DashboardPage: React.FC = () => {
                       <div className="mt-6">
                         <button
                           onClick={handleOpenAddModal}
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                          className="btn-primary inline-flex items-center gap-2"
                         >
                           <AddIcon />
-                          <span className="ml-2">Add Your First Job</span>
+                          <span>Add Your First Job</span>
                         </button>
                       </div>
                     </>
@@ -1141,7 +1163,7 @@ const DashboardPage: React.FC = () => {
                             {job.contactEmail || job.contactPhone || job.hiringManagerName ? (
                               <div className="flex flex-col gap-0.5 text-xs">
                                 {job.contactEmail && (
-                                  <a href={`mailto:${job.contactEmail}`} className="text-indigo-500 dark:text-indigo-400 hover:underline truncate block" title={`Email: ${job.contactEmail}`}>
+                                  <a href={`mailto:${job.contactEmail}`} className="hover:underline truncate block" style={{color: 'var(--accent)'}} title={`Email: ${job.contactEmail}`}>
                                     📧 {job.contactEmail.length > 12 ? job.contactEmail.substring(0, 12) + '...' : job.contactEmail}
                                   </a>
                                 )}
@@ -1159,11 +1181,11 @@ const DashboardPage: React.FC = () => {
                             ) : job.contact ? (
                               // Legacy contact field fallback
                               job.contact.includes('@') ? (
-                                <a href={`mailto:${job.contact}`} className="text-indigo-500 dark:text-indigo-400 hover:underline truncate block" title={`Email ${job.contact}`}>
+                                <a href={`mailto:${job.contact}`} className="hover:underline truncate block" style={{color: 'var(--accent)'}} title={`Email ${job.contact}`}>
                                   {job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}
                                 </a>
                               ) : job.contact.startsWith('http') ? (
-                                <a href={job.contact} target="_blank" rel="noopener noreferrer" className="text-indigo-500 dark:text-indigo-400 hover:underline truncate block" title={job.contact}>
+                                <a href={job.contact} target="_blank" rel="noopener noreferrer" className="hover:underline truncate block" style={{color: 'var(--accent)'}} title={job.contact}>
                                   {job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}
                                 </a>
                               ) : (
@@ -1191,7 +1213,7 @@ const DashboardPage: React.FC = () => {
                                   href={url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center justify-center w-8 h-8 rounded-md text-indigo-500 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+                                  className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors" style={{color: 'var(--accent)'}}
                                   title={`Open: ${url}`}
                                 >
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -1239,7 +1261,7 @@ const DashboardPage: React.FC = () => {
                       <button
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className="flex items-center justify-center w-9 h-9 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
                         <ChevronLeftIcon />
                       </button>
@@ -1247,9 +1269,9 @@ const DashboardPage: React.FC = () => {
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`flex items-center justify-center w-9 h-9 rounded-md text-sm font-semibold transition-colors ${currentPage === page
-                            ? 'bg-indigo-600 dark:bg-indigo-600 text-white'
-                            : 'border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                          className={`flex items-center justify-center w-10 h-10 rounded-xl text-sm font-semibold transition-all ${currentPage === page
+                            ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
+                            : 'border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
                             }`}
                         >
                           {page}
@@ -1258,7 +1280,7 @@ const DashboardPage: React.FC = () => {
                       <button
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages}
-                        className="flex items-center justify-center w-9 h-9 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
                         <ChevronRightIcon />
                       </button>
@@ -1272,16 +1294,16 @@ const DashboardPage: React.FC = () => {
 
         {/* Add/Edit Modal */}
         {modalMode && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 dark:bg-opacity-80 flex justify-center items-center z-50">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg mx-4 sm:mx-0 flex flex-col">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
+            <div className="card-elevated p-6 rounded-2xl shadow-2xl w-full max-w-lg mx-4 sm:mx-0 flex flex-col" style={{maxHeight: '90vh'}}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>
                   Add New Job Manually
                 </h2>
                 <button
                   onClick={handleCloseModal}
                   disabled={isSubmitting}
-                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-50 transition-colors"
+                  className="btn-ghost w-9 h-9 p-0 flex items-center justify-center disabled:opacity-50"
                   aria-label="Close"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1299,8 +1321,8 @@ const DashboardPage: React.FC = () => {
                 <div className="flex-1 overflow-y-auto pr-1">
                   {/* Job Title */}
                   <div className="mb-5">
-                    <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Job Title <span className="text-red-500 dark:text-red-400">*</span>
+                    <label htmlFor="jobTitle" className="label-overline mb-2 block">
+                      Job Title <span style={{color: 'var(--rose)'}}>*</span>
                     </label>
                     <input
                       type="text"
@@ -1309,14 +1331,14 @@ const DashboardPage: React.FC = () => {
                       value={formData.jobTitle || ''}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                      className="input-base w-full"
                     />
                   </div>
 
                   {/* Company Name */}
                   <div className="mb-5">
-                    <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Company Name <span className="text-red-500 dark:text-red-400">*</span>
+                    <label htmlFor="companyName" className="label-overline mb-2 block">
+                      Company Name <span style={{color: 'var(--rose)'}}>*</span>
                     </label>
                     <input
                       type="text"
@@ -1325,7 +1347,7 @@ const DashboardPage: React.FC = () => {
                       value={formData.companyName || ''}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                      className="input-base w-full"
                     />
                   </div>
 
@@ -1333,79 +1355,71 @@ const DashboardPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4 mb-5">
                     {/* Status */}
                     <div>
-                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Status
-                      </label>
+                      <label htmlFor="status" className="label-overline mb-2 block">Status</label>
                       <select
                         id="status"
                         name="status"
                         value={formData.status || 'Not Applied'}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                        className="input-base w-full cursor-pointer"
                       >
                         {statusOptions.map(status => (
-                          <option key={status} value={status} className="bg-white dark:bg-gray-600">{status}</option>
+                          <option key={status} value={status}>{status}</option>
                         ))}
                       </select>
                     </div>
 
                     {/* Language */}
                     <div>
-                      <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Language
-                      </label>
+                      <label htmlFor="language" className="label-overline mb-2 block">Language</label>
                       <select
                         id="language"
                         name="language"
                         value={formData.language || 'en'}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                        className="input-base w-full cursor-pointer"
                       >
-                        <option value="en" className="bg-white dark:bg-gray-600">English</option>
-                        <option value="de" className="bg-white dark:bg-gray-600">German</option>
+                        <option value="en">English</option>
+                        <option value="de">German</option>
                       </select>
                     </div>
                   </div>
 
                   {/* CV Selection */}
                   <div className="mb-5">
-                    <label htmlFor="baseCvId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Base CV
-                    </label>
+                    <label htmlFor="baseCvId" className="label-overline mb-2 block">Base CV</label>
                     <select
                       id="baseCvId"
                       name="baseCvId"
                       value={formData.baseCvId || ''}
                       onChange={handleInputChange}
                       disabled={isLoadingCvs}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer disabled:opacity-50"
+                      className="input-base w-full cursor-pointer disabled:opacity-50"
                     >
                       <option value="">
                         {isLoadingCvs ? 'Loading CVs...' : 'Select a CV (optional)'}
                       </option>
                       {cvs.map(cv => (
-                        <option key={cv._id} value={cv._id} className="bg-white dark:bg-gray-600">
+                        <option key={cv._id} value={cv._id}>
                           {cv.displayName || cv.category || 'Unnamed CV'}
                           {cv.isPrimary ? ' (Primary)' : ''}
                         </option>
                       ))}
                     </select>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="mt-1 text-xs" style={{color: 'var(--text-muted)'}}>
                       Choose which CV version to use as the base for this job application
                     </p>
                   </div>
 
                   {/* Job Type */}
                   <div className="mb-5">
-                    <label htmlFor="jobType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Job Type
-                    </label>
+                    <label htmlFor="jobType" className="label-overline mb-2 block">Job Type</label>
                     <select
                       id="jobType"
                       name="jobType"
                       value={formData.jobType || ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none cursor-pointer"
+                      className="input-base w-full cursor-pointer"
                     >
                       <option value="">Not specified</option>
                       <option value="full-time">Full-time</option>
@@ -1447,7 +1461,7 @@ const DashboardPage: React.FC = () => {
 
                     return (
                       <div className="mb-5">
-                        <label htmlFor="createdAt" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="createdAt" className="label-overline mb-2 block">
                           Date Added
                         </label>
                         <input
@@ -1463,7 +1477,7 @@ const DashboardPage: React.FC = () => {
                               setFormData(prev => ({ ...prev, createdAt: newDate.toISOString() }));
                             }
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                          className="input-base w-full"
                         />
                       </div>
                     );
@@ -1471,9 +1485,7 @@ const DashboardPage: React.FC = () => {
 
                   {/* Job URL */}
                   <div className="mb-5">
-                    <label htmlFor="jobUrl_modal" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Job URL(s)
-                    </label>
+                    <label htmlFor="jobUrl_modal" className="label-overline mb-2 block">Job URL(s)</label>
                     <input
                       id="jobUrl_modal"
                       name="jobUrl"
@@ -1485,9 +1497,9 @@ const DashboardPage: React.FC = () => {
                         setFormData(prev => ({ ...prev, jobUrl: normalized }));
                       }}
                       placeholder="https://example.com/job-posting"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                      className="input-base w-full"
                     />
-                    <p className="mt-1.5 text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500">
+                    <p className="mt-1.5 text-[10px] uppercase tracking-wider font-semibold" style={{color: 'var(--text-muted)'}}>
                       Separate multiples with commas or spaces
                     </p>
                   </div>
@@ -1496,32 +1508,28 @@ const DashboardPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4 mb-5">
                     {/* Salary */}
                     <div>
-                      <label htmlFor="salary" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Salary
-                      </label>
+                      <label htmlFor="salary" className="label-overline mb-2 block">Salary</label>
                       <input
                         type="text"
                         id="salary"
                         name="salary"
                         value={formData.salary || ''}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                        className="input-base w-full"
                         placeholder="e.g., 50k-70k, $80,000"
                       />
                     </div>
 
                     {/* Contact */}
                     <div>
-                      <label htmlFor="contact" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Contact
-                      </label>
+                      <label htmlFor="contact" className="label-overline mb-2 block">Contact</label>
                       <input
                         type="text"
                         id="contact"
                         name="contact"
                         value={formData.contact || ''}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                        className="input-base w-full"
                         placeholder="Email, link, or name"
                       />
                     </div>
@@ -1529,34 +1537,32 @@ const DashboardPage: React.FC = () => {
 
                   {/* Notes */}
                   <div className="mb-5">
-                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Notes
-                    </label>
+                    <label htmlFor="notes" className="label-overline mb-2 block">Notes</label>
                     <textarea
                       id="notes"
                       name="notes"
                       rows={3}
                       value={formData.notes || ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none"
+                      className="input-base w-full resize-none"
                     />
                   </div>
                 </div>
 
                 {/* Modal Action Buttons */}
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+                <div className="flex justify-end gap-3 pt-4 mt-4" style={{borderTop: '1px solid var(--border)'}}>
                   <button
                     type="button"
                     onClick={handleCloseModal}
                     disabled={isSubmitting}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
+                    className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-4 py-2 bg-purple-600 dark:bg-purple-600 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors flex items-center gap-2"
+                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -1583,35 +1589,29 @@ const DashboardPage: React.FC = () => {
 
         {/* Delete Confirmation Modal */}
         {deleteConfirmModal.isOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 dark:bg-opacity-80 flex justify-center items-center z-50">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md mx-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
+            <div className="card-elevated p-6 rounded-2xl shadow-2xl w-full max-w-md mx-4">
               <div className="flex items-center gap-4 mb-4">
-                <div className="flex-shrink-0 bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
-                  <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex-shrink-0 p-3 rounded-full" style={{background: 'color-mix(in srgb, var(--rose) 15%, transparent)', color: 'var(--rose)'}}>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Delete Job Application</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <h3 className="text-lg font-bold" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>Delete Job Application</h3>
+                  <p className="text-sm mt-1" style={{color: 'var(--text-secondary)'}}>
                     Are you sure you want to delete this job application? This action cannot be undone.
                   </p>
                 </div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-600/50 p-3 rounded-md mb-4">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{deleteConfirmModal.jobTitle}</p>
+              <div className="p-3 rounded-xl mb-4" style={{background: 'var(--bg-elevated)', border: '1px solid var(--border)'}}>
+                <p className="text-sm font-semibold" style={{color: 'var(--text-primary)'}}>{deleteConfirmModal.jobTitle}</p>
               </div>
               <div className="flex justify-end gap-3">
-                <button
-                  onClick={handleDeleteCancel}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
-                >
+                <button onClick={handleDeleteCancel} className="btn-secondary">
                   Cancel
                 </button>
-                <button
-                  onClick={handleDeleteConfirm}
-                  className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-md hover:bg-red-700 dark:hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
-                >
+                <button onClick={handleDeleteConfirm} className="btn-danger">
                   Delete
                 </button>
               </div>

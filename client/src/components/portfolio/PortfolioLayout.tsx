@@ -226,7 +226,7 @@ const PortfolioLayout: React.FC<PortfolioLayoutProps> = ({
                     e.preventDefault();
                     scrollToSection('connect');
                   }}
-                  className="inline-flex items-center justify-center px-6 py-3 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-all duration-300 hover:scale-105 hover:shadow-lg group"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-primary text-ink-950 font-semibold rounded-lg shadow-md hover:bg-gold-600 transition-all duration-300 hover:scale-105 hover:shadow-lg group"
                 >
                   Get in Touch
                   <svg className="ml-2 w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

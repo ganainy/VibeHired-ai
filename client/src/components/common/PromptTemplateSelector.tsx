@@ -177,19 +177,19 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
     return (
         <div className="w-full">
             <div 
-                className="flex items-center justify-between cursor-pointer group hover:bg-purple-50 dark:hover:bg-purple-900/10 p-2 -mx-2 rounded-lg transition-colors mb-2"
+                className="flex items-center justify-between cursor-pointer group hover:bg-gold-50 dark:hover:bg-gold-900/10 p-2 -mx-2 rounded-lg transition-colors mb-2"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">tune</span>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{label}</h3>
+                    <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>tune</span>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 transition-colors">{label}</h3>
                     <span className={`material-symbols-outlined text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
                         expand_more
                     </span>
                 </div>
 
                 {!isOpen && selectedTemplateId && (
-                    <div className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1.5 opacity-80 group-hover:opacity-100">
+                    <div className="text-xs font-medium flex items-center gap-1.5 opacity-80 group-hover:opacity-100" style={{color:"var(--accent)"}}>
                         <span className="material-symbols-outlined text-xs">info</span>
                         {getTemplateName()}
                     </div>
@@ -214,7 +214,7 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                                         value={selectedTemplateId}
                                         onChange={handleTemplateChange}
                                         onClick={(e) => e.stopPropagation()}
-                                        className={`text-sm border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-1.5 pl-3 pr-10 ${!selectedTemplateId ? 'border-amber-300 ring-1 ring-amber-300 dark:border-amber-700 dark:ring-amber-900' : ''
+                                        className={`text-sm border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:border-gold-500 focus:ring-gold-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-1.5 pl-3 pr-10 ${!selectedTemplateId ? 'border-amber-300 ring-1 ring-amber-300 dark:border-amber-700 dark:ring-amber-900' : ''
                                             }`}
                                     >
                                         <option value="">Select a template...</option>
@@ -250,7 +250,7 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                         )}
                     </div>
 
-                    <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-lg border border-purple-100 dark:border-purple-900/20">
+                    <div className="p-4 rounded-lg border" style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)"}}>
                 <textarea
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
@@ -259,14 +259,14 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                     rows={3}
                 />
 
-                <div className="flex justify-between items-center mt-2 pt-2 border-t border-purple-200 dark:border-purple-800/30">
+                <div className="flex justify-between items-center mt-2 pt-2 border-t" style={{borderColor:"var(--accent-dim)"}}>
                     <button
                         type="button"
                         onClick={() => selectedTemplateId && setShowPromptModal(true)}
                         disabled={!selectedTemplateId}
                         className={`text-xs font-medium flex items-center gap-1 ${
                             selectedTemplateId 
-                                ? 'text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 cursor-pointer underline underline-offset-2' 
+                                ? 'text-gold-600 dark:text-gold-400 hover:text-gold-800 dark:hover:text-gold-300 cursor-pointer underline underline-offset-2' 
                                 : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
                         }`}
                         title={selectedTemplateId ? 'Click to view full prompt' : 'No template selected'}
@@ -278,7 +278,7 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                     {!showSaveInput ? (
                         <button
                             onClick={() => setShowSaveInput(true)}
-                            className="text-xs flex items-center gap-1 text-purple-700 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200"
+                            className="text-xs flex items-center gap-1 text-gold-700 hover:text-gold-900 dark:text-gold-400 dark:hover:text-gold-200"
                         >
                             <span className="material-symbols-outlined text-sm">add</span>
                             Save as new template
@@ -290,12 +290,12 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                                 value={newTemplateName}
                                 onChange={(e) => setNewTemplateName(e.target.value)}
                                 placeholder="Template name"
-                                className="text-xs px-2 py-1 rounded border border-purple-200 dark:border-purple-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-purple-500"
+                                className="text-xs px-2 py-1 rounded border dark:bg-gray-800 dark:text-white focus:outline-none" style={{borderColor:"var(--accent-dim)"}}
                             />
                             <button
                                 onClick={handleSaveNewTemplate}
                                 disabled={isSaving || !newTemplateName}
-                                className="text-xs px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                                className="text-xs px-2 py-1 rounded disabled:opacity-50 text-ink-950" style={{background:"var(--accent)"}}
                             >
                                 Save
                             </button>
@@ -318,7 +318,7 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                     <div className="w-full max-w-4xl max-h-[80vh] bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-2">
-                                <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">description</span>
+                                <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>description</span>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                                     {getTemplateName()}
                                 </h3>
@@ -338,7 +338,7 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                         <div className="flex justify-end p-4 border-t border-gray-200 dark:border-gray-700">
                             <button
                                 onClick={() => setShowPromptModal(false)}
-                                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                                className="btn-primary rounded-lg"
                             >
                                 Close
                             </button>

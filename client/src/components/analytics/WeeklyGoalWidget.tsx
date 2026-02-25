@@ -56,7 +56,7 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
     return (
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-slate-200 dark:border-zinc-800 flex flex-col h-full relative">
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-100 dark:border-zinc-800 flex flex-col h-full relative">
             <div className="flex justify-between items-start mb-6">
                 <h3 className="font-semibold text-slate-900 dark:text-white">Weekly Goal</h3>
                 <div className="relative" ref={menuRef}>
@@ -68,7 +68,7 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
                     </button>
 
                     {isMenuOpen && (
-                        <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 py-1">
+                        <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 rounded-lg shadow-lg z-10 py-1">
                             <button
                                 onClick={() => {
                                     setIsEditing(true);
@@ -109,7 +109,7 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
                             </button>
                             <button
                                 onClick={handleSave}
-                                className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-md"
+                                className="btn-primary text-xs rounded-md px-3 py-1"
                             >
                                 Save
                             </button>
@@ -139,7 +139,7 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
                                 strokeDasharray={circumference}
                                 strokeDashoffset={strokeDashoffset}
                                 strokeLinecap="round"
-                                className="text-indigo-600 dark:text-indigo-500 transition-all duration-1000 ease-out"
+                                className="text-gold-500 dark:text-gold-400 transition-all duration-1000 ease-out"
                             />
                         </svg>
                         <div className="absolute flex flex-col items-center">

@@ -19,7 +19,7 @@ const JobStatusBadge: React.FC<JobStatusBadgeProps> = ({ type, status, className
                 'Applied': { color: 'text-green-600 dark:text-green-400 font-medium', label: 'Applied' },
                 'Not Applied': { color: 'text-slate-500 dark:text-slate-400', label: 'Not Applied' },
                 'Interview': { color: 'text-blue-600 dark:text-blue-400 font-medium', label: 'Interview' },
-                'Assessment': { color: 'text-purple-600 dark:text-purple-400 font-medium', label: 'Assessment' },
+                'Assessment': { color: 'text-amber-600 dark:text-amber-400 font-medium', label: 'Assessment' },
                 'Rejected': { color: 'text-red-500 dark:text-red-400', label: 'Rejected' },
                 'Closed': { color: 'text-slate-400 dark:text-slate-500', label: 'Closed' },
                 'Offer': { color: 'text-emerald-600 dark:text-emerald-400 font-semibold', label: 'Offer 🎉' },

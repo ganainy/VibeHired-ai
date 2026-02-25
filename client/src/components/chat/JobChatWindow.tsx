@@ -114,19 +114,19 @@ const JobChatWindow: React.FC<JobChatWindowProps> = ({
     return (
         <div className="fixed bottom-24 right-6 w-96 h-[600px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col z-50">
             {/* Header */}
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-purple-600 dark:bg-purple-700 text-white rounded-t-lg">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 rounded-t-lg" style={{background:"var(--accent)"}}>
                 <div className="flex-1 min-w-0">
                     <h2 className="text-lg font-semibold truncate">
                         Chat with AI
                     </h2>
-                    <p className="text-xs text-purple-100 truncate mt-0.5">
+                    <p className="text-xs truncate mt-0.5 text-ink-900/70">
                         {jobTitle}
                     </p>
                 </div>
                 <button
                     onClick={onClose}
                     disabled={isLoading}
-                    className="ml-2 text-white hover:text-purple-100 disabled:opacity-50 transition-colors flex-shrink-0"
+                    className="ml-2 text-ink-900/90 hover:text-ink-900 disabled:opacity-50 transition-colors flex-shrink-0"
                     aria-label="Close"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,10 +157,10 @@ const JobChatWindow: React.FC<JobChatWindowProps> = ({
                         >
                             <div
                                 className={`max-w-[85%] rounded-lg px-3 py-2 ${
-                                    message.sender === 'user'
-                                        ? 'bg-purple-600 dark:bg-purple-700 text-white'
+                                    message.sender === 'user' ? 'text-ink-950'
                                         : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700'
                                 }`}
+                                style={message.sender === 'user' ? {background: 'var(--accent)'} : {}}
                             >
                                 <p className="text-sm whitespace-pre-wrap break-words">{message.text}</p>
                             </div>
@@ -201,12 +201,12 @@ const JobChatWindow: React.FC<JobChatWindowProps> = ({
                         placeholder="Ask a question..."
                         disabled={isLoading}
                         rows={2}
-                        className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <button
                         type="submit"
                         disabled={!inputText.trim() || isLoading}
-                        className="px-3 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
+                        className="btn-primary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
                     >
                         {isLoading ? (
                             <Spinner size="sm" />

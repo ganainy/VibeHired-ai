@@ -32,8 +32,8 @@ const PRIORITY_COLORS: Record<Priority, { badge: string; border: string }> = {
         border: 'border-l-amber-500',
     },
     low: {
-        badge: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-        border: 'border-l-blue-500',
+        badge: 'badge badge-ink',
+        border: 'border-l-gold-400',
     },
 };
 
@@ -130,21 +130,22 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
         return (
             <div className="flex flex-col items-center justify-center py-8 px-6 text-center gap-6">
                 <div className="relative w-20 h-20">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg animate-pulse" style={{background:"linear-gradient(135deg, var(--accent-dim), var(--accent))"}}>
+
                         <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                         </svg>
                     </div>
                     <div className="absolute inset-0">
                         <svg className="w-full h-full animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 80 80">
-                            <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="4" fill="none" className="text-blue-200 dark:text-blue-900" />
-                            <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="4" fill="none" strokeDasharray="56 170" strokeLinecap="round" className="text-blue-600 dark:text-blue-400" />
+                            <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="4" fill="none" style={{color:'var(--border)'}} />
+                            <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="4" fill="none" strokeDasharray="56 170" strokeLinecap="round" style={{color:'var(--accent)'}} />
                         </svg>
                     </div>
                 </div>
                 <div>
                     <p className="font-semibold text-gray-900 dark:text-gray-100">Analyzing your CV…</p>
-                    <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">{progressMessage || 'This usually takes 15–30 seconds'}</p>
+                    <p className="text-sm mt-1" style={{color:'var(--accent)'}}>{progressMessage || 'This usually takes 15–30 seconds'}</p>
                 </div>
             </div>
         );
@@ -153,8 +154,8 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
     if (!atsScores) {
         return (
             <div className="flex flex-col items-center justify-center py-8 px-6 text-center gap-5">
-                <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                    <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{background:'var(--accent-bg)', border:'1px solid var(--accent-dim)'}}>
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{color:'var(--accent)'}}>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                 </div>
@@ -172,7 +173,7 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                 <button
                     onClick={onScan}
                     disabled={!hasJobDescription}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-medium text-sm transition-all shadow-sm"
+                    className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 px-5 py-2.5 text-sm"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -244,7 +245,7 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                 checked={selectedIndices.has(origIdx)}
                 onChange={() => toggleItem(origIdx)}
                 disabled={isApplyingBatch}
-                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 accent-gold-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             />
         </label>
     );
@@ -301,7 +302,7 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
 
                 {/* Select All + Apply Selected action bar */}
                 {remainingCount > 0 && (
-                    <div className="flex items-center justify-between gap-2 py-2 px-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 sticky top-0 z-10">
+                    <div className="flex items-center justify-between gap-2 py-2 px-3 bg-zinc-50 dark:bg-slate-800/60 rounded-lg border border-zinc-100 dark:border-slate-700 sticky top-0 z-10">
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                             <input
                                 type="checkbox"
@@ -309,7 +310,7 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                                 ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
                                 onChange={toggleAll}
                                 disabled={isApplyingBatch}
-                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-50"
+                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 accent-gold-500 cursor-pointer disabled:opacity-50"
                             />
                             <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                                 {allSelected ? 'Deselect all' : 'Select all'} ({remainingCount})
@@ -320,10 +321,10 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                             disabled={!someSelected || isApplyingBatch}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border
                                 ${isApplyingBatch
-                                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700 cursor-wait'
+                                    ? 'cursor-wait'
                                     : !someSelected
                                         ? 'opacity-40 cursor-not-allowed bg-gray-100 dark:bg-gray-700 text-gray-500 border-gray-200 dark:border-gray-600'
-                                        : 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent shadow-sm'
+                                        : 'bg-gold-500 hover:bg-gold-600 text-ink-950 border-transparent shadow-sm'
                                 }`}
                         >
                             {isApplyingBatch
@@ -369,7 +370,7 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                                     <div
                                         key={item.origIdx}
                                         className={`flex items-start gap-3 p-3 rounded-lg border border-l-4 border-gray-100 dark:border-gray-700 ${pColors.border} transition-colors
-                                            ${selectedIndices.has(item.origIdx) ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' : 'bg-white dark:bg-gray-800'}`}
+                                            ${selectedIndices.has(item.origIdx) ? 'border-gold-400' : 'bg-white dark:bg-gray-800'}`}
                                     >
                                         <RowCheckbox origIdx={item.origIdx} />
                                         <div className="flex-1 min-w-0">
@@ -398,7 +399,7 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                                 <div
                                     key={item.origIdx}
                                     className={`flex items-start gap-3 p-3 rounded-lg border border-l-4 border-gray-100 dark:border-gray-700 border-l-orange-400 transition-colors
-                                        ${selectedIndices.has(item.origIdx) ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' : 'bg-white dark:bg-gray-800'}`}
+                                        ${selectedIndices.has(item.origIdx) ? 'border-gold-400' : 'bg-white dark:bg-gray-800'}`}
                                 >
                                     <RowCheckbox origIdx={item.origIdx} />
                                     <div className="flex-1 min-w-0">
@@ -425,8 +426,8 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                             {skillsWithIdx.map((item) => (
                                 <div
                                     key={item.origIdx}
-                                    className={`flex items-start gap-3 p-3 rounded-lg border border-l-4 border-gray-100 dark:border-gray-700 border-l-purple-400 transition-colors
-                                        ${selectedIndices.has(item.origIdx) ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' : 'bg-white dark:bg-gray-800'}`}
+                                    className={`flex items-start gap-3 p-3 rounded-lg border border-l-4 border-gray-100 dark:border-gray-700 border-l-gold-500 transition-colors
+                                        ${selectedIndices.has(item.origIdx) ? 'border-gold-400' : 'bg-white dark:bg-gray-800'}`}
                                 >
                                     <RowCheckbox origIdx={item.origIdx} />
                                     <div className="flex-1 min-w-0">

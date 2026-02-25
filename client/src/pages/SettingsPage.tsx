@@ -8,20 +8,20 @@ import SearchableSelect from '../components/common/SearchableSelect';
 
 // Icon Components
 const EyeIcon = () => (
-  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-zinc-500 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
   </svg>
 );
 
 const EyeOffIcon = () => (
-  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-zinc-500 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
   </svg>
 );
 
 const KeyIcon = () => (
-  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-zinc-500 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
   </svg>
 );
@@ -45,25 +45,25 @@ const XIcon = () => (
 );
 
 const ChevronDownIcon = () => (
-  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-zinc-500 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
   </svg>
 );
 
 const ChevronUpIcon = () => (
-  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-zinc-500 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
   </svg>
 );
 
 const InfoIcon = () => (
-  <svg className="w-5 h-5 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} style={{color:'var(--accent)'}}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 
 const LockIcon = () => (
-  <svg className="w-5 h-5 text-slate-500 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  <svg className="w-5 h-5 text-zinc-500 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
   </svg>
 );
@@ -92,13 +92,13 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-70">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">{title}</h3>
-        <p className="text-slate-600 dark:text-slate-400 mb-6">{message}</p>
+      <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">{title}</h3>
+        <p className="text-zinc-600 dark:text-zinc-400 mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg font-medium transition-colors"
+            className="px-4 py-2 text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg font-medium transition-colors"
           >
             {cancelText}
           </button>
@@ -442,40 +442,43 @@ const SettingsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="flex justify-center items-center min-h-screen bg-zinc-50 dark:bg-zinc-950">
         <Spinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-6 sm:py-8 px-4">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-8 sm:py-10 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+            <div className="p-2 rounded-lg" style={{background: 'var(--accent-bg)'}}>
               <KeyIcon />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            <h1 className="page-title" style={{fontSize: '1.5rem'}}>
               Integration & AI Settings
             </h1>
           </div>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 ml-12">
+          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 ml-12">
             Manage your API keys for AI features and integrations
           </p>
         </div>
 
         {/* Onboarding Section for New Users */}
         {isNewUser && (
-          <div className="mb-6 sm:mb-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl shadow-sm overflow-hidden">
+          <div className="mb-6 sm:mb-8 rounded-xl shadow-sm overflow-hidden" style={{background:'var(--accent-bg)', border:'1px solid var(--accent-dim)'}}>
             <button
               onClick={() => setIsOnboardingExpanded(!isOnboardingExpanded)}
-              className="w-full p-4 sm:p-6 flex items-center justify-between hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-colors"
+              className="w-full p-4 sm:p-6 flex items-center justify-between transition-colors rounded-t-xl"
+              style={{background:'transparent'}}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-bg-hover,rgba(232,184,68,0.14))')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               <div className="flex items-center gap-3">
                 <InfoIcon />
-                <h2 className="text-lg sm:text-xl font-semibold text-blue-900 dark:text-blue-100 text-left">
+                <h2 className="text-lg sm:text-xl font-semibold text-left" style={{color:'var(--text-primary)'}}>
                   Welcome! Let's set up your API keys
                 </h2>
               </div>
@@ -484,24 +487,24 @@ const SettingsPage: React.FC = () => {
 
             {isOnboardingExpanded && (
               <div className="px-4 sm:px-6 pb-6 space-y-4">
-                <p className="text-sm sm:text-base text-blue-800 dark:text-blue-200">
+                <p className="text-sm sm:text-base" style={{color:'var(--text-secondary)'}}>
                   To use AI-powered features in this app, you need to provide your own API keys.
                   This ensures you have full control over your usage and costs.
                 </p>
 
                 {/* Gemini Section */}
-                <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-800">
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
+                <div className="p-4 rounded-lg" style={{background:'var(--bg-elevated)', border:'1px solid var(--border)'}}>
+                  <h3 className="font-semibold mb-2 flex items-center gap-2" style={{color:'var(--text-primary)'}}>
                     <KeyIcon />
                     Gemini API Key (Recommended)
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
                     Powers AI features: CV analysis, cover letter generation, chat assistance, and job description extraction. Highly recommended for full functionality.
                   </p>
                   <div className="space-y-2 text-sm">
-                    <p className="font-medium text-slate-700 dark:text-slate-300">How to get your free Gemini API key:</p>
-                    <ol className="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-400 ml-2">
-                      <li>Visit <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">https://makersuite.google.com/app/apikey</a></li>
+                    <p className="font-medium text-zinc-700 dark:text-zinc-300">How to get your free Gemini API key:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-zinc-600 dark:text-zinc-400 ml-2">
+                      <li>Visit <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{color:'var(--accent)'}}>https://makersuite.google.com/app/apikey</a></li>
                       <li>Sign in with your Google account</li>
                       <li>Click "Create API Key"</li>
                       <li>Copy the generated key (starts with "AIza")</li>
@@ -511,18 +514,18 @@ const SettingsPage: React.FC = () => {
                 </div>
 
                 {/* Apify Section */}
-                <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-800">
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
+                <div className="p-4 rounded-lg" style={{background:'var(--bg-elevated)', border:'1px solid var(--border)'}}>
+                  <h3 className="font-semibold mb-2 flex items-center gap-2" style={{color:'var(--text-primary)'}}>
                     <KeyIcon />
                     Apify API Token (Optional)
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
                     Only needed if you want to sync your LinkedIn profile data. You can skip this if you don't need LinkedIn features.
                   </p>
                   <div className="space-y-2 text-sm">
-                    <p className="font-medium text-slate-700 dark:text-slate-300">How to get your free Apify token:</p>
-                    <ol className="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-400 ml-2">
-                      <li>Visit <a href="https://console.apify.com/account/integrations" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">https://console.apify.com/account/integrations</a></li>
+                    <p className="font-medium text-zinc-700 dark:text-zinc-300">How to get your free Apify token:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-zinc-600 dark:text-zinc-400 ml-2">
+                      <li>Visit <a href="https://console.apify.com/account/integrations" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{color:'var(--accent)'}}>https://console.apify.com/account/integrations</a></li>
                       <li>Sign up for a free Apify account (or log in)</li>
                       <li>Go to Settings → Integrations</li>
                       <li>Find "Personal API tokens" and click "Create token"</li>
@@ -550,18 +553,18 @@ const SettingsPage: React.FC = () => {
         {/* API Keys Form */}
         <div className="space-y-6">
           {/* Apify API Token Card */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+          <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+            <div className="p-4 sm:p-6 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <div className="p-2 rounded-lg" style={{background: 'var(--accent-bg)'}}>
                     <KeyIcon />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    <h3 className="text-lg font-bold" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>
                       Apify API Token
                     </h3>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
                       Optional - For LinkedIn integration
                     </p>
                   </div>
@@ -573,7 +576,7 @@ const SettingsPage: React.FC = () => {
                       Configured
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-400">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-600 text-zinc-600 dark:text-zinc-400">
                       Not Configured
                     </span>
                   )}
@@ -591,8 +594,8 @@ const SettingsPage: React.FC = () => {
             </div>
             <div className="p-4 sm:p-6 space-y-4">
               <div>
-                <label htmlFor="apify-token" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  API Token <span className="text-slate-400 text-xs font-normal">(Optional)</span>
+                <label htmlFor="apify-token" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                  API Token <span className="text-zinc-400 text-xs font-normal">(Optional)</span>
                 </label>
                 <div className="relative">
                   <input
@@ -605,17 +608,17 @@ const SettingsPage: React.FC = () => {
                     }}
                     onBlur={() => setApifyTokenTouched(true)}
                     placeholder={isApifyConfigured ? `Current: ${apiKeys?.apify?.accessToken || '****'}` : 'Enter your Apify token (starts with apify_api_) - Optional'}
-                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${apifyValidation?.valid === false
+                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-zinc-600 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 transition-colors ${apifyValidation?.valid === false
                       ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
                       : apifyValidation?.valid === true
                         ? 'border-green-300 dark:border-green-700 focus:ring-green-500'
-                        : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500'
+                        : 'border-zinc-300 dark:border-zinc-600 focus:ring-gold-500/50'
                       }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowApifyToken(!showApifyToken)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
                     aria-label={showApifyToken ? 'Hide token' : 'Show token'}
                   >
                     {showApifyToken ? <EyeOffIcon /> : <EyeIcon />}
@@ -637,12 +640,12 @@ const SettingsPage: React.FC = () => {
                   </p>
                 )}
                 {!apifyValidation && (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                     Format: Starts with "apify_api_" and at least 20 characters (optional)
                   </p>
                 )}
                 {isApifyConfigured && (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                     Current token: {apiKeys?.apify?.accessToken || '****'}
                   </p>
                 )}
@@ -651,17 +654,17 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {/* AI Provider Settings Section */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+          <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+            <div className="p-4 sm:p-6 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                <div className="p-2 rounded-lg" style={{background: 'var(--accent-bg)'}}>
                   <KeyIcon />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  <h3 className="text-lg font-bold" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>
                     AI Provider Settings
                   </h3>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                  <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
                     Configure your AI provider preferences
                   </p>
                 </div>
@@ -670,29 +673,29 @@ const SettingsPage: React.FC = () => {
             <div className="p-4 sm:p-6 space-y-6">
               {/* Default Provider Selection */}
               <div>
-                <label htmlFor="default-provider" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label htmlFor="default-provider" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                   Default AI Provider
                 </label>
                 <select
                   id="default-provider"
                   value={defaultProvider}
                   onChange={(e) => setDefaultProvider(e.target.value as 'gemini' | 'openrouter' | 'ollama' | '')}
-                  className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="input-base w-full px-4 py-2.5 focus:ring-gold-500/50"
                 >
-                  <option value="" className="dark:bg-slate-600">Select a provider...</option>
-                  <option value="gemini" className="dark:bg-slate-600">Gemini</option>
-                  <option value="openrouter" className="dark:bg-slate-600">OpenRouter</option>
-                  <option value="ollama" className="dark:bg-slate-600">Ollama</option>
+                  <option value="" className="dark:bg-zinc-600">Select a provider...</option>
+                  <option value="gemini" className="dark:bg-zinc-600">Gemini</option>
+                  <option value="openrouter" className="dark:bg-zinc-600">OpenRouter</option>
+                  <option value="ollama" className="dark:bg-zinc-600">Ollama</option>
                 </select>
-                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                   Select your preferred AI provider. You must select a provider to use AI features.
                 </p>
               </div>
 
               {/* Default Model Selection */}
               <div>
-                <label htmlFor="default-model" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Default Model <span className="text-slate-400 text-xs font-normal">(Optional)</span>
+                <label htmlFor="default-model" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                  Default Model <span className="text-zinc-400 text-xs font-normal">(Optional)</span>
                 </label>
                 <SearchableSelect
                   id="default-model"
@@ -704,7 +707,7 @@ const SettingsPage: React.FC = () => {
                   className=""
                 />
                 {loadingModels ? (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                     Loading available models...
                   </p>
                 ) : availableModels.length === 0 ? (
@@ -714,7 +717,7 @@ const SettingsPage: React.FC = () => {
                       : `No models available. Please configure your ${defaultProvider === 'gemini' ? 'Gemini' : 'OpenRouter'} API key in the settings first.`}
                   </p>
                 ) : (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                     Select a default model for {defaultProvider}. Leave empty to use provider default.
                   </p>
                 )}
@@ -723,8 +726,8 @@ const SettingsPage: React.FC = () => {
               {/* Gemini API Key */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="gemini-key" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Gemini API Key <span className="text-slate-400 text-xs font-normal">(Recommended)</span>
+                  <label htmlFor="gemini-key" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Gemini API Key <span className="text-zinc-400 text-xs font-normal">(Recommended)</span>
                   </label>
                   <div className="flex items-center gap-2">
                     {isGeminiConfigured ? (
@@ -733,7 +736,7 @@ const SettingsPage: React.FC = () => {
                         Configured
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-400">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-600 text-zinc-600 dark:text-zinc-400">
                         Not Configured
                       </span>
                     )}
@@ -759,17 +762,17 @@ const SettingsPage: React.FC = () => {
                     }}
                     onBlur={() => setGeminiKeyTouched(true)}
                     placeholder={isGeminiConfigured ? `Current: ${apiKeys?.gemini?.accessToken || apiKeys?.aiProviders?.providers?.gemini?.accessToken || '****'}` : 'Enter your Gemini API key (starts with AIza)'}
-                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${geminiValidation?.valid === false
+                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-zinc-600 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 transition-colors ${geminiValidation?.valid === false
                       ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
                       : geminiValidation?.valid === true
                         ? 'border-green-300 dark:border-green-700 focus:ring-green-500'
-                        : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500'
+                        : 'border-zinc-300 dark:border-zinc-600 focus:ring-gold-500/50'
                       }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowGeminiKey(!showGeminiKey)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
                     aria-label={showGeminiKey ? 'Hide key' : 'Show key'}
                   >
                     {showGeminiKey ? <EyeOffIcon /> : <EyeIcon />}
@@ -791,12 +794,12 @@ const SettingsPage: React.FC = () => {
                   </p>
                 )}
                 {!geminiValidation && (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                     Format: Starts with "AIza" and at least 20 characters. Recommended for AI features.
                   </p>
                 )}
                 {isGeminiConfigured && (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                     Current key: {apiKeys?.gemini?.accessToken || apiKeys?.aiProviders?.providers?.gemini?.accessToken || '****'}
                   </p>
                 )}
@@ -804,8 +807,8 @@ const SettingsPage: React.FC = () => {
 
               {/* OpenRouter API Key */}
               <div>
-                <label htmlFor="openrouter-key" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  OpenRouter API Key <span className="text-slate-400 text-xs font-normal">(Optional)</span>
+                <label htmlFor="openrouter-key" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                  OpenRouter API Key <span className="text-zinc-400 text-xs font-normal">(Optional)</span>
                 </label>
                 <div className="relative">
                   <input
@@ -818,17 +821,17 @@ const SettingsPage: React.FC = () => {
                     }}
                     onBlur={() => setOpenRouterKeyTouched(true)}
                     placeholder={isOpenRouterConfigured ? `Current: ${apiKeys?.aiProviders?.providers?.openrouter?.accessToken || '****'}` : 'Enter your OpenRouter API key (starts with sk-or-v1- or sk-)'}
-                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${openRouterValidation?.valid === false
+                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-zinc-600 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 transition-colors ${openRouterValidation?.valid === false
                       ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
                       : openRouterValidation?.valid === true
                         ? 'border-green-300 dark:border-green-700 focus:ring-green-500'
-                        : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500'
+                        : 'border-zinc-300 dark:border-zinc-600 focus:ring-gold-500/50'
                       }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowOpenRouterKey(!showOpenRouterKey)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
                     aria-label={showOpenRouterKey ? 'Hide key' : 'Show key'}
                   >
                     {showOpenRouterKey ? <EyeOffIcon /> : <EyeIcon />}
@@ -850,13 +853,13 @@ const SettingsPage: React.FC = () => {
                   </p>
                 )}
                 {!openRouterValidation && (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                     Format: Starts with "sk-or-v1-" or "sk-" and at least 20 characters (optional)
                   </p>
                 )}
                 {isOpenRouterConfigured && (
                   <div className="mt-2 flex items-center justify-between">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
                       Current key: {apiKeys?.aiProviders?.providers?.openrouter?.accessToken || '****'}
                     </p>
                     <button
@@ -872,8 +875,8 @@ const SettingsPage: React.FC = () => {
 
               {/* Ollama Base URL */}
               <div>
-                <label htmlFor="ollama-url" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Ollama Base URL <span className="text-slate-400 text-xs font-normal">(Optional)</span>
+                <label htmlFor="ollama-url" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                  Ollama Base URL <span className="text-zinc-400 text-xs font-normal">(Optional)</span>
                 </label>
                 <div className="relative">
                   <input
@@ -886,17 +889,17 @@ const SettingsPage: React.FC = () => {
                     }}
                     onBlur={() => setOllamaUrlTouched(true)}
                     placeholder="http://localhost:11434"
-                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 transition-colors ${ollamaValidation?.valid === false
+                    className={`w-full px-4 py-2.5 pr-12 border rounded-lg bg-white dark:bg-zinc-600 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 transition-colors ${ollamaValidation?.valid === false
                       ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
                       : ollamaValidation?.valid === true
                         ? 'border-green-300 dark:border-green-700 focus:ring-green-500'
-                        : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500'
+                        : 'border-zinc-300 dark:border-zinc-600 focus:ring-gold-500/50'
                       }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowOllamaUrl(!showOllamaUrl)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
                     aria-label={showOllamaUrl ? 'Hide URL' : 'Show URL'}
                   >
                     {showOllamaUrl ? <EyeOffIcon /> : <EyeIcon />}
@@ -918,13 +921,13 @@ const SettingsPage: React.FC = () => {
                   </p>
                 )}
                 {!ollamaValidation && (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
                     Default: http://localhost:11434 (change if your Ollama instance is running elsewhere)
                   </p>
                 )}
                 {isOllamaConfigured && (
                   <div className="mt-2 flex items-center justify-between">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
                       Current URL: {apiKeys?.aiProviders?.providers?.ollama?.baseUrl || 'http://localhost:11434'}
                     </p>
                     <button
@@ -952,7 +955,7 @@ const SettingsPage: React.FC = () => {
                 (openRouterKey.trim() !== '' && openRouterValidation?.valid === false) ||
                 (ollamaUrl.trim() !== '' && ollamaValidation?.valid === false)
               }
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-sm"
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? (
                 <>

@@ -26,7 +26,7 @@ export const PipelineConversionWidget: React.FC<PipelineConversionWidgetProps> =
     };
 
     return (
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-slate-200 dark:border-zinc-800 h-full">
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-100 dark:border-zinc-800 h-full">
             <h3 className="font-semibold text-slate-900 dark:text-white mb-6">Pipeline Conversion</h3>
 
             <div className="space-y-6">

@@ -2,103 +2,67 @@
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import Spinner from '../components/common/Spinner';
+import { useTheme } from '../context/ThemeContext';
 
-// Icon components
-const EmailIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+// ── Spinner ──────────────────────────────────────────────────────────────────
+const Spinner = () => (
+  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
   </svg>
 );
 
-const LockIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+// ── Icons ────────────────────────────────────────────────────────────────────
+const EyeIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" /><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z" />
   </svg>
 );
 
-const EyeIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+const EyeOffIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" />
   </svg>
 );
 
-const EyeOffIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+const SunIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
   </svg>
 );
 
-const ErrorIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
-  <svg className={className} fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+const MoonIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
   </svg>
 );
 
-const SuccessIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
-  <svg className={className} fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-  </svg>
-);
-
-// Password strength types
+// ── Password strength ────────────────────────────────────────────────────────
 type PasswordStrength = 'weak' | 'fair' | 'good' | 'strong';
 
-// Calculate password strength
 const calculatePasswordStrength = (password: string): PasswordStrength => {
   if (password.length === 0) return 'weak';
-  
   let strength = 0;
-  
-  // Length checks
-  if (password.length >= 8) strength += 1;
-  if (password.length >= 12) strength += 1;
-  
-  // Character variety checks
-  if (/[a-z]/.test(password)) strength += 1;
-  if (/[A-Z]/.test(password)) strength += 1;
-  if (/[0-9]/.test(password)) strength += 1;
-  if (/[^a-zA-Z0-9]/.test(password)) strength += 1;
-  
+  if (password.length >= 8) strength++;
+  if (password.length >= 12) strength++;
+  if (/[a-z]/.test(password)) strength++;
+  if (/[A-Z]/.test(password)) strength++;
+  if (/[0-9]/.test(password)) strength++;
+  if (/[^a-zA-Z0-9]/.test(password)) strength++;
   if (strength <= 2) return 'weak';
   if (strength === 3) return 'fair';
   if (strength === 4) return 'good';
   return 'strong';
 };
 
-// Get password strength color
-const getStrengthColor = (strength: PasswordStrength): string => {
-  switch (strength) {
-    case 'weak':
-      return 'bg-red-500';
-    case 'fair':
-      return 'bg-orange-500';
-    case 'good':
-      return 'bg-yellow-500';
-    case 'strong':
-      return 'bg-green-500';
-    default:
-      return 'bg-slate-300';
-  }
+const strengthConfig: Record<PasswordStrength, { label: string; color: string; segments: number }> = {
+  weak:   { label: 'Weak',   color: 'var(--rose, #f46464)',    segments: 1 },
+  fair:   { label: 'Fair',   color: 'var(--ember, #f07e38)',   segments: 2 },
+  good:   { label: 'Good',   color: 'var(--accent)',           segments: 3 },
+  strong: { label: 'Strong', color: 'var(--jade, #2dd4a0)',    segments: 4 },
 };
 
-// Get password strength text
-const getStrengthText = (strength: PasswordStrength): string => {
-  switch (strength) {
-    case 'weak':
-      return 'Weak';
-    case 'fair':
-      return 'Fair';
-    case 'good':
-      return 'Good';
-    case 'strong':
-      return 'Strong';
-    default:
-      return '';
-  }
-};
-
+// ── Component ─────────────────────────────────────────────────────────────────
 const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -107,468 +71,376 @@ const RegisterPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [registrationSuccess, setRegistrationSuccess] = useState<boolean>(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
   const [touched, setTouched] = useState({ email: false, username: false, password: false, confirmPassword: false });
+
   const { register, error: authError, isLoading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const passwordStrength = calculatePasswordStrength(password);
+  const strengthInfo = strengthConfig[passwordStrength];
 
-  // Email validation
-  const validateEmail = (emailValue: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(emailValue);
-  };
-
-  // Username validation
-  const validateUsername = (usernameValue: string): string | null => {
-    if (!usernameValue.trim()) {
-      return 'Username is required';
-    }
-    if (usernameValue.length < 3) {
-      return 'Username must be at least 3 characters long';
-    }
-    if (usernameValue.length > 30) {
-      return 'Username must be at most 30 characters long';
-    }
-    if (!/^[a-z0-9_-]+$/i.test(usernameValue)) {
-      return 'Username can only contain letters, numbers, hyphens, and underscores';
-    }
+  const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const validateUsername = (v: string): string | null => {
+    if (!v.trim()) return 'Username is required';
+    if (v.length < 3) return 'At least 3 characters';
+    if (v.length > 30) return 'At most 30 characters';
+    if (!/^[a-z0-9_-]+$/i.test(v)) return 'Letters, numbers, hyphens, underscores only';
     return null;
   };
+  const validatePassword = (v: string): string | null =>
+    v.length < 8 ? 'At least 8 characters required' : null;
 
-  // Password validation
-  const validatePassword = (passwordValue: string): string | null => {
-    if (passwordValue.length < 8) {
-      return 'Password must be at least 8 characters long';
-    }
-    return null;
-  };
-
-  // Handle email change
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setEmail(value);
-    if (touched.email) {
-      if (value && !validateEmail(value)) {
-        setEmailError('Please enter a valid email address');
-      } else {
-        setEmailError(null);
-      }
-    }
-  };
-
-  // Handle username change
-  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    setUsername(value);
-    setLocalError(null);
-    if (touched.username) {
-      const error = validateUsername(value);
-      setUsernameError(error);
-    }
-  };
-
-  // Handle password change
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPassword(value);
-    setLocalError(null);
-    
-    if (touched.password) {
-      const error = validatePassword(value);
-      setPasswordError(error);
-    }
-    
-    // Check if passwords match when confirm password is filled
-    if (confirmPassword && value !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match');
-    } else if (confirmPassword && value === confirmPassword) {
-      setConfirmPasswordError(null);
-    }
-  };
-
-  // Handle confirm password change
-  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setConfirmPassword(value);
-    setLocalError(null);
-    
-    if (touched.confirmPassword) {
-      if (value && value !== password) {
-        setConfirmPasswordError('Passwords do not match');
-      } else {
-        setConfirmPasswordError(null);
-      }
-    }
-  };
-
-  // Handle blur events
-  const handleBlur = (field: 'email' | 'username' | 'password' | 'confirmPassword') => {
-    setTouched(prev => ({ ...prev, [field]: true }));
-    
-    if (field === 'email' && email && !validateEmail(email)) {
-      setEmailError('Please enter a valid email address');
-    } else if (field === 'email') {
-      setEmailError(null);
-    } else if (field === 'username' && username) {
-      const error = validateUsername(username);
-      setUsernameError(error);
-    } else if (field === 'password' && password) {
-      const error = validatePassword(password);
-      setPasswordError(error);
-    } else if (field === 'confirmPassword' && confirmPassword) {
-      if (confirmPassword !== password) {
-        setConfirmPasswordError('Passwords do not match');
-      } else {
-        setConfirmPasswordError(null);
-      }
-    }
-  };
-
-  // Redirect to Settings after successful registration
   useEffect(() => {
     if (registrationSuccess) {
-      const timer = setTimeout(() => {
-        // Redirect to Settings page with onboarding flag
-        navigate('/settings', { state: { fromRegistration: true } });
-      }, 1500);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => navigate('/settings', { state: { fromRegistration: true } }), 1500);
+      return () => clearTimeout(t);
     }
   }, [registrationSuccess, navigate]);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setTouched({ email: true, username: true, password: true, confirmPassword: true });
     setLocalError(null);
-    setRegistrationSuccess(false);
 
-    // Validate email
-    if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email address');
-      return;
-    }
+    if (!validateEmail(email)) { setEmailError('Please enter a valid email address'); return; }
+    const uErr = validateUsername(username);
+    if (uErr) { setUsernameError(uErr); return; }
+    const pErr = validatePassword(password);
+    if (pErr) { setPasswordError(pErr); return; }
+    if (password !== confirmPassword) { setConfirmPasswordError('Passwords do not match'); return; }
 
-    // Validate username
-    const usernameValidationError = validateUsername(username);
-    if (usernameValidationError) {
-      setUsernameError(usernameValidationError);
-      return;
-    }
-
-    // Validate password
-    const passwordValidationError = validatePassword(password);
-    if (passwordValidationError) {
-      setPasswordError(passwordValidationError);
-      return;
-    }
-
-    // Validate password match
-    if (password !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match');
-      setLocalError('Passwords do not match.');
-      return;
-    }
-
-    setEmailError(null);
-    setUsernameError(null);
-    setPasswordError(null);
-    setConfirmPasswordError(null);
-
+    setEmailError(null); setUsernameError(null); setPasswordError(null); setConfirmPasswordError(null);
     await register({ email, username, password });
-
-    // Check if registration was successful
-    if (!authError && !isLoading) {
-      setRegistrationSuccess(true);
-    }
+    if (!authError && !isLoading) setRegistrationSuccess(true);
   };
 
-  const isEmailValid = email && touched.email && !emailError;
-  const isEmailInvalid = touched.email && emailError;
-  const isUsernameValid = username && touched.username && !usernameError;
-  const isUsernameInvalid = touched.username && usernameError;
-  const isPasswordValid = password && touched.password && !passwordError;
-  const isPasswordInvalid = touched.password && passwordError;
-  const isConfirmPasswordValid = confirmPassword && touched.confirmPassword && !confirmPasswordError;
-  const isConfirmPasswordInvalid = touched.confirmPassword && confirmPasswordError;
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border)',
+    borderRadius: '0.625rem',
+    color: 'var(--text-primary)',
+    fontSize: '0.9375rem',
+    padding: '0.7rem 1rem',
+    outline: 'none',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
+    fontFamily: 'Outfit, sans-serif',
+  };
+
+  const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.borderColor = 'var(--accent)';
+    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(232,184,68,0.1)';
+  };
+  const onBlurStyle = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.boxShadow = 'none';
+  };
+
+  const FieldError = ({ msg }: { msg: string | null | undefined }) =>
+    msg ? <p className="mt-1.5 text-xs" style={{ color: 'var(--rose, #f46464)' }}>{msg}</p> : null;
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-900 px-4 py-8">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 transition-all duration-300">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Create Your Account</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Sign up to get started</p>
+    <div
+      className="min-h-screen flex flex-col md:flex-row"
+      style={{ backgroundColor: 'var(--bg-base)' }}
+    >
+      {/* ── Left panel ── */}
+      <div
+        className="hidden md:flex flex-col justify-between flex-1 p-12 xl:p-16 relative overflow-hidden"
+        style={{ backgroundColor: 'var(--bg-surface)', borderRight: '1px solid var(--border)' }}
+      >
+        {/* Decorative background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -left-20 w-80 h-80 rounded-full opacity-[0.04]" style={{ backgroundColor: 'var(--accent)' }} />
+          <svg className="absolute inset-0 w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="dots2" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="1.5" fill="var(--accent)" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#dots2)" />
+          </svg>
+          <div className="absolute -bottom-28 -right-16 w-72 h-72 rounded-full opacity-[0.04]" style={{ backgroundColor: 'var(--jade, #2dd4a0)' }} />
         </div>
 
-        <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-          {/* Display registration errors */}
-          {(localError || authError) && !registrationSuccess && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm rounded-lg border border-red-200 dark:border-red-800 flex items-start gap-2 animate-slide-in">
-              <ErrorIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <span>{localError || authError}</span>
-            </div>
-          )}
+        {/* Brand */}
+        <div className="relative z-10 flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--accent-bg, rgba(232,184,68,0.15))', border: '1px solid rgba(232,184,68,0.25)' }}>
+            <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+              <path d="M8 10h12M10 7h8M7 10v11a1 1 0 001 1h12a1 1 0 001-1V10M11 14h6M11 17h4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <span className="text-lg font-semibold" style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}>VibeHired</span>
+        </div>
 
-          {/* Display success message */}
-          {registrationSuccess && (
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm rounded-lg border border-green-200 dark:border-green-800 flex items-start gap-2 animate-slide-in">
-              <SuccessIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <span>Registration successful! Redirecting to settings to configure API keys...</span>
-            </div>
-          )}
+        {/* Editorial text */}
+        <div className="relative z-10 space-y-6">
+          <h1
+            className="text-4xl xl:text-5xl font-semibold leading-[1.1] tracking-tight"
+            style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
+          >
+            Your career,<br />
+            <span style={{ color: 'var(--accent)' }}>intelligently managed.</span>
+          </h1>
+          <p className="text-base leading-relaxed max-w-sm" style={{ color: 'var(--text-secondary)' }}>
+            Create your free account and start tracking, optimizing, and automating your job hunt today.
+          </p>
 
-          {/* Hide form fields on success */}
-          {!registrationSuccess && (
-            <>
-              {/* Email field */}
-              <div>
-                <label htmlFor="email-register" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  Email address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <EmailIcon className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-                  </div>
-                  <input
-                    id="email-register"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={handleEmailChange}
-                    onBlur={() => handleBlur('email')}
-                    aria-invalid={isEmailInvalid ? 'true' : 'false'}
-                    aria-describedby={isEmailInvalid ? 'email-error' : undefined}
-                    className={`mt-1 block w-full pl-10 pr-3 py-2.5 border rounded-lg shadow-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-0 sm:text-sm transition-all duration-200 ${
-                      isEmailInvalid
-                        ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
-                        : isEmailValid
-                        ? 'border-green-300 dark:border-green-600 focus:ring-green-500 focus:border-green-500'
-                        : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500'
-                    }`}
-                    placeholder="you@example.com"
-                  />
-                </div>
-                {isEmailInvalid && (
-                  <p id="email-error" className="mt-1.5 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                    <ErrorIcon className="w-4 h-4" />
-                    {emailError}
-                  </p>
-                )}
-              </div>
-
-              {/* Username field */}
-              <div>
-                <label htmlFor="username-register" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  Username
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="w-5 h-5 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="username-register"
-                    name="username"
-                    type="text"
-                    autoComplete="username"
-                    required
-                    value={username}
-                    onChange={handleUsernameChange}
-                    onBlur={() => handleBlur('username')}
-                    aria-invalid={isUsernameInvalid ? 'true' : 'false'}
-                    aria-describedby={isUsernameInvalid ? 'username-error' : undefined}
-                    className={`mt-1 block w-full pl-10 pr-3 py-2.5 border rounded-lg shadow-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-0 sm:text-sm transition-all duration-200 ${
-                      isUsernameInvalid
-                        ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
-                        : isUsernameValid
-                        ? 'border-green-300 dark:border-green-600 focus:ring-green-500 focus:border-green-500'
-                        : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500'
-                    }`}
-                    placeholder="your-username"
-                  />
-                </div>
-                {isUsernameInvalid && (
-                  <p id="username-error" className="mt-1.5 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                    <ErrorIcon className="w-4 h-4" />
-                    {usernameError}
-                  </p>
-                )}
-                {username && !usernameError && (
-                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    Your portfolio will be at: /portfolio/{username}
-                  </p>
-                )}
-              </div>
-
-              {/* Password field */}
-              <div>
-                <label htmlFor="password-register" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <LockIcon className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-                  </div>
-                  <input
-                    id="password-register"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    value={password}
-                    onChange={handlePasswordChange}
-                    onBlur={() => handleBlur('password')}
-                    aria-invalid={isPasswordInvalid ? 'true' : 'false'}
-                    aria-describedby={isPasswordInvalid ? 'password-error' : undefined}
-                    className={`mt-1 block w-full pl-10 pr-10 py-2.5 border rounded-lg shadow-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-0 sm:text-sm transition-all duration-200 ${
-                      isPasswordInvalid
-                        ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
-                        : isPasswordValid
-                        ? 'border-green-300 dark:border-green-600 focus:ring-green-500 focus:border-green-500'
-                        : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500'
-                    }`}
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none transition-colors"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-                  </button>
-                </div>
-                {isPasswordInvalid && (
-                  <p id="password-error" className="mt-1.5 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                    <ErrorIcon className="w-4 h-4" />
-                    {passwordError}
-                  </p>
-                )}
-                {/* Password strength indicator */}
-                {password && (
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-slate-600 dark:text-slate-400">Password strength:</span>
-                      <span className={`text-xs font-medium ${
-                        passwordStrength === 'weak' ? 'text-red-600 dark:text-red-400' :
-                        passwordStrength === 'fair' ? 'text-orange-600 dark:text-orange-400' :
-                        passwordStrength === 'good' ? 'text-yellow-600 dark:text-yellow-400' :
-                        'text-green-600 dark:text-green-400'
-                      }`}>
-                        {getStrengthText(passwordStrength)}
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          passwordStrength === 'weak' ? 'w-1/4' :
-                          passwordStrength === 'fair' ? 'w-2/4' :
-                          passwordStrength === 'good' ? 'w-3/4' :
-                          'w-full'
-                        } ${getStrengthColor(passwordStrength)}`}
-                      />
-                    </div>
-                    <ul className="mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1">
-                      <li className={password.length >= 8 ? 'text-green-600 dark:text-green-400' : ''}>
-                        {password.length >= 8 ? '✓' : '○'} At least 8 characters
-                      </li>
-                      <li className={/[a-z]/.test(password) && /[A-Z]/.test(password) ? 'text-green-600 dark:text-green-400' : ''}>
-                        {/[a-z]/.test(password) && /[A-Z]/.test(password) ? '✓' : '○'} Upper and lowercase letters
-                      </li>
-                      <li className={/[0-9]/.test(password) ? 'text-green-600 dark:text-green-400' : ''}>
-                        {/[0-9]/.test(password) ? '✓' : '○'} At least one number
-                      </li>
-                      <li className={/[^a-zA-Z0-9]/.test(password) ? 'text-green-600 dark:text-green-400' : ''}>
-                        {/[^a-zA-Z0-9]/.test(password) ? '✓' : '○'} At least one special character
-                      </li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {/* Confirm Password field */}
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <LockIcon className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-                  </div>
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    value={confirmPassword}
-                    onChange={handleConfirmPasswordChange}
-                    onBlur={() => handleBlur('confirmPassword')}
-                    aria-invalid={isConfirmPasswordInvalid ? 'true' : 'false'}
-                    aria-describedby={isConfirmPasswordInvalid ? 'confirm-password-error' : undefined}
-                    className={`mt-1 block w-full pl-10 pr-10 py-2.5 border rounded-lg shadow-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-0 sm:text-sm transition-all duration-200 ${
-                      isConfirmPasswordInvalid
-                        ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500'
-                        : isConfirmPasswordValid
-                        ? 'border-green-300 dark:border-green-600 focus:ring-green-500 focus:border-green-500'
-                        : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500'
-                    }`}
-                    placeholder="Confirm your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none transition-colors"
-                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showConfirmPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-                  </button>
-                </div>
-                {isConfirmPasswordInvalid && (
-                  <p id="confirm-password-error" className="mt-1.5 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                    <ErrorIcon className="w-4 h-4" />
-                    {confirmPasswordError}
-                  </p>
-                )}
-              </div>
-
-              {/* Submit button */}
-              <div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+          {/* Steps */}
+          <ol className="space-y-4">
+            {[
+              { num: '01', text: 'Create your account' },
+              { num: '02', text: 'Add your CV & preferences' },
+              { num: '03', text: 'Let AI handle the rest' },
+            ].map(step => (
+              <li key={step.num} className="flex items-center gap-4">
+                <span
+                  className="font-mono text-xs font-semibold w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: 'var(--accent-bg, rgba(232,184,68,0.1))', color: 'var(--accent)', border: '1px solid rgba(232,184,68,0.2)' }}
                 >
-                  {isLoading ? (
-                    <>
-                      <Spinner size="sm" className="text-white" />
-                      <span>Registering...</span>
-                    </>
-                  ) : (
-                    'Register'
-                  )}
-                </button>
+                  {step.num}
+                </span>
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{step.text}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <p className="relative z-10 text-xs" style={{ color: 'var(--text-muted)' }}>Free to get started — no credit card required</p>
+      </div>
+
+      {/* ── Right form panel ── */}
+      <div
+        className="flex flex-col justify-center w-full md:w-[480px] lg:w-[520px] flex-shrink-0 p-8 md:p-12 overflow-y-auto"
+        style={{ backgroundColor: 'var(--bg-base)' }}
+      >
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-2 md:hidden">
+            <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+              <rect width="28" height="28" rx="8" fill="var(--accent)" fillOpacity="0.12" />
+              <path d="M8 10h12M10 7h8M7 10v11a1 1 0 001 1h12a1 1 0 001-1V10M11 14h6M11 17h4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="font-semibold" style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}>VibeHired</span>
+          </div>
+          <div className="md:ml-auto">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg"
+              style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+            </button>
+          </div>
+        </div>
+
+        {/* Heading */}
+        <div className="mb-7">
+          <h2 className="text-[1.75rem] font-semibold tracking-tight" style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}>
+            Create account
+          </h2>
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>Join VibeHired and start your journey</p>
+        </div>
+
+        {/* Success state */}
+        {registrationSuccess && (
+          <div className="mb-6 flex items-center gap-3 rounded-lg p-4 text-sm" style={{ backgroundColor: 'var(--jade-bg, rgba(45,212,160,0.08))', border: '1px solid rgba(45,212,160,0.25)', color: 'var(--jade, #2dd4a0)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <span>Account created! Redirecting to setup…</span>
+          </div>
+        )}
+
+        {/* Error alert */}
+        {(authError || localError) && !registrationSuccess && (
+          <div className="mb-6 flex items-start gap-2.5 rounded-lg p-3.5 text-sm" style={{ backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))', border: '1px solid rgba(244,100,100,0.2)', color: 'var(--rose, #f46464)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{authError || localError}</span>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {/* Username */}
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }} htmlFor="username">
+              Username
+            </label>
+            <input
+              id="username"
+              type="text"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => {
+                const v = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+                setUsername(v);
+                setLocalError(null);
+                if (touched.username) setUsernameError(validateUsername(v));
+              }}
+              onBlur={() => { setTouched(p => ({ ...p, username: true })); setUsernameError(validateUsername(username)); }}
+              placeholder="your-handle"
+              style={{ ...inputStyle }}
+              onFocus={onFocus}
+              onBlurCapture={onBlurStyle}
+            />
+            <FieldError msg={touched.username ? usernameError : null} />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }} htmlFor="reg-email">
+              Email address
+            </label>
+            <input
+              id="reg-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (touched.email) setEmailError(e.target.value && !validateEmail(e.target.value) ? 'Please enter a valid email address' : null);
+              }}
+              onBlur={() => { setTouched(p => ({ ...p, email: true })); setEmailError(email && !validateEmail(email) ? 'Please enter a valid email address' : null); }}
+              placeholder="you@example.com"
+              style={{ ...inputStyle }}
+              onFocus={onFocus}
+              onBlurCapture={onBlurStyle}
+            />
+            <FieldError msg={touched.email ? emailError : null} />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }} htmlFor="reg-password">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="reg-password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (touched.password) setPasswordError(validatePassword(e.target.value));
+                  if (confirmPassword && e.target.value !== confirmPassword) setConfirmPasswordError('Passwords do not match');
+                  else if (confirmPassword) setConfirmPasswordError(null);
+                }}
+                onBlur={() => { setTouched(p => ({ ...p, password: true })); setPasswordError(validatePassword(password)); }}
+                placeholder="Min. 8 characters"
+                style={{ ...inputStyle, paddingRight: '2.75rem' }}
+                onFocus={onFocus}
+                onBlurCapture={onBlurStyle}
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} aria-label="Toggle password">
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
+            {/* Strength meter */}
+            {password.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4].map(seg => (
+                    <div
+                      key={seg}
+                      className="h-1 flex-1 rounded-full transition-all duration-300"
+                      style={{
+                        backgroundColor: seg <= strengthInfo.segments ? strengthInfo.color : 'var(--border)',
+                      }}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs font-mono" style={{ color: strengthInfo.color }}>{strengthInfo.label}</p>
               </div>
-            </>
-          )}
+            )}
+            <FieldError msg={touched.password ? passwordError : null} />
+          </div>
+
+          {/* Confirm password */}
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }} htmlFor="confirm-password">
+              Confirm password
+            </label>
+            <div className="relative">
+              <input
+                id="confirm-password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (touched.confirmPassword) setConfirmPasswordError(e.target.value !== password ? 'Passwords do not match' : null);
+                }}
+                onBlur={() => { setTouched(p => ({ ...p, confirmPassword: true })); setConfirmPasswordError(confirmPassword !== password ? 'Passwords do not match' : null); }}
+                placeholder="Repeat your password"
+                style={{ ...inputStyle, paddingRight: '2.75rem' }}
+                onFocus={onFocus}
+                onBlurCapture={onBlurStyle}
+              />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} aria-label="Toggle confirm password">
+                {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
+            <FieldError msg={touched.confirmPassword ? confirmPasswordError : null} />
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isLoading || registrationSuccess}
+            className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all mt-2"
+            style={{
+              backgroundColor: 'var(--accent)',
+              color: '#0e0e17',
+              boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(232,184,68,0.2)',
+              opacity: (isLoading || registrationSuccess) ? 0.7 : 1,
+              cursor: (isLoading || registrationSuccess) ? 'not-allowed' : 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              if (!isLoading && !registrationSuccess) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent-hover)';
+                (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent)';
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+            }}
+          >
+            {isLoading ? (
+              <><Spinner /><span>Creating account…</span></>
+            ) : registrationSuccess ? (
+              <span>✓ Account created!</span>
+            ) : (
+              'Create account'
+            )}
+          </button>
         </form>
 
-        <p className="text-sm text-center text-slate-600 dark:text-slate-400">
-          Already have an account?{' '}
-          <Link
-            to="/login"
-            className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-          >
-            Login here
-          </Link>
-        </p>
+        {/* Login link */}
+        <div className="mt-7 text-center">
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              className="font-medium transition-colors"
+              style={{ color: 'var(--accent)' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--accent-hover)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

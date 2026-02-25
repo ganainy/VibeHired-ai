@@ -1953,12 +1953,12 @@ const ReviewFinalizePage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
                 <div className="container mx-auto p-4">
                     <div className="mb-6">
                         <LoadingSkeleton lines={2} />
                     </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
                         <LoadingSkeleton lines={5} />
                     </div>
                 </div>
@@ -1968,12 +1968,12 @@ const ReviewFinalizePage: React.FC = () => {
 
     if (fetchError) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
                 <div className="container mx-auto p-4">
                     <div className="mb-4">
                         <button
                             onClick={() => navigate('/dashboard')}
-                            className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 mb-4"
+                            className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 mb-4"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1992,12 +1992,12 @@ const ReviewFinalizePage: React.FC = () => {
 
     if (!jobApplication) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
                 <div className="container mx-auto p-4 text-center">
-                    <p className="text-slate-900 dark:text-slate-300 mb-4">Job application data not found.</p>
+                    <p className="text-zinc-900 dark:text-zinc-300 mb-4">Job application data not found.</p>
                     <button
                         onClick={() => navigate('/dashboard')}
-                        className="px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                        className="btn-primary"
                     >
                         Back to Dashboard
                     </button>
@@ -2009,7 +2009,7 @@ const ReviewFinalizePage: React.FC = () => {
     const progressSteps = getProgressSteps();
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
             {/* Toast Notification */}
             {toast && (
                 <Toast
@@ -2026,10 +2026,10 @@ const ReviewFinalizePage: React.FC = () => {
                 <div className="flex items-start justify-between gap-4 mb-6">
                     {/* Left: Job Info */}
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                             {jobApplication.jobTitle}
                         </h1>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400 mt-1.5">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">
                             <span className="inline-flex items-center gap-1.5">
                                 <span className="material-symbols-outlined text-[18px]">apartment</span>
                                 {jobApplication.companyName}
@@ -2081,7 +2081,7 @@ const ReviewFinalizePage: React.FC = () => {
                                         Retry
                                     </span>
                                 ) : (
-                                    <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                    <span className="badge badge-gold text-xs px-2 py-0.5 cursor-pointer">
                                         Calculate
                                     </span>
                                 )}
@@ -2098,7 +2098,10 @@ const ReviewFinalizePage: React.FC = () => {
                                         href={url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="p-3 text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
+                                        className="p-3 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
+                                        style={{background:'var(--accent-bg)', color:'var(--accent)', border:'1px solid var(--accent-dim)'}}
+                                        onMouseEnter={e=>(e.currentTarget.style.background='var(--accent-bg-hover,rgba(232,184,68,0.14))')}
+                                        onMouseLeave={e=>(e.currentTarget.style.background='var(--accent-bg)')}
                                         title={`View Job Posting ${parseMultipleUrls(jobApplication.jobUrl || '').length > 1 ? `(${idx + 1})` : ''}: ${url}`}
                                     >
                                         <span className="material-symbols-outlined text-[20px]">open_in_new</span>
@@ -2108,7 +2111,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     </a>
                                 ))}
                                 {parseMultipleUrls(jobApplication.jobUrl || '').length > 3 && (
-                                    <span className="text-xs text-slate-500 dark:text-slate-400 ml-1" title={parseMultipleUrls(jobApplication.jobUrl || '').slice(3).join('\n')}>
+                                    <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-1" title={parseMultipleUrls(jobApplication.jobUrl || '').slice(3).join('\n')}>
                                         +{parseMultipleUrls(jobApplication.jobUrl || '').length - 3} more
                                     </span>
                                 )}
@@ -2141,7 +2144,7 @@ const ReviewFinalizePage: React.FC = () => {
 
 
                 {/* Tabs Navigation with Integrated Progress Indicators */}
-                <div className="mb-6 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-4">
+                <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-4">
                     <div className="relative flex items-center justify-between w-full max-w-4xl mx-auto">
                         <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-600 -z-10 transform -translate-y-1/2"></div>
 
@@ -2151,7 +2154,7 @@ const ReviewFinalizePage: React.FC = () => {
                             className="group flex flex-col items-center focus:outline-none"
                         >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'job-description'
-                                ? 'bg-primary text-white shadow-lg scale-125'
+                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
                                 : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
                                 }`}>
                                 <span className="material-symbols-outlined text-sm">check</span>
@@ -2168,7 +2171,7 @@ const ReviewFinalizePage: React.FC = () => {
                             className="group flex flex-col items-center focus:outline-none"
                         >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'cv'
-                                ? 'bg-primary text-white shadow-lg scale-125'
+                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
                                 : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
                                 }`}>
                                 <span className="material-symbols-outlined text-sm">article</span>
@@ -2185,7 +2188,7 @@ const ReviewFinalizePage: React.FC = () => {
                             className="group flex flex-col items-center focus:outline-none"
                         >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'cover-letter'
-                                ? 'bg-primary text-white shadow-lg scale-125'
+                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
                                 : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
                                 }`}>
                                 <span className="material-symbols-outlined text-sm">mail</span>
@@ -2202,13 +2205,13 @@ const ReviewFinalizePage: React.FC = () => {
                             className="group flex flex-col items-center focus:outline-none"
                         >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'mock-interview'
-                                ? 'bg-violet-600 text-white shadow-lg scale-125'
+                                ? 'bg-gold-500 text-ink-950 shadow-lg scale-125'
                                 : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
                                 }`}>
                                 <span className="material-symbols-outlined text-sm">mic</span>
                             </div>
                             <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'mock-interview'
-                                ? 'text-violet-600 dark:text-violet-400 font-bold'
+                                ? 'text-gold-600 dark:text-gold-400 font-bold'
                                 : 'text-gray-500 dark:text-gray-400'
                                 }`}>Interview</span>
                         </button>
@@ -2235,7 +2238,7 @@ const ReviewFinalizePage: React.FC = () => {
                                         <button
                                             onClick={handleSaveJobDetails}
                                             disabled={!jobDetailsHasChanges || isSavingJobDetails || !jobDetailsForm}
-                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primaryLight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-transparent text-xs font-medium rounded-md shadow-sm text-ink-950 bg-primary hover:bg-primaryLight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                         >
                                             {isSavingJobDetails ? (
                                                 <>
@@ -2495,7 +2498,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
                                             <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
                                                 <strong className="text-text-main-light dark:text-text-main-dark">Contact Email:</strong>{' '}
-                                                <a href={`mailto:${jobApplication.contactEmail}`} className="text-indigo-500 dark:text-indigo-400 hover:underline">
+                                                <a href={`mailto:${jobApplication.contactEmail}`} className="hover:underline" style={{color: 'var(--accent)'}}>
                                                     {jobApplication.contactEmail}
                                                 </a>
                                             </span>
@@ -2522,7 +2525,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
                                             <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
                                                 <strong className="text-text-main-light dark:text-text-main-dark">Application Portal:</strong>{' '}
-                                                <a href={jobApplication.applicationUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-500 dark:text-indigo-400 hover:underline">
+                                                <a href={jobApplication.applicationUrl} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{color: 'var(--accent)'}}>
                                                     {jobApplication.applicationUrl.length > 50 ? jobApplication.applicationUrl.substring(0, 50) + '...' : jobApplication.applicationUrl}
                                                 </a>
                                             </span>
@@ -2559,7 +2562,7 @@ const ReviewFinalizePage: React.FC = () => {
                                 <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                                     <div className="flex justify-between items-center mb-4">
                                         <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-indigo-500">checklist</span>
+                                            <span className="material-symbols-outlined">checklist</span>
                                             Requirements
                                         </h2>
                                     </div>
@@ -2581,10 +2584,10 @@ const ReviewFinalizePage: React.FC = () => {
                                             onClick={() => setShowExtractWithAi(!showExtractWithAi)}
                                             disabled={isExtractingWithAi}
                                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${isExtractingWithAi
-                                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                                ? 'badge badge-gold opacity-60'
                                                 : showExtractWithAi
-                                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                                    : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                                                    ? 'badge badge-gold'
+                                                    : 'btn-ghost text-sm'
                                                 }`}
                                             title="Extract job details using AI"
                                         >
@@ -2617,8 +2620,8 @@ const ReviewFinalizePage: React.FC = () => {
 
                                 {/* Extract with AI Section - Only shown when no job description exists */}
                                 {showExtractWithAi && (!jobApplication.jobDescriptionText || jobApplication.jobDescriptionText.trim().length < 50) && (
-                                    <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                                    <div className="mb-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
                                             Paste the job description text below and click "Extract" to update the job details using AI.
                                         </p>
                                         <div className="relative">
@@ -2626,14 +2629,14 @@ const ReviewFinalizePage: React.FC = () => {
                                                 value={pastedJobText}
                                                 onChange={(e) => setPastedJobText(e.target.value)}
                                                 placeholder="Paste job description here..."
-                                                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50 resize-y min-h-[120px] text-sm transition-all"
+                                                className="input-base w-full resize-y min-h-[120px]"
                                                 rows={5}
                                                 disabled={isExtractingWithAi}
                                             />
                                             {isExtractingWithAi && (
-                                                <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2">
+                                                <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center gap-2">
                                                     <Spinner size="md" />
-                                                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Extracting job details...</p>
+                                                    <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Extracting job details...</p>
                                                 </div>
                                             )}
                                         </div>
@@ -2648,7 +2651,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             <button
                                                 onClick={handleExtractWithAi}
                                                 disabled={isExtractingWithAi || !pastedJobText || pastedJobText.trim().length < 50}
-                                                className="bg-indigo-600 text-white font-medium py-2 px-5 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
+                                                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                             >
                                                 {isExtractingWithAi ? (
                                                     <>
@@ -2685,7 +2688,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={pastedJobText}
                                                         onChange={(e) => setPastedJobText(e.target.value)}
                                                         placeholder="Paste job description here..."
-                                                        className="w-full bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-700 focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 disabled:opacity-50 resize-y min-h-[120px] text-sm transition-all"
+                                                        className="input-base w-full resize-y min-h-[120px]"
                                                         rows={5}
                                                         disabled={isExtractingWithAi}
                                                     />
@@ -2700,7 +2703,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     <button
                                                         onClick={handleExtractWithAi}
                                                         disabled={isExtractingWithAi || !pastedJobText || pastedJobText.trim().length < 50}
-                                                        className="bg-indigo-600 text-white font-medium py-2 px-5 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center gap-2"
+                                                        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                                     >
                                                         {isExtractingWithAi ? (
                                                             <>
@@ -2778,7 +2781,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     <button
                                                         onClick={finalPdfFiles.cl ? () => handleDownload(finalPdfFiles.cl) : handleGenerateCoverLetterPdf}
                                                         disabled={isRenderingCoverLetterPdf}
-                                                        className="group flex items-center gap-2 px-3 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 active:bg-blue-800 dark:active:bg-blue-800 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+                                                        className="btn-primary group flex items-center gap-2 px-3 py-2 text-xs disabled:opacity-70 disabled:cursor-not-allowed"
                                                         title="Download as PDF"
                                                     >
                                                         {isRenderingCoverLetterPdf ? (
@@ -2794,7 +2797,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     {/* Download Word Button */}
                                                     <button
                                                         onClick={handleDownloadWord}
-                                                        className="group flex items-center gap-2 px-3 py-2 bg-blue-500 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-600 active:bg-blue-700 dark:active:bg-blue-700 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
+                                                        className="btn-secondary group flex items-center gap-2 px-3 py-2 text-xs"
                                                         title="Download as Word Document"
                                                     >
                                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2839,7 +2842,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="mt-4 flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm border border-blue-100 dark:border-blue-900/30">
+                                        <div className="mt-4 flex items-center gap-2 p-3 rounded-lg text-sm" style={{background:'var(--accent-bg)', color:'var(--text-secondary)', border:'1px solid var(--accent-dim)'}}>
                                             <span className="material-symbols-outlined text-base">info</span>
                                             <p>
                                                 To regenerate the cover letter with different instructions, please delete the current cover letter using the trash icon above.
@@ -2848,8 +2851,8 @@ const ReviewFinalizePage: React.FC = () => {
 
                                         {/* Cover Letter Library Panel */}
                                         {showClLibraryPanel && (
-                                            <div className="mt-4 p-4 border border-purple-200 dark:border-purple-700/50 bg-purple-50 dark:bg-purple-900/20 rounded-xl space-y-4">
-                                                <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-200 flex items-center gap-2">
+                                            <div className="mt-4 p-4 rounded-xl space-y-4" style={{background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)'}}>
+                                                <h3 className="text-sm font-semibold flex items-center gap-2" style={{color: 'var(--accent)'}}>
                                                     <span className="material-symbols-outlined text-base">folder_open</span>
                                                     Attach Cover Letter from Library
                                                 </h3>
@@ -2865,7 +2868,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={selectedBaseClId}
                                                         onChange={(e) => { setSelectedBaseClId(e.target.value); setClUploadFile(null); }}
                                                         disabled={!!clUploadFile || isApplyingBaseCl}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 disabled:opacity-50"
+                                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 disabled:opacity-50" style={{caretColor: 'var(--accent)'}}
                                                     >
                                                         <option value="">— choose a cover letter —</option>
                                                         {baseCoverLetters.map(cl => (
@@ -2903,7 +2906,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         <button
                                                             onClick={() => clUploadFileRef.current?.click()}
                                                             disabled={isApplyingBaseCl}
-                                                            className="flex items-center gap-2 px-3 py-2 text-sm border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors disabled:opacity-50"
+                                                        className="flex items-center gap-2 px-3 py-2 text-sm border border-dashed rounded-lg transition-colors disabled:opacity-50" style={{borderColor: 'var(--border)', color: 'var(--text-secondary)'}}
                                                         >
                                                             <span className="material-symbols-outlined text-base">upload_file</span>
                                                             Choose file…
@@ -2922,7 +2925,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     <button
                                                         onClick={handleApplyBaseCoverLetter}
                                                         disabled={isApplyingBaseCl || (!selectedBaseClId && !clUploadFile)}
-                                                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
                                                         {isApplyingBaseCl ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
                                                         Attach to Job
@@ -2973,11 +2976,12 @@ const ReviewFinalizePage: React.FC = () => {
                                             onClick={() => setClCreationMode('ai')}
                                             className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
                                                 clCreationMode === 'ai'
-                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
-                                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
+                                                    ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
                                             }`}
+                                            style={clCreationMode === 'ai' ? {background: 'var(--accent-bg)', borderColor: 'var(--accent)'} : {}}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'ai' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}
+                                                style={clCreationMode === 'ai' ? {background: 'var(--accent)'} : {}}>
                                                 <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
                                             </div>
                                             <div>
@@ -2985,7 +2989,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Let the AI write a tailored cover letter based on your CV and the job description.</p>
                                             </div>
                                             {clCreationMode === 'ai' && (
-                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full bg-purple-600 text-white">
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{background: 'var(--accent)'}}>
                                                     <span className="material-symbols-outlined text-[14px]">check</span>
                                                 </span>
                                             )}
@@ -2997,11 +3001,12 @@ const ReviewFinalizePage: React.FC = () => {
                                             onClick={() => setClCreationMode('import')}
                                             className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
                                                 clCreationMode === 'import'
-                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
-                                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
+                                                    ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
                                             }`}
+                                            style={clCreationMode === 'import' ? {background: 'var(--accent-bg)', borderColor: 'var(--accent)'} : {}}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'import' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'import' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}
+                                                style={clCreationMode === 'import' ? {background: 'var(--accent)'} : {}}>
                                                 <span className="material-symbols-outlined text-[22px]">upload_file</span>
                                             </div>
                                             <div>
@@ -3009,7 +3014,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Upload a PDF / DOCX file or pick an existing one from your library.</p>
                                             </div>
                                             {clCreationMode === 'import' && (
-                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full bg-purple-600 text-white">
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{background: 'var(--accent)'}}>
                                                     <span className="material-symbols-outlined text-[14px]">check</span>
                                                 </span>
                                             )}
@@ -3018,9 +3023,9 @@ const ReviewFinalizePage: React.FC = () => {
 
                                     {/* ── Option B form: Import / Upload ── */}
                                     {clCreationMode === 'import' && (
-                                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-6">
+                                        <div className="card p-8 space-y-6">
                                             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">folder_open</span>
+                                                <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>folder_open</span>
                                                 Attach Cover Letter
                                             </h3>
 
@@ -3039,8 +3044,8 @@ const ReviewFinalizePage: React.FC = () => {
                                                     onChange={(e) => { const f = e.target.files?.[0] ?? null; setClUploadFile(f); if (f) setSelectedBaseClId(''); }}
                                                 />
                                                 {clUploadFile ? (
-                                                    <div className="flex items-center gap-3 px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700/50 rounded-xl">
-                                                        <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">description</span>
+                                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{background: "var(--accent-bg)", borderColor: "var(--accent-dim)", border: "1px solid var(--accent-dim)"}}>
+                                                        <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>description</span>
                                                         <span className="flex-1 truncate text-sm text-gray-800 dark:text-gray-200 font-medium">{clUploadFile.name}</span>
                                                         <button
                                                             onClick={() => { setClUploadFile(null); if (clUploadFileRef.current) clUploadFileRef.current.value = ''; }}
@@ -3053,7 +3058,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     <button
                                                         onClick={() => clUploadFileRef.current?.click()}
                                                         disabled={isApplyingBaseCl}
-                                                        className="flex items-center gap-3 w-full px-4 py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all disabled:opacity-50"
+                                                        className="flex items-center gap-3 w-full px-4 py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-gold-400 hover:text-gold-600 dark:hover:text-gold-400 hover:bg-gold-50 dark:hover:bg-gold-900/10 transition-all disabled:opacity-50"
                                                     >
                                                         <span className="material-symbols-outlined text-2xl">upload_file</span>
                                                         <span className="text-sm font-medium">Click to choose a PDF or DOCX file…</span>
@@ -3076,7 +3081,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={selectedBaseClId}
                                                         onChange={(e) => { setSelectedBaseClId(e.target.value); setClUploadFile(null); if (clUploadFileRef.current) clUploadFileRef.current.value = ''; }}
                                                         disabled={!!clUploadFile || isApplyingBaseCl}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all disabled:opacity-50"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 input-base disabled:opacity-50"
                                                     >
                                                         <option value="">— choose a saved cover letter —</option>
                                                         {baseCoverLetters.map(cl => (
@@ -3108,7 +3113,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <button
                                                     onClick={handleApplyBaseCoverLetter}
                                                     disabled={isApplyingBaseCl || (!selectedBaseClId && !clUploadFile)}
-                                                    className="flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="flex items-center gap-2 px-6 py-2.5 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     {isApplyingBaseCl ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
                                                     Attach to Job
@@ -3129,11 +3134,11 @@ const ReviewFinalizePage: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-8">
+                                    <div className="card p-8 space-y-8">
                                         {/* Target Role Section */}
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">work</span>
+                                                <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>work</span>
                                                 <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Target Role</h3>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -3145,7 +3150,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         type="text"
                                                         value={tailoredJobTitle}
                                                         onChange={(e) => setTailoredJobTitle(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
                                                         placeholder="e.g. Senior Product Manager"
                                                     />
                                                 </div>
@@ -3157,7 +3162,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         type="text"
                                                         value={tailoredCompanyName}
                                                         onChange={(e) => setTailoredCompanyName(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
                                                         placeholder="e.g. Acme Innovations"
                                                     />
                                                 </div>
@@ -3168,7 +3173,7 @@ const ReviewFinalizePage: React.FC = () => {
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">description</span>
+                                                    <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>description</span>
                                                     <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Job Description</h3>
                                                 </div>
                                             </div>
@@ -3176,7 +3181,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <textarea
                                                     value={tailoredJobDescription}
                                                     onChange={(e) => setTailoredJobDescription(e.target.value)}
-                                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100 min-h-[200px]"
+                                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base min-h-[200px]"
                                                     placeholder="Paste the full job description here... Our AI will analyze key requirements."
                                                 ></textarea>
                                             </div>
@@ -3186,14 +3191,14 @@ const ReviewFinalizePage: React.FC = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
                                             <div className="space-y-4">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">folder</span>
+                                                    <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>folder</span>
                                                     <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Base Resume</h3>
                                                 </div>
                                                 <div className="relative">
                                                     <select
                                                         value={selectedClBaseCvId}
                                                         onChange={(e) => handleSelectedClBaseCvIdChange(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
                                                     >
                                                         {currentCvId && hasLocalCv && (
                                                             <option value="__job_cv__">📄 This Job's CV (attached)</option>
@@ -3230,7 +3235,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             <button
                                                 onClick={handleGenerateCoverLetter}
                                                 disabled={isGeneratingCoverLetter || !hasMasterCv || !tailoredJobDescription}
-                                                className="group relative flex items-center gap-2 px-8 py-3 bg-purple-600 dark:bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-700 active:bg-purple-800 transition-all font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                                                className="btn-primary font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                                             >
                                                 {isGeneratingCoverLetter ? (
                                                     <>
@@ -3267,7 +3272,7 @@ const ReviewFinalizePage: React.FC = () => {
                             {/* Raw PDF attached — no JSON, show placeholder */}
                             {hasLocalCv && (!cvData || !cvData.basics || Object.keys(cvData.basics).length === 0) && !liveCvDescriptor ? (
                                 <div className="p-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center gap-4 text-center">
-                                    <span className="material-symbols-outlined text-5xl text-purple-400">description</span>
+                                    <span className="material-symbols-outlined text-5xl" style={{color:'var(--accent)'}}>description</span>
                                     <div>
                                         <p className="text-base font-semibold text-gray-800 dark:text-gray-200">CV attached as PDF</p>
                                         {currentCvFilename && (
@@ -3294,7 +3299,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     setIsLoadingRawPdf(false);
                                                 }
                                             }}
-                                            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg transition-colors disabled:opacity-50"
+                                            className="btn-secondary text-sm disabled:opacity-50"
                                         >
                                             {isLoadingRawPdf ? (
                                                 <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
@@ -3384,23 +3389,23 @@ const ReviewFinalizePage: React.FC = () => {
                                 >
                                     {/* Tailoring Changes Panel - Show what AI changed */}
                                     {tailoringChanges && tailoringChanges.length > 0 && (
-                                        <div className="mb-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                                        <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                                             <details className="group">
-                                                <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-transparent group-open:border-slate-100 dark:group-open:border-slate-800">
+                                                <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-transparent group-open:border-zinc-100 dark:group-open:border-zinc-800">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white shadow-sm">
+                                                        <div className="flex items-center justify-center w-8 h-8 rounded-lg text-ink-950 shadow-sm" style={{background: 'var(--accent)'}}>
                                                             <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
                                                         </div>
                                                         <div>
-                                                            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                                            <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100">
                                                                 Tailoring Changes
                                                             </h3>
-                                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
                                                                 {tailoringChanges.length} modification{tailoringChanges.length !== 1 ? 's' : ''} recorded
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <span className="text-slate-400 group-open:rotate-180 transition-transform duration-200">
+                                                    <span className="text-zinc-400 group-open:rotate-180 transition-transform duration-200">
                                                         <span className="material-symbols-outlined text-[20px]">expand_more</span>
                                                     </span>
                                                 </summary>
@@ -3411,15 +3416,15 @@ const ReviewFinalizePage: React.FC = () => {
                                                             className="py-4 first:pt-2 last:pb-2"
                                                         >
                                                             <div className="flex items-start gap-4">
-                                                                <span className="flex-shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                                                <span className="flex-shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
                                                                     {change.section}
                                                                 </span>
                                                                 <div className="flex-1 min-w-0 space-y-1.5">
-                                                                    <p className="text-sm text-slate-800 dark:text-slate-200 leading-snug">
+                                                                    <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-snug">
                                                                         {change.description}
                                                                     </p>
-                                                                    <p className="text-xs text-slate-500 dark:text-slate-500 flex items-center gap-2 italic">
-                                                                        <span className="w-1 h-1 rounded-full bg-indigo-400 dark:bg-indigo-500"></span>
+                                                                    <p className="text-xs text-zinc-500 dark:text-zinc-500 flex items-center gap-2 italic">
+                                                                        <span className="w-1 h-1 rounded-full" style={{background:'var(--accent)'}}></span>
                                                                         {change.reason}
                                                                     </p>
                                                                 </div>
@@ -3432,16 +3437,16 @@ const ReviewFinalizePage: React.FC = () => {
                                     )}
 
                                     {/* ATS Analysis Card */}
-                                    <div className="mb-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                                    <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                                         <details className="group">
-                                            <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-transparent group-open:border-slate-100 dark:group-open:border-slate-800">
+                                            <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-transparent group-open:border-zinc-100 dark:group-open:border-zinc-800">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-500 text-white shadow-sm">
+                                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg text-ink-950 shadow-sm" style={{background:'var(--accent)'}}>
                                                         <span className="material-symbols-outlined text-[20px]">troubleshoot</span>
                                                     </div>
                                                     <div>
-                                                        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">ATS Analysis</h3>
-                                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                        <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100">ATS Analysis</h3>
+                                                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
                                                             {isScanningAts ? 'Scanning…' : atsScores ? (() => {
                                                                 const total =
                                                                     (atsScores.complianceDetails?.actionableFeedback?.length ?? 0) +
@@ -3474,7 +3479,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                             Re-scan
                                                         </button>
                                                     )}
-                                                    <span className="text-slate-400 group-open:rotate-180 transition-transform duration-200">
+                                                    <span className="text-zinc-400 group-open:rotate-180 transition-transform duration-200">
                                                         <span className="material-symbols-outlined text-[20px]">expand_more</span>
                                                     </span>
                                                 </div>
@@ -3521,12 +3526,10 @@ const ReviewFinalizePage: React.FC = () => {
                                             type="button"
                                             onClick={() => setCvCreationMode('ai')}
                                             className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
-                                                cvCreationMode === 'ai'
-                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
-                                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
+                                                cvCreationMode === 'ai' ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
                                             }`}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'ai' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`} style={cvCreationMode === 'ai' ? {background:'var(--accent)'} : {}}>
                                                 <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
                                             </div>
                                             <div>
@@ -3534,7 +3537,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Let the AI tailor your CV to the job description automatically.</p>
                                             </div>
                                             {cvCreationMode === 'ai' && (
-                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full bg-purple-600 text-white">
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{background:'var(--accent)'}}>
                                                     <span className="material-symbols-outlined text-[14px]">check</span>
                                                 </span>
                                             )}
@@ -3545,12 +3548,10 @@ const ReviewFinalizePage: React.FC = () => {
                                             type="button"
                                             onClick={() => setCvCreationMode('import')}
                                             className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
-                                                cvCreationMode === 'import'
-                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
-                                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-700'
+                                                cvCreationMode === 'import' ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
                                             }`}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'import' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'import' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`} style={cvCreationMode === 'import' ? {background:'var(--accent)'} : {}}>
                                                 <span className="material-symbols-outlined text-[22px]">upload_file</span>
                                             </div>
                                             <div>
@@ -3558,7 +3559,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Upload a PDF / DOCX file or pick an existing one from your library.</p>
                                             </div>
                                             {cvCreationMode === 'import' && (
-                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full bg-purple-600 text-white">
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{background:'var(--accent)'}}>
                                                     <span className="material-symbols-outlined text-[14px]">check</span>
                                                 </span>
                                             )}
@@ -3567,9 +3568,9 @@ const ReviewFinalizePage: React.FC = () => {
 
                                     {/* ── Option B form: Import / Upload ── */}
                                     {cvCreationMode === 'import' && (
-                                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-6">
+                                        <div className="card p-8 space-y-6">
                                             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">folder_open</span>
+                                                <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>folder_open</span>
                                                 Attach CV
                                             </h3>
 
@@ -3588,8 +3589,8 @@ const ReviewFinalizePage: React.FC = () => {
                                                     onChange={(e) => { const f = e.target.files?.[0] ?? null; setCvImportFile(f); if (f) setSelectedBaseCvIdForImport(''); }}
                                                 />
                                                 {cvImportFile ? (
-                                                    <div className="flex items-center gap-3 px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700/50 rounded-xl">
-                                                        <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">description</span>
+                                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{background: "var(--accent-bg)", borderColor: "var(--accent-dim)", border: "1px solid var(--accent-dim)"}}>
+                                                        <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>description</span>
                                                         <span className="flex-1 truncate text-sm text-gray-800 dark:text-gray-200 font-medium">{cvImportFile.name}</span>
                                                         <button
                                                             onClick={() => { setCvImportFile(null); if (cvImportFileRef.current) cvImportFileRef.current.value = ''; }}
@@ -3602,7 +3603,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     <button
                                                         onClick={() => cvImportFileRef.current?.click()}
                                                         disabled={isApplyingBaseCv}
-                                                        className="flex items-center gap-3 w-full px-4 py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all disabled:opacity-50"
+                                                        className="flex items-center gap-3 w-full px-4 py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-gold-400 hover:text-gold-600 dark:hover:text-gold-400 hover:bg-gold-50 dark:hover:bg-gold-900/10 transition-all disabled:opacity-50"
                                                     >
                                                         <span className="material-symbols-outlined text-2xl">upload_file</span>
                                                         <span className="text-sm font-medium">Click to choose a PDF or DOCX file…</span>
@@ -3625,7 +3626,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={selectedBaseCvIdForImport}
                                                         onChange={(e) => { setSelectedBaseCvIdForImport(e.target.value); setCvImportFile(null); if (cvImportFileRef.current) cvImportFileRef.current.value = ''; }}
                                                         disabled={!!cvImportFile || isApplyingBaseCv}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all disabled:opacity-50"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 input-base disabled:opacity-50"
                                                     >
                                                         <option value="">— choose a saved CV —</option>
                                                         {availableCvs.map(cv => (
@@ -3657,7 +3658,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <button
                                                     onClick={handleApplyBaseCv}
                                                     disabled={isApplyingBaseCv || (!selectedBaseCvIdForImport && !cvImportFile)}
-                                                    className="flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="flex items-center gap-2 px-6 py-2.5 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     {isApplyingBaseCv ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
                                                     Attach to Job
@@ -3678,11 +3679,11 @@ const ReviewFinalizePage: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 space-y-8">
+                                    <div className="card p-8 space-y-8">
                                         {/* Target Role Section */}
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">work</span>
+                                                <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>work</span>
                                                 <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Target Role</h3>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -3694,7 +3695,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         type="text"
                                                         value={tailoredJobTitle}
                                                         onChange={(e) => setTailoredJobTitle(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
                                                         placeholder="e.g. Senior Product Manager"
                                                     />
                                                 </div>
@@ -3706,7 +3707,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         type="text"
                                                         value={tailoredCompanyName}
                                                         onChange={(e) => setTailoredCompanyName(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100"
+                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
                                                         placeholder="e.g. Acme Innovations"
                                                     />
                                                 </div>
@@ -3717,7 +3718,7 @@ const ReviewFinalizePage: React.FC = () => {
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">description</span>
+                                                    <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>description</span>
                                                     <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Job Description</h3>
                                                 </div>
                                             </div>
@@ -3725,7 +3726,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <textarea
                                                     value={tailoredJobDescription}
                                                     onChange={(e) => setTailoredJobDescription(e.target.value)}
-                                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-gray-900 dark:text-gray-100 min-h-[200px]"
+                                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base min-h-[200px]"
                                                     placeholder="Paste the full job description here... Our AI will analyze key requirements and skills."
                                                 ></textarea>
                                             </div>
@@ -3736,14 +3737,14 @@ const ReviewFinalizePage: React.FC = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
                                                 <div className="space-y-4">
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">folder</span>
+                                                        <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>folder</span>
                                                         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Base Resume</h3>
                                                     </div>
                                                     <div className="relative">
                                                         <select
                                                             value={selectedBaseCvId}
                                                             onChange={(e) => handleSelectedBaseCvIdChange(e.target.value)}
-                                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 appearance-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
                                                         >
                                                             {availableCvs.map(cv => (
                                                                 <option key={cv.id} value={cv.id}>{cv.name}</option>
@@ -3779,7 +3780,7 @@ const ReviewFinalizePage: React.FC = () => {
                                         <button
                                             onClick={handleGenerateSpecificCv}
                                             disabled={isGeneratingCv || !hasMasterCv || !tailoredJobDescription}
-                                            className="group relative flex items-center gap-2 px-8 py-3 bg-purple-600 dark:bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-700 active:bg-purple-800 transition-all font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                                            className="btn-primary font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                                         >
                                             {isGeneratingCv ? (
                                                 <>
@@ -3819,10 +3820,10 @@ const ReviewFinalizePage: React.FC = () => {
                             <div className="p-8">
                                 <div className="flex justify-center mb-8">
                                     <div className="relative">
-                                        <div className="w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center animate-pulse">
-                                            <span className="material-symbols-outlined text-4xl text-purple-600 dark:text-purple-400">auto_awesome</span>
+                                        <div className="w-20 h-20 rounded-full flex items-center justify-center animate-pulse" style={{background:"var(--accent-bg)"}}>
+                                            <span className="material-symbols-outlined text-4xl" style={{color:"var(--accent)"}}>auto_awesome</span>
                                         </div>
-                                        <div className="absolute inset-0 border-4 border-purple-500 rounded-full border-t-transparent animate-spin"></div>
+                                        <div className="absolute inset-0 border-4 rounded-full border-t-transparent animate-spin" style={{borderColor:"var(--accent)"}}></div>
                                     </div>
                                 </div>
 
@@ -3845,21 +3846,21 @@ const ReviewFinalizePage: React.FC = () => {
                                     <div className="relative pt-1">
                                         <div className="flex mb-2 items-center justify-between">
                                             <div className="text-right">
-                                                <span className="text-xs font-semibold inline-block text-purple-600 dark:text-purple-400">
+                                                <span className="text-xs font-semibold inline-block" style={{color:'var(--accent)'}}>
                                                     {Math.round(generationProgress)}%
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-purple-100 dark:bg-gray-600">
-                                            <div style={{ width: `${generationProgress}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-600 transition-all duration-500 ease-out"></div>
+                                        <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
+                                            <div style={{ width: `${generationProgress}%`, background: 'var(--accent)' }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ease-out"></div>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-medium text-gray-400">
-                                        <div className={generationStep === 'analyzing' || generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Analyze</div>
-                                        <div className={generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Match</div>
-                                        <div className={generationStep === 'tailoring' || generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Tailor</div>
-                                        <div className={generationStep === 'finalizing' ? "text-purple-600 dark:text-purple-400" : ""}>Finalize</div>
+                                        <div style={generationStep === 'analyzing' || generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? {color:"var(--accent)"} : {}}>Analyze</div>
+                                        <div style={generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? {color:"var(--accent)"} : {}}>Match</div>
+                                        <div style={generationStep === 'tailoring' || generationStep === 'finalizing' ? {color:"var(--accent)"} : {}}>Tailor</div>
+                                        <div style={generationStep === 'finalizing' ? {color:"var(--accent)"} : {}}>Finalize</div>
                                     </div>
                                 </div>
                             </div>
@@ -3916,7 +3917,7 @@ const ReviewFinalizePage: React.FC = () => {
                 isGeneratingCoverLetter && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in duration-200">
-                            <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mb-2">
+                            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-2" style={{background:"var(--accent-bg)"}}>
                                 <Spinner size="lg" />
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Generating Cover Letter</h3>
@@ -4122,7 +4123,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     <button
                                         onClick={handleRefreshRecommendation}
                                         disabled={isRefreshingRecommendation}
-                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primaryLight disabled:opacity-50 transition-colors"
+                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary text-ink-950 hover:bg-primaryLight disabled:opacity-50 transition-colors"
                                     >
                                         {isRefreshingRecommendation ? (
                                             <Spinner size="sm" />
@@ -4157,3 +4158,4 @@ const ReviewFinalizePage: React.FC = () => {
 };
 
 export default ReviewFinalizePage;
+

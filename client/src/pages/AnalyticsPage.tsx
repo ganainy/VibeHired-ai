@@ -98,16 +98,16 @@ const AnalyticsPage: React.FC = () => {
         <div className="container mx-auto px-4 py-8 max-w-7xl animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Analytics Dashboard</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Track your application progress and performance.</p>
+                    <h1 className="page-title">Analytics Dashboard</h1>
+                    <p style={{color: 'var(--text-secondary)'}}>Track your application progress and performance.</p>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400 ml-2">Period:</span>
+                <div className="flex items-center gap-3 p-1.5 rounded-xl shadow-sm" style={{background: 'var(--bg-surface)', border: '1px solid var(--border)'}}>
+                    <span className="text-sm font-medium ml-2" style={{color: 'var(--text-secondary)'}}>Period:</span>
                     <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="bg-transparent border-none focus:ring-0 text-sm font-semibold text-slate-800 dark:text-slate-100 cursor-pointer pr-8"
+                        className="bg-transparent border-none focus:ring-0 text-sm font-semibold cursor-pointer pr-8" style={{color: 'var(--text-primary)'}}
                     >
                         <optgroup label="Timeframe">
                             {monthOptions.map(option => (
@@ -138,12 +138,12 @@ const AnalyticsPage: React.FC = () => {
 
                 {/* Application Velocity Chart - Only shown if not 'today' */}
                 {selectedMonth !== 'today' && (
-                    <div className="md:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col h-[400px] min-w-0">
+                    <div className="md:col-span-2 card p-6 flex flex-col h-[400px] min-w-0">
                         <div className="flex items-center gap-2 mb-6">
-                            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                                <span className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[20px]">trending_up</span>
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'var(--accent-bg)'}}>
+                                <span className="material-symbols-outlined text-[20px]" style={{color: 'var(--accent)'}}>trending_up</span>
                             </div>
-                            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Application Velocity</h3>
+                            <h3 className="text-lg font-bold" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>Application Velocity</h3>
                         </div>
                         <div className="flex-1 min-h-0">
                             {isLoadingStats ? (
@@ -167,9 +167,9 @@ const AnalyticsPage: React.FC = () => {
             </div>
 
             {/* Kanban Board Section */}
-            <div className="mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">Application Pipeline</h3>
-                <div className="bg-slate-100 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="mt-8 pt-8" style={{borderTop: '1px solid var(--border)'}}>
+                <h3 className="text-xl font-bold mb-6" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>Application Pipeline</h3>
+                <div className="p-4 rounded-xl" style={{background: 'var(--bg-elevated)', border: '1px solid var(--border)'}}>
                     <ApplicationPipelineKanban
                         jobs={jobs}
                         isLoading={isLoadingJobs}

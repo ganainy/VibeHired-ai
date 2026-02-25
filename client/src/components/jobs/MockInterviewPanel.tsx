@@ -167,7 +167,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
         <div className="w-full max-w-3xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-violet-600 text-white shadow-sm">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl text-ink-950 shadow-sm" style={{background:"var(--accent)"}}>
                     <span className="material-symbols-outlined text-[22px]">mic</span>
                 </div>
                 <div>
@@ -189,9 +189,9 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
 
             {/* ── IDLE ── */}
             {phase === 'idle' && (
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center space-y-6 shadow-sm">
-                    <div className="mx-auto w-20 h-20 rounded-full bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-4xl text-violet-600 dark:text-violet-400">record_voice_over</span>
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 p-8 text-center space-y-6 shadow-sm">
+                    <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
+                        <span className="material-symbols-outlined text-4xl" style={{color:"var(--accent)"}}>record_voice_over</span>
                     </div>
                     <div>
                         <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed max-w-md mx-auto">
@@ -216,7 +216,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                     </div>
                     <button
                         onClick={startInterview}
-                        className="inline-flex items-center gap-2 px-8 py-3 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all"
+                        className="btn-primary font-semibold rounded-xl shadow-md hover:shadow-lg"
                     >
                         <span className="material-symbols-outlined text-base">play_arrow</span>
                         {labels.startBtn}
@@ -226,9 +226,9 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
 
             {/* ── LOADING ── */}
             {phase === 'loading' && (
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-4 shadow-sm">
-                    <div className="mx-auto w-16 h-16 rounded-full bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-3xl text-violet-600 dark:text-violet-400 animate-pulse">auto_awesome</span>
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 p-12 text-center space-y-4 shadow-sm">
+                    <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
+                        <span className="material-symbols-outlined text-3xl animate-pulse" style={{color:"var(--accent)"}}>auto_awesome</span>
                     </div>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                         {isEnglish ? 'Generating your interview questions…' : 'Interviewfragen werden generiert…'}
@@ -238,19 +238,18 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
 
             {/* ── QUESTION ── */}
             {phase === 'question' && (
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm overflow-hidden">
                     {/* Progress bar */}
                     <div className="w-full bg-gray-100 dark:bg-slate-800 h-1.5">
                         <div
-                            className="bg-violet-600 h-1.5 transition-all duration-500"
-                            style={{ width: `${((currentIndex) / totalQuestions) * 100}%` }}
+                            className="h-1.5 transition-all duration-500" style={{ width: `${((currentIndex) / totalQuestions) * 100}%` }}
                         />
                     </div>
 
                     <div className="p-6 space-y-5">
                         {/* Question header */}
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wider">
+                            <span className="text-xs font-semibold uppercase tracking-wider" style={{color:"var(--accent)"}}>
                                 {isEnglish
                                     ? `Question ${currentIndex + 1} of ${totalQuestions}`
                                     : `Frage ${currentIndex + 1} von ${totalQuestions}`}
@@ -258,9 +257,8 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                             {tts.isSupported && (
                                 <button
                                     onClick={handleReadAloud}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${tts.isSpeaking
-                                        ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
-                                        : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-700 dark:hover:text-violet-300'
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${tts.isSpeaking ? 'text-ink-950' /* style set inline */
+                                        : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gold-50 dark:hover:bg-gold-900/20 hover:text-gold-700 dark:hover:text-gold-300'
                                     }`}
                                     title={tts.isSpeaking ? labels.stop : labels.readAloud}
                                 >
@@ -286,7 +284,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                                 }}
                                 rows={5}
                                 placeholder={labels.typeAnswer}
-                                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-800 dark:text-gray-200 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 transition-all"
+                                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-800 dark:text-gray-200 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-gold-500/30 focus:border-gold-500 transition-all"
                             />
                             {stt.isListening && (
                                 <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-red-500 text-white text-xs font-medium px-2 py-1 rounded-full animate-pulse">
@@ -304,7 +302,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                                     title={stt.isListening ? labels.micStop : labels.micStart}
                                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${stt.isListening
                                         ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30'
-                                        : 'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:border-violet-300 hover:text-violet-600 dark:hover:text-violet-400'
+                                        : 'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-gold-50 dark:hover:bg-gold-900/20 hover:border-gold-300 hover:text-gold-600 dark:hover:text-gold-400'
                                     }`}
                                 >
                                     <span className="material-symbols-outlined text-base">
@@ -317,7 +315,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                             <button
                                 onClick={submitAnswer}
                                 disabled={!answer.trim()}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="btn-primary text-sm rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 <span className="material-symbols-outlined text-base">send</span>
                                 {labels.submit}
@@ -329,9 +327,9 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
 
             {/* ── EVALUATING ── */}
             {phase === 'evaluating' && (
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-4 shadow-sm">
-                    <div className="mx-auto w-16 h-16 rounded-full bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-3xl text-violet-500 animate-spin">progress_activity</span>
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 p-12 text-center space-y-4 shadow-sm">
+                    <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
+                        <span className="material-symbols-outlined text-3xl animate-spin" style={{color:"var(--accent)"}}>progress_activity</span>
                     </div>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                         {isEnglish ? 'Evaluating your answer…' : 'Antwort wird bewertet…'}
@@ -341,12 +339,11 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
 
             {/* ── RESULT ── */}
             {phase === 'result' && currentEvaluation && (
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm overflow-hidden">
                     {/* Progress bar */}
                     <div className="w-full bg-gray-100 dark:bg-slate-800 h-1.5">
                         <div
-                            className="bg-violet-600 h-1.5 transition-all duration-500"
-                            style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
+                            className="h-1.5 transition-all duration-500" style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
                         />
                     </div>
 
@@ -405,8 +402,8 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                         )}
 
                         {/* Model answer */}
-                        <div className="p-4 bg-violet-50 dark:bg-violet-900/20 rounded-xl border border-violet-100 dark:border-violet-800">
-                            <p className="text-xs font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <div className="p-4 rounded-xl border" style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)"}}>
+                            <p className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1" style={{color:"var(--accent)"}}>
                                 <span className="material-symbols-outlined text-sm">stars</span>
                                 {labels.modelAnswer}
                             </p>
@@ -417,7 +414,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                         <div className="flex justify-end">
                             <button
                                 onClick={handleNext}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md transition-all"
+                                className="btn-primary text-sm rounded-xl"
                             >
                                 <span className="material-symbols-outlined text-base">
                                     {currentIndex + 1 >= totalQuestions ? 'flag' : 'arrow_forward'}
@@ -433,7 +430,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
             {phase === 'finished' && (
                 <div className="space-y-6">
                     {/* Overall score card */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 text-center space-y-4">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm p-8 text-center space-y-4">
                         <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{labels.interviewComplete}</p>
                         <div className="flex flex-col items-center gap-2">
                             <span className="text-xs text-gray-400 uppercase tracking-wider font-medium">{labels.overallScore}</span>
@@ -443,7 +440,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                         </div>
                         <button
                             onClick={startInterview}
-                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl shadow-sm hover:shadow-md transition-all"
+                            className="btn-primary rounded-xl"
                         >
                             <span className="material-symbols-outlined text-base">replay</span>
                             {labels.retake}
@@ -453,7 +450,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                     {/* Per-question summary */}
                     <div className="space-y-4">
                         {results.map((r, idx) => (
-                            <details key={idx} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden group">
+                            <details key={idx} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-slate-800 shadow-sm overflow-hidden group">
                                 <summary className="flex items-center justify-between gap-4 cursor-pointer px-5 py-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                     <div className="flex items-center gap-3 min-w-0">
                                         <span className="shrink-0 text-xs font-bold text-gray-400 dark:text-gray-500 w-5 text-center">{idx + 1}</span>
@@ -499,8 +496,8 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                                         </div>
                                     )}
                                     {/* Model answer */}
-                                    <div className="p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-100 dark:border-violet-800">
-                                        <p className="text-xs font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-1.5">{labels.modelAnswer}</p>
+                                    <div className="p-3 rounded-lg border" style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)"}}>
+                                        <p className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{color:"var(--accent)"}}>{labels.modelAnswer}</p>
                                         <p className="text-sm text-gray-700 dark:text-gray-300">{r.evaluation.modelAnswer}</p>
                                     </div>
                                 </div>

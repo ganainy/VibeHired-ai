@@ -63,7 +63,7 @@ const SortableProjectItem: React.FC<SortableProjectItemProps> = ({ project, onTo
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-move"
+      className="flex items-center justify-between p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-move"
     >
       <div className="flex items-center gap-3 flex-1">
         <div
@@ -588,7 +588,7 @@ const PortfolioSetupPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8">
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-8">
         <LoadingSkeleton />
       </div>
     );
@@ -597,16 +597,16 @@ const PortfolioSetupPage: React.FC = () => {
   const progressPercentage = ((activeTab + 1) / 5) * 100;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-display">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-display">
       <main className="flex-grow flex justify-center py-6 lg:py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full flex flex-col">
           {/* Page Heading */}
           <div className="flex flex-wrap justify-between gap-4 p-4 items-center">
             <div className="flex flex-col gap-2">
-              <h1 className="text-slate-900 dark:text-white text-2xl font-bold leading-tight">
+              <h1 className="text-zinc-900 dark:text-white text-2xl font-bold leading-tight">
                 Portfolio Setup
               </h1>
-              <p className="text-slate-600 dark:text-slate-400 text-base font-normal leading-normal">
+              <p className="text-zinc-600 dark:text-zinc-400 text-base font-normal leading-normal">
                 Connect your accounts, configure your data, and publish your professional portfolio in minutes.
               </p>
             </div>
@@ -780,8 +780,8 @@ const PortfolioSetupPage: React.FC = () => {
 
                     {/* LinkedIn Card */}
                     <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 rounded-xl p-6 flex flex-col items-center text-center shadow-sm hover:shadow-lg transition-shadow duration-300">
-                      <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mb-4">
-                        <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{background:'var(--accent-bg)', border:'1px solid var(--accent-dim)'}}>
+                        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" style={{color:'var(--accent)'}}>
                           <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path>
                         </svg>
                       </div>
@@ -955,9 +955,9 @@ const PortfolioSetupPage: React.FC = () => {
                       )}
                     </div>
                     {!isLinkedInConnected && !linkedInData.name && !linkedInData.title && (
-                      <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <p className="text-sm text-blue-800 dark:text-blue-300">
-                          <span className="font-medium">No LinkedIn data found.</span> Go to the "Connect Accounts" tab and sync your LinkedIn profile to automatically fill these fields with your LinkedIn information.
+                      <div className="mb-4 p-4 rounded-lg" style={{background:'var(--accent-bg)', border:'1px solid var(--accent-dim)'}}>
+                        <p className="text-sm" style={{color:'var(--text-secondary)'}}>
+                          <span className="font-medium" style={{color:'var(--accent)'}}>No LinkedIn data found.</span> Go to the "Connect Accounts" tab and sync your LinkedIn profile to automatically fill these fields with your LinkedIn information.
                         </p>
                       </div>
                     )}

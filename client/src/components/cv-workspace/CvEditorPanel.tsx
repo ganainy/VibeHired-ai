@@ -135,7 +135,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
               <select
                 value={templateId}
                 onChange={(e) => onTemplateChange(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[160px]"
+                className="input-base px-3 py-1.5 text-sm min-w-[160px] focus:ring-gold-500/50"
               >
                 {availableTemplates.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
@@ -159,8 +159,8 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
               onClick={onSave}
               disabled={!hasUnsavedChanges || saveStatus === 'saving'}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${hasUnsavedChanges && saveStatus !== 'saving'
-                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                ? 'btn-primary hover:bg-primaryLight'
+                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed rounded-lg px-4 py-1.5 text-sm font-semibold'
                 }`}
             >
               {saveStatus === 'saving' ? (
@@ -179,7 +179,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
             {/* Download PDF button */}
             <button
               onClick={() => handlePrint()}
-              className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-sm"
+              className="btn-primary flex items-center gap-2 px-4 py-1.5 text-sm"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

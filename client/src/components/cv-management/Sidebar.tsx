@@ -50,37 +50,31 @@ const Sidebar: React.FC<SidebarProps> = ({
         return (
             <div
                 onClick={() => onSelectCv(cv._id)}
-                className={`
-                    group relative p-3 rounded-xl border cursor-pointer transition-all duration-200 w-64 flex-shrink-0
-                    ${isActive
-                        ? 'bg-white border-blue-500 shadow-sm ring-1 ring-blue-500/20'
-                        : 'bg-white border-gray-50 hover:border-gray-200 hover:shadow-sm'
-                    }
-                    dark:bg-gray-800 dark:border-gray-700
-                `}
+                style={isActive ? {background:'var(--bg-surface)', borderColor:'var(--accent)', boxShadow:'0 0 0 1px rgba(232,184,68,0.2)'} : {background:'var(--bg-surface)', borderColor:'var(--border)'}}
+                className="group relative p-3 rounded-xl border cursor-pointer transition-all duration-200 w-64 flex-shrink-0 hover:border-opacity-70"
             >
                 {isActive && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l-xl" />
+                    <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{background:'var(--accent)'}} />
                 )}
 
                 <div className="flex justify-between items-start mb-1">
-                    <h3 className={`font-semibold text-sm line-clamp-1 ${isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-200'}`}>
+                    <h3 className="font-semibold text-sm line-clamp-1" style={{color:'var(--text-primary)'}}>
                         {displayName}
                     </h3>
                 </div>
 
                 <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-gray-400 dark:text-gray-500 self-end">
+                    <span className="text-xs self-end" style={{color:'var(--text-muted)'}}>
                         Edited: {getRelativeTime(cv.updatedAt)}
                     </span>
 
                     <div className="flex gap-1.5">
                         {cv.category && (
-                            <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                            <span className="badge badge-gold text-[10px] px-1.5 py-0.5">
                                 {cv.category}
                             </span>
                         )}
-                        <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] text-gray-500 font-medium">
+                        <span className="badge badge-ink text-[10px] px-1.5 py-0.5">
                             English
                         </span>
                     </div>
@@ -97,7 +91,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     onRenameBranch(cv._id, newName.trim());
                                 }
                             }}
-                            className="p-1 text-gray-400 hover:text-blue-500 bg-white/80 dark:bg-gray-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/40"
+                            className="p-1 rounded-md transition-colors"
+                            style={{color:'var(--text-muted)', background:'var(--bg-elevated)'}}
+                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
                             title="Rename"
                         >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +108,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 e.stopPropagation();
                                 onDeleteCv(cv._id);
                             }}
-                            className="p-1 text-gray-400 hover:text-red-500 bg-white/80 dark:bg-gray-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/40"
+                            className="p-1 rounded-md transition-colors"
+                            style={{color:'var(--text-muted)', background:'var(--bg-elevated)'}}
+                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--rose)')}
+                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
                             title="Delete"
                         >
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,12 +125,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     };
 
     return (
-        <div className={`flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
-            <div className="flex flex-col gap-4 p-4 border-b border-gray-100 dark:border-gray-700/50">
+        <div className={`flex flex-col rounded-xl overflow-hidden ${className}`} style={{background:'var(--bg-surface)', border:'1px solid var(--border)', boxShadow:'0 2px 8px rgba(0,0,0,0.3)'}}>
+            <div className="flex flex-col gap-4 p-4 border-b" style={{borderColor:'var(--border)'}}>
                 {/* Row 1: Title & Filter */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <h2 className="text-sm font-extrabold text-gray-900 dark:text-white uppercase tracking-widest">My Documents</h2>
+                        <h2 className="text-sm font-extrabold uppercase tracking-widest label-overline" style={{color:'var(--text-primary)'}}>My Documents</h2>
 
                         {/* Search moved here */}
                         <div className="relative w-48 flex-shrink-0">
@@ -144,7 +144,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 placeholder="Filter CVs..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full py-1.5 pl-8 pr-3 text-[11px] bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder-gray-400 font-medium"
+                                className="input-base w-full py-1.5 pl-8 pr-3 text-[11px] font-medium focus:ring-gold-500/30"
                             />
                         </div>
                     </div>
@@ -159,10 +159,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {onCreateBranch && (
                                 <button
                                     onClick={onCreateBranch}
-                                    className="flex flex-col items-center justify-center gap-2 w-32 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-900/50 bg-blue-50/20 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:border-blue-400 dark:hover:border-blue-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/30 transition-all group"
+                                    className="flex flex-col items-center justify-center gap-2 w-32 rounded-xl border-2 border-dashed transition-all group"
+                                    style={{borderColor:'var(--accent-dim)', background:'var(--accent-bg)', color:'var(--accent)'}}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.background='var(--accent-bg-hover,rgba(232,184,68,0.14))'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor='var(--accent-dim)'; e.currentTarget.style.background='var(--accent-bg)'; }}
                                     title="Create a new CV"
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-blue-100/50 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform" style={{background:'var(--accent-bg)'}}>
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                         </svg>

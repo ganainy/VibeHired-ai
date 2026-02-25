@@ -151,7 +151,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
       {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 rounded-lg shadow-lg max-h-60 overflow-hidden">
           {/* Search Input */}
-          <div className="p-2 border-b border-slate-200 dark:border-slate-600">
+          <div className="p-2 border-b border-zinc-100 dark:border-slate-600">
             <input
               ref={inputRef}
               type="text"
@@ -189,7 +189,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                       ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100'
                       : highlightedIndex === index
                       ? 'bg-slate-100 dark:bg-slate-600 text-slate-900 dark:text-white'
-                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-zinc-50 dark:hover:bg-slate-600'
                   }`}
                 >
                   {option}

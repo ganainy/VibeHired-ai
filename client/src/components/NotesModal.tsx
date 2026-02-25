@@ -105,7 +105,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
                             onChange={(e) => setNotes(e.target.value)}
                             rows={12}
                             placeholder="Add your notes about this job application..."
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-colors"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-transparent resize-none transition-colors"
                             disabled={isSaving}
                         />
                         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -126,7 +126,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors flex items-center gap-2"
+                        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                         {isSaving ? (
                             <>

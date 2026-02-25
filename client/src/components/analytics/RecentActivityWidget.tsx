@@ -9,7 +9,7 @@ interface RecentActivityWidgetProps {
 
 const statusColors: Record<string, string> = {
     'Applied': 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30',
-    'Interview': 'text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/30',
+    'Interview': 'text-gold-600 bg-gold-100 dark:text-gold-400 dark:bg-gold-900/30',
     'Offer': 'text-emerald-600 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30',
     'Rejected': 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30',
     'Assessment': 'text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30',
@@ -45,10 +45,10 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ jobs
     }, [jobs]);
 
     return (
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-slate-200 dark:border-zinc-800 h-full">
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-100 dark:border-zinc-800 h-full">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="font-semibold text-slate-900 dark:text-white">Recent Activity</h3>
-                <Link to="/" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                <Link to="/" className="text-sm hover:underline" style={{color:'var(--accent)'}}>
                     View All
                 </Link>
             </div>

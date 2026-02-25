@@ -11,7 +11,7 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ onClick, hasUnr
     return (
         <button
             onClick={onClick}
-            className="fixed bottom-6 right-6 w-14 h-14 bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50 group"
+            className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50 group text-ink-950" style={{background:"var(--accent)"}}
             aria-label="Chat with AI"
             title="Chat with AI about this job"
         >
@@ -23,7 +23,7 @@ const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ onClick, hasUnr
             {hasUnread && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
             )}
-            <span className="absolute inset-0 rounded-full bg-purple-400 opacity-0 group-hover:opacity-20 transition-opacity"></span>
+            <span className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-20 transition-opacity" style={{background:"var(--accent)"}}></span>
         </button>
     );
 };
