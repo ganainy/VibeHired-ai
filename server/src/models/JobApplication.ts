@@ -5,6 +5,19 @@ import { JsonResumeSchema } from '../types/jsonresume'; // Assuming this type ex
 // Define allowed statuses
 type GenerationStatus = 'none' | 'pending_input' | 'draft_ready' | 'finalized' | 'error';
 
+// Reminder sub-document
+export interface IReminder {
+    id: string;
+    naturalText: string;
+    title: string;
+    description: string;
+    dateTimeISO: string;
+    notificationMinutesBefore: number;
+    calendarEventId?: string;
+    status: 'pending' | 'synced' | 'error';
+    createdAt: Date;
+}
+
 // Interface defining the structure of a Job Application document
 export interface IJobApplication extends Document {
     userId: mongoose.Schema.Types.ObjectId;
@@ -98,6 +111,8 @@ export interface IJobApplication extends Document {
     isFavorite?: boolean; // User can mark job as favorite
     // --- ATS Applied History ---
     appliedAtsSuggestions?: string[]; // History of applied ATS improvements (used to exclude from future scans)
+    // --- Reminders ---
+    reminders?: IReminder[];
     // --- Standard Timestamps ---
     createdAt: Date;
     updatedAt: Date;
@@ -209,7 +224,19 @@ const JobApplicationSchema: Schema = new Schema(
         // --- Favorite Flag Schema ---
         isFavorite: { type: Boolean, default: false, index: true },
         // --- ATS Applied History Schema ---
-        appliedAtsSuggestions: { type: [String], default: [] }
+        appliedAtsSuggestions: { type: [String], default: [] },
+        // --- Reminders Schema ---
+        reminders: [{
+            id: { type: String, required: true },
+            naturalText: { type: String, required: true },
+            title: { type: String, required: true },
+            description: { type: String, default: '' },
+            dateTimeISO: { type: String, required: true },
+            notificationMinutesBefore: { type: Number, default: 30 },
+            calendarEventId: { type: String },
+            status: { type: String, enum: ['pending', 'synced', 'error'], default: 'pending' },
+            createdAt: { type: Date, default: Date.now }
+        }]
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );

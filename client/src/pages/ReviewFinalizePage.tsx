@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { updateCustomPrompts } from '../services/settingsApi';
-import { getJobById, updateJob, JobApplication, scrapeJobDescriptionApi, extractJobFromTextApi, deleteJob } from '../services/jobApi';
+import { getJobById, updateJob, JobApplication, scrapeJobDescriptionApi, extractJobFromTextApi, deleteJob, IReminder } from '../services/jobApi';
+import { getGoogleCalendarStatus } from '../services/googleCalendarApi';
 import { renderFinalPdfs, renderCvPdf, renderCoverLetterPdf, getDownloadUrl, generateCvOnly, improveSection, applyAtsSuggestion } from '../services/generatorApi';
 import { analyzeCv, AnalysisResult, getAnalysis } from '../services/analysisApi';
 import { scanAts, getAtsScores, getAtsForJob, AtsScores, deleteAtsAnalysis } from '../services/atsApi';
@@ -18,6 +19,7 @@ import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
 import axios from 'axios';
 import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import ErrorAlert from '../components/common/ErrorAlert';
+import SendToPhoneButton from '../components/jobs/SendToPhoneButton';
 import Spinner from '../components/common/Spinner';
 import Toast from '../components/common/Toast';
 import JobStatusBadge from '../components/jobs/JobStatusBadge';
@@ -30,6 +32,7 @@ import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
 import PromptCustomizer from '../components/common/PromptCustomizer';
 import PromptChecklist from '../components/common/PromptChecklist';
 import MockInterviewPanel from '../components/jobs/MockInterviewPanel';
+import RemindersPanel from '../components/jobs/RemindersPanel';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { getBaseCoverLetters, applyBaseCoverLetterToJob, uploadCoverLetterForJob, saveCurrentCoverLetterForJob, CoverLetterBase } from '../services/coverLetterBaseApi';
@@ -114,7 +117,7 @@ const ReviewFinalizePage: React.FC = () => {
     const [isRefreshingRecommendation, setIsRefreshingRecommendation] = useState<boolean>(false);
     const [isRecommendationModalOpen, setIsRecommendationModalOpen] = useState<boolean>(false);
     const [isClCopied, setIsClCopied] = useState<boolean>(false);
-    const VALID_TABS = ['job-description', 'cover-letter', 'cv', 'mock-interview'] as const;
+    const VALID_TABS = ['job-description', 'cover-letter', 'cv', 'mock-interview', 'reminders'] as const;
     type ActiveTab = typeof VALID_TABS[number];
     const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
         // Priority 1: URL Param
@@ -177,6 +180,10 @@ const ReviewFinalizePage: React.FC = () => {
     const [isLoadingRawPdf, setIsLoadingRawPdf] = useState<boolean>(false);
     const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
     const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false);
+
+    // Reminders & Google Calendar
+    const [reminders, setReminders] = useState<IReminder[]>([]);
+    const [googleCalConnected, setGoogleCalConnected] = useState<boolean>(false);
 
     const [selectedTemplate, setSelectedTemplate] = useState<string>('german-latex');
     const [cvSaveStatus, setCvSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -510,6 +517,8 @@ const ReviewFinalizePage: React.FC = () => {
         try {
             const data = await getJobById(jobId);
             setJobApplication(data);
+            // Initialize reminders from loaded job
+            setReminders(data.reminders ?? []);
             // Seed applied ATS suggestions history from DB
             if (data.appliedAtsSuggestions && data.appliedAtsSuggestions.length > 0) {
                 setAppliedAtsSuggestions(data.appliedAtsSuggestions);
@@ -586,6 +595,13 @@ const ReviewFinalizePage: React.FC = () => {
     useEffect(() => {
         fetchJobData();
     }, [fetchJobData]);
+
+    // Fetch Google Calendar connection status once on mount
+    useEffect(() => {
+        getGoogleCalendarStatus()
+            .then((s) => setGoogleCalConnected(s.connected))
+            .catch(() => { /* Google Calendar not configured — not a fatal error */ });
+    }, []);
 
     // Reset initial load flag after data is loaded
     useEffect(() => {
@@ -2216,6 +2232,23 @@ const ReviewFinalizePage: React.FC = () => {
                                 }`}>Interview</span>
                         </button>
 
+                        {/* Tab 5: Reminders */}
+                        <button
+                            onClick={() => handleTabChange('reminders')}
+                            className="group flex flex-col items-center focus:outline-none"
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'reminders'
+                                ? 'bg-amber-500 text-white shadow-lg scale-125'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">notifications</span>
+                            </div>
+                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'reminders'
+                                ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}>Reminders{reminders.length > 0 && ` (${reminders.length})`}</span>
+                        </button>
+
                     </div>
                 </div>      {/* Tab Content */}
                 <div className="px-0 py-6">
@@ -2507,8 +2540,15 @@ const ReviewFinalizePage: React.FC = () => {
                                     {jobApplication.contactPhone && (
                                         <li className="flex items-start gap-3">
                                             <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                <strong className="text-text-main-light dark:text-text-main-dark">Contact Phone:</strong> {jobApplication.contactPhone}
+                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark flex flex-wrap items-center gap-2">
+                                                <strong className="text-text-main-light dark:text-text-main-dark">Contact Phone:</strong>
+                                                {jobApplication.contactPhone}
+                                                <SendToPhoneButton
+                                                    phone={jobApplication.contactPhone}
+                                                    company={jobApplication.companyName}
+                                                    jobTitle={jobApplication.jobTitle}
+                                                    contactName={jobApplication.hiringManagerName}
+                                                />
                                             </span>
                                         </li>
                                     )}
@@ -3804,6 +3844,23 @@ const ReviewFinalizePage: React.FC = () => {
                     {/* Tab 5: Mock Interview */}
                     {activeTab === 'mock-interview' && jobApplication && (
                         <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} />
+                    )}
+
+                    {/* Tab 6: Reminders */}
+                    {activeTab === 'reminders' && jobApplication && (
+                        <div className="max-w-2xl mx-auto">
+                            <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-5">
+                                <RemindersPanel
+                                    jobId={jobId!}
+                                    jobTitle={jobApplication.jobTitle}
+                                    companyName={jobApplication.companyName}
+                                    reminders={reminders}
+                                    googleConnected={googleCalConnected}
+                                    onRemindersChange={setReminders}
+                                    onToast={showToast}
+                                />
+                            </div>
+                        </div>
                     )}
                 </div>
 

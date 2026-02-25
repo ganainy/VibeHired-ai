@@ -35,6 +35,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "googleapis": "^171.4.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.0",
     "multer": "^1.4.5-lts.2",
@@ -42,6 +43,7 @@
     "openai": "^6.10.0",
     "pdf-parse": "^2.4.5",
     "puppeteer": "^24.7.2",
+    "uuid": "^13.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

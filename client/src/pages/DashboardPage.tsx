@@ -144,6 +144,8 @@ const DashboardPage: React.FC = () => {
   const [filterText, setFilterText] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterFavorite, setFilterFavorite] = useState<boolean>(false);
+  const [filterHasNotes, setFilterHasNotes] = useState<boolean>(false);
+  const [filterJobType, setFilterJobType] = useState<string>('');
   const [sortKey, setSortKey] = useState<SortableJobKeys>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -251,7 +253,7 @@ const DashboardPage: React.FC = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterText, filterStatus, filterFavorite]);
+  }, [filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType]);
 
   // --- Derived State: Filtered and Sorted Jobs ---
   const displayedJobs = useMemo(() => {
@@ -271,9 +273,19 @@ const DashboardPage: React.FC = () => {
       filteredJobs = filteredJobs.filter(job => job.status === filterStatus);
     }
 
+    // Apply Job Type Filter
+    if (filterJobType) {
+      filteredJobs = filteredJobs.filter(job => job.jobType === filterJobType);
+    }
+
     // Apply Favorite Filter
     if (filterFavorite) {
       filteredJobs = filteredJobs.filter(job => job.isFavorite === true);
+    }
+
+    // Apply Has Notes Filter
+    if (filterHasNotes) {
+      filteredJobs = filteredJobs.filter(job => !!job.notes && job.notes.trim().length > 0);
     }
 
     // Apply Sorting
@@ -302,7 +314,7 @@ const DashboardPage: React.FC = () => {
     }
 
     return filteredJobs;
-  }, [jobs, filterText, filterStatus, filterFavorite, sortKey, sortDirection]);
+  }, [jobs, filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, sortKey, sortDirection]);
 
   // --- Modal Event Handlers ---
   const handleOpenAddModal = () => {
@@ -716,25 +728,7 @@ const DashboardPage: React.FC = () => {
           })()}
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-stagger">
-          <div className="stat-card">
-            <div className="stat-card-value">{jobs.length}</div>
-            <div className="stat-card-label">Total Applications</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-value">{jobs.filter(j => j.status === 'Applied').length}</div>
-            <div className="stat-card-label">Applied</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-value">{jobs.filter(j => j.status === 'Interview').length}</div>
-            <div className="stat-card-label">Interviews</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-value">{jobs.filter(j => j.status === 'Offer').length}</div>
-            <div className="stat-card-label">Offers</div>
-          </div>
-        </div>
+
 
 
         {/* Add Job Section */}
@@ -1004,11 +998,13 @@ const DashboardPage: React.FC = () => {
         <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-6">
           {/* Filter Controls */}
           <div>
-            <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
-              <div className="w-full md:w-1/3">
-                <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2" htmlFor="filter-title">Filter by Title/Company</label>
+            <div className="flex flex-wrap items-end gap-3 mb-4">
+
+              {/* Search */}
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-xs font-medium mb-1.5 label-overline" htmlFor="filter-title">Search</label>
                 <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{color:'var(--text-muted)'}}>
                     <SearchIcon />
                   </div>
                   <input
@@ -1016,18 +1012,20 @@ const DashboardPage: React.FC = () => {
                     id="filter-title"
                     value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
-                    placeholder="Search..."
-                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-white focus:ring-zinc-900 dark:focus:ring-white rounded-xl pl-11 h-12 text-zinc-900 dark:text-zinc-100 transition-all"
+                    placeholder="Title or company…"
+                    className="input-base w-full pl-9 h-10 text-sm"
                   />
                 </div>
               </div>
-              <div className="w-full md:w-auto">
-                <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2" htmlFor="filter-status">Filter by Status</label>
+
+              {/* Status */}
+              <div className="min-w-[150px]">
+                <label className="block text-xs font-medium mb-1.5 label-overline" htmlFor="filter-status">Status</label>
                 <select
                   id="filter-status"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-white focus:ring-zinc-900 dark:focus:ring-white rounded-xl h-12 px-4 text-zinc-900 dark:text-zinc-100 transition-all"
+                  className="input-base w-full h-10 text-sm"
                 >
                   <option value="">All Statuses</option>
                   {statusOptions.map(status => (
@@ -1035,18 +1033,72 @@ const DashboardPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              <div className="w-full md:w-auto">
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Favorites</label>
-                <button
-                  onClick={() => setFilterFavorite(!filterFavorite)}
-                  className={`flex items-center gap-2 px-4 h-10 rounded-md border transition-colors ${filterFavorite
-                      ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300'
-                      : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
-                    }`}
+
+              {/* Job Type */}
+              <div className="min-w-[150px]">
+                <label className="block text-xs font-medium mb-1.5 label-overline" htmlFor="filter-jobtype">Job Type</label>
+                <select
+                  id="filter-jobtype"
+                  value={filterJobType}
+                  onChange={(e) => setFilterJobType(e.target.value)}
+                  className="input-base w-full h-10 text-sm"
                 >
-                  <StarIcon filled={filterFavorite} />
-                  <span>{filterFavorite ? 'Favorites Only' : 'All Jobs'}</span>
-                </button>
+                  <option value="">All Types</option>
+                  <option value="full-time">Full-time</option>
+                  <option value="part-time">Part-time</option>
+                  <option value="working-student">Working Student</option>
+                  <option value="internship">Internship</option>
+                  <option value="contract">Contract</option>
+                  <option value="freelance">Freelance</option>
+                </select>
+              </div>
+
+              {/* Toggle pills */}
+              <div className="flex items-end gap-2 pb-0">
+                <div>
+                  <label className="block text-xs font-medium mb-1.5 label-overline">Quick filters</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setFilterFavorite(!filterFavorite)}
+                      className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-sm font-medium transition-all ${
+                        filterFavorite
+                          ? 'text-ink-950 border-transparent'
+                          : 'border-transparent hover:opacity-80'
+                      }`}
+                      style={filterFavorite
+                        ? {background:'var(--accent)', color:'#0e0e17'}
+                        : {background:'var(--bg-raised)', color:'var(--text-secondary)', border:'1px solid var(--border)'}}
+                      title="Favorites only"
+                    >
+                      <StarIcon filled={filterFavorite} />
+                      <span>Favorites</span>
+                    </button>
+
+                    <button
+                      onClick={() => setFilterHasNotes(!filterHasNotes)}
+                      className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-sm font-medium transition-all hover:opacity-80"
+                      style={filterHasNotes
+                        ? {background:'var(--accent)', color:'#0e0e17', border:'1px solid transparent'}
+                        : {background:'var(--bg-raised)', color:'var(--text-secondary)', border:'1px solid var(--border)'}}
+                      title="Only show jobs with notes"
+                    >
+                      <span className="material-symbols-outlined text-base" style={{fontSize:'16px'}}>sticky_note_2</span>
+                      <span>Has Notes</span>
+                    </button>
+
+                    {(filterText || filterStatus || filterJobType || filterFavorite || filterHasNotes) && (
+                      <button
+                        onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); }}
+                        className="inline-flex items-center gap-1 h-10 px-3 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+                        style={{background:'var(--bg-raised)', color:'var(--text-muted)', border:'1px solid var(--border)'}}
+                        title="Clear all filters"
+                      >
+                        <span className="material-symbols-outlined" style={{fontSize:'15px'}}>close</span>
+                        <span>Clear</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1062,7 +1114,7 @@ const DashboardPage: React.FC = () => {
                       </p>
                       <div className="mt-6">
                         <button
-                          onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); }}
+                          onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); }}
                           className="btn-primary"
                         >
                           Clear Filters

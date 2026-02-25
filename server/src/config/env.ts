@@ -36,4 +36,8 @@ export const env = {
     NODE_ENV: process.env.NODE_ENV || 'development',
     FRONTEND_URL: process.env.FRONTEND_URL,
     ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
+    // Google OAuth (for Calendar integration)
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI,
 };

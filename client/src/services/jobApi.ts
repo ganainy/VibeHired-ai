@@ -50,6 +50,28 @@ export interface JobApplication {
         keyDetails?: string | Array<{ key: string; value: string }>;
     };
     // userId?: string; // Add later
+    reminders?: IReminder[];
+}
+
+/** Reminder sub-document (mirrors server IReminder) */
+export interface IReminder {
+    id: string;
+    naturalText: string;
+    title: string;
+    description: string;
+    dateTimeISO: string;
+    notificationMinutesBefore: number;
+    calendarEventId?: string;
+    status: 'pending' | 'synced' | 'error';
+    createdAt: string;
+}
+
+/** Shape returned by AI parse endpoint */
+export interface ParsedReminder {
+    title: string;
+    description: string;
+    dateTimeISO: string;
+    notificationMinutesBefore: number;
 }
 export type CreateJobPayload = Omit<JobApplication, '_id' | 'createdAt' | 'updatedAt' | 'draftCvJson' | 'draftCoverLetterText' | 'generationStatus'> & { createdAt?: string }; // Allow optional createdAt on create
 export type UpdateJobPayload = Partial<Omit<JobApplication, '_id' | 'userId' | 'updatedAt'>>; // Allow updating most fields including createdAt
@@ -261,6 +283,48 @@ export const updateJobDraft = async (jobId: string, draftData: UpdateDraftPayloa
         }
         throw { message: 'An unknown error occurred updating draft data.' };
     }
+};
+
+// ---  Reminder API Functions ---
+
+export const parseReminderApi = async (
+    jobId: string,
+    naturalText: string
+): Promise<ParsedReminder> => {
+    const response = await axios.post<ParsedReminder>(
+        `${API_BASE_URL}/job-applications/${jobId}/reminders/parse`,
+        { naturalText }
+    );
+    return response.data;
+};
+
+export interface AddReminderPayload {
+    naturalText: string;
+    title: string;
+    description: string;
+    dateTimeISO: string;
+    notificationMinutesBefore?: number;
+}
+
+export const addReminderApi = async (
+    jobId: string,
+    payload: AddReminderPayload
+): Promise<{ reminder: IReminder; job: { reminders: IReminder[] } }> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/job-applications/${jobId}/reminders`,
+        payload
+    );
+    return response.data;
+};
+
+export const deleteReminderApi = async (
+    jobId: string,
+    reminderId: string
+): Promise<{ message: string; reminders: IReminder[] }> => {
+    const response = await axios.delete(
+        `${API_BASE_URL}/job-applications/${jobId}/reminders/${reminderId}`
+    );
+    return response.data;
 };
 
 // Function to get all job applications with generated CVs

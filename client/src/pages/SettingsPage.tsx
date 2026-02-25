@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getApiKeys, updateApiKeys, deleteApiKey, getProviderModels, ApiKeys } from '../services/settingsApi';
+import { getGoogleCalendarStatus, getGoogleConnectUrl, disconnectGoogleCalendar } from '../services/googleCalendarApi';
 import Toast from '../components/common/Toast';
 import Spinner from '../components/common/Spinner';
 import SearchableSelect from '../components/common/SearchableSelect';
@@ -153,6 +154,13 @@ const SettingsPage: React.FC = () => {
     service: null,
   });
 
+  // Google Calendar state
+  const [googleCalConnected, setGoogleCalConnected] = useState(false);
+  const [googleCalEmail, setGoogleCalEmail] = useState<string | null>(null);
+  const [isLoadingGoogleCal, setIsLoadingGoogleCal] = useState(true);
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [isDisconnectingGoogle, setIsDisconnectingGoogle] = useState(false);
+
   // Onboarding collapse state
   const [isOnboardingExpanded, setIsOnboardingExpanded] = useState(true);
 
@@ -162,6 +170,59 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     loadApiKeys();
   }, []);
+
+  // Fetch Google Calendar status + handle OAuth callback redirect
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const gcStatus = params.get('googleCalendar');
+    if (gcStatus === 'connected') {
+      setToast({ message: 'Google Calendar connected successfully!', type: 'success' });
+      navigate('/settings', { replace: true });
+    } else if (gcStatus === 'error') {
+      const reason = params.get('reason') || 'unknown';
+      setToast({ message: `Google Calendar connection failed: ${reason}`, type: 'error' });
+      navigate('/settings', { replace: true });
+    }
+    loadGoogleCalStatus();
+  }, []);
+
+  const loadGoogleCalStatus = async () => {
+    setIsLoadingGoogleCal(true);
+    try {
+      const status = await getGoogleCalendarStatus();
+      setGoogleCalConnected(status.connected);
+      setGoogleCalEmail(status.email);
+    } catch {
+      // Non-fatal — Google Calendar might not be configured on the server
+    } finally {
+      setIsLoadingGoogleCal(false);
+    }
+  };
+
+  const handleGoogleConnect = async () => {
+    setIsConnectingGoogle(true);
+    try {
+      const url = await getGoogleConnectUrl();
+      window.location.href = url;
+    } catch (err: any) {
+      setToast({ message: err?.response?.data?.message || 'Failed to start Google OAuth flow.', type: 'error' });
+      setIsConnectingGoogle(false);
+    }
+  };
+
+  const handleGoogleDisconnect = async () => {
+    setIsDisconnectingGoogle(true);
+    try {
+      await disconnectGoogleCalendar();
+      setGoogleCalConnected(false);
+      setGoogleCalEmail(null);
+      setToast({ message: 'Google Calendar disconnected.', type: 'info' });
+    } catch (err: any) {
+      setToast({ message: err?.response?.data?.message || 'Failed to disconnect.', type: 'error' });
+    } finally {
+      setIsDisconnectingGoogle(false);
+    }
+  };
 
   // Fetch models when provider changes
   useEffect(() => {
@@ -940,6 +1001,96 @@ const SettingsPage: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Google Calendar Integration Card */}
+          <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+            <div className="p-4 sm:p-6 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg" style={{ background: 'var(--accent-bg)' }}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} style={{ color: 'var(--accent)' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                      Google Calendar
+                    </h3>
+                    <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+                      Optional — Sync job reminders to your Google Calendar
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isLoadingGoogleCal ? (
+                    <Spinner size="sm" />
+                  ) : googleCalConnected ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                      <CheckIcon />
+                      Connected
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-600 text-zinc-600 dark:text-zinc-400">
+                      Not Connected
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="p-4 sm:p-6 space-y-4">
+              {googleCalConnected ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">Connected account</p>
+                    {googleCalEmail && (
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{googleCalEmail}</p>
+                    )}
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                      New reminders will automatically be added to your primary Google Calendar.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleGoogleDisconnect}
+                    disabled={isDisconnectingGoogle}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors"
+                  >
+                    {isDisconnectingGoogle ? <Spinner size="sm" /> : <TrashIcon />}
+                    Disconnect
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    Connect your Google account to automatically sync job reminders (e.g. "Follow up in one week")
+                    directly to your Google Calendar with popup &amp; email notifications.
+                  </p>
+                  <ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-1 list-disc list-inside">
+                    <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--accent)' }}>Google Cloud Console</a></li>
+                    <li>Create a project → Enable "Google Calendar API"</li>
+                    <li>OAuth consent screen → Create OAuth 2.0 Client ID (Web application)</li>
+                    <li>Add your server's callback URL, then set <code className="bg-zinc-100 dark:bg-zinc-700 px-1 rounded">GOOGLE_CLIENT_ID</code>, <code className="bg-zinc-100 dark:bg-zinc-700 px-1 rounded">GOOGLE_CLIENT_SECRET</code>, and <code className="bg-zinc-100 dark:bg-zinc-700 px-1 rounded">GOOGLE_REDIRECT_URI</code> in your server environment.</li>
+                  </ul>
+                  <button
+                    onClick={handleGoogleConnect}
+                    disabled={isConnectingGoogle}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-600 disabled:opacity-50 transition-colors shadow-sm"
+                  >
+                    {isConnectingGoogle ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <svg className="w-4 h-4" viewBox="0 0 48 48" fill="none">
+                        <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107" />
+                        <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00" />
+                        <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50" />
+                        <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2" />
+                      </svg>
+                    )}
+                    Connect Google Account
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

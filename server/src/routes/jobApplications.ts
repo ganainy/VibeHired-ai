@@ -17,8 +17,14 @@ import {
   createJobFromTextBodySchema,
   updateDraftBodySchema,
   checkDuplicateQuerySchema,
+  parseReminderBodySchema,
+  addReminderBodySchema,
+  reminderIdParamSchema,
 } from '../validations/jobApplicationSchemas';
 import { objectIdParamSchema, jobIdParamSchema, filenameParamSchema } from '../validations/commonSchemas';
+import { parseReminder } from '../services/reminderParserService';
+import { createCalendarEvent, deleteCalendarEvent, isGoogleConnected } from '../services/googleCalendarService';
+import { v4 as uuidv4 } from 'uuid';
 
 const router: Router = express.Router();
 
@@ -873,6 +879,144 @@ const getJobRecommendationHandler: RequestHandler = async (req: ValidatedRequest
   }
 };
 router.get('/:id/recommendation', validateRequest({ params: objectIdParamSchema }), getJobRecommendationHandler);
+
+
+// ============================================================================
+// REMINDER ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/job-applications/:id/reminders/parse
+ * AI-parses a natural-language reminder string into a structured object.
+ * Does NOT save anything — purely a preview step.
+ */
+const parseReminderHandler: RequestHandler = async (req: ValidatedRequest, res) => {
+  const user = req.user as { _id: mongoose.Types.ObjectId | string };
+  if (!user) { res.status(401).json({ message: 'Not authenticated.' }); return; }
+
+  const { id: jobId } = req.validated!.params!;
+  const { naturalText } = req.validated!.body!;
+  const userId = user._id.toString();
+
+  try {
+    const job = await JobApplication.findOne({ _id: jobId, userId });
+    if (!job) { res.status(404).json({ message: 'Job not found.' }); return; }
+
+    const parsed = await parseReminder(userId, naturalText, {
+      jobTitle: job.jobTitle,
+      companyName: job.companyName,
+    });
+    res.json(parsed);
+  } catch (err: any) {
+    console.error('parseReminderHandler error:', err);
+    res.status(500).json({ message: err.message || 'AI parsing failed.' });
+  }
+};
+router.post(
+  '/:id/reminders/parse',
+  validateRequest({ params: objectIdParamSchema, body: parseReminderBodySchema }),
+  parseReminderHandler
+);
+
+/**
+ * POST /api/job-applications/:id/reminders
+ * Save a confirmed reminder. If Google Calendar is connected, also creates a calendar event.
+ */
+const addReminderHandler: RequestHandler = async (req: ValidatedRequest, res) => {
+  const user = req.user as { _id: mongoose.Types.ObjectId | string };
+  if (!user) { res.status(401).json({ message: 'Not authenticated.' }); return; }
+
+  const { id: jobId } = req.validated!.params!;
+  const body = req.validated!.body!;
+  const userId = user._id.toString();
+
+  try {
+    const job = await JobApplication.findOne({ _id: jobId, userId });
+    if (!job) { res.status(404).json({ message: 'Job not found.' }); return; }
+
+    const newReminder: any = {
+      id: uuidv4(),
+      naturalText: body.naturalText,
+      title: body.title,
+      description: body.description ?? '',
+      dateTimeISO: body.dateTimeISO,
+      notificationMinutesBefore: body.notificationMinutesBefore ?? 30,
+      status: 'pending',
+      createdAt: new Date(),
+    };
+
+    // Attempt Google Calendar sync
+    const googleConnected = await isGoogleConnected(userId);
+    if (googleConnected) {
+      try {
+        const eventId = await createCalendarEvent(userId, newReminder, {
+          jobTitle: job.jobTitle,
+          companyName: job.companyName,
+        });
+        newReminder.calendarEventId = eventId;
+        newReminder.status = 'synced';
+      } catch (calErr: any) {
+        console.error('Google Calendar sync failed, saving reminder as pending:', calErr);
+        newReminder.status = 'error';
+      }
+    }
+
+    job.reminders = [...(job.reminders ?? []), newReminder];
+    await job.save();
+
+    res.status(201).json({ reminder: newReminder, job: { reminders: job.reminders } });
+  } catch (err: any) {
+    console.error('addReminderHandler error:', err);
+    res.status(500).json({ message: err.message || 'Failed to save reminder.' });
+  }
+};
+router.post(
+  '/:id/reminders',
+  validateRequest({ params: objectIdParamSchema, body: addReminderBodySchema }),
+  addReminderHandler
+);
+
+/**
+ * DELETE /api/job-applications/:id/reminders/:reminderId
+ * Remove a reminder from a job. Also deletes the calendar event if one was created.
+ */
+const deleteReminderHandler: RequestHandler = async (req: ValidatedRequest, res) => {
+  const user = req.user as { _id: mongoose.Types.ObjectId | string };
+  if (!user) { res.status(401).json({ message: 'Not authenticated.' }); return; }
+
+  const { id: jobId, reminderId } = req.validated!.params!;
+  const userId = user._id.toString();
+
+  try {
+    const job = await JobApplication.findOne({ _id: jobId, userId });
+    if (!job) { res.status(404).json({ message: 'Job not found.' }); return; }
+
+    const reminder = (job.reminders ?? []).find((r: any) => r.id === reminderId);
+    if (!reminder) { res.status(404).json({ message: 'Reminder not found.' }); return; }
+
+    // Delete the calendar event if it exists
+    if ((reminder as any).calendarEventId) {
+      try {
+        await deleteCalendarEvent(userId, (reminder as any).calendarEventId);
+      } catch (calErr) {
+        console.error('Failed to delete calendar event, proceeding with DB delete:', calErr);
+      }
+    }
+
+    job.reminders = (job.reminders ?? []).filter((r: any) => r.id !== reminderId);
+    await job.save();
+
+    res.json({ message: 'Reminder deleted.', reminders: job.reminders });
+  } catch (err: any) {
+    console.error('deleteReminderHandler error:', err);
+    res.status(500).json({ message: err.message || 'Failed to delete reminder.' });
+  }
+};
+router.delete(
+  '/:id/reminders/:reminderId',
+  validateRequest({ params: reminderIdParamSchema }),
+  deleteReminderHandler
+);
 
 
 export default router; // Export the configured router

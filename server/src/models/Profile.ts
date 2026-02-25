@@ -67,6 +67,12 @@ export interface IProfile extends Document {
       baseUrl?: string;
       enabled?: boolean;
     };
+    google?: {
+      accessToken?: string;
+      refreshToken?: string;
+      email?: string;
+      enabled?: boolean;
+    };
   };
   settings?: {
     theme?: string;
@@ -250,6 +256,15 @@ const ProfileSchema: Schema = new Schema(
           type: String,
           default: 'http://localhost:11434',
         },
+        enabled: {
+          type: Boolean,
+          default: false,
+        },
+      },
+      google: {
+        accessToken: String,
+        refreshToken: String,
+        email: String,
         enabled: {
           type: Boolean,
           default: false,

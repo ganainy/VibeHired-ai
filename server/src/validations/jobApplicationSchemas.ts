@@ -142,3 +142,31 @@ export const checkDuplicateQuerySchema = z.object({
   companyName: z.string().optional(),
   jobTitle: z.string().optional(),
 });
+
+/**
+ * Parse reminder (AI) — just the natural language text
+ */
+export const parseReminderBodySchema = z.object({
+  naturalText: z.string().min(3, 'Please describe what you want to be reminded about.').max(500),
+});
+
+/**
+ * Save a confirmed reminder
+ */
+export const addReminderBodySchema = z.object({
+  naturalText: z.string().min(1),
+  title: z.string().min(1, 'Title is required.'),
+  description: z.string().default(''),
+  dateTimeISO: z.string().refine((v) => !isNaN(Date.parse(v)), {
+    message: 'dateTimeISO must be a valid ISO 8601 date string',
+  }),
+  notificationMinutesBefore: z.number().int().min(0).max(10080).default(30),
+});
+
+/**
+ * Reminder id param
+ */
+export const reminderIdParamSchema = z.object({
+  id: z.string().min(1, 'Job ID is required'),
+  reminderId: z.string().min(1, 'Reminder ID is required'),
+});
