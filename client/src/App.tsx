@@ -17,6 +17,9 @@ import PortfolioSetupPage from './pages/PortfolioSetupPage';
 import SettingsPage from './pages/SettingsPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AutoJobsPage from './pages/AutoJobsPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import GoogleAuthCallbackPage from './pages/GoogleAuthCallbackPage';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -58,6 +61,9 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth/google" element={<GoogleAuthCallbackPage />} />
           <Route path="/" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
@@ -70,6 +76,9 @@ function App() {
       <Routes>
         <Route path="/login" element={<Navigate to="/dashboard" replace />} />
         <Route path="/register" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/forgot-password" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/reset-password" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/auth/google" element={<GoogleAuthCallbackPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/manage-cv" element={<ProtectedRoute><CVManagementPage /></ProtectedRoute>} />
         <Route path="/auto-jobs" element={<ProtectedRoute><AutoJobsPage /></ProtectedRoute>} />

@@ -1,17 +1,23 @@
 // server/src/routes/googleAuth.ts
 /**
- * Google OAuth 2.0 routes for Calendar integration.
+ * Google OAuth 2.0 routes — two separate flows:
  *
- * Endpoints:
- *   GET  /api/auth/google/connect   — Returns the Google OAuth consent URL
- *   GET  /api/auth/google/callback  — Handles the OAuth callback; stores tokens
- *   GET  /api/auth/google/status    — Returns { connected, email }
- *   DELETE /api/auth/google/disconnect — Revokes & removes stored tokens
+ * ── Calendar Integration (existing) ──
+ *   GET  /api/auth/google/connect     — Returns consent URL (authenticated, calendar scopes)
+ *   GET  /api/auth/google/callback    — Stores tokens after calendar auth
+ *   GET  /api/auth/google/status      — Returns { connected, email }
+ *   DELETE /api/auth/google/disconnect
+ *
+ * ── Google Sign-In (new) ──
+ *   GET  /api/auth/google/login       — Returns consent URL (public, email+profile scopes)
+ *   GET  /api/auth/google/auth-callback — Handles login redirect; issues JWT
  */
 import express, { Router, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { google } from 'googleapis';
 import authMiddleware from '../middleware/authMiddleware';
 import Profile from '../models/Profile';
+import User from '../models/User';
 import { env } from '../config/env';
 import { encrypt } from '../utils/encryption';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -24,7 +30,7 @@ const SCOPES = [
     'https://www.googleapis.com/auth/userinfo.email',
 ];
 
-function buildOAuth2Client() {
+function buildOAuth2Client(redirectUri?: string) {
     if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.GOOGLE_REDIRECT_URI) {
         throw new ValidationError(
             'Google OAuth is not configured on this server. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI.'
@@ -33,7 +39,7 @@ function buildOAuth2Client() {
     return new google.auth.OAuth2(
         env.GOOGLE_CLIENT_ID,
         env.GOOGLE_CLIENT_SECRET,
-        env.GOOGLE_REDIRECT_URI
+        redirectUri ?? env.GOOGLE_REDIRECT_URI
     );
 }
 
@@ -157,4 +163,101 @@ router.delete('/disconnect', authMiddleware, asyncHandler(async (req: Request, r
     res.json({ message: 'Google Calendar disconnected.' });
 }));
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Google Sign-In routes (public — no authMiddleware)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const LOGIN_SCOPES = [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'openid',
+];
+
+const JWT_EXPIRY = '7d';
+
+function getJwtSecret(): string {
+    const secret = env.JWT_SECRET;
+    if (!secret) throw new ValidationError('JWT_SECRET is not configured.');
+    return secret;
+}
+
+/**
+ * GET /api/auth/google/login
+ * Public — returns `{ url }` for the Google consent page (email + profile scopes).
+ * Frontend should redirect/open the returned URL.
+ */
+router.get('/login', asyncHandler(async (_req: Request, res: Response) => {
+    const loginRedirectUri = env.GOOGLE_LOGIN_REDIRECT_URI || 'http://localhost:5001/api/auth/google/auth-callback';
+    const oauth2Client = buildOAuth2Client(loginRedirectUri);
+    const url = oauth2Client.generateAuthUrl({
+        access_type: 'online',
+        scope: LOGIN_SCOPES,
+        prompt: 'select_account',
+    });
+    res.json({ url });
+}));
+
+/**
+ * GET /api/auth/google/auth-callback
+ * Public — Google redirects here after the user signs in.
+ * Finds or creates the User, issues a JWT, and redirects to the frontend.
+ */
+router.get('/auth-callback', asyncHandler(async (req: Request, res: Response) => {
+    const { code, error } = req.query as Record<string, string>;
+    const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+
+    if (error || !code) {
+        return res.redirect(`${frontendUrl}/login?error=google_failed`);
+    }
+
+    let googleEmail: string;
+    let googleId: string;
+    try {
+        const loginRedirectUri = env.GOOGLE_LOGIN_REDIRECT_URI || 'http://localhost:5001/api/auth/google/auth-callback';
+        const oauth2Client = buildOAuth2Client(loginRedirectUri);
+        const { tokens } = await oauth2Client.getToken(code);
+        oauth2Client.setCredentials(tokens);
+
+        const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+        const { data } = await oauth2.userinfo.get();
+
+        if (!data.email || !data.id) {
+            return res.redirect(`${frontendUrl}/login?error=google_failed`);
+        }
+        googleEmail = data.email.toLowerCase();
+        googleId = data.id;
+    } catch {
+        return res.redirect(`${frontendUrl}/login?error=google_failed`);
+    }
+
+    // Find by googleId first, then by email (to link existing accounts)
+    let user = await User.findOne({ googleId });
+
+    if (!user) {
+        user = await User.findOne({ email: googleEmail });
+        if (user) {
+            // Link this Google account to the existing email account
+            user.googleId = googleId;
+            await user.save({ validateBeforeSave: false });
+        } else {
+            // Create a brand-new Google-only account
+            let username = googleEmail.split('@')[0].replace(/[^a-z0-9_-]/gi, '').substring(0, 30) || 'user';
+            const taken = await User.findOne({ username });
+            if (taken) username = `${username}${Math.floor(Math.random() * 9000) + 1000}`;
+
+            user = new User({ email: googleEmail, googleId, username });
+            await user.save({ validateBeforeSave: false });
+        }
+    }
+
+    const token = jwt.sign(
+        { userId: String(user._id), email: user.email },
+        getJwtSecret(),
+        { expiresIn: JWT_EXPIRY as jwt.SignOptions['expiresIn'] }
+    );
+
+    return res.redirect(`${frontendUrl}/auth/google?token=${token}`);
+}));
+
 export default router;
+

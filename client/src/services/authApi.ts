@@ -78,6 +78,38 @@ export const getCurrentUserProfile = async (): Promise<UserProfile> => {
 
 // Username updates are no longer allowed after registration
 // The updateUsername function has been removed
+
+export const forgotPassword = async (email: string): Promise<{ message: string }> => {
+    try {
+        const response = await axios.post<{ message: string }>(`${API_BASE_URL}/forgot-password`, { email });
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) throw error.response.data as ApiError;
+        throw { message: 'An error occurred. Please try again.' } as ApiError;
+    }
+};
+
+export const resetPassword = async (token: string, password: string): Promise<{ message: string }> => {
+    try {
+        const response = await axios.post<{ message: string }>(`${API_BASE_URL}/reset-password`, { token, password });
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) throw error.response.data as ApiError;
+        throw { message: 'An error occurred. Please try again.' } as ApiError;
+    }
+};
+
+export const getGoogleLoginUrl = async (): Promise<string> => {
+    try {
+        const response = await axios.get<{ url: string }>(
+            `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api'}/auth/google/login`
+        );
+        return response.data.url;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) throw error.response.data as ApiError;
+        throw { message: 'Could not get Google login URL.' } as ApiError;
+    }
+};
 // export const updateUsername = async (username: string): Promise<{ message: string; username: string }> => {
 //     try {
 //         const response = await axios.put<{ message: string; username: string }>(`${API_BASE_URL}/username`, { username });

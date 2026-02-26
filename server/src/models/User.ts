@@ -5,7 +5,8 @@ import { JsonResumeSchema } from '../types/jsonresume';
 
 export interface IUser extends Document {
   email: string;
-  passwordHash: string; // Store hash, not the plain password
+  passwordHash?: string; // Optional — Google-only users have no password
+  googleId?: string;   // Google OAuth subject ID
   username?: string; // Optional username for portfolio URLs
   cvJson?: JsonResumeSchema | mongoose.Schema.Types.Mixed;
   cvAnalysisCache?: {
@@ -15,6 +16,8 @@ export interface IUser extends Document {
   };
   selectedTemplate?: string; // Selected CV template ID
   cvFilename?: string; // Original filename of the uploaded CV
+  passwordResetToken?: string;   // SHA-256 hash of the raw reset token
+  passwordResetExpires?: Date;    // Expiry date of the reset token
   createdAt?: Date; // Added by Mongoose timestamps
   updatedAt?: Date; // Added by Mongoose timestamps
   // Add other fields like name later if needed
@@ -38,9 +41,20 @@ const UserSchema: Schema = new Schema(
       trim: true,
       lowercase: true,
     },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow many null values; enforce uniqueness only for non-null
+    },
     passwordHash: {
       type: String,
-      required: true,
+      required: false, // Optional for Google-only accounts
+    },
+    passwordResetToken: {
+      type: String,
+    },
+    passwordResetExpires: {
+      type: Date,
     },
     cvJson: {
       type: Schema.Types.Mixed,
@@ -73,8 +87,8 @@ const UserSchema: Schema = new Schema(
 // Use a pre-save hook to hash the password BEFORE it's saved to the DB
 // Note: Needs 'function' keyword to correctly scope 'this'
 UserSchema.pre<IUser>('save', async function (next) {
-  // Only hash the password if it has been modified (or is new)
-  if (!this.isModified('passwordHash')) return next();
+  // Only hash the password if it has been modified (or is new) and is set
+  if (!this.isModified('passwordHash') || !this.passwordHash) return next();
 
   try {
     // Generate a salt and hash the password
@@ -97,7 +111,7 @@ UserSchema.pre<IUser>('save', async function (next) {
 // --- Password Comparison Method ---
 // Add a method to the user schema to easily compare passwords
 UserSchema.methods.comparePassword = function (candidatePassword: string): Promise<boolean> {
-  // 'this.passwordHash' refers to the hash stored in the document
+  if (!this.passwordHash) return Promise.resolve(false);
   return bcrypt.compare(candidatePassword, this.passwordHash);
 };
 

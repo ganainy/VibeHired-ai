@@ -1,6 +1,6 @@
 // client/src/context/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { loginUser, registerUser } from '../services/authApi'; // Import API calls
+import { loginUser, registerUser } from '../services/authApi';
 import axios from 'axios'; // Import axios to set default header
 
 // Define the shape of the user object
@@ -22,6 +22,7 @@ interface AuthContextType {
   login: (credentials: { email: string, password: string }) => Promise<void>;
   register: (credentials: { email: string, username: string, password: string }) => Promise<void>;
   logout: () => void;
+  loginWithToken: (token: string) => void;
 }
 
 // Create the context with a default undefined value initially
@@ -115,6 +116,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [logout]);
 
+  // loginWithToken — used by the Google OAuth callback page
+  const loginWithToken = React.useCallback((token: string) => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userObj: User = { id: payload.userId, email: payload.email };
+      setUser(userObj);
+      setToken(token);
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('authUser', JSON.stringify(userObj));
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } catch (e) {
+      console.error('Failed to decode token', e);
+    }
+  }, []);
+
   // Register function (doesn't log in automatically)
   const register = React.useCallback(async (credentials: { email: string, username: string, password: string }) => {
     setError(null);
@@ -133,7 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Value provided by the context
   const value = {
-    isAuthenticated: !!token, // True if token exists
+    isAuthenticated: !!token,
     user,
     token,
     isLoading,
@@ -141,6 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    loginWithToken,
   };
 
   return (

@@ -1,12 +1,15 @@
 // server/src/routes/auth.ts
 import express, { Router, Request, Response, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import mongoose from 'mongoose';
 import User from '../models/User'; // Import User model
 import { validateRequest } from '../middleware/validateRequest';
-import { registerBodySchema, loginBodySchema } from '../validations/authSchemas';
+import { registerBodySchema, loginBodySchema, forgotPasswordBodySchema, resetPasswordBodySchema } from '../validations/authSchemas';
 import { ValidatedRequest } from '../middleware/validateRequest';
 import authMiddleware from '../middleware/authMiddleware';
+import { env } from '../config/env';
+import { sendPasswordResetEmail } from '../utils/emailService';
 
 const router: Router = express.Router();
 
@@ -154,6 +157,83 @@ router.get('/me', authMiddleware as RequestHandler, async (req: Request, res: Re
 
 // Username updates are no longer allowed after registration
 // The PUT /api/auth/username endpoint has been removed
+
+
+// --- Forgot Password Route ---
+// POST /api/auth/forgot-password
+router.post('/forgot-password', validateRequest({ body: forgotPasswordBodySchema }), async (req: ValidatedRequest, res: Response) => {
+    const { email } = req.validated!.body!;
+
+    try {
+        const user = await User.findOne({ email });
+
+        // Always respond with the same message to prevent user enumeration
+        if (!user) {
+            res.status(200).json({ message: 'If that email exists, a reset link has been sent.' });
+            return;
+        }
+
+        // Generate a raw random token and store its SHA-256 hash in the DB
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+        user.passwordResetToken = hashedToken;
+        user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+        await user.save({ validateBeforeSave: false });
+
+        const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+        const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
+
+        try {
+            await sendPasswordResetEmail(email, resetUrl);
+        } catch (emailErr) {
+            // Roll back the token if the email fails to send
+            user.passwordResetToken = undefined;
+            user.passwordResetExpires = undefined;
+            await user.save({ validateBeforeSave: false });
+            console.error('Failed to send reset email:', emailErr);
+            res.status(500).json({ message: 'Failed to send reset email. Please try again later.' });
+            return;
+        }
+
+        res.status(200).json({ message: 'If that email exists, a reset link has been sent.' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ message: 'Server error.' });
+    }
+});
+
+
+// --- Reset Password Route ---
+// POST /api/auth/reset-password
+router.post('/reset-password', validateRequest({ body: resetPasswordBodySchema }), async (req: ValidatedRequest, res: Response) => {
+    const { token: rawToken, password } = req.validated!.body!;
+
+    try {
+        const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+        const user = await User.findOne({
+            passwordResetToken: hashedToken,
+            passwordResetExpires: { $gt: new Date() }, // Token must not be expired
+        });
+
+        if (!user) {
+            res.status(400).json({ message: 'Reset token is invalid or has expired.' });
+            return;
+        }
+
+        // Assign new password (pre-save hook will hash it)
+        user.passwordHash = password;
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: 'Password reset successfully. You can now log in.' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ message: 'Server error.' });
+    }
+});
 
 
 export default router;
