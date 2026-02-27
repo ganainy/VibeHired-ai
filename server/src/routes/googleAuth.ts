@@ -28,6 +28,9 @@ const router: Router = express.Router();
 const SCOPES = [
     'https://www.googleapis.com/auth/calendar.events',
     'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/gmail.labels',
+    'https://www.googleapis.com/auth/gmail.modify',
 ];
 
 function buildOAuth2Client(redirectUri?: string) {

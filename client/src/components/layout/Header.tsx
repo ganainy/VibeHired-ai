@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-
+// ── Inbox icon (email suggestions) ───────────────────────────────────────────────────────
+const InboxIconMobile = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+        <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" />
+    </svg>
+);
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 const Logo = () => (
@@ -86,7 +92,11 @@ const LogoutIcon = () => (
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-const Header = () => {
+interface HeaderProps {
+    pendingEmailCount?: number;
+}
+
+const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
     const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const location = useLocation();
@@ -121,6 +131,7 @@ const Header = () => {
     const navItems = [
         { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
         { path: '/manage-cv', label: 'Manage CV', icon: WorkIcon },
+        { path: '/email-suggestions', label: 'Inbox', icon: InboxIconMobile, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
         { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon },
         { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
         { path: '/portfolio-setup', label: 'Portfolio', icon: PortfolioIcon },
@@ -222,12 +233,19 @@ const Header = () => {
                                     >
                                         <item.icon />
                                         {item.label}
-                                        {isActive && (
+                                        {(item as any).badge ? (
+                                            <span
+                                                className="ml-auto min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold px-1"
+                                                style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+                                            >
+                                                {(item as any).badge > 9 ? '9+' : (item as any).badge}
+                                            </span>
+                                        ) : isActive ? (
                                             <span
                                                 className="ml-auto w-1.5 h-1.5 rounded-full"
                                                 style={{ backgroundColor: 'var(--accent)' }}
                                             />
-                                        )}
+                                        ) : null}
                                     </Link>
                                 );
                             })}

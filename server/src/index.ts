@@ -25,6 +25,7 @@ import autoJobRoutes from './routes/autoJobRoutes';
 import chatRoutes from './routes/chat';
 import interviewRoutes from './routes/interview';
 import googleAuthRoutes from './routes/googleAuth';
+import emailSuggestionsRoutes from './routes/emailSuggestions';
 // Correct the import for the default export
 import protect from './middleware/authMiddleware'; // Import default export and alias it as 'protect'
 import { errorHandler } from './middleware/errorHandler';
@@ -96,6 +97,7 @@ app.use('/api/auto-jobs', autoJobRoutes); // Auto-jobs routes (protected)
 app.use('/api/chat', protect, chatRoutes); // Chat routes (protected)
 app.use('/api/interview', protect, interviewRoutes); // Mock interview routes (protected)
 app.use('/api/auth/google', googleAuthRoutes); // Google OAuth routes (callback is public, others are protected internally)
+app.use('/api/email-suggestions', protect, emailSuggestionsRoutes); // Email suggestion routes (protected)
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
@@ -113,6 +115,20 @@ mongoose.connect(mongoUri)
     console.log('MongoDB Connected Successfully');
 
     // Auto-job scheduling removed - jobs are now only manually triggered
+
+    // ── Gmail email suggestion polling (every 15 minutes) ─────────────────
+    import('node-cron').then(({ default: cron }) => {
+      import('./services/emailSuggestionService').then(({ pollAllUsers }) => {
+        cron.schedule('*/15 * * * *', async () => {
+          try {
+            await pollAllUsers();
+          } catch (err) {
+            console.error('[Cron] Email suggestion poll error:', err);
+          }
+        });
+        console.log('[Cron] Gmail email suggestion poller scheduled (every 15 min)');
+      });
+    });
 
     // Start listening only after successful DB connection
     const server = app.listen(port, () => {

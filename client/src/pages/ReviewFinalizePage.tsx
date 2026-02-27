@@ -225,7 +225,7 @@ const ReviewFinalizePage: React.FC = () => {
                 console.error("Error reading selectedBaseCvId from localStorage", e);
             }
         }
-        return 'master';
+        return '';
     });
     const [selectedClBaseCvId, setSelectedClBaseCvId] = useState<string>(() => {
         // Read from localStorage for persistence per job
@@ -276,7 +276,7 @@ const ReviewFinalizePage: React.FC = () => {
                 console.error("Error saving selectedBaseCvId to localStorage", e);
             }
 
-            const baseCvIdForJob = newId === 'master' ? null : newId;
+            const baseCvIdForJob = (newId === 'master' || newId === '') ? null : newId;
             void updateJob(currentJobId, { baseCvId: baseCvIdForJob })
                 .then((updatedJob) => {
                     setJobApplication(prev => prev ? { ...prev, baseCvId: updatedJob.baseCvId ?? null } : prev);
@@ -379,7 +379,7 @@ const ReviewFinalizePage: React.FC = () => {
                 if (savedBaseCvId) {
                     setSelectedBaseCvId(savedBaseCvId);
                 } else {
-                    setSelectedBaseCvId('master');
+                    setSelectedBaseCvId('');
                 }
 
                 const savedClBaseCvId = localStorage.getItem(`job_selectedClBaseCvId_${jobId}`);
@@ -390,7 +390,7 @@ const ReviewFinalizePage: React.FC = () => {
                 }
             } catch (e) {
                 console.error("Error reading CV selection from localStorage", e);
-                setSelectedBaseCvId('master');
+                setSelectedBaseCvId('');
                 setSelectedClBaseCvId('master');
             }
         }
@@ -677,13 +677,14 @@ const ReviewFinalizePage: React.FC = () => {
     useEffect(() => {
         if (availableCvs.length === 0 || !jobId) return;
 
+        // '' means "not selected" — always valid, don't auto-select
+        if (selectedBaseCvId === '' || selectedBaseCvId === 'master') return;
+
         const hasValidSelection = availableCvs.some(cv => cv.id === selectedBaseCvId);
         if (hasValidSelection) return;
 
-        const fallbackCvId = availableCvs[0]?.id;
-        if (!fallbackCvId) return;
-
-        handleSelectedBaseCvIdChange(fallbackCvId);
+        // Previously selected CV no longer exists — reset to "not selected"
+        handleSelectedBaseCvIdChange('');
     }, [availableCvs, selectedBaseCvId, jobId]);
 
     // Fetch existing ATS scores when job application is loaded
@@ -3799,6 +3800,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                             onChange={(e) => handleSelectedBaseCvIdChange(e.target.value)}
                                                             className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
                                                         >
+                                                            <option value="">— Not selected —</option>
                                                             {availableCvs.map(cv => (
                                                                 <option key={cv.id} value={cv.id}>{cv.name}</option>
                                                             ))}

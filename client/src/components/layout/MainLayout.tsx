@@ -1,24 +1,46 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { listPendingSuggestions } from '../../services/emailSuggestionsApi';
+import { useAuth } from '../../context/AuthContext';
 
 interface MainLayoutProps {
     children: React.ReactNode;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+    const { user } = useAuth();
+    const [pendingCount, setPendingCount] = useState(0);
+
+    const refreshCount = useCallback(async () => {
+        if (!user) return;
+        try {
+            const suggestions = await listPendingSuggestions();
+            setPendingCount(suggestions.length);
+        } catch {
+            // non-fatal
+        }
+    }, [user]);
+
+    // Poll for pending suggestion count every 60 seconds
+    useEffect(() => {
+        refreshCount();
+        const interval = setInterval(refreshCount, 60_000);
+        return () => clearInterval(interval);
+    }, [refreshCount]);
+
     return (
         <div
             className="flex h-screen overflow-hidden"
             style={{ backgroundColor: 'var(--bg-base)' }}
         >
             {/* Desktop sidebar */}
-            <Sidebar />
+            <Sidebar pendingEmailCount={pendingCount} />
 
             {/* Main content area */}
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 {/* Mobile header (hidden on md+) */}
-                <Header />
+                <Header pendingEmailCount={pendingCount} />
 
                 {/* Page content */}
                 <main

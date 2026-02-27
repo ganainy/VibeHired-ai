@@ -55,7 +55,7 @@ const PlatformIcon: React.FC<{ platform: JobPlatform; className?: string }> = ({
 type JobFormData = Partial<Omit<JobApplication, '_id' | 'updatedAt' | 'generationStatus' | 'generatedCvFilename' | 'generatedCoverLetterFilename'>>;
 
 // Explicitly list sortable keys for type safety
-type SortableJobKeys = 'jobTitle' | 'companyName' | 'status' | 'createdAt';
+type SortableJobKeys = 'jobTitle' | 'companyName' | 'status' | 'createdAt' | 'jobType' | 'salary';
 
 // Job type options for dropdown
 const JOB_TYPE_OPTIONS = [
@@ -264,7 +264,8 @@ const DashboardPage: React.FC = () => {
       const lowerCaseFilter = filterText.toLowerCase();
       filteredJobs = filteredJobs.filter(job =>
         job.jobTitle.toLowerCase().includes(lowerCaseFilter) ||
-        job.companyName.toLowerCase().includes(lowerCaseFilter)
+        job.companyName.toLowerCase().includes(lowerCaseFilter) ||
+        (job.hiringManagerName && job.hiringManagerName.toLowerCase().includes(lowerCaseFilter))
       );
     }
 
@@ -291,8 +292,28 @@ const DashboardPage: React.FC = () => {
     // Apply Sorting
     if (sortKey) {
       filteredJobs.sort((a, b) => {
-        const aValue = a[sortKey as keyof JobApplication] as any;
-        const bValue = b[sortKey as keyof JobApplication] as any;
+        let aValue: any;
+        let bValue: any;
+
+        if (sortKey === 'jobType') {
+          aValue = a.jobType || '';
+          bValue = b.jobType || '';
+        } else if (sortKey === 'salary') {
+          // Extract numeric salary for comparison
+          const extractSalary = (salary: string | undefined): number => {
+            if (!salary) return 0;
+            // Try to extract numbers from the salary string (e.g., "€50,000" -> 50000)
+            const numbers = salary.replace(/[^0-9]/g, '');
+            return numbers ? parseInt(numbers, 10) : 0;
+          };
+          const aSalary = a.salary || a.extractedData?.salaryRaw || a.extractedData?.estimatedSalary;
+          const bSalary = b.salary || b.extractedData?.salaryRaw || b.extractedData?.estimatedSalary;
+          aValue = extractSalary(aSalary);
+          bValue = extractSalary(bSalary);
+        } else {
+          aValue = a[sortKey as keyof JobApplication];
+          bValue = b[sortKey as keyof JobApplication];
+        }
 
         let comparison = 0;
 
@@ -300,6 +321,9 @@ const DashboardPage: React.FC = () => {
           const dateA = new Date(aValue).getTime();
           const dateB = new Date(bValue).getTime();
           comparison = (isNaN(dateA) ? 0 : dateA) - (isNaN(dateB) ? 0 : dateB);
+        } else if (sortKey === 'salary') {
+          // Numeric comparison for salary
+          comparison = (aValue || 0) - (bValue || 0);
         } else if (typeof aValue === 'string' && typeof bValue === 'string') {
           comparison = aValue.localeCompare(bValue);
         } else {
@@ -634,8 +658,8 @@ const DashboardPage: React.FC = () => {
     </svg>
   );
 
-  const ArrowDownIcon = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+  const ArrowDownIcon = ({ className = '' }: { className?: string }) => (
+    <svg className={`w-4 h-4 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
     </svg>
   );
@@ -1002,7 +1026,7 @@ const DashboardPage: React.FC = () => {
 
               {/* Search */}
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-xs font-medium mb-1.5 label-overline" htmlFor="filter-title">Search</label>
+                <label className="block text-xs font-medium mb-1.5 label-overline" htmlFor="filter-title">Search (Title, Company, Contact)</label>
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{color:'var(--text-muted)'}}>
                     <SearchIcon />
@@ -1012,7 +1036,7 @@ const DashboardPage: React.FC = () => {
                     id="filter-title"
                     value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
-                    placeholder="Title or company…"
+                    placeholder="Title, company or contact name…"
                     className="input-base w-full pl-9 h-10 text-sm"
                   />
                 </div>
@@ -1153,11 +1177,27 @@ const DashboardPage: React.FC = () => {
                         >
                           <div className="flex items-center gap-1">
                             <span>Date Added</span>
-                            {sortKey === 'createdAt' && <ArrowDownIcon />}
+                            <ArrowDownIcon className={sortKey === 'createdAt' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'} />
                           </div>
                         </th>
-                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Type</th>
-                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Salary</th>
+                        <th
+                          onClick={() => handleSort('jobType')}
+                          className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
+                        >
+                          <div className="flex items-center gap-1">
+                            <span>Type</span>
+                            <ArrowDownIcon className={sortKey === 'jobType' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'} />
+                          </div>
+                        </th>
+                        <th
+                          onClick={() => handleSort('salary')}
+                          className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
+                        >
+                          <div className="flex items-center gap-1">
+                            <span>Salary</span>
+                            <ArrowDownIcon className={sortKey === 'salary' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'} />
+                          </div>
+                        </th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Contact</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Actions</th>
                       </tr>

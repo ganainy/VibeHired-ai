@@ -20,6 +20,7 @@ import AutoJobsPage from './pages/AutoJobsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import GoogleAuthCallbackPage from './pages/GoogleAuthCallbackPage';
+import EmailSuggestionsPage from './pages/EmailSuggestionsPage';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -85,6 +86,7 @@ function App() {
         <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
         <Route path="/portfolio-setup" element={<ProtectedRoute><PortfolioSetupPage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        <Route path="/email-suggestions" element={<ProtectedRoute><EmailSuggestionsPage /></ProtectedRoute>} />
         <Route
           path="/jobs/:jobId/review/ai-review"
           element={<Navigate to="../cv" relative="path" replace />}

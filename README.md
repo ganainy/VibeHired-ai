@@ -46,6 +46,14 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 - **AI Draft Generation:** Generate tailored CV and cover letter drafts for specific job applications using AI that adapts your content to match job requirements
 - **Smart Placeholder System:** AI detects missing information and uses intelligent placeholder handling with context-aware user input modals
 
+### Gmail Email Automation
+- **Automatic Email Scanning:** Server polls your Gmail inbox every 15 minutes for new unread emails matching job application responses
+- **AI Classification:** Your configured AI model (Gemini/OpenRouter/Ollama) classifies each email as a rejection, interview invite, assessment, or offer
+- **Smart Job Matching:** Parsed company name and job title are fuzzy-matched against your tracked applications
+- **Suggest-then-Confirm Flow:** Nothing is applied automatically — every detected change appears in the **Email Inbox** page for you to review, apply, or dismiss
+- **Deduplication:** Processed emails are labelled `job-tracker-processed` in Gmail so they're never surfaced twice
+- **Privacy First:** Email bodies are only sent to your own configured AI provider
+
 ### Analytics Dashboard
 - **Statistics Overview:** Key metrics (Total, Response Rate, Interviews, Offers) with "vs last month" trend indicators
 - **Visual Charts:** 
@@ -191,6 +199,7 @@ After starting the application:
 | **Register** | Create a new account to get started. | ![Register](demo/register.png) |
 | **Forgot Password** | Request a password reset link by email. | ![Forgot Password](demo/forgot-password.png) |
 | **Auto Jobs** | Automated job discovery with AI-powered analysis and filtering. Manually trigger job searches and get intelligent job recommendations. | ![Auto Jobs](demo/auto-jobs.png) |
+| **Email Inbox** | Gmail-powered inbox that automatically scans your emails every 15 minutes, uses AI to detect job application responses (rejections, interview invites, offers), and surfaces them as one-click status updates — nothing is applied until you confirm. | ![Email Inbox](demo/email-inbox.png) |
 | **Dashboard** | The main dashboard provides a comprehensive view of all job applications with filtering, sorting, and quick actions. | ![Dashboard](demo/main-dashboard.png) |
 | **Dashboard — Kanban View** | Visual kanban board for tracking applications through the hiring pipeline. | ![Dashboard Kanban](demo/dashboard-kanban.png) |
 | **Analytics Dashboard** | Visual dashboard with real-time metrics, status trends, weekly application goals, and pipeline yield analysis. | ![Analytics](demo/analytics-dashboard.png) |
