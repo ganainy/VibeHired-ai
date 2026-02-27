@@ -11,12 +11,22 @@ import { generateStructuredResponse } from '../utils/aiService';
 
 // ── AI classification result ────────────────────────────────────────────────
 
+interface SuggestedCalendarEvent {
+    title: string;
+    description: string;
+    /** ISO 8601 datetime string, e.g. "2026-03-10T14:00:00Z" */
+    dateTimeISO: string;
+    notificationMinutesBefore: number;
+}
+
 interface EmailClassification {
     isJobRelated: boolean;
     /** One of the valid job statuses, or null if email doesn't warrant a change */
     suggestedStatus: JobStatus | null;
-    /** Brief note to append to the job's existing notes */
+    /** Richer note summarising key info from the email (salary, advice, prep tips, etc.) */
     suggestedNote: string;
+    /** Calendar event to create, if the email contains a concrete date/time */
+    suggestedCalendarEvent: SuggestedCalendarEvent | null;
     /** Company name extracted from the email */
     extractedCompany: string;
     /** Job title extracted from the email */
@@ -24,32 +34,60 @@ interface EmailClassification {
     confidence: 'high' | 'medium' | 'low';
 }
 
+// ── PII helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Strips common PII patterns from an email body before it is sent to an
+ * external AI provider.  Removes email addresses, phone numbers, and
+ * standalone personal names that appear in common signature patterns.
+ */
+function sanitizeEmailBody(body: string): string {
+    return body
+        // Remove email addresses
+        .replace(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g, '[email]')
+        // Remove phone numbers (international and common local formats)
+        .replace(/(\+?\d[\d\s\-().]{7,}\d)/g, '[phone]');
+}
+
+/**
+ * Extracts the registrable domain from an email address.
+ * e.g. "recruiter@greenhouse.io" → "greenhouse.io"
+ */
+function senderDomain(email: string): string {
+    return email.includes('@') ? email.split('@')[1] : email;
+}
+
 // ── AI prompt ────────────────────────────────────────────────────────────────
 
 function buildClassificationPrompt(subject: string, body: string, sender: string): string {
     const truncatedBody = body.slice(0, 3000);
-    return `You are an assistant that analyses job application emails.
+    const today = new Date().toISOString().split('T')[0];
+    return `You are an assistant that analyses job application emails. Today's date is ${today}.
 
 Email Details:
-- From: ${sender}
+- From (domain only): ${sender}
 - Subject: ${subject}
-- Body (truncated to 3000 chars):
+- Body (truncated to 3000 chars, PII redacted):
 ${truncatedBody}
 
 Task:
-1. Determine if this email is related to a job application (e.g. rejection, interview invite, assessment, offer, acknowledgement).
+1. Determine if this email is related to a job application (e.g. rejection, interview invite, assessment, offer, acknowledgement, recruiter info).
 2. If job-related, extract:
    - The company name
    - The job title / role (best guess from email context)
-   - The appropriate new status from ONLY these values: "Interview", "Assessment", "Rejected", "Offer". Use null if the email is just an acknowledgment/confirmation of receipt without a real status change.
-   - A short note (1-2 sentences max) summarising the key information from the email.
+   - The appropriate new status from ONLY these values: "Interview", "Assessment", "Rejected", "Offer". Use null if the email is an acknowledgment or contains info without a real status change.
+   - A detailed note (2-4 sentences) summarising ALL key information from the email: interview details, salary/compensation figures, preparation tips, important context, or any actionable advice. Leave empty string if nothing useful.
+   - A calendar event if — and only if — the email mentions a specific date and/or time for an interview, assessment, deadline or similar scheduled event. Use null if no concrete datetime is mentioned.
    - Your confidence level: "high" if the intent is very clear, "medium" if reasonably inferred, "low" if uncertain.
 
-Return ONLY valid JSON with this exact structure:
+For suggestedCalendarEvent.dateTimeISO: produce a full ISO 8601 datetime string. If only a date is given (no time), use 09:00:00 UTC on that date. If the year is ambiguous, assume the nearest future occurrence.
+
+Return ONLY valid JSON with this exact structure (no markdown, no extra keys):
 {
   "isJobRelated": boolean,
   "suggestedStatus": "Interview" | "Assessment" | "Rejected" | "Offer" | null,
   "suggestedNote": string,
+  "suggestedCalendarEvent": { "title": string, "description": string, "dateTimeISO": string, "notificationMinutesBefore": number } | null,
   "extractedCompany": string,
   "extractedRole": string,
   "confidence": "high" | "medium" | "low"
@@ -118,9 +156,12 @@ export async function pollEmailsForUser(userId: string, since?: Date): Promise<n
 
     // Check if user has an AI provider configured (non-fatal if not)
     let aiAvailable = true;
+    let inboxProvider: string | undefined;
     try {
         const profile = await Profile.findOne({ userId });
         if (!profile?.aiProviderSettings?.defaultProvider) aiAvailable = false;
+        // inboxProvider overrides defaultProvider for email classification only
+        inboxProvider = profile?.aiProviderSettings?.inboxProvider;
     } catch {
         aiAvailable = false;
     }
@@ -136,6 +177,7 @@ export async function pollEmailsForUser(userId: string, since?: Date): Promise<n
             isJobRelated: false,
             suggestedStatus: null,
             suggestedNote: '',
+            suggestedCalendarEvent: null,
             extractedCompany: '',
             extractedRole: '',
             confidence: 'low',
@@ -143,8 +185,12 @@ export async function pollEmailsForUser(userId: string, since?: Date): Promise<n
 
         if (aiAvailable) {
             try {
-                const prompt = buildClassificationPrompt(msg.subject, msg.body, `${msg.senderName} <${msg.senderEmail}>`);
-                classification = await generateStructuredResponse<EmailClassification>(userId, prompt);
+                const prompt = buildClassificationPrompt(
+                    msg.subject,
+                    sanitizeEmailBody(msg.body),
+                    senderDomain(msg.senderEmail),
+                );
+                classification = await generateStructuredResponse<EmailClassification>(userId, prompt, undefined, inboxProvider);
             } catch (aiErr) {
                 console.error(`[EmailSuggestionService] AI classification failed for message ${msg.id}:`, aiErr);
                 // Fall back to simple keyword heuristic
@@ -155,7 +201,14 @@ export async function pollEmailsForUser(userId: string, since?: Date): Promise<n
             classification = fallbackClassify(msg.subject, msg.body, msg.senderEmail);
         }
 
-        if (!classification.isJobRelated || classification.confidence === 'low' && !classification.suggestedStatus) {
+        // Skip if not job-related, or if low confidence and there's genuinely nothing to surface
+        if (!classification.isJobRelated) continue;
+        if (
+            classification.confidence === 'low' &&
+            !classification.suggestedStatus &&
+            !classification.suggestedNote &&
+            !classification.suggestedCalendarEvent
+        ) {
             continue;
         }
 
@@ -170,7 +223,8 @@ export async function pollEmailsForUser(userId: string, since?: Date): Promise<n
             senderName: msg.senderName,
             senderEmail: msg.senderEmail,
             suggestedStatus: classification.suggestedStatus,
-            suggestedNote: classification.suggestedNote,
+            suggestedNote: classification.suggestedNote || undefined,
+            suggestedCalendarEvent: classification.suggestedCalendarEvent || undefined,
             confidence: classification.confidence,
             matchedCompanyName: match?.companyName ?? classification.extractedCompany,
             matchedJobTitle: match?.jobTitle ?? classification.extractedRole,
@@ -217,7 +271,7 @@ function fallbackClassify(subject: string, body: string, senderEmail: string): E
         /\b(application|applied|position|role|opportunity|candidate|hiring|recruiter|interview|offer|assessment|unfortunately|regret|not selected|moving forward)\b/.test(text);
 
     if (!isJobRelated) {
-        return { isJobRelated: false, suggestedStatus: null, suggestedNote: '', extractedCompany: '', extractedRole: '', confidence: 'low' };
+        return { isJobRelated: false, suggestedStatus: null, suggestedNote: '', suggestedCalendarEvent: null, extractedCompany: '', extractedRole: '', confidence: 'low' };
     }
 
     let suggestedStatus: JobStatus | null = null;
@@ -239,6 +293,7 @@ function fallbackClassify(subject: string, body: string, senderEmail: string): E
         isJobRelated: true,
         suggestedStatus,
         suggestedNote: suggestedStatus ? `Email received: ${subject.slice(0, 100)}` : '',
+        suggestedCalendarEvent: null,
         extractedCompany,
         extractedRole: '',
         confidence: suggestedStatus ? 'medium' : 'low',

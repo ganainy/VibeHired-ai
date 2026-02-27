@@ -130,6 +130,8 @@ The client is a single-page application (SPA) built with React and TypeScript.
     - `Forms/LanguagesForm.tsx`: Languages form
     - `types.ts`: Shared type definitions for resume-builder
     - `index.ts`: Public exports
+  - `email-suggestions/`: Gmail inbox suggestion components
+    - `EmailSuggestionPanel.tsx`: Slide-in sidebar panel variant — renders suggestion cards with three independent action sections (status change, AI note, calendar event)
   - `generator/`: Draft generation components
     - `UserInputModal.tsx`: Modal for user input during generation
   - `jobs/`: Job application components
@@ -167,9 +169,11 @@ The client is a single-page application (SPA) built with React and TypeScript.
   - `PortfolioPage.tsx`: Public portfolio view (accessible at `/portfolio/:username`)
   - `ReviewFinalizePage.tsx`: Review and finalize generated CVs/cover letters
   - `SettingsPage.tsx`: API key management and AI provider settings
+  - `EmailSuggestionsPage.tsx`: Full `/email-inbox` page — lists AI-generated inbox suggestion cards (status change, note, calendar event sections)
 
 - **`src/services`**: API communication layer - handles all HTTP requests to backend:
   - `analysisApi.ts`: CV analysis endpoints
+  - `emailSuggestionsApi.ts`: Email inbox suggestion endpoints (poll, accept, add-note, reject, preferences, Gmail scope status)
   - `analyticsApi.ts`: Analytics data endpoints
   - `atsApi.ts`: ATS scoring endpoints
   - `authApi.ts`: Authentication endpoints
@@ -245,6 +249,7 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
   - `WorkflowRun.ts`: Automated workflow execution tracking
   - `ResumeCache.ts`: Cached resume parsing results
   - `CvAnalysis.ts`: CV analysis results with detailed ATS scores
+  - `EmailSuggestion.ts`: Pending AI inbox suggestions (status change, note, calendar event) with a 90-day TTL
 
 - **`src/providers`**: AI provider registry and management:
   - `base.ts`: Base provider interface
@@ -271,6 +276,7 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
   - `profile.ts`: `/api/profile` - Profile management endpoints
   - `projects.ts`: `/api/projects` - Portfolio project endpoints
   - `settings.ts`: `/api/settings` - Settings and API key management
+  - `emailSuggestions.ts`: `/api/email-suggestions` - Gmail inbox scanning, AI suggestion CRUD, add-note, and accept-with-calendar actions
 
 - **`src/services`**: Core business logic:
   - `analysisService.ts`: CV analysis logic
@@ -288,6 +294,8 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
   - `linkedinService.ts`: LinkedIn profile scraping via Apify
   - `resumeCacheService.ts`: Resume parsing cache management
   - `workflowProgressHelper.ts`: Workflow progress tracking utilities
+  - `emailSuggestionService.ts`: Gmail polling, AI email classification (status + note + calendar), fuzzy job matching, suggestion persistence
+  - `googleCalendarService.ts`: Google Calendar event creation via OAuth token; checks Calendar scope availability
 
 - **`src/utils`**: Utility functions and helpers:
   - `aiExtractor.ts`: AI-powered data extraction from job postings

@@ -4,6 +4,13 @@ import mongoose, { Document, Schema } from 'mongoose';
 export type SuggestionStatus = 'pending' | 'accepted' | 'rejected';
 export type JobStatus = 'Applied' | 'Not Applied' | 'Interview' | 'Assessment' | 'Rejected' | 'Offer';
 
+export interface ISuggestedCalendarEvent {
+    title: string;
+    description: string;
+    dateTimeISO: string;
+    notificationMinutesBefore: number;
+}
+
 export interface IEmailSuggestion extends Document {
     userId: mongoose.Schema.Types.ObjectId;
     jobApplicationId?: mongoose.Schema.Types.ObjectId;
@@ -14,6 +21,8 @@ export interface IEmailSuggestion extends Document {
     senderEmail?: string;
     suggestedStatus: JobStatus | null;
     suggestedNote?: string;
+    suggestedCalendarEvent?: ISuggestedCalendarEvent;
+    noteAdded?: boolean;
     confidence: 'high' | 'medium' | 'low';
     matchedCompanyName?: string;
     matchedJobTitle?: string;
@@ -37,6 +46,13 @@ const EmailSuggestionSchema = new Schema<IEmailSuggestion>(
             default: null,
         },
         suggestedNote: { type: String },
+        suggestedCalendarEvent: {
+            title: { type: String },
+            description: { type: String },
+            dateTimeISO: { type: String },
+            notificationMinutesBefore: { type: Number, default: 30 },
+        },
+        noteAdded: { type: Boolean, default: false },
         confidence: { type: String, enum: ['high', 'medium', 'low'], required: true },
         matchedCompanyName: { type: String },
         matchedJobTitle: { type: String },
@@ -52,6 +68,9 @@ const EmailSuggestionSchema = new Schema<IEmailSuggestion>(
 
 // Compound index: one suggestion per Gmail message per user
 EmailSuggestionSchema.index({ userId: 1, gmailMessageId: 1 }, { unique: true });
+
+// TTL index: auto-delete suggestions after 90 days
+EmailSuggestionSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7_776_000 });
 
 const EmailSuggestion = mongoose.model<IEmailSuggestion>('EmailSuggestion', EmailSuggestionSchema);
 export default EmailSuggestion;

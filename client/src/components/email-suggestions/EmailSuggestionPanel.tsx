@@ -4,8 +4,11 @@ import {
     listPendingSuggestions,
     acceptSuggestion,
     rejectSuggestion,
+    addNoteSuggestion,
     pollNow,
     getGmailScopeStatus,
+    getPreferences,
+    updatePreferences,
     type EmailSuggestion,
 } from '../../services/emailSuggestionsApi';
 import { getGoogleConnectUrl } from '../../services/googleCalendarApi';
@@ -82,7 +85,33 @@ function StatusPill({ status }: { status: string | null }) {
     );
 }
 
-// ── Main Panel Component ──────────────────────────────────────────────────────
+const NoteIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+);
+
+const CalendarIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+);
+
+function formatCalEventDate(iso: string): string {
+    try {
+        return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+    } catch {
+        return iso;
+    }
+}
+
+// ── Main Panel Component ───────────────────────────────────────────────────────
 
 interface Props {
     isOpen: boolean;
@@ -97,17 +126,23 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
     const [actionIds, setActionIds] = useState<Set<string>>(new Set());
     const [hasScope, setHasScope] = useState<boolean | null>(null);
     const [toast, setToast] = useState<string | null>(null);
+    const [lookbackDays, setLookbackDays] = useState(14);
+    const [calendarUnchecked, setCalendarUnchecked] = useState<Set<string>>(new Set());
+    const [noteAddedLocally, setNoteAddedLocally] = useState<Set<string>>(new Set());
     const panelRef = useRef<HTMLDivElement>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const [data, scopeResult] = await Promise.all([
+            const [data, scopeResult, prefs] = await Promise.all([
                 listPendingSuggestions(),
                 getGmailScopeStatus(),
+                getPreferences(),
             ]);
             setSuggestions(data);
             setHasScope(scopeResult.hasScope);
+            setLookbackDays(prefs.lookbackDays);
+            setNoteAddedLocally(new Set(data.filter((s) => s.noteAdded).map((s) => s._id)));
         } catch {
             // swallow — panel might open before auth is confirmed
         } finally {
@@ -137,14 +172,40 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
     const handleAccept = async (s: EmailSuggestion) => {
         setActionIds((prev) => new Set(prev).add(s._id));
         try {
-            await acceptSuggestion(s._id);
+            const includeCalendarEvent = !calendarUnchecked.has(s._id);
+            const result = await acceptSuggestion(s._id, { includeCalendarEvent });
             setSuggestions((prev) => prev.filter((x) => x._id !== s._id));
-            showToast(`Status updated to "${s.suggestedStatus}" for ${s.matchedCompanyName ?? 'job'}`);
+            if (result.calendarWarning) {
+                showToast(result.calendarWarning);
+            } else if (s.suggestedStatus) {
+                showToast(
+                    `Status updated to "${s.suggestedStatus}" for ${s.matchedCompanyName ?? 'job'}` +
+                    (result.calendarEventCreated ? ' · Calendar event created' : '')
+                );
+            } else if (result.calendarEventCreated) {
+                showToast(`Calendar event created for ${s.matchedCompanyName ?? 'job'}`);
+            } else {
+                showToast(`Suggestion accepted for ${s.matchedCompanyName ?? 'job'}`);
+            }
             onJobUpdated?.();
         } catch {
             showToast('Failed to apply suggestion. Please try again.');
         } finally {
             setActionIds((prev) => { const n = new Set(prev); n.delete(s._id); return n; });
+        }
+    };
+
+    const handleAddNote = async (s: EmailSuggestion) => {
+        setActionIds((prev) => new Set(prev).add(`note-${s._id}`));
+        try {
+            await addNoteSuggestion(s._id);
+            setNoteAddedLocally((prev) => new Set(prev).add(s._id));
+            showToast(`Note added to ${s.matchedCompanyName ?? 'job'}`);
+            onJobUpdated?.();
+        } catch {
+            showToast('Failed to add note. Please try again.');
+        } finally {
+            setActionIds((prev) => { const n = new Set(prev); n.delete(`note-${s._id}`); return n; });
         }
     };
 
@@ -163,13 +224,22 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
     const handlePoll = async () => {
         setPolling(true);
         try {
-            const result = await pollNow(14);
+            const result = await pollNow(lookbackDays);
             await load();
             showToast(result.count > 0 ? `Found ${result.count} new suggestion(s)!` : 'No new emails found.');
         } catch {
             showToast('Poll failed. Check your Gmail connection.');
         } finally {
             setPolling(false);
+        }
+    };
+
+    const handleLookbackDaysChange = async (value: number) => {
+        setLookbackDays(value);
+        try {
+            await updatePreferences({ lookbackDays: value });
+        } catch {
+            // non-fatal - preference not saved but UI still works
         }
     };
 
@@ -221,6 +291,21 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <select
+                            value={lookbackDays}
+                            onChange={(e) => handleLookbackDaysChange(Number(e.target.value))}
+                            className="text-xs rounded-lg px-2 py-1"
+                            style={{
+                                backgroundColor: 'var(--bg-elevated)',
+                                color: 'var(--text-secondary)',
+                                border: '1px solid var(--border)',
+                            }}
+                        >
+                            <option value={1}>1 day</option>
+                            <option value={7}>7 days</option>
+                            <option value={14}>14 days</option>
+                            <option value={30}>30 days</option>
+                        </select>
                         <button
                             onClick={handlePoll}
                             disabled={polling}
@@ -310,7 +395,11 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
 
                     {!loading && suggestions.map((s) => {
                         const busy = actionIds.has(s._id);
+                        const noteBusy = actionIds.has(`note-${s._id}`);
                         const job = s.jobApplicationId as any;
+                        const isCalChecked = !calendarUnchecked.has(s._id);
+                        const isNoteAdded = noteAddedLocally.has(s._id);
+                        const hasCalEvent = !!s.suggestedCalendarEvent;
                         return (
                             <div
                                 key={s._id}
@@ -338,36 +427,107 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
                                 </div>
 
                                 {/* Subject */}
-                                <p className="text-[12px] mb-2 line-clamp-1" style={{ color: 'var(--text-secondary)' }}>
+                                <p className="text-[12px] mb-1.5 line-clamp-1" style={{ color: 'var(--text-secondary)' }}>
                                     <span style={{ color: 'var(--text-muted)' }}>Subject: </span>{s.emailSubject}
                                 </p>
 
                                 {/* Snippet */}
-                                <p
-                                    className="text-[11.5px] leading-relaxed line-clamp-3 mb-3"
-                                    style={{ color: 'var(--text-muted)' }}
-                                >
+                                <p className="text-[11.5px] leading-relaxed line-clamp-2 mb-3" style={{ color: 'var(--text-muted)' }}>
                                     {s.emailSnippet}
                                 </p>
 
-                                {/* Note preview */}
+                                {/* ── Section 2: Note ── */}
                                 {s.suggestedNote && (
-                                    <p
-                                        className="text-[11px] mb-3 px-2.5 py-1.5 rounded-lg"
+                                    <div
+                                        className="rounded-lg px-2.5 py-2 mb-2"
                                         style={{
-                                            backgroundColor: 'rgba(232,184,68,0.07)',
-                                            color: 'var(--text-secondary)',
+                                            backgroundColor: 'rgba(232,184,68,0.06)',
                                             border: '1px solid rgba(232,184,68,0.15)',
                                         }}
                                     >
-                                        Note: {s.suggestedNote}
-                                    </p>
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[10.5px] font-semibold mb-0.5 flex items-center gap-1" style={{ color: 'var(--accent)' }}>
+                                                    <NoteIcon /> AI Note
+                                                </p>
+                                                <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                                    {s.suggestedNote}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleAddNote(s)}
+                                                disabled={noteBusy || isNoteAdded}
+                                                className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[10.5px] font-medium transition-colors"
+                                                style={{
+                                                    backgroundColor: isNoteAdded ? 'rgba(34,197,94,0.12)' : 'rgba(232,184,68,0.15)',
+                                                    color: isNoteAdded ? '#22c55e' : 'var(--accent)',
+                                                    border: `1px solid ${isNoteAdded ? 'rgba(34,197,94,0.3)' : 'rgba(232,184,68,0.3)'}`,
+                                                    opacity: noteBusy ? 0.6 : 1,
+                                                    cursor: isNoteAdded ? 'default' : 'pointer',
+                                                }}
+                                            >
+                                                {isNoteAdded ? (<><CheckIcon /> Added</>) : noteBusy ? 'Adding…' : 'Add note'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ── Section 3: Calendar event ── */}
+                                {hasCalEvent && (
+                                    <div
+                                        className="rounded-lg px-2.5 py-2 mb-2"
+                                        style={{
+                                            backgroundColor: hasScope ? 'rgba(59,130,246,0.05)' : 'rgba(150,150,150,0.05)',
+                                            border: `1px solid ${hasScope ? 'rgba(59,130,246,0.18)' : 'rgba(150,150,150,0.18)'}`,
+                                            opacity: hasScope ? 1 : 0.65,
+                                        }}
+                                    >
+                                        <div className="flex items-start gap-2">
+                                            {hasScope && (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isCalChecked}
+                                                    onChange={(e) => {
+                                                        setCalendarUnchecked((prev) => {
+                                                            const next = new Set(prev);
+                                                            if (!e.target.checked) next.add(s._id); else next.delete(s._id);
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className="mt-0.5 shrink-0 cursor-pointer"
+                                                    style={{ accentColor: '#3b82f6' }}
+                                                />
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[10.5px] font-semibold mb-0.5 flex items-center gap-1"
+                                                    style={{ color: hasScope ? '#3b82f6' : 'var(--text-muted)' }}>
+                                                    <CalendarIcon />
+                                                    {hasScope ? 'Add to calendar' : 'Calendar event'}
+                                                    {!hasScope && (
+                                                        <button
+                                                            onClick={handleConnectGmail}
+                                                            className="ml-1 underline text-[10px] font-normal"
+                                                            style={{ color: 'var(--accent)' }}
+                                                        >
+                                                            Connect Gmail →
+                                                        </button>
+                                                    )}
+                                                </p>
+                                                <p className="text-[11px] font-medium truncate" style={{ color: 'var(--text-secondary)' }}>
+                                                    {s.suggestedCalendarEvent!.title}
+                                                </p>
+                                                <p className="text-[10.5px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                                    {formatCalEventDate(s.suggestedCalendarEvent!.dateTimeISO)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
 
                                 {/* Job match indicator */}
                                 {!job && (
                                     <p className="text-[11px] mb-2" style={{ color: 'rgba(251,191,36,0.8)' }}>
-                                        ⚠ No matching job found — status won't be applied
+                                        ⚠ No matching job found
                                     </p>
                                 )}
                                 {job && (
@@ -395,7 +555,7 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
                                         >
                                             <XIcon /> Dismiss
                                         </button>
-                                        {s.suggestedStatus && (
+                                        {(s.suggestedStatus || (hasCalEvent && hasScope)) && (
                                             <button
                                                 onClick={() => handleAccept(s)}
                                                 disabled={busy}
@@ -405,7 +565,8 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
                                                     color: '#000',
                                                 }}
                                             >
-                                                <CheckIcon /> Apply
+                                                <CheckIcon />
+                                                {s.suggestedStatus ? 'Apply' : 'Save'}
                                             </button>
                                         )}
                                     </div>

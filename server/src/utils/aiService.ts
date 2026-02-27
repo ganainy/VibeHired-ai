@@ -7,16 +7,17 @@ import Profile from '../models/Profile';
 import { NotFoundError } from './errors/AppError';
 
 /**
- * Get user's configured provider strategy - requires explicit provider selection
+ * Get user's configured provider strategy - requires explicit provider selection.
+ * @param providerOverride Optional provider name to use instead of the user's default.
  */
-export async function getProviderStrategy(userId: string): Promise<ProviderStrategy> {
+export async function getProviderStrategy(userId: string, providerOverride?: string): Promise<ProviderStrategy> {
   const profile = await Profile.findOne({ userId });
   if (!profile) {
     throw new NotFoundError('User profile not found');
   }
 
   const aiProviderSettings = profile.aiProviderSettings;
-  const defaultProvider = aiProviderSettings?.defaultProvider;
+  const defaultProvider = providerOverride ?? aiProviderSettings?.defaultProvider;
 
   // Require explicit provider selection - no automatic fallback
   if (!defaultProvider) {
@@ -52,13 +53,15 @@ export async function getProviderStrategy(userId: string): Promise<ProviderStrat
 }
 
 /**
- * Get model adapter for user's configured provider
+ * Get model adapter for user's configured provider.
+ * @param providerOverride Optional provider name to use instead of the user's default.
  */
 export async function getModelAdapter(
   userId: string,
-  modelName?: string
+  modelName?: string,
+  providerOverride?: string
 ): Promise<ModelAdapter> {
-  const strategy = await getProviderStrategy(userId);
+  const strategy = await getProviderStrategy(userId, providerOverride);
   const apiKey = await strategy.getApiKey(userId);
 
   if (!apiKey) {
@@ -110,14 +113,16 @@ export async function generateContentWithFile(
 }
 
 /**
- * Generate structured JSON response using user's configured provider
+ * Generate structured JSON response using user's configured provider.
+ * @param providerOverride Optional provider name to use instead of the user's default.
  */
 export async function generateStructuredResponse<T>(
   userId: string,
   prompt: string,
-  options?: GenerateContentOptions
+  options?: GenerateContentOptions,
+  providerOverride?: string
 ): Promise<T> {
-  const adapter = await getModelAdapter(userId);
+  const adapter = await getModelAdapter(userId, undefined, providerOverride);
   return adapter.generateStructuredResponse<T>(prompt, options);
 }
 

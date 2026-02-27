@@ -13,6 +13,7 @@ function formatBytes(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+
 function iconForType(type: MaterialType): string {
     switch (type) {
         case 'pdf':      return 'picture_as_pdf';
@@ -138,12 +139,7 @@ const GlobalMaterialCard: React.FC<{
                             </p>
                         )}
 
-                        {/* Content preview */}
-                        {(material.type === 'text' || material.type === 'markdown') && material.content && (
-                            <p className="text-xs mt-1.5 line-clamp-2 font-mono whitespace-pre-wrap px-2 py-1.5 rounded-md" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-secondary)' }}>
-                                {material.content}
-                            </p>
-                        )}
+
                     </div>
 
                     {/* Actions */}

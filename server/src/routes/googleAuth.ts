@@ -30,7 +30,8 @@ const SCOPES = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/gmail.labels',
-    'https://www.googleapis.com/auth/gmail.modify',
+    // gmail.modify removed — gmail.readonly + gmail.labels is sufficient
+    // to read messages and apply the job-tracker-processed label
 ];
 
 function buildOAuth2Client(redirectUri?: string) {

@@ -24,6 +24,7 @@ For deployment see [DEPLOYMENT.md](./DEPLOYMENT.md).
 8. [Public Portfolio](#8-public-portfolio)
 9. [Settings](#9-settings)
 10. [Prep Library](#10-prep-library)
+11. [Email Inbox](#11-email-inbox)
 
 ---
 
@@ -402,6 +403,99 @@ Also accessible per-job via `/jobs/:jobId/review/materials` tab (component: `Int
 | TXT | MongoDB `content` field (no Cloudinary) | Plain `<pre>` |
 | MD | MongoDB `content` field (no Cloudinary) | `<ReactMarkdown>` |
 | Link | URL only, no upload | Opens in new tab on click |
+
+---
+
+---
+
+## 11. Email Inbox
+
+| Attribute | Value |
+|---|---|
+| **Route** | `/email-inbox` |
+| **Auth required** | Yes |
+| **Screenshot** | `demo/email-inbox.png` |
+| **Components** | `EmailSuggestionsPage.tsx`, `EmailSuggestionPanel.tsx` (sidebar variant) |
+
+**Default state**
+- "How it works" explainer accordion always visible
+- Privacy / AI provider picker displayed with warnings if an external provider is selected
+- Gmail scope warning shown (with reconnect button) if the user's Google OAuth token lacks Gmail read permission
+- Empty state shown when no pending suggestions exist
+
+**How the pipeline works**
+
+1. Server polls Gmail every 15 minutes (or on manual "Scan inbox" click) for unread job-related emails
+2. Email body is PII-redacted (emails/phones stripped) before being sent to the AI
+3. AI classifies the email and returns a structured response with up to three suggestions
+4. Suggestions are fuzzy-matched to a tracked job application (company name required)
+5. Suggestion card is saved as `pending` in MongoDB with a 90-day TTL
+6. User reviews each card and takes action independently on each section
+
+**Three per-card action sections**
+
+| Section | Shown when | User action |
+|---|---|---|
+| **Status change** | `suggestedStatus` is non-null | **Apply** button updates the matched job's status |
+| **AI Note** | `suggestedNote` is non-empty | Standalone **Add to job notes** button appends the note with a `[DD Mon YYYY]` timestamp to `job.notes` — independent of Accept/Reject |
+| **Calendar event** | `suggestedCalendarEvent` is present | Checkbox (checked by default) on the card; unchecking opts out before clicking Apply. When not connected: row is greyed-out with a "Connect Google Calendar" prompt |
+
+**Card behaviour details**
+
+- Cards appear even when `suggestedStatus` is null, as long as a note or calendar event was extracted (e.g. salary info, prep advice, or a scheduled event without a status change)
+- "Add to job notes" is idempotent — button becomes disabled (shows "Added") once the note has been saved, without dismissing the card
+- Calendar event creation calls the existing `googleCalendarService.createCalendarEvent()` and pushes an `IReminder` entry (with `calendarEventId`, `status: 'synced'`) into `job.reminders[]`
+- Accepting a card only dismisses it — dismissing a card never modifies the job
+
+**AI prompt output schema**
+
+```json
+{
+  "isJobRelated": boolean,
+  "suggestedStatus": "Interview" | "Assessment" | "Rejected" | "Offer" | null,
+  "suggestedNote": "string (2-4 sentences, key facts, salary, advice)",
+  "suggestedCalendarEvent": {
+    "title": "string",
+    "description": "string",
+    "dateTimeISO": "string (ISO 8601)",
+    "notificationMinutesBefore": number
+  } | null,
+  "extractedCompany": "string",
+  "extractedRole": "string",
+  "confidence": "high" | "medium" | "low"
+}
+```
+
+**Key interactions**
+
+| Action | Description |
+|---|---|
+| **Scan inbox** | Manual Gmail poll; rate-limited to 1 per 60 s per user |
+| **Lookback window** | Dropdown to set how many days back to scan (1 / 7 / 14 / 30) |
+| **Add to job notes** | Appends the AI note to `job.notes` without touching job status or dismissing the card |
+| **Calendar checkbox** | Checked by default; unchecking before Apply skips calendar event creation |
+| **Apply / Save** | Applies the status change and/or creates the calendar event (if checked) |
+| **Dismiss** | Marks suggestion as `rejected`; no changes to the job |
+| **Connect Gmail** | Initiates Google OAuth re-authorisation with Gmail + Calendar scopes |
+| **AI provider selector** | Per-user override for which AI provider processes inbox emails |
+
+**API routes**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/email-suggestions` | List pending suggestions |
+| `POST` | `/api/email-suggestions/poll` | Trigger manual Gmail poll |
+| `POST` | `/api/email-suggestions/:id/accept` | Apply status + optional calendar event; body: `{ includeCalendarEvent: boolean }` |
+| `POST` | `/api/email-suggestions/:id/add-note` | Independently append note to matched job |
+| `POST` | `/api/email-suggestions/:id/reject` | Dismiss suggestion |
+| `GET` | `/api/email-suggestions/preferences` | Get lookback days + AI provider preference |
+| `PUT` | `/api/email-suggestions/preferences` | Update preferences |
+| `GET` | `/api/email-suggestions/gmail-scope-status` | Check Gmail OAuth scope |
+
+**AI features used**
+- Email classification — Gemini / OpenRouter / Ollama (respects per-user `inboxProvider` override, falls back to `defaultProvider`)
+- Calendar datetime parsing is done inline by the classification prompt (no separate parse step)
+- Fallback keyword heuristic used when no AI provider is configured
 
 ---
 

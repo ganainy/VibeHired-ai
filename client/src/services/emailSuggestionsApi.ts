@@ -14,6 +14,13 @@ export interface JobRef {
     status: JobStatus;
 }
 
+export interface SuggestedCalendarEvent {
+    title: string;
+    description: string;
+    dateTimeISO: string;
+    notificationMinutesBefore: number;
+}
+
 export interface EmailSuggestion {
     _id: string;
     userId: string;
@@ -25,6 +32,8 @@ export interface EmailSuggestion {
     senderEmail?: string;
     suggestedStatus: JobStatus | null;
     suggestedNote?: string;
+    suggestedCalendarEvent?: SuggestedCalendarEvent;
+    noteAdded?: boolean;
     confidence: Confidence;
     matchedCompanyName?: string;
     matchedJobTitle?: string;
@@ -38,9 +47,18 @@ export const listPendingSuggestions = async (): Promise<EmailSuggestion[]> => {
     return data;
 };
 
-/** Accept a suggestion — applies the status + note to the matched job. */
-export const acceptSuggestion = async (id: string): Promise<void> => {
-    await axios.post(`${API_BASE_URL}/email-suggestions/${id}/accept`);
+/** Accept a suggestion — applies the status change and optionally creates a calendar event. */
+export const acceptSuggestion = async (id: string, options?: { includeCalendarEvent?: boolean }): Promise<{ calendarEventCreated?: boolean; calendarWarning?: string }> => {
+    const { data } = await axios.post<{ calendarEventCreated?: boolean; calendarWarning?: string }>(
+        `${API_BASE_URL}/email-suggestions/${id}/accept`,
+        { includeCalendarEvent: options?.includeCalendarEvent ?? true }
+    );
+    return data;
+};
+
+/** Append the suggested note to the matched job, independent of Accept/Reject. */
+export const addNoteSuggestion = async (id: string): Promise<void> => {
+    await axios.post(`${API_BASE_URL}/email-suggestions/${id}/add-note`);
 };
 
 /** Reject / dismiss a suggestion. */
@@ -61,6 +79,33 @@ export const pollNow = async (lookbackDays = 7): Promise<{ count: number; messag
 export const getGmailScopeStatus = async (): Promise<{ hasScope: boolean }> => {
     const { data } = await axios.get<{ hasScope: boolean }>(
         `${API_BASE_URL}/email-suggestions/gmail-scope-status`
+    );
+    return data;
+};
+
+/** Get email suggestion preferences for the current user. */
+export interface EmailSuggestionPreferences {
+    lookbackDays: number;
+    /** Global default AI provider configured for this user's account. */
+    defaultProvider?: string | null;
+    /** Provider override used exclusively for inbox email classification.
+     *  When set, overrides defaultProvider for this feature only.
+     *  Null / empty means "follow defaultProvider". */
+    inboxProvider?: string | null;
+}
+
+export const getPreferences = async (): Promise<EmailSuggestionPreferences> => {
+    const { data } = await axios.get<EmailSuggestionPreferences>(
+        `${API_BASE_URL}/email-suggestions/preferences`
+    );
+    return data;
+};
+
+/** Update email suggestion preferences for the current user. */
+export const updatePreferences = async (preferences: Partial<Pick<EmailSuggestionPreferences, 'lookbackDays' | 'inboxProvider'>>): Promise<EmailSuggestionPreferences> => {
+    const { data } = await axios.put<EmailSuggestionPreferences>(
+        `${API_BASE_URL}/email-suggestions/preferences`,
+        preferences
     );
     return data;
 };

@@ -84,6 +84,9 @@ export interface IProfile extends Document {
     showLinkedInExperience?: boolean;
     showLinkedInSkills?: boolean;
     showLinkedInLanguages?: boolean;
+    emailSuggestions?: {
+      lookbackDays?: number;
+    };
   };
   autoJobSettings?: {
     enabled?: boolean;
@@ -98,6 +101,10 @@ export interface IProfile extends Document {
   };
   aiProviderSettings?: {
     defaultProvider?: 'gemini' | 'openrouter' | 'ollama';
+    /** Override provider used exclusively for inbox email classification. Allows
+     *  routing email content to a local Ollama model even when the global
+     *  default is an external provider such as Gemini or OpenRouter. */
+    inboxProvider?: 'gemini' | 'openrouter' | 'ollama';
     defaultModel?: string;
     providers?: {
       gemini?: {
@@ -308,6 +315,14 @@ const ProfileSchema: Schema = new Schema(
         type: Boolean,
         default: true,
       },
+      emailSuggestions: {
+        lookbackDays: {
+          type: Number,
+          default: 14,
+          min: 1,
+          max: 30,
+        },
+      },
     },
     autoJobSettings: {
       keywords: {
@@ -348,6 +363,10 @@ const ProfileSchema: Schema = new Schema(
     },
     aiProviderSettings: {
       defaultProvider: {
+        type: String,
+        enum: ['gemini', 'openrouter', 'ollama'],
+      },
+      inboxProvider: {
         type: String,
         enum: ['gemini', 'openrouter', 'ollama'],
       },

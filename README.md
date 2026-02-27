@@ -50,6 +50,10 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 - **Automatic Email Scanning:** Server polls your Gmail inbox every 15 minutes for new unread emails matching job application responses
 - **AI Classification:** Your configured AI model (Gemini/OpenRouter/Ollama) classifies each email as a rejection, interview invite, assessment, or offer
 - **Smart Job Matching:** Parsed company name and job title are fuzzy-matched against your tracked applications
+- **Three independent suggestions per email:** Each card can carry a status change, a rich AI-written note (salary figures, prep advice, key facts), and a calendar event — each confirmed separately
+- **Standalone Note Action:** "Add to job notes" appends the AI note with a timestamp to the job without touching its status or dismissing the card
+- **Calendar Event Suggestions:** When an email contains a concrete interview/assessment datetime, a checkbox (checked by default) lets you add the event to Google Calendar in one click via the existing Calendar integration
+- **Info-only cards:** Cards appear even when there is no status change — useful for emails that share salary data, recruiter advice, or prep tips
 - **Suggest-then-Confirm Flow:** Nothing is applied automatically — every detected change appears in the **Email Inbox** page for you to review, apply, or dismiss
 - **Deduplication:** Processed emails are labelled `job-tracker-processed` in Gmail so they're never surfaced twice
 - **Privacy First:** Email bodies are only sent to your own configured AI provider
@@ -206,7 +210,7 @@ After starting the application:
 | **Register** | Create a new account to get started. | ![Register](demo/register.png) |
 | **Forgot Password** | Request a password reset link by email. | ![Forgot Password](demo/forgot-password.png) |
 | **Auto Jobs** | Automated job discovery with AI-powered analysis and filtering. Manually trigger job searches and get intelligent job recommendations. | ![Auto Jobs](demo/auto-jobs.png) |
-| **Email Inbox** | Gmail-powered inbox that automatically scans your emails every 15 minutes, uses AI to detect job application responses (rejections, interview invites, offers), and surfaces them as one-click status updates — nothing is applied until you confirm. | ![Email Inbox](demo/email-inbox.png) |
+| **Email Inbox** | Gmail-powered inbox that automatically scans your emails every 15 minutes. AI detects status changes, writes rich notes (salary, prep advice, key facts), and extracts calendar events — each surfaced as an independent action on the card. Nothing is applied until you confirm. | ![Email Inbox](demo/email-inbox.png) |
 | **Dashboard** | The main dashboard provides a comprehensive view of all job applications with filtering, sorting, and quick actions. | ![Dashboard](demo/main-dashboard.png) |
 | **Dashboard — Kanban View** | Visual kanban board for tracking applications through the hiring pipeline. | ![Dashboard Kanban](demo/dashboard-kanban.png) |
 | **Analytics Dashboard** | Visual dashboard with real-time metrics, status trends, weekly application goals, and pipeline yield analysis. | ![Analytics](demo/analytics-dashboard.png) |
