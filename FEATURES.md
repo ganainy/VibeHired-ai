@@ -23,6 +23,7 @@ For deployment see [DEPLOYMENT.md](./DEPLOYMENT.md).
 7. [Portfolio Setup](#7-portfolio-setup)
 8. [Public Portfolio](#8-public-portfolio)
 9. [Settings](#9-settings)
+10. [Prep Library](#10-prep-library)
 
 ---
 
@@ -246,7 +247,7 @@ No AI features — analytics are computed from stored job application data.
 |---|---|
 | **Route** | `/jobs/:jobId/review/:tab?` |
 | **Auth required** | Yes |
-| **Screenshots** | `demo/custom-job-cv.png`, `demo/custom-job-coverletter.png`, `demo/ats-analysis.png` |
+| **Screenshots** | `demo/custom-job-cv.png`, `demo/custom-job-coverletter.png`, `demo/ats-analysis.png`, `demo/materials-tab.png` |
 | **Component** | `ReviewFinalizePage.tsx` |
 
 **Tabs**
@@ -257,6 +258,7 @@ No AI features — analytics are computed from stored job application data.
 | `cover-letter` | AI-generated cover letter editor (`CoverLetterEditor`) + format picker (`EmailFormatModal`) |
 | `ats` | ATS scoring panel — score card + keyword breakdown + improvement suggestions |
 | `chat` | Per-job AI chat window (`JobChatWindow`) |
+| `materials` | Interview prep material upload and management panel (`InterviewMaterialsPanel`) |
 
 **Key interactions**
 
@@ -357,6 +359,49 @@ Visibility is controlled by the user's `isPublic` flag set in [Portfolio Setup �
 - API keys are encrypted before storage (`server/src/utils/encryption.ts`)
 - The active AI provider is selected per-request (falls back: user provider → Gemini key → error)
 - Test buttons to validate keys before saving
+
+---
+
+## 10. Prep Library
+
+| Attribute | Value |
+|---|---|
+| **Route** | `/interview-materials` |
+| **Auth required** | Yes |
+| **Screenshots** | `demo/prep-library.png`, `demo/prep-library-preview.png`, `demo/prep-library-upload.png` |
+| **Component** | `InterviewMaterialsPage.tsx` |
+
+Also accessible per-job via `/jobs/:jobId/review/materials` tab (component: `InterviewMaterialsPanel.tsx`).
+
+**Default state**
+- `viewMode = 'grouped'` — materials shown grouped by company/job with accordion expand/collapse
+- Empty state shown if no materials have been marked as globally shared
+
+**Key interactions**
+
+| Action | Description |
+|---|---|
+| **Upload files** | Drag-drop or click to browse — PDF, DOCX, PNG, JPG, TXT, MD up to 30 MB each |
+| **Multi-file upload** | Select or drop 2+ files for bulk queue; sequential uploads with animated progress bar and per-file error tracking |
+| **Add Note** | Quick-add plain-text snippet stored as `content` (no Cloudinary upload) |
+| **Add Markdown** | Quick-add Markdown note — rendered with `react-markdown` on preview |
+| **Add Link** | Quick-add external URL — opens directly in new tab on card click |
+| **Preview** | Click any card to open inline preview: PDFs/DOCX via Google Docs Viewer iframe, images inline, Markdown rendered, text plain |
+| **Global toggle** | Per-item toggle to include/remove a material from the global Prep Library |
+| **Grouped view** | Materials grouped by job with accordion expand/collapse (default) |
+| **Flat view** | All materials in a single list with job chip links |
+| **Search** | Filter by title, description, job title, company, or URL |
+
+**File handling details**
+
+| Type | Storage | Preview |
+|---|---|---|
+| PDF | Cloudinary (`resource_type: 'raw'`) | Google Docs Viewer iframe |
+| DOCX | Cloudinary (`resource_type: 'raw'`) | Google Docs Viewer iframe |
+| PNG / JPG | Cloudinary (`resource_type: 'image'`) | Inline `<img>` |
+| TXT | MongoDB `content` field (no Cloudinary) | Plain `<pre>` |
+| MD | MongoDB `content` field (no Cloudinary) | `<ReactMarkdown>` |
+| Link | URL only, no upload | Opens in new tab on click |
 
 ---
 

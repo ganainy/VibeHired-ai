@@ -32,6 +32,7 @@ import PromptCustomizer from '../components/common/PromptCustomizer';
 import PromptChecklist from '../components/common/PromptChecklist';
 import MockInterviewPanel from '../components/jobs/MockInterviewPanel';
 import RemindersPanel from '../components/jobs/RemindersPanel';
+import InterviewMaterialsPanel from '../components/jobs/InterviewMaterialsPanel';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { getBaseCoverLetters, applyBaseCoverLetterToJob, uploadCoverLetterForJob, saveCurrentCoverLetterForJob, CoverLetterBase } from '../services/coverLetterBaseApi';
@@ -116,7 +117,7 @@ const ReviewFinalizePage: React.FC = () => {
     const [isRefreshingRecommendation, setIsRefreshingRecommendation] = useState<boolean>(false);
     const [isRecommendationModalOpen, setIsRecommendationModalOpen] = useState<boolean>(false);
     const [isClCopied, setIsClCopied] = useState<boolean>(false);
-    const VALID_TABS = ['job-description', 'cover-letter', 'cv', 'mock-interview', 'reminders'] as const;
+    const VALID_TABS = ['job-description', 'cover-letter', 'cv', 'mock-interview', 'reminders', 'materials'] as const;
     type ActiveTab = typeof VALID_TABS[number];
     const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
         // Priority 1: URL Param
@@ -2242,6 +2243,23 @@ const ReviewFinalizePage: React.FC = () => {
                                 }`}>Reminders{reminders.length > 0 && ` (${reminders.length})`}</span>
                         </button>
 
+                        {/* Tab 6: Prep Materials */}
+                        <button
+                            onClick={() => handleTabChange('materials')}
+                            className="group flex flex-col items-center focus:outline-none"
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'materials'
+                                ? 'bg-emerald-500 text-white shadow-lg scale-125'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">library_books</span>
+                            </div>
+                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'materials'
+                                ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}>Materials</span>
+                        </button>
+
                     </div>
                 </div>      {/* Tab Content */}
                 <div className="px-0 py-6">
@@ -3875,6 +3893,15 @@ const ReviewFinalizePage: React.FC = () => {
                                     onRemindersChange={setReminders}
                                     onToast={showToast}
                                 />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Tab 7: Prep Materials */}
+                    {activeTab === 'materials' && jobId && (
+                        <div className="max-w-3xl mx-auto">
+                            <div className="rounded-xl shadow-sm border p-5" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                                <InterviewMaterialsPanel jobId={jobId} />
                             </div>
                         </div>
                     )}

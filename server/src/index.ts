@@ -24,6 +24,7 @@ import settingsRoutes from './routes/settings';
 import autoJobRoutes from './routes/autoJobRoutes';
 import chatRoutes from './routes/chat';
 import interviewRoutes from './routes/interview';
+import interviewMaterialsRoutes from './routes/interviewMaterials';
 import googleAuthRoutes from './routes/googleAuth';
 import emailSuggestionsRoutes from './routes/emailSuggestions';
 // Correct the import for the default export
@@ -96,6 +97,7 @@ app.use('/api/settings', settingsRoutes); // Settings routes (protected)
 app.use('/api/auto-jobs', autoJobRoutes); // Auto-jobs routes (protected)
 app.use('/api/chat', protect, chatRoutes); // Chat routes (protected)
 app.use('/api/interview', protect, interviewRoutes); // Mock interview routes (protected)
+app.use('/api/interview-materials', protect, interviewMaterialsRoutes); // Interview prep materials (protected)
 app.use('/api/auth/google', googleAuthRoutes); // Google OAuth routes (callback is public, others are protected internally)
 app.use('/api/email-suggestions', protect, emailSuggestionsRoutes); // Email suggestion routes (protected)
 

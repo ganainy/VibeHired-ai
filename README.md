@@ -88,6 +88,13 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 - **PDF Generation:** Generate professional PDF documents from your finalized AI-optimized CVs and cover letters
 - **Download System:** Secure download of generated PDF files
 
+### Interview Prep Library
+- **Per-job prep materials:** Attach PDFs, DOCX, images, text notes, Markdown notes, and external links to any job application via the dedicated Materials tab
+- **Bulk upload:** Select or drop multiple files at once with a sequential upload queue and animated progress bar
+- **Inline preview:** Click any card to preview — PDFs and DOCX via Google Docs Viewer, images inline, Markdown rendered with full formatting via `react-markdown`
+- **Global Prep Library:** Mark any material as globally shared; view all materials across all jobs on the `/interview-materials` page with grouped or flat views
+- **Cloudinary-backed file storage** for binary files; text and Markdown stored directly in the database — 30 MB per-file limit
+
 ## Technology Stack
 
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, React Router, Axios
@@ -215,3 +222,5 @@ After starting the application:
 | **Portfolio Setup - Step 5: Community** | Browse other published portfolios from the VibeHired community. | ![Portfolio Setup - Step 5](demo/portfolio-setup-community.png) |
 | **Public Portfolio** | Share your professional portfolio with a clean, modern public page. | ![Public Portfolio](demo/custom-portfolio.png) |
 | **Settings** | Manage your API keys for AI features (Gemini, OpenRouter, Ollama) and integrations (Apify). Configure AI provider settings and model selection. | ![Settings](demo/settings.png) |
+| **Prep Library** | Global view of all interview preparation materials shared across jobs — grouped by company with search and flat/grouped toggle. Click any card to preview PDFs, images, or rendered Markdown inline. | ![Prep Library](demo/prep-library.png) |
+| **Materials Tab** | Per-job prep materials panel with drag-and-drop upload, multi-file bulk progress, and inline Google Docs Viewer preview for PDFs and DOCX. | ![Materials Tab](demo/materials-tab.png) |
