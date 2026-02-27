@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api';
 
 export interface EvaluationResult {
     score: number;           // 0-10
@@ -17,7 +17,7 @@ function getAuthHeaders(): Record<string, string> {
 
 /** Generate 6-8 interview questions for a job */
 export async function generateInterviewQuestions(jobId: string): Promise<string[]> {
-    const res = await fetch(`${API_BASE_URL}/api/interview/${jobId}/questions`, {
+    const res = await fetch(`${API_BASE_URL}/interview/${jobId}/questions`, {
         method: 'POST',
         headers: getAuthHeaders(),
     });
@@ -35,7 +35,7 @@ export async function evaluateAnswer(
     question: string,
     answer: string
 ): Promise<EvaluationResult> {
-    const res = await fetch(`${API_BASE_URL}/api/interview/${jobId}/evaluate`, {
+    const res = await fetch(`${API_BASE_URL}/interview/${jobId}/evaluate`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ question, answer }),

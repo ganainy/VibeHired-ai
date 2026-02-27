@@ -3856,6 +3856,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     companyName={jobApplication.companyName}
                                     reminders={reminders}
                                     googleConnected={googleCalConnected}
+                                    language={jobApplication.language}
                                     onRemindersChange={setReminders}
                                     onToast={showToast}
                                 />
