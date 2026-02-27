@@ -58,6 +58,9 @@ export interface IJobApplication extends Document {
             max?: number;
             currency?: string;
         };
+        salaryRaw?: string; // Raw salary string extracted from the job posting by AI
+        estimatedSalary?: string; // AI-estimated salary when not explicitly stated in the posting
+        salaryIsEstimate?: boolean; // true = AI estimated, false = extracted from posting
         yearsExperience?: number;
         location?: string;
         remoteOption?: string;
@@ -163,7 +166,9 @@ const JobApplicationSchema: Schema = new Schema(
                 max: Number,
                 currency: { type: String, default: 'USD' }
             },
-            salaryRaw: String, // Store raw salary string from AI
+            salaryRaw: String, // Store raw salary string from AI (extracted from posting)
+            estimatedSalary: String, // AI-estimated salary when not stated in posting
+            salaryIsEstimate: Boolean, // true = AI estimated, false = extracted from posting
             keyDetails: Schema.Types.Mixed, // AI-extracted highlights (array of {key, value} or legacy string)
             yearsExperience: Number,
             location: String,

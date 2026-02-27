@@ -17,7 +17,6 @@ import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
 import AtsInlinePanel from '../components/ats/AtsInlinePanel';
 import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
 import axios from 'axios';
-import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import ErrorAlert from '../components/common/ErrorAlert';
 import SendToPhoneButton from '../components/jobs/SendToPhoneButton';
 import Spinner from '../components/common/Spinner';
@@ -1969,15 +1968,8 @@ const ReviewFinalizePage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-                <div className="container mx-auto p-4">
-                    <div className="mb-6">
-                        <LoadingSkeleton lines={2} />
-                    </div>
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-                        <LoadingSkeleton lines={5} />
-                    </div>
-                </div>
+            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
+                <Spinner size="lg" />
             </div>
         );
     }
@@ -2440,6 +2432,13 @@ const ReviewFinalizePage: React.FC = () => {
                                                     placeholder="e.g., 50k-70k, $80,000"
                                                     className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                                 />
+                                                {!jobDetailsForm.salary && (jobApplication.extractedData?.salaryRaw || jobApplication.extractedData?.estimatedSalary) && (
+                                                    <p className="mt-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                                                        {jobApplication.extractedData?.salaryIsEstimate === false
+                                                            ? `✅ From posting: ${jobApplication.extractedData.salaryRaw}`
+                                                            : `🤖 AI estimate: ${jobApplication.extractedData.estimatedSalary}`}
+                                                    </p>
+                                                )}
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Email</label>
@@ -2516,11 +2515,25 @@ const ReviewFinalizePage: React.FC = () => {
                                             </span>
                                         </li>
                                     )}
-                                    {jobApplication.extractedData?.salaryRaw && (
+                                    {/* Salary: show extracted salary or AI estimate */}
+                                    {(jobApplication.extractedData?.salaryRaw || jobApplication.extractedData?.estimatedSalary) && (
                                         <li className="flex items-start gap-3">
                                             <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
                                             <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                <strong className="text-text-main-light dark:text-text-main-dark">Salary Estimate:</strong> {jobApplication.extractedData.salaryRaw}
+                                                <strong className="text-text-main-light dark:text-text-main-dark">Salary:</strong>{' '}
+                                                {jobApplication.extractedData?.salaryRaw
+                                                    ? jobApplication.extractedData.salaryRaw
+                                                    : jobApplication.extractedData?.estimatedSalary}
+                                                {' '}
+                                                {jobApplication.extractedData?.salaryIsEstimate === false ? (
+                                                    <span className="inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">
+                                                        From posting
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" title="This salary is an AI estimate based on the job data">
+                                                        AI Estimate
+                                                    </span>
+                                                )}
                                             </span>
                                         </li>
                                     )}

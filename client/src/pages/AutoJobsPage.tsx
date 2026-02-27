@@ -19,7 +19,7 @@ import {
     WorkflowRun
 } from '../services/autoJobApi';
 import Toast from '../components/common/Toast';
-import LoadingSkeleton from '../components/common/LoadingSkeleton';
+import Spinner from '../components/common/Spinner';
 import ConfirmModal from '../components/common/ConfirmModal';
 import JobRecommendationBadge from '../components/jobs/JobRecommendationBadge';
 import { formatDate } from '../utils/dateUtils';
@@ -591,7 +591,11 @@ const AutoJobsPage: React.FC = () => {
     };
 
     if (isLoading && jobs.length === 0) {
-        return <LoadingSkeleton />;
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Spinner size="lg" />
+            </div>
+        );
     }
 
     // Handle column sort click

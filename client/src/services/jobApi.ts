@@ -46,7 +46,9 @@ export interface JobApplication {
     updatedAt: string; // Dates are often strings in JSON
     extractedData?: {
         location?: string;
-        salaryRaw?: string;
+        salaryRaw?: string; // Salary extracted directly from the posting
+        estimatedSalary?: string; // AI-estimated salary when not stated in the posting
+        salaryIsEstimate?: boolean; // true = AI estimated, false = extracted from posting
         keyDetails?: string | Array<{ key: string; value: string }>;
     };
     // userId?: string; // Add later

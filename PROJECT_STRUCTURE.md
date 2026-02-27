@@ -109,7 +109,27 @@ The client is a single-page application (SPA) built with React and TypeScript.
     - `WorkExperienceEditor.tsx`: Work experience editor
     - `types.ts`: Type definitions
   - `cv-management/`: CV management components
-    - `Sidebar.tsx`: Sidebar navigation
+    - `Sidebar.tsx`: Sidebar navigation for CV branch list
+  - `cv-workspace/`: Unified CV edit workspace components
+    - `CvEditorPanel.tsx`: Combines the live CV preview and section editor into a single A4-surface panel (used by the unified edit/review flow)
+  - `layout/`: Application shell components
+    - `Header.tsx`: Top navigation bar (user menu, theme toggle)
+    - `MainLayout.tsx`: Root authenticated layout wrapper — renders `Header`, `Sidebar`, and the page `<Outlet>`
+    - `Sidebar.tsx`: Primary navigation sidebar (links to all main pages, collapsible)
+  - `resume-builder/`: Standalone resume-builder widget (used in CV creation flow)
+    - `ResumeBuilder.tsx`: Top-level orchestrator component
+    - `Form/BaseForm.tsx`: Shared form base wrapper
+    - `Form/FormSection.tsx`: Collapsible form section container
+    - `Form/InputGroup.tsx`: Labelled input group layout helper
+    - `Forms/ProfileForm.tsx`: Personal info & summary form
+    - `Forms/WorkExperiencesForm.tsx`: Work experience entries form
+    - `Forms/EducationsForm.tsx`: Education entries form
+    - `Forms/SkillsForm.tsx`: Skills form
+    - `Forms/ProjectsForm.tsx`: Projects form
+    - `Forms/CertificatesForm.tsx`: Certificates form
+    - `Forms/LanguagesForm.tsx`: Languages form
+    - `types.ts`: Shared type definitions for resume-builder
+    - `index.ts`: Public exports
   - `generator/`: Draft generation components
     - `UserInputModal.tsx`: Modal for user input during generation
   - `jobs/`: Job application components
@@ -128,16 +148,22 @@ The client is a single-page application (SPA) built with React and TypeScript.
     - `separator.tsx`: Separator component
   - `CoverLetterEditor.tsx`: Cover letter editor component
   - `CoverLetterModal.tsx`: Cover letter modal
+  - `EmailFormatModal.tsx`: Modal for selecting and previewing the email format of a cover letter (plain-text / formatted)
   - `NotesModal.tsx`: Notes modal component
 
+> **Note:** The following directories are reserved for future features and currently contain only placeholder files: `analysis/`, `cover-letter/`, `dashboard/`.
+
 - **`src/pages`**: Top-level page components:
-  - `LoginPage.tsx`: User login
+  - `LoginPage.tsx`: User login (email/password + Google OAuth button)
   - `RegisterPage.tsx`: User registration
+  - `ForgotPasswordPage.tsx`: Request a password-reset link by email
+  - `ResetPasswordPage.tsx`: Set a new password via reset token (reads `?token=` from URL)
+  - `GoogleAuthCallbackPage.tsx`: OAuth 2.0 callback handler — exchanges the Google code for a JWT and redirects to `/dashboard`
   - `DashboardPage.tsx`: Main dashboard with job applications
   - `AutoJobsPage.tsx`: Automated job discovery and workflow management
   - `CVManagementPage.tsx`: CV upload, parsing, and editing
   - `AnalyticsPage.tsx`: Analytics dashboard with charts and statistics
-  - `PortfolioSetupPage.tsx`: Portfolio configuration and setup
+  - `PortfolioSetupPage.tsx`: Portfolio configuration and setup (5 tabs)
   - `PortfolioPage.tsx`: Public portfolio view (accessible at `/portfolio/:username`)
   - `ReviewFinalizePage.tsx`: Review and finalize generated CVs/cover letters
   - `SettingsPage.tsx`: API key management and AI provider settings

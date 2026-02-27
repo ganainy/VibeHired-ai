@@ -13,7 +13,9 @@ export interface ExtractedJobData {
     jobDescriptionText: string | null;
     language: string | null; // e.g., "en", "de", "es"
     location?: string | null; // Extracted location
-    salary?: string | null; // Extracted salary info
+    salary?: string | null; // Extracted salary info (null when not explicitly stated in the posting)
+    estimatedSalary?: string | null; // AI-estimated salary when not explicitly stated (e.g., "$80k–$110k/year")
+    salaryIsEstimate?: boolean; // true if salary is AI-estimated, false if extracted from the posting
     keyDetails?: Array<{ key: string; value: string }> | null; // AI extracted highlights (key-value pairs)
     jobPrerequisites?: string | null; // AI-extracted job requirements and prerequisites
     jobType?: 'full-time' | 'part-time' | 'working-student' | 'internship' | 'contract' | 'freelance' | null; // Employment type
@@ -141,7 +143,9 @@ async function extractFieldsWithGemini(htmlContent: string, url: string, userId:
         3. Extract the full job description text, focusing on responsibilities, qualifications, requirements, benefits, and any other relevant details. Remove any HTML tags and return clean text.
         4. Determine the primary language of the job posting (e.g., "en" for English, "de" for German, "es" for Spanish). Use standard ISO 639-1 language codes.
         5. Extract the job location (e.g., "remote", "Berlin", "Hybrid").
-        6. Extract any salary or compensation information provided.
+        6. Salary:
+           - If the posting explicitly states a salary or compensation range, extract it into the \`salary\` field and set \`salaryIsEstimate\` to false. Set \`estimatedSalary\` to null.
+           - If NO salary is mentioned, set \`salary\` to null, set \`salaryIsEstimate\` to true, and provide a realistic market-rate estimate in \`estimatedSalary\` based on the job title, location, seniority level, required skills/tech stack, company type, and local market data. Express it as a range (e.g., "€60k–€80k/year", "$90k–$120k/year"). Be realistic and specific.
         7. Extract key highlights such as Employment Type, Experience Level, Remote Policy, Benefits, Tech Stack, Location, Salary, and any other important details. Return them as a structured list of key-value pairs in the 'keyDetails' field.
         8. Extract the job prerequisites and requirements as a bullet-pointed list. Include required skills, qualifications, years of experience, education requirements, certifications, languages, and any "must-have" or "nice-to-have" items. IMPORTANT: This list MUST BE IN ENGLISH, even if the job description is in another language. Translate the requirements to English if necessary. Format as a clean bulleted list (using • or - characters). Leave the 'notes' field NULL.
         9. Determine the employment type (jobType). Map common terms to these exact values: "full-time" (for Vollzeit, full-time, 40 hours), "part-time" (for Teilzeit, part-time), "working-student" (for Werkstudent, working student, student assistant), "internship" (for Praktikum, internship), "contract" (for Befristet, contract, temporary), "freelance" (for Freelance, self-employed). Use null if not specified.
@@ -152,15 +156,16 @@ async function extractFieldsWithGemini(htmlContent: string, url: string, userId:
             - applicationUrl: Direct application URL or portal link (if different from the source URL)
 
         Output Format:
-        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "keyDetails", "jobPrerequisites", "jobType", "contactEmail", "contactPhone", "hiringManagerName", "applicationUrl", and "notes".
-        - jobTitle, companyName, language, location, salary, jobPrerequisites, contactEmail, contactPhone, hiringManagerName, applicationUrl should be strings if found, or null.
+        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "estimatedSalary", "salaryIsEstimate", "keyDetails", "jobPrerequisites", "jobType", "contactEmail", "contactPhone", "hiringManagerName", "applicationUrl", and "notes".
+        - jobTitle, companyName, language, location, salary, estimatedSalary, jobPrerequisites, contactEmail, contactPhone, hiringManagerName, applicationUrl should be strings if found, or null.
+        - salaryIsEstimate should be a boolean: true if salary is AI-estimated, false if extracted from the posting.
         - jobType should be one of: "full-time", "part-time", "working-student", "internship", "contract", "freelance", or null.
         - keyDetails should be an array of objects with "key" and "value" strings, or null.
         - jobPrerequisites should be a bulleted list string of requirements and qualifications (ALWAYS IN ENGLISH).
         - jobDescriptionText is REQUIRED.
         - 'notes' should be null.
 
-        Example structure:
+        Example structure (salary NOT in posting — AI estimates):
         \`\`\`json
         {
           "jobTitle": "Software Engineer",
@@ -168,7 +173,9 @@ async function extractFieldsWithGemini(htmlContent: string, url: string, userId:
           "jobDescriptionText": "...",
           "language": "en",
           "location": "Berlin / Hybrid",
-          "salary": "€80k",
+          "salary": null,
+          "estimatedSalary": "€70k–€95k/year",
+          "salaryIsEstimate": true,
           "jobType": "full-time",
           "contactEmail": "recruiting@techcorp.com",
           "contactPhone": "+49 30 12345678",
@@ -177,7 +184,6 @@ async function extractFieldsWithGemini(htmlContent: string, url: string, userId:
           "keyDetails": [
             { "key": "Contract", "value": "Full-time" },
             { "key": "Location", "value": "Berlin / Hybrid" },
-            { "key": "Salary", "value": "€80k" },
             { "key": "Benefits", "value": "Health, Gym" }
           ],
           "jobPrerequisites": "• 3+ years of experience in software development\\n• Proficiency in Java, JavaScript, or Python\\n• Bachelor's degree in Computer Science or related field\\n• Experience with cloud platforms (AWS, GCP, Azure)\\n• Strong communication skills\\n• Nice to have: Experience with Kubernetes",
@@ -261,7 +267,9 @@ export async function extractJobDataFromText(rawText: string, userId: string): P
         3. Extract the full job description text, focusing on responsibilities, qualifications, requirements, benefits, and any other relevant details.
         4. Determine the primary language of the job posting (e.g., "en" for English, "de" for German, "es" for Spanish). Use standard ISO 639-1 language codes.
         5. Extract the job location (e.g., "remote", "Berlin", "Hybrid").
-        6. Extract any salary or compensation information provided.
+        6. Salary:
+           - If the posting explicitly states a salary or compensation range, extract it into the \`salary\` field and set \`salaryIsEstimate\` to false. Set \`estimatedSalary\` to null.
+           - If NO salary is mentioned, set \`salary\` to null, set \`salaryIsEstimate\` to true, and provide a realistic market-rate estimate in \`estimatedSalary\` based on the job title, location, seniority level, required skills/tech stack, company type, and local market data. Express it as a range (e.g., "€60k–€80k/year", "$90k–$120k/year"). Be realistic and specific.
         7. Extract key highlights such as Employment Type, Experience Level, Remote Policy, Benefits, Tech Stack, Location, Salary, and any other important details. Return them as a structured list of key-value pairs in the 'keyDetails' field.
         8. Extract the job prerequisites and requirements as a bullet-pointed list. Include required skills, qualifications, years of experience, education requirements, certifications, languages, and any "must-have" or "nice-to-have" items. IMPORTANT: This list MUST BE IN ENGLISH, even if the job description is in another language. Translate the requirements to English if necessary. Format as a clean bulleted list (using • or - characters). Leave the 'notes' field NULL.
         9. Determine the employment type (jobType). Map common terms to these exact values: "full-time" (for Vollzeit, full-time, 40 hours), "part-time" (for Teilzeit, part-time), "working-student" (for Werkstudent, working student, student assistant), "internship" (for Praktikum, internship), "contract" (for Befristet, contract, temporary), "freelance" (for Freelance, self-employed). Use null if not specified.
@@ -272,15 +280,16 @@ export async function extractJobDataFromText(rawText: string, userId: string): P
             - applicationUrl: Direct application URL or portal link
 
         Output Format:
-        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "keyDetails", "jobPrerequisites", "jobType", "contactEmail", "contactPhone", "hiringManagerName", "applicationUrl", and "notes".
-        - jobTitle, companyName, language, location, salary, jobPrerequisites, contactEmail, contactPhone, hiringManagerName, applicationUrl should be strings if found, or null.
+        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "estimatedSalary", "salaryIsEstimate", "keyDetails", "jobPrerequisites", "jobType", "contactEmail", "contactPhone", "hiringManagerName", "applicationUrl", and "notes".
+        - jobTitle, companyName, language, location, salary, estimatedSalary, jobPrerequisites, contactEmail, contactPhone, hiringManagerName, applicationUrl should be strings if found, or null.
+        - salaryIsEstimate should be a boolean: true if salary is AI-estimated, false if extracted from the posting.
         - jobType should be one of: "full-time", "part-time", "working-student", "internship", "contract", "freelance", or null.
         - keyDetails should be an array of objects with "key" and "value" strings, or null.
         - jobPrerequisites should be a bulleted list string of requirements and qualifications (ALWAYS IN ENGLISH).
         - jobDescriptionText is REQUIRED.
         - 'notes' should be null.
 
-        Example structure:
+        Example structure (salary IS in posting):
         \`\`\`json
         {
           "jobTitle": "Software Engineer",
@@ -289,6 +298,8 @@ export async function extractJobDataFromText(rawText: string, userId: string): P
           "language": "en",
           "location": "SF",
           "salary": "$150k",
+          "estimatedSalary": null,
+          "salaryIsEstimate": false,
           "jobType": "full-time",
           "contactEmail": "jobs@techcorp.com",
           "contactPhone": "+1 555 123 4567",

@@ -446,6 +446,8 @@ const extractFromTextHandler: RequestHandler = async (req: ValidatedRequest, res
         ...existingExtractedData,
         location: extractedData.location || existingExtractedData.location,
         salaryRaw: extractedData.salary || existingExtractedData.salaryRaw,
+        estimatedSalary: extractedData.estimatedSalary || existingExtractedData.estimatedSalary,
+        salaryIsEstimate: extractedData.salaryIsEstimate ?? existingExtractedData.salaryIsEstimate,
         keyDetails: extractedData.keyDetails || existingExtractedData.keyDetails
       }
     };
@@ -543,6 +545,8 @@ const createJobFromUrlHandler: RequestHandler = async (req: ValidatedRequest, re
       extractedData: {
         location: extractedData.location || undefined,
         salaryRaw: extractedData.salary || undefined,
+        estimatedSalary: extractedData.estimatedSalary || undefined,
+        salaryIsEstimate: extractedData.salaryIsEstimate ?? undefined,
         keyDetails: extractedData.keyDetails || undefined
       }
     });
@@ -670,6 +674,8 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
       extractedData: {
         location: extractedData.location || undefined,
         salaryRaw: extractedData.salary || undefined,
+        estimatedSalary: extractedData.estimatedSalary || undefined,
+        salaryIsEstimate: extractedData.salaryIsEstimate ?? undefined,
         keyDetails: extractedData.keyDetails || undefined
       }
     });

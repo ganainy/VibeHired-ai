@@ -2,7 +2,7 @@
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Visit_Now-blue?style=for-the-badge)](https://vibehired-ai.netlify.app)
 
-VibeHired is an AI-powered job application assistant built on Google Gemini AI that automates and enhances your job search process. The platform uses advanced AI to analyze CVs, generate personalized cover letters, score ATS compatibility, extract job requirements, and provide real-time application assistance—all while you maintain full control over your data and API usage. Transform the tedious job application process into an efficient, intelligent workflow.
+VibeHired is an AI-powered job application assistant that automates and enhances your job search process. The platform uses multi-provider AI (Google Gemini, OpenRouter, Ollama) to analyze CVs, generate personalized cover letters, score ATS compatibility, extract job requirements, and provide real-time application assistance—all while you maintain full control over your data and API usage. Transform the tedious job application process into an efficient, intelligent workflow.
 
 ## 🚀 Live Preview
 
@@ -14,6 +14,8 @@ VibeHired is an AI-powered job application assistant built on Google Gemini AI t
 
 ### User Authentication
 - Secure registration and login using JWT
+- **Google OAuth:** Sign in with Google via a secure OAuth 2.0 callback flow
+- **Password Reset:** Forgot-password / reset-password email flow
 - Protected routes with authentication middleware
 - User profile management
 
@@ -185,8 +187,12 @@ After starting the application:
 
 | Feature | Description | Screenshot |
 |---------|-------------|------------|
+| **Login** | Secure email/password login and Google OAuth sign-in. | ![Login](demo/login.png) |
+| **Register** | Create a new account to get started. | ![Register](demo/register.png) |
+| **Forgot Password** | Request a password reset link by email. | ![Forgot Password](demo/forgot-password.png) |
 | **Auto Jobs** | Automated job discovery with AI-powered analysis and filtering. Manually trigger job searches and get intelligent job recommendations. | ![Auto Jobs](demo/auto-jobs.png) |
-| **Dashboard** | The main dashboard provides a comprehensive view of all job applications with filtering, sorting, and quick actions. | ![Dashboard](demo/main-dashbaord.png) |
+| **Dashboard** | The main dashboard provides a comprehensive view of all job applications with filtering, sorting, and quick actions. | ![Dashboard](demo/main-dashboard.png) |
+| **Dashboard — Kanban View** | Visual kanban board for tracking applications through the hiring pipeline. | ![Dashboard Kanban](demo/dashboard-kanban.png) |
 | **Analytics Dashboard** | Visual dashboard with real-time metrics, status trends, weekly application goals, and pipeline yield analysis. | ![Analytics](demo/analytics-dashboard.png) |
 | **Job Details** | View detailed job information and manage individual job applications. | ![Job Details](demo/job-details.png) |
 | **Custom Job CV** | Review and customize AI-generated CVs tailored to specific job applications. | ![Custom Job CV](demo/custom-job-cv.png) |
@@ -194,9 +200,9 @@ After starting the application:
 | **ATS Analysis** | Get detailed ATS compatibility scores and feedback to optimize your application. | ![ATS Analysis](demo/ats-analysis.png) |
 | **CV Management** | Upload, parse, and edit your CV with a rich editor that supports section-by-section editing and AI-powered analysis. | ![CV Management](demo/cv-management.png) |
 | **Portfolio Setup - Step 1: Connect Accounts** | Connect your GitHub and LinkedIn accounts to automatically import your professional data. | ![Portfolio Setup - Step 1](demo/portfolio-setup.png) |
-| **Portfolio Setup - Step 2: GitHub Repos** | Select which GitHub repositories to showcase in your portfolio. | ![Portfolio Setup - Step 2](demo/portfolio-setup2.png) |
-| **Portfolio Setup - Step 3: LinkedIn Data** | Review and edit your professional information imported from LinkedIn. | ![Portfolio Setup - Step 3](demo/portfolio-setup3.png) |
-| **Portfolio Setup - Step 4: Publish** | Publish your portfolio with a custom username and toggle visibility settings. | ![Portfolio Setup - Step 4](demo/portfolio-setup4.png) |
-| **Portfolio Setup - Step 5: Community** | Browse other published portfolios from the VibeHired community. | ![Portfolio Setup - Step 5](demo/portfolio-setup5.png) |
+| **Portfolio Setup - Step 2: GitHub Repos** | Select which GitHub repositories to showcase in your portfolio. | ![Portfolio Setup - Step 2](demo/portfolio-setup-github.png) |
+| **Portfolio Setup - Step 3: LinkedIn Data** | Review and edit your professional information imported from LinkedIn. | ![Portfolio Setup - Step 3](demo/portfolio-setup-linkedin.png) |
+| **Portfolio Setup - Step 4: Publish** | Publish your portfolio with a custom username and toggle visibility settings. | ![Portfolio Setup - Step 4](demo/portfolio-setup-publish.png) |
+| **Portfolio Setup - Step 5: Community** | Browse other published portfolios from the VibeHired community. | ![Portfolio Setup - Step 5](demo/portfolio-setup-community.png) |
 | **Public Portfolio** | Share your professional portfolio with a clean, modern public page. | ![Public Portfolio](demo/custom-portfolio.png) |
 | **Settings** | Manage your API keys for AI features (Gemini, OpenRouter, Ollama) and integrations (Apify). Configure AI provider settings and model selection. | ![Settings](demo/settings.png) |

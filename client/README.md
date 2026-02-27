@@ -1,54 +1,94 @@
-# React + TypeScript + Vite
+# VibeHired — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The React + TypeScript + Vite single-page application for [VibeHired](../README.md).
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| Layer | Choice |
+|---|---|
+| Framework | React 18 + TypeScript |
+| Build tool | Vite |
+| Routing | React Router v6 |
+| Styling | Tailwind CSS + custom CSS design tokens (see [STYLE_GUIDELINES.md](./STYLE_GUIDELINES.md)) |
+| HTTP client | Axios |
+| Charts | Recharts |
+| CV schema | JSON Resume |
+| Icons | Material Symbols Outlined (Google Fonts) |
 
-## Expanding the ESLint configuration
+## Local Development
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+From the **repo root:**
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+npm run dev          # starts both frontend (port 5173) and backend (port 5001)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Or from this directory only:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```bash
+npm install          # first time only
+npm run dev          # Vite dev server at http://localhost:5173
 ```
+
+## Environment Variables
+
+Create a `.env.local` file in this (`client/`) directory or set the variable in your shell before starting the dev server:
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_BACKEND_URL` | Production only | Absolute URL of the deployed backend API. Leave unset for local dev (proxied via Vite). |
+
+## Available Scripts
+
+| Script | Description |
+|---|---|
+| `npm run dev` | Start Vite dev server with HMR |
+| `npm run build` | TypeScript compile + Vite production build (outputs to `dist/`) |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | Run ESLint across all source files |
+
+## Project Structure
+
+All source code lives in `src/`. Key directories:
+
+```
+src/
+├── components/   # Reusable UI components, grouped by feature
+├── context/      # React Context providers (Auth, Theme)
+├── hooks/        # Custom React hooks
+├── pages/        # Top-level route components
+├── services/     # Axios API wrappers (one file per backend route group)
+├── templates/    # 14 resume/CV templates
+├── types/        # TypeScript interfaces & enums
+├── utils/        # Pure utility functions
+└── lib/          # Third-party library helpers
+```
+
+For a full breakdown of every file and directory see [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md).
+
+## Design System
+
+All components follow the **Obsidian Intelligence** design system documented in [STYLE_GUIDELINES.md](./STYLE_GUIDELINES.md):
+
+- **Dark-first** — `var(--bg-base)` through `var(--bg-raised)` surface layers
+- **Gold accent** — `var(--accent)` (`#e8b844`) only; no blue/purple
+- **Fonts** — Fraunces (display), Outfit (body), JetBrains Mono (data)
+- **Component classes** — `.card`, `.btn-primary`, `.input-base`, `.badge-*`, etc. defined in `src/index.css`
+
+## Routes
+
+| Path | Component | Auth |
+|---|---|---|
+| `/login` | `LoginPage` | Public |
+| `/register` | `RegisterPage` | Public |
+| `/forgot-password` | `ForgotPasswordPage` | Public |
+| `/reset-password` | `ResetPasswordPage` | Public |
+| `/auth/google` | `GoogleAuthCallbackPage` | Public |
+| `/portfolio/:username` | `PortfolioPage` | Public |
+| `/dashboard` | `DashboardPage` | Protected |
+| `/manage-cv` | `CVManagementPage` | Protected |
+| `/auto-jobs` | `AutoJobsPage` | Protected |
+| `/analytics` | `AnalyticsPage` | Protected |
+| `/portfolio-setup` | `PortfolioSetupPage` | Protected |
+| `/settings` | `SettingsPage` | Protected |
+| `/jobs/:jobId/review/:tab?` | `ReviewFinalizePage` | Protected |

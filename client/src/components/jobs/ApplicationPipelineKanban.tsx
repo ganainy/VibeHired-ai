@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { JobApplication } from '../../services/jobApi';
 import ApplicationCard from './ApplicationCard';
-import LoadingSkeleton from '../common/LoadingSkeleton';
+import Spinner from '../common/Spinner';
 
 export type KanbanColumn = 'Saved' | 'Applied' | 'Interviewing' | 'Offer' | 'Rejected';
 
@@ -149,7 +149,11 @@ const ApplicationPipelineKanban: React.FC<ApplicationPipelineKanbanProps> = ({
   ];
 
   if (isLoading) {
-    return <LoadingSkeleton />;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   return (

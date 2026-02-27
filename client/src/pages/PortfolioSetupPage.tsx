@@ -17,7 +17,7 @@ import {
 } from '../services/portfolioApi';
 // Username updates are no longer allowed after registration
 // import { updateUsername as updateUsernameAPI } from '../services/authApi';
-import LoadingSkeleton from '../components/common/LoadingSkeleton';
+import Spinner from '../components/common/Spinner';
 import ErrorAlert from '../components/common/ErrorAlert';
 import Toast from '../components/common/Toast';
 import {
@@ -588,8 +588,8 @@ const PortfolioSetupPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-8">
-        <LoadingSkeleton />
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-8 flex items-center justify-center">
+        <Spinner size="lg" />
       </div>
     );
   }

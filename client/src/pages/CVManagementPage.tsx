@@ -17,7 +17,6 @@ import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
 import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
 import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 import Toast from '../components/common/Toast';
-import LoadingSkeleton from '../components/common/LoadingSkeleton';
 import { fetchAllSectionsAnalysis, fetchSectionAnalysis, SectionAnalysisResult } from '../services/analysisApi';
 import { improveSection } from '../services/generatorApi';
 import { scanAts, getAtsScores, getLatestAts, AtsScores, getAtsForJob } from '../services/atsApi';

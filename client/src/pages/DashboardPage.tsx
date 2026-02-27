@@ -20,7 +20,7 @@ import linkedinLogo from '../assets/linkedin-svgrepo-com.svg';
 import indeedLogo from '../assets/indeed-svgrepo-com.svg';
 import xingLogo from '../assets/xing-logo-svgrepo-com.svg';
 import stepstoneLogo from '../assets/stepstone-svgrepo-com.svg';
-import LoadingSkeleton from '../components/common/LoadingSkeleton';
+import Spinner from '../components/common/Spinner';
 import Toast from '../components/common/Toast';
 import DuplicateJobWarningModal from '../components/jobs/DuplicateJobWarningModal';
 
@@ -674,8 +674,8 @@ const DashboardPage: React.FC = () => {
   // --- Render Loading State ---
   if (isLoading) {
     return (
-      <div className="h-full p-8">
-        <LoadingSkeleton lines={5} />
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -1157,6 +1157,7 @@ const DashboardPage: React.FC = () => {
                           </div>
                         </th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Type</th>
+                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Salary</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Contact</th>
                         <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Actions</th>
                       </tr>
@@ -1209,6 +1210,27 @@ const DashboardPage: React.FC = () => {
                             ) : (
                               <span className="text-slate-400 dark:text-slate-500">-</span>
                             )}
+                          </td>
+                          {/* Salary column */}
+                          <td className="p-4 text-slate-600 dark:text-slate-400">
+                            {(() => {
+                              const displaySalary = job.salary || job.extractedData?.salaryRaw || job.extractedData?.estimatedSalary;
+                              if (!displaySalary) return <span className="text-slate-400 dark:text-slate-500">-</span>;
+                              const isUserEntered = !!job.salary;
+                              const isFromPosting = !job.salary && !!job.extractedData?.salaryRaw;
+                              const isEstimate = !job.salary && !job.extractedData?.salaryRaw && job.extractedData?.salaryIsEstimate;
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs font-medium">{displaySalary}</span>
+                                  {isEstimate && (
+                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">AI Est.</span>
+                                  )}
+                                  {isFromPosting && (
+                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-green-600 dark:text-green-400">Posting</span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td className="p-4 text-slate-600 dark:text-slate-400 max-w-[120px]" onClick={(e) => e.stopPropagation()}>
                             {/* Display structured contact info if available, otherwise fall back to legacy contact field */}

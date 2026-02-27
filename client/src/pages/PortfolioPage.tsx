@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getAggregatedProfile, getProjectsByUsername, AggregatedProfile, Project } from '../services/portfolioApi';
 import PortfolioLayout from '../components/portfolio/PortfolioLayout';
-import LoadingSkeleton from '../components/common/LoadingSkeleton';
+import Spinner from '../components/common/Spinner';
 import ErrorAlert from '../components/common/ErrorAlert';
 
 const PortfolioPage: React.FC = () => {
@@ -92,8 +92,8 @@ const PortfolioPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-        <div className="container mx-auto px-4 py-8 w-full">
-          <LoadingSkeleton lines={5} />
+        <div className="flex items-center justify-center h-64">
+          <Spinner size="lg" />
         </div>
       </div>
     );
