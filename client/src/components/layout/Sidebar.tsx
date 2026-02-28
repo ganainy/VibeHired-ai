@@ -69,6 +69,13 @@ const PrepLibraryIcon = () => (
     </svg>
 );
 
+const TimeTrackerIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <polyline points="12 7 12 12 15.5 14" />
+    </svg>
+);
+
 const SunIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="4" />
@@ -129,6 +136,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
         { path: '/email-suggestions', label: 'Inbox', icon: InboxIcon, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
         { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon },
         { path: '/interview-materials', label: 'Prep Library', icon: PrepLibraryIcon },
+        { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
         { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
         { path: '/portfolio-setup', label: 'Portfolio', icon: PortfolioIcon },
         { path: '/settings', label: 'Settings', icon: SettingsIcon },

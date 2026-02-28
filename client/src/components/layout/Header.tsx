@@ -71,6 +71,13 @@ const SettingsIcon = () => (
     </svg>
 );
 
+const TimeTrackerIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <polyline points="12 7 12 12 15.5 14" />
+    </svg>
+);
+
 const SunIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="4" />
@@ -136,6 +143,7 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
         { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
         { path: '/portfolio-setup', label: 'Portfolio', icon: PortfolioIcon },
         { path: '/settings', label: 'Settings', icon: SettingsIcon },
+        { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
     ];
 
     const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : 'U';

@@ -35,7 +35,7 @@ import { getGoogleConnectUrl } from '../../../services/googleCalendarApi';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const defaultPrefs = { lookbackDays: 14, defaultProvider: null, inboxProvider: null };
+const defaultPrefs = { lookbackDays: 14, defaultProvider: null, inboxProvider: null, autoPoll: false };
 
 function setupApiDefaults(overrides: Partial<typeof api> = {}) {
     vi.mocked(api.getGmailScopeStatus).mockResolvedValue({ hasScope: true });
@@ -73,6 +73,7 @@ const makeSuggestion = (overrides = {}) => ({
         companyName: 'Acme Corp',
         status: 'Applied' as const,
     },
+    emailCategory: 'application_response' as const,
     ...overrides,
 });
 

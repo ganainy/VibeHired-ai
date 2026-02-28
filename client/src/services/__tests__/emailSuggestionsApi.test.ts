@@ -41,6 +41,7 @@ const makeSuggestion = (overrides: Partial<EmailSuggestion> = {}): EmailSuggesti
     matchedJobTitle: 'Senior Engineer',
     status: 'pending',
     createdAt: '2026-02-27T10:00:00Z',
+    emailCategory: 'application_response' as const,
     ...overrides,
 });
 

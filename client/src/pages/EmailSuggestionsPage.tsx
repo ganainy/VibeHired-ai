@@ -12,6 +12,7 @@ import {
     type EmailSuggestion,
 } from '../services/emailSuggestionsApi';
 import { getGoogleConnectUrl } from '../services/googleCalendarApi';
+import EditSuggestionModal from '../components/email-suggestions/EditSuggestionModal';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -97,9 +98,27 @@ const CalendarIcon = () => (
     </svg>
 );
 
-function formatCalEventDate(iso: string): string {
+const EditIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+);
+
+const ExternalLinkIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+        <polyline points="15 3 21 3 21 9" />
+        <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+);
+
+function formatCalEventDate(iso: string | null | undefined): string {
+    if (!iso) return 'Date not specified';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return 'Date not specified';
     try {
-        return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+        return d.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
     } catch {
         return iso;
     }
@@ -141,7 +160,7 @@ const HOW_IT_WORKS = [
     {
         icon: MailIcon,
         title: 'Reads your Gmail',
-        description: 'Every 15 minutes the server scans your inbox for new unread emails that look like job application responses.',
+        description: 'Every 2 hours the server scans your inbox for new unread emails that look like job application responses.',
     },
     {
         icon: SparkleIcon,
@@ -170,10 +189,31 @@ const EmailSuggestionsPage: React.FC = () => {
     const [hasScope, setHasScope] = useState<boolean | null>(null);
     const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
     const [lookbackDays, setLookbackDays] = useState(14);
+    const [autoPoll, setAutoPoll] = useState(true);
     const [defaultProvider, setDefaultProvider] = useState<string | null>(null);
     const [inboxProvider, setInboxProvider] = useState<string | null>(null);
     const [calendarUnchecked, setCalendarUnchecked] = useState<Set<string>>(new Set());
     const [noteAddedLocally, setNoteAddedLocally] = useState<Set<string>>(new Set());
+    const [editingSuggestion, setEditingSuggestion] = useState<EmailSuggestion | null>(null);
+    const [howItWorksOpen, setHowItWorksOpen] = useState<boolean>(() => {
+        try { return localStorage.getItem('emailSuggestions.howItWorksOpen') !== 'false'; }
+        catch { return true; }
+    });
+    const [activeTab, setActiveTab] = useState<'application_response' | 'job_offer'>(() => {
+        try { return (localStorage.getItem('emailSuggestions.activeTab') as any) || 'application_response'; }
+        catch { return 'application_response'; }
+    });
+
+    const switchTab = (tab: 'application_response' | 'job_offer') => {
+        setActiveTab(tab);
+        try { localStorage.setItem('emailSuggestions.activeTab', tab); } catch {}
+    };
+
+    const toggleHowItWorks = () => setHowItWorksOpen((v) => {
+        const next = !v;
+        try { localStorage.setItem('emailSuggestions.howItWorksOpen', String(next)); } catch {}
+        return next;
+    });
 
     const showToast = (msg: string, type: 'ok' | 'err' = 'ok') => {
         setToast({ msg, type });
@@ -191,6 +231,7 @@ const EmailSuggestionsPage: React.FC = () => {
             setSuggestions(data);
             setHasScope(scopeResult.hasScope);
             setLookbackDays(prefs.lookbackDays);
+            setAutoPoll(prefs.autoPoll ?? true);
             setDefaultProvider(prefs.defaultProvider ?? null);
             setInboxProvider(prefs.inboxProvider ?? null);
             setNoteAddedLocally(new Set(data.filter((s) => s.noteAdded).map((s) => s._id)));
@@ -254,6 +295,12 @@ const EmailSuggestionsPage: React.FC = () => {
         }
     };
 
+    const handleEditSave = (updated: EmailSuggestion) => {
+        setSuggestions((prev) => prev.map((s) => s._id === updated._id ? updated : s));
+        setEditingSuggestion(null);
+        showToast('Suggestion updated successfully.');
+    };
+
     const handlePoll = async () => {
         setPolling(true);
         try {
@@ -273,6 +320,15 @@ const EmailSuggestionsPage: React.FC = () => {
             await updatePreferences({ lookbackDays: value });
         } catch {
             // non-fatal - preference not saved but UI still works
+        }
+    };
+
+    const handleAutoPollChange = async (value: boolean) => {
+        setAutoPoll(value);
+        try {
+            await updatePreferences({ autoPoll: value });
+        } catch {
+            setAutoPoll(!value); // revert on failure
         }
     };
 
@@ -301,7 +357,9 @@ const EmailSuggestionsPage: React.FC = () => {
     };
 
     return (
-        <div className="max-w-3xl mx-auto space-y-8 pb-12">
+        <div className="h-full overflow-y-auto custom-scrollbar px-2" style={{ background: 'var(--bg-base)' }}>
+        <div className="max-w-3xl mx-auto px-4 md:px-6 lg:px-8">
+        <div className="py-6 md:py-8 space-y-8 pb-12">
 
             {/* ── Page header ── */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -309,8 +367,8 @@ const EmailSuggestionsPage: React.FC = () => {
                     <div className="flex items-center gap-2.5 mb-1.5">
                         <span style={{ color: 'var(--accent)' }}><InboxIcon /></span>
                         <h1
-                            className="text-2xl font-bold tracking-tight"
-                            style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
+                            className="text-2xl md:text-3xl font-display font-semibold tracking-tight"
+                            style={{ color: 'var(--text-primary)' }}
                         >
                             Email Inbox
                         </h1>
@@ -323,7 +381,7 @@ const EmailSuggestionsPage: React.FC = () => {
                             </span>
                         )}
                     </div>
-                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                    <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
                         AI-detected status changes from your job application emails, ready to review before applying.
                     </p>
                 </div>
@@ -332,12 +390,7 @@ const EmailSuggestionsPage: React.FC = () => {
                     <select
                         value={lookbackDays}
                         onChange={(e) => handleLookbackDaysChange(Number(e.target.value))}
-                        className="text-xs rounded-lg px-2.5 py-2"
-                        style={{
-                            backgroundColor: 'var(--bg-elevated)',
-                            color: 'var(--text-secondary)',
-                            border: '1px solid var(--border)',
-                        }}
+                        className="input-base !w-auto text-sm"
                     >
                         <option value={1}>Last 1 day</option>
                         <option value={7}>Last 7 days</option>
@@ -347,12 +400,7 @@ const EmailSuggestionsPage: React.FC = () => {
                     <button
                         onClick={handlePoll}
                         disabled={polling}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                        style={{
-                            backgroundColor: 'var(--accent)',
-                            color: '#000',
-                            opacity: polling ? 0.65 : 1,
-                        }}
+                        className="btn-primary flex items-center gap-2"
                     >
                         <RefreshIcon spinning={polling} />
                         {polling ? 'Scanning…' : 'Scan inbox'}
@@ -361,14 +409,34 @@ const EmailSuggestionsPage: React.FC = () => {
             </div>
 
             {/* ── How it works ── */}
-            <div
-                className="rounded-2xl p-5"
-                style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
-            >
-                <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
-                    How it works
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="card overflow-hidden">
+                {/* Header / toggle row */}
+                <button
+                    type="button"
+                    onClick={toggleHowItWorks}
+                    className="w-full flex items-center justify-between px-5 py-4 text-left"
+                >
+                    <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                        How it works
+                    </p>
+                    <span
+                        style={{
+                            color: 'var(--text-muted)',
+                            display: 'inline-flex',
+                            transform: howItWorksOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 200ms',
+                        }}
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </span>
+                </button>
+
+                {/* Collapsible body */}
+                {howItWorksOpen && (
+                <div className="px-5 pb-5" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                     {HOW_IT_WORKS.map((step, i) => (
                         <div key={i} className="flex gap-3">
                             <div
@@ -390,12 +458,38 @@ const EmailSuggestionsPage: React.FC = () => {
                 </div>
 
                 <div
-                    className="mt-4 pt-4 flex flex-wrap gap-x-6 gap-y-1.5"
+                    className="mt-4 pt-4 flex flex-wrap gap-x-6 gap-y-2"
                     style={{ borderTop: '1px solid var(--border)' }}
                 >
-                    <p className="text-[11.5px]" style={{ color: 'var(--text-muted)' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Auto-scan:</span> every 15 minutes while server is running
-                    </p>
+                    {/* Auto-scan toggle */}
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                        <button
+                            role="switch"
+                            aria-checked={autoPoll}
+                            onClick={() => handleAutoPollChange(!autoPoll)}
+                            className="relative shrink-0 transition-colors"
+                            style={{
+                                width: 36, height: 20, borderRadius: 99,
+                                background: autoPoll ? 'var(--accent)' : 'var(--bg-elevated)',
+                                border: `1px solid ${autoPoll ? 'var(--accent)' : 'var(--border)'}`,
+                            }}
+                        >
+                            <span
+                                style={{
+                                    position: 'absolute', top: 2,
+                                    left: autoPoll ? 17 : 2,
+                                    width: 14, height: 14, borderRadius: '50%',
+                                    background: autoPoll ? '#000' : 'var(--text-muted)',
+                                    transition: 'left 150ms',
+                                }}
+                            />
+                        </button>
+                        <span className="text-[11.5px]" style={{ color: autoPoll ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+                            <span style={{ color: 'var(--text-secondary)', fontWeight: autoPoll ? 600 : 400 }}>Auto-scan:</span>
+                            {autoPoll ? ' every 2 hours while server is running' : ' disabled — manual scan only'}
+                        </span>
+                    </label>
+
                     <p className="text-[11.5px]" style={{ color: 'var(--text-muted)' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>Matched emails:</span> labelled <code style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, backgroundColor: 'var(--bg-elevated)' }}>job-tracker-processed</code> in Gmail so they're never shown twice
                     </p>
@@ -403,6 +497,8 @@ const EmailSuggestionsPage: React.FC = () => {
                         <span style={{ color: 'var(--text-secondary)' }}>Privacy:</span> email bodies are only sent to your own configured AI provider
                     </p>
                 </div>
+                </div>
+                )}
             </div>
 
             {/* ── Privacy & AI provider section ── */}
@@ -411,11 +507,8 @@ const EmailSuggestionsPage: React.FC = () => {
                 const isExternal = effectiveProvider === 'gemini' || effectiveProvider === 'openrouter';
                 return (
                     <div
-                        className="rounded-2xl p-5"
-                        style={{
-                            backgroundColor: isExternal ? 'rgba(239,68,68,0.04)' : 'var(--bg-surface)',
-                            border: isExternal ? '1px solid rgba(239,68,68,0.22)' : '1px solid var(--border)',
-                        }}
+                        className="card p-5"
+                        style={isExternal ? { backgroundColor: 'rgba(239,68,68,0.04)', borderColor: 'rgba(239,68,68,0.22)' } : undefined}
                     >
                         <div className="flex items-start gap-3">
                             <div
@@ -451,12 +544,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                     <select
                                         value={inboxProvider ?? ''}
                                         onChange={(e) => handleInboxProviderChange(e.target.value || null)}
-                                        className="text-xs rounded-lg px-2.5 py-1.5"
-                                        style={{
-                                            backgroundColor: 'var(--bg-elevated)',
-                                            color: 'var(--text-secondary)',
-                                            border: '1px solid var(--border)',
-                                        }}
+                                        className="input-base !w-auto text-sm"
                                     >
                                         <option value="">Follow global setting ({defaultProvider ?? 'none set'})</option>
                                         <option value="ollama">Ollama (local — most private)</option>
@@ -471,11 +559,8 @@ const EmailSuggestionsPage: React.FC = () => {
             })()}
             {hasScope === false && (
                 <div
-                    className="rounded-2xl p-5"
-                    style={{
-                        backgroundColor: 'rgba(251,191,36,0.06)',
-                        border: '1px solid rgba(251,191,36,0.25)',
-                    }}
+                    className="card p-5"
+                    style={{ backgroundColor: 'rgba(251,191,36,0.06)', borderColor: 'rgba(251,191,36,0.25)' }}
                 >
                     <div className="flex items-start gap-3">
                         <div
@@ -493,8 +578,7 @@ const EmailSuggestionsPage: React.FC = () => {
                             </p>
                             <button
                                 onClick={handleConnectGmail}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
-                                style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+                                className="btn-primary flex items-center gap-2"
                             >
                                 <LinkIcon />
                                 Connect / reconnect Google account
@@ -506,35 +590,77 @@ const EmailSuggestionsPage: React.FC = () => {
 
             {/* ── Suggestion list ── */}
             <div className="space-y-3">
+                {/* Tabs */}
+                {!loading && (() => {
+                    const appCount = suggestions.filter(s => (s.emailCategory ?? 'application_response') === 'application_response').length;
+                    const offerCount = suggestions.filter(s => s.emailCategory === 'job_offer').length;
+                    return (
+                        <div
+                            className="flex items-center gap-1 p-1 rounded-xl"
+                            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                        >
+                            {([
+                                { key: 'application_response' as const, label: 'Applications', count: appCount },
+                                { key: 'job_offer' as const, label: 'Job Leads', count: offerCount },
+                            ]).map(({ key, label, count }) => {
+                                const isActive = activeTab === key;
+                                return (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => switchTab(key)}
+                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                                        style={{
+                                            background: isActive ? 'var(--bg-raised)' : 'transparent',
+                                            border: isActive ? '1px solid var(--border-bright)' : '1px solid transparent',
+                                            color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                                            boxShadow: isActive ? '0 1px 4px rgba(14,14,23,0.4)' : 'none',
+                                        }}
+                                    >
+                                        {label}
+                                        {count > 0 && (
+                                            <span
+                                                className="px-1.5 py-0.5 rounded-full text-xs font-bold leading-none"
+                                                style={{
+                                                    backgroundColor: isActive ? 'var(--accent)' : 'var(--bg-raised)',
+                                                    color: isActive ? '#000' : 'var(--text-muted)',
+                                                }}
+                                            >
+                                                {count}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
+
                 <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                    <p className="label-overline">
                         Pending review
                     </p>
                     {suggestions.length > 0 && (
                         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                            {suggestions.length} suggestion{suggestions.length > 1 ? 's' : ''} waiting
+                            {suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length} suggestion{suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length !== 1 ? 's' : ''} waiting
                         </p>
                     )}
                 </div>
 
                 {loading && (
-                    <div className="flex items-center justify-center py-16">
-                        <div
-                            className="w-7 h-7 rounded-full border-2 border-t-transparent"
-                            style={{
-                                borderColor: 'var(--border)',
-                                borderTopColor: 'var(--accent)',
-                                animation: 'spin 0.8s linear infinite',
-                            }}
-                        />
+                    <div className="space-y-3 animate-stagger">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="card p-5 space-y-3">
+                                <div className="shimmer h-5 w-1/3 rounded-lg" />
+                                <div className="shimmer h-4 w-full rounded-lg" />
+                                <div className="shimmer h-4 w-2/3 rounded-lg" />
+                            </div>
+                        ))}
                     </div>
                 )}
 
                 {!loading && suggestions.length === 0 && (
-                    <div
-                        className="rounded-2xl p-10 flex flex-col items-center text-center"
-                        style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
-                    >
+                    <div className="card p-10 flex flex-col items-center text-center">
                         <div
                             className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
                             style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
@@ -545,12 +671,23 @@ const EmailSuggestionsPage: React.FC = () => {
                             All caught up
                         </p>
                         <p className="text-sm max-w-sm" style={{ color: 'var(--text-muted)' }}>
-                            No pending suggestions. Click <strong style={{ color: 'var(--text-secondary)' }}>Scan inbox</strong> above to check for new job emails, or wait for the automatic scan every 15 minutes.
+                            No pending suggestions. Click <strong style={{ color: 'var(--text-secondary)' }}>Scan inbox</strong> above to check for new job emails{autoPoll ? ', or wait for the automatic scan every 2 hours' : ''}.
                         </p>
                     </div>
                 )}
 
-                {!loading && suggestions.map((s) => {
+                {!loading && suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length === 0 && suggestions.length > 0 && (
+                    <div className="card p-8 flex flex-col items-center text-center">
+                        <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                            No {activeTab === 'job_offer' ? 'job lead' : 'application'} emails pending
+                        </p>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            Switch to the other tab to see your {activeTab === 'job_offer' ? 'application responses' : 'job leads'}.
+                        </p>
+                    </div>
+                )}
+
+                {!loading && suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).map((s) => {
                     const busy = actionIds.has(s._id);
                     const noteBusy = actionIds.has(`note-${s._id}`);
                     const job = s.jobApplicationId as any;
@@ -560,13 +697,8 @@ const EmailSuggestionsPage: React.FC = () => {
                     return (
                         <div
                             key={s._id}
-                            className="rounded-2xl p-5"
-                            style={{
-                                backgroundColor: 'var(--bg-surface)',
-                                border: '1px solid var(--border)',
-                                opacity: busy ? 0.5 : 1,
-                                transition: 'opacity 150ms',
-                            }}
+                            className="card p-5"
+                            style={{ opacity: busy ? 0.5 : 1, transition: 'opacity 150ms' }}
                         >
                             {/* Company / status row */}
                             <div className="flex items-start justify-between gap-3 mb-3">
@@ -610,30 +742,30 @@ const EmailSuggestionsPage: React.FC = () => {
                                         border: '1px solid rgba(232,184,68,0.15)',
                                     }}
                                 >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-[11px] font-semibold mb-1 flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
-                                                <NoteIcon /> AI note
-                                            </p>
-                                            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                                                {s.suggestedNote}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => handleAddNote(s)}
-                                            disabled={noteBusy || isNoteAdded}
-                                            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                                            style={{
-                                                backgroundColor: isNoteAdded ? 'rgba(34,197,94,0.12)' : 'rgba(232,184,68,0.15)',
-                                                color: isNoteAdded ? '#22c55e' : 'var(--accent)',
-                                                border: `1px solid ${isNoteAdded ? 'rgba(34,197,94,0.3)' : 'rgba(232,184,68,0.3)'}`,
-                                                opacity: noteBusy ? 0.6 : 1,
-                                                cursor: isNoteAdded ? 'default' : 'pointer',
-                                            }}
-                                        >
-                                            {isNoteAdded ? (<><CheckIcon /> Added to job</>) : noteBusy ? 'Adding…' : 'Add to job notes'}
-                                        </button>
+                                    <div className="flex items-center justify-between gap-3 mb-1.5">
+                                        <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
+                                            <NoteIcon /> AI note
+                                        </p>
+                                        {job && (
+                                            <button
+                                                onClick={() => handleAddNote(s)}
+                                                disabled={noteBusy || isNoteAdded}
+                                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                                                style={{
+                                                    backgroundColor: isNoteAdded ? 'rgba(34,197,94,0.12)' : 'rgba(232,184,68,0.15)',
+                                                    color: isNoteAdded ? '#22c55e' : 'var(--accent)',
+                                                    border: `1px solid ${isNoteAdded ? 'rgba(34,197,94,0.3)' : 'rgba(232,184,68,0.3)'}`,
+                                                    opacity: noteBusy ? 0.6 : 1,
+                                                    cursor: isNoteAdded ? 'default' : 'pointer',
+                                                }}
+                                            >
+                                                {isNoteAdded ? (<><CheckIcon /> Added to job</>) : noteBusy ? 'Adding…' : 'Add to job notes'}
+                                            </button>
+                                        )}
                                     </div>
+                                    <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                        {s.suggestedNote}
+                                    </p>
                                 </div>
                             )}
 
@@ -722,15 +854,27 @@ const EmailSuggestionsPage: React.FC = () => {
                                 </div>
 
                                 <div className="flex gap-2 shrink-0">
+                                    <a
+                                        href={`https://mail.google.com/mail/u/0/#all/${s.gmailMessageId}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="btn-ghost text-sm flex items-center gap-1.5"
+                                        title="Open email in Gmail"
+                                    >
+                                        <ExternalLinkIcon /> Gmail
+                                    </a>
+                                    <button
+                                        onClick={() => setEditingSuggestion(s)}
+                                        disabled={busy}
+                                        className="btn-secondary text-sm flex items-center gap-1.5"
+                                        title="Edit suggestion"
+                                    >
+                                        <EditIcon /> Edit
+                                    </button>
                                     <button
                                         onClick={() => handleReject(s)}
                                         disabled={busy}
-                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium transition-colors"
-                                        style={{
-                                            backgroundColor: 'rgba(244,100,100,0.07)',
-                                            color: 'var(--rose, #f46464)',
-                                            border: '1px solid rgba(244,100,100,0.18)',
-                                        }}
+                                        className="btn-danger text-sm flex items-center gap-1.5"
                                     >
                                         <XIcon /> Dismiss
                                     </button>
@@ -738,11 +882,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                         <button
                                             onClick={() => handleAccept(s)}
                                             disabled={busy}
-                                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors"
-                                            style={{
-                                                backgroundColor: 'var(--accent)',
-                                                color: '#000',
-                                            }}
+                                            className="btn-primary text-sm flex items-center gap-1.5"
                                         >
                                             <CheckIcon />
                                             {s.suggestedStatus ? 'Apply' : 'Save to calendar'}
@@ -754,6 +894,15 @@ const EmailSuggestionsPage: React.FC = () => {
                     );
                 })}
             </div>
+
+            {/* Edit Suggestion Modal */}
+            {editingSuggestion && (
+                <EditSuggestionModal
+                    suggestion={editingSuggestion}
+                    onClose={() => setEditingSuggestion(null)}
+                    onSave={handleEditSave}
+                />
+            )}
 
             {/* Toast */}
             {toast && (
@@ -777,6 +926,8 @@ const EmailSuggestionsPage: React.FC = () => {
                     to   { opacity: 1; transform: translateX(-50%) translateY(0); }
                 }
             `}</style>
+        </div>
+        </div>
         </div>
     );
 };

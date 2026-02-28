@@ -7,6 +7,8 @@ export type JobStatus = 'Applied' | 'Not Applied' | 'Interview' | 'Assessment' |
 export type SuggestionStatus = 'pending' | 'accepted' | 'rejected';
 export type Confidence = 'high' | 'medium' | 'low';
 
+export type EmailCategory = 'application_response' | 'job_offer';
+
 export interface JobRef {
     _id: string;
     jobTitle: string;
@@ -37,13 +39,39 @@ export interface EmailSuggestion {
     confidence: Confidence;
     matchedCompanyName?: string;
     matchedJobTitle?: string;
+    emailCategory: EmailCategory;
     status: SuggestionStatus;
     createdAt: string;
+}
+
+export interface CalendarEventUpdate {
+    title?: string;
+    description?: string;
+    dateTimeISO?: string;
+    notificationMinutesBefore?: number;
+}
+
+export interface UpdateSuggestionPayload {
+    matchedCompanyName?: string;
+    matchedJobTitle?: string;
+    jobApplicationId?: string | null;
+    suggestedStatus?: JobStatus | null;
+    emailCategory?: EmailCategory;
+    calendarEvent?: CalendarEventUpdate | null;
 }
 
 /** List all pending suggestions for the current user. */
 export const listPendingSuggestions = async (): Promise<EmailSuggestion[]> => {
     const { data } = await axios.get<EmailSuggestion[]>(`${API_BASE_URL}/email-suggestions`);
+    return data;
+};
+
+/** Update an email suggestion (edit matched company, job title, or job application). */
+export const updateSuggestion = async (id: string, payload: UpdateSuggestionPayload): Promise<EmailSuggestion> => {
+    const { data } = await axios.put<EmailSuggestion>(
+        `${API_BASE_URL}/email-suggestions/${id}`,
+        payload
+    );
     return data;
 };
 
@@ -86,6 +114,8 @@ export const getGmailScopeStatus = async (): Promise<{ hasScope: boolean }> => {
 /** Get email suggestion preferences for the current user. */
 export interface EmailSuggestionPreferences {
     lookbackDays: number;
+    /** Whether the server should automatically scan emails on the cron schedule. */
+    autoPoll: boolean;
     /** Global default AI provider configured for this user's account. */
     defaultProvider?: string | null;
     /** Provider override used exclusively for inbox email classification.
@@ -102,7 +132,7 @@ export const getPreferences = async (): Promise<EmailSuggestionPreferences> => {
 };
 
 /** Update email suggestion preferences for the current user. */
-export const updatePreferences = async (preferences: Partial<Pick<EmailSuggestionPreferences, 'lookbackDays' | 'inboxProvider'>>): Promise<EmailSuggestionPreferences> => {
+export const updatePreferences = async (preferences: Partial<Pick<EmailSuggestionPreferences, 'lookbackDays' | 'inboxProvider' | 'autoPoll'>>): Promise<EmailSuggestionPreferences> => {
     const { data } = await axios.put<EmailSuggestionPreferences>(
         `${API_BASE_URL}/email-suggestions/preferences`,
         preferences
