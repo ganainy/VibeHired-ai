@@ -8,6 +8,7 @@ import {
     DependencyCheck
 } from './ProviderStrategy';
 import { decrypt } from '../../utils/encryption';
+import { GEMINI_FLASH, GEMINI_FLASH_LITE, GEMINI_FLASH_8B, GEMINI_PRO } from '../../constants/geminiModels';
 
 /**
  * Gemini AI provider strategy
@@ -23,29 +24,29 @@ export class GeminiProvider extends ProviderStrategy {
         // In the future, this could fetch from Gemini API
         return [
             {
-                id: 'gemini-1.5-flash',
+                id: GEMINI_FLASH_LITE,
                 name: 'Gemini 1.5 Flash',
                 contextWindow: 1000000,
                 costPer1kTokens: 0.00015,
                 supportsImages: true
             },
             {
-                id: 'gemini-1.5-flash-8b',
+                id: GEMINI_FLASH_8B,
                 name: 'Gemini 1.5 Flash-8B',
                 contextWindow: 1000000,
                 costPer1kTokens: 0.00010,
                 supportsImages: true
             },
             {
-                id: 'gemini-1.5-pro',
+                id: GEMINI_PRO,
                 name: 'Gemini 1.5 Pro',
                 contextWindow: 2000000,
                 costPer1kTokens: 0.00125,
                 supportsImages: true
             },
             {
-                id: 'gemini-2.0-flash-exp',
-                name: 'Gemini 2.0 Flash (Experimental)',
+                id: GEMINI_FLASH,
+                name: 'Gemini 3 Flash (Preview)',
                 contextWindow: 1000000,
                 costPer1kTokens: 0.00015,
                 supportsImages: true

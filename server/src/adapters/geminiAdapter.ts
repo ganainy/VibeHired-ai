@@ -2,6 +2,7 @@
 import { GoogleGenerativeAI, GenerativeModel, Part } from '@google/generative-ai';
 import fs from 'fs';
 import { ModelAdapter, GenerateContentOptions, GenerateContentResult } from './base';
+import { GEMINI_FLASH } from '../constants/geminiModels';
 
 /**
  * Parse JSON response from AI text output
@@ -54,7 +55,7 @@ export class GeminiAdapter extends ModelAdapter {
   private model: GenerativeModel;
   private modelName: string;
 
-  constructor(apiKey: string, modelName: string = 'gemini-2.5-flash') {
+  constructor(apiKey: string, modelName: string = GEMINI_FLASH) {
     super();
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.modelName = modelName;

@@ -3,6 +3,7 @@ import { ModelAdapter, AdapterConfig } from './ModelAdapter';
 import { GeminiAdapter } from './GeminiAdapter';
 import { OpenRouterAdapter } from './OpenRouterAdapter';
 import { AIProvider } from '../providers/AIProvider';
+import { GEMINI_FLASH } from '../../constants/geminiModels';
 
 /**
  * Factory for creating model adapters
@@ -49,7 +50,7 @@ export class AdapterFactory {
             console.warn(`Failed to create ${primaryConfig.provider} adapter, falling back to Gemini:`, error);
             return new GeminiAdapter(
                 fallbackApiKey,
-                'gemini-1.5-flash',
+                GEMINI_FLASH,
                 primaryConfig.temperature,
                 primaryConfig.maxTokens
             );

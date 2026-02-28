@@ -10,6 +10,7 @@ import { getOrStructureResume } from './resumeCacheService';
 import { waitForRateLimit } from '../utils/rateLimiter';
 import { decrypt } from '../utils/encryption';
 import { convertJsonResumeToText } from '../utils/cvTextExtractor';
+import { GEMINI_FLASH, GEMINI_PRO } from '../constants/geminiModels';
 import mongoose from 'mongoose';
 import { processJobsInParallel } from './parallelJobProcessor';
 
@@ -285,9 +286,9 @@ async function executeWorkflow(runId: string, userId: string, isManual: boolean)
         const provider = aiProviderSettings?.provider || aiProviderSettings?.defaultProvider || 'gemini';
         const batchSize = aiProviderSettings?.batchSize || 5;
         const models = aiProviderSettings?.models || {
-            analysis: 'gemini-1.5-flash',
-            relevance: 'gemini-1.5-flash',
-            generation: 'gemini-1.5-pro'
+            analysis: GEMINI_FLASH,
+            relevance: GEMINI_FLASH,
+            generation: GEMINI_PRO
         };
 
         console.log(`\n→ Using parallel processing with provider: ${provider}`);

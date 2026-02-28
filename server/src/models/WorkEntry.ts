@@ -1,0 +1,120 @@
+// server/src/models/WorkEntry.ts
+import mongoose, { Document, Schema } from 'mongoose';
+
+export type WorkEntryType = 'shift' | 'appointment';
+export type WorkEntryStatus = 'planned' | 'done';
+
+export interface IWorkEntry extends Document {
+  userId: mongoose.Types.ObjectId;
+  employerId: mongoose.Types.ObjectId;
+  subLocationId?: string;   // ObjectId string of the embedded sub-location
+  subLocationName?: string; // Name snapshot at time of creation
+  title?: string; // Optional label (e.g. "Team standup", "Morning shift")
+  type: WorkEntryType;
+  date: Date; // Date of the entry (midnight UTC)
+  startTime: string; // 'HH:mm' e.g. '09:00'
+  endTime: string;   // 'HH:mm' e.g. '17:00'
+  hours: number;     // Computed duration in hours (decimal)
+  status: WorkEntryStatus;
+  notes?: string;
+  googleCalendarEventId?: string;
+  reminderCreated: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/** Compute decimal hours from HH:mm strings. Handles overnight shifts (end < start). */
+function computeHours(startTime: string, endTime: string): number {
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  const startMins = sh * 60 + sm;
+  let endMins = eh * 60 + em;
+  if (endMins <= startMins) endMins += 24 * 60; // overnight
+  return Math.round(((endMins - startMins) / 60) * 100) / 100;
+}
+
+const WorkEntrySchema: Schema = new Schema(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    employerId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Employer',
+      required: true,
+      index: true,
+    },
+    subLocationId: {
+      type: String,
+      required: false,
+    },
+    subLocationName: {
+      type: String,
+      required: false,
+    },
+    title: {
+      type: String,
+      trim: true,
+      required: false,
+    },
+    type: {
+      type: String,
+      enum: ['shift', 'appointment'],
+      required: true,
+      default: 'shift',
+    },
+    date: {
+      type: Date,
+      required: true,
+    },
+    startTime: {
+      type: String,
+      required: true,
+      match: [/^\d{2}:\d{2}$/, 'startTime must be HH:mm'],
+    },
+    endTime: {
+      type: String,
+      required: true,
+      match: [/^\d{2}:\d{2}$/, 'endTime must be HH:mm'],
+    },
+    hours: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    status: {
+      type: String,
+      enum: ['planned', 'done'],
+      required: true,
+      default: 'planned',
+    },
+    notes: {
+      type: String,
+      required: false,
+    },
+    googleCalendarEventId: {
+      type: String,
+      required: false,
+    },
+    reminderCreated: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
+
+// Auto-compute hours before saving
+WorkEntrySchema.pre('save', function (next) {
+  const entry = this as unknown as IWorkEntry;
+  if (entry.isModified('startTime') || entry.isModified('endTime') || entry.isNew) {
+    entry.hours = computeHours(entry.startTime, entry.endTime);
+  }
+  next();
+});
+
+export { computeHours };
+export default mongoose.model<IWorkEntry>('WorkEntry', WorkEntrySchema);

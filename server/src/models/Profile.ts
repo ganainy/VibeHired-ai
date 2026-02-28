@@ -1,5 +1,6 @@
 // server/src/models/Profile.ts
 import mongoose, { Document, Schema } from 'mongoose';
+import { GEMINI_FLASH, GEMINI_PRO } from '../constants/geminiModels';
 
 export interface IProfile extends Document {
   userId: mongoose.Types.ObjectId;
@@ -86,6 +87,7 @@ export interface IProfile extends Document {
     showLinkedInLanguages?: boolean;
     emailSuggestions?: {
       lookbackDays?: number;
+      autoPoll?: boolean;
     };
   };
   autoJobSettings?: {
@@ -322,6 +324,10 @@ const ProfileSchema: Schema = new Schema(
           min: 1,
           max: 30,
         },
+        autoPoll: {
+          type: Boolean,
+          default: true,
+        },
       },
     },
     autoJobSettings: {
@@ -414,15 +420,15 @@ const ProfileSchema: Schema = new Schema(
       models: {
         analysis: {
           type: String,
-          default: 'gemini-1.5-flash',
+          default: GEMINI_FLASH,
         },
         relevance: {
           type: String,
-          default: 'gemini-1.5-flash',
+          default: GEMINI_FLASH,
         },
         generation: {
           type: String,
-          default: 'gemini-1.5-pro',
+          default: GEMINI_PRO,
         },
 
       },

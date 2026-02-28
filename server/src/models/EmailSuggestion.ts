@@ -4,6 +4,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 export type SuggestionStatus = 'pending' | 'accepted' | 'rejected';
 export type JobStatus = 'Applied' | 'Not Applied' | 'Interview' | 'Assessment' | 'Rejected' | 'Offer';
 
+export type EmailCategory = 'application_response' | 'job_offer';
+
 export interface ISuggestedCalendarEvent {
     title: string;
     description: string;
@@ -24,6 +26,7 @@ export interface IEmailSuggestion extends Document {
     suggestedCalendarEvent?: ISuggestedCalendarEvent;
     noteAdded?: boolean;
     confidence: 'high' | 'medium' | 'low';
+    emailCategory: EmailCategory;
     matchedCompanyName?: string;
     matchedJobTitle?: string;
     status: SuggestionStatus;
@@ -54,6 +57,7 @@ const EmailSuggestionSchema = new Schema<IEmailSuggestion>(
         },
         noteAdded: { type: Boolean, default: false },
         confidence: { type: String, enum: ['high', 'medium', 'low'], required: true },
+        emailCategory: { type: String, enum: ['application_response', 'job_offer'], default: 'application_response' },
         matchedCompanyName: { type: String },
         matchedJobTitle: { type: String },
         status: {

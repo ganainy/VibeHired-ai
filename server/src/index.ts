@@ -27,6 +27,8 @@ import interviewRoutes from './routes/interview';
 import interviewMaterialsRoutes from './routes/interviewMaterials';
 import googleAuthRoutes from './routes/googleAuth';
 import emailSuggestionsRoutes from './routes/emailSuggestions';
+import employersRoutes from './routes/employers';
+import workTrackerRoutes from './routes/workTracker';
 // Correct the import for the default export
 import protect from './middleware/authMiddleware'; // Import default export and alias it as 'protect'
 import { errorHandler } from './middleware/errorHandler';
@@ -100,6 +102,8 @@ app.use('/api/interview', protect, interviewRoutes); // Mock interview routes (p
 app.use('/api/interview-materials', protect, interviewMaterialsRoutes); // Interview prep materials (protected)
 app.use('/api/auth/google', googleAuthRoutes); // Google OAuth routes (callback is public, others are protected internally)
 app.use('/api/email-suggestions', protect, emailSuggestionsRoutes); // Email suggestion routes (protected)
+app.use('/api/employers', employersRoutes); // Employer management (protected internally)
+app.use('/api/work-tracker', workTrackerRoutes); // Work time tracker (protected internally)
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
@@ -118,17 +122,17 @@ mongoose.connect(mongoUri)
 
     // Auto-job scheduling removed - jobs are now only manually triggered
 
-    // ── Gmail email suggestion polling (every 15 minutes) ─────────────────
+    // ── Gmail email suggestion polling (every 2 hours) ────────────────────
     import('node-cron').then(({ default: cron }) => {
       import('./services/emailSuggestionService').then(({ pollAllUsers }) => {
-        cron.schedule('*/15 * * * *', async () => {
+        cron.schedule('0 */2 * * *', async () => {
           try {
             await pollAllUsers();
           } catch (err) {
             console.error('[Cron] Email suggestion poll error:', err);
           }
         });
-        console.log('[Cron] Gmail email suggestion poller scheduled (every 15 min)');
+        console.log('[Cron] Gmail email suggestion poller scheduled (every 2 hours)');
       });
     });
 

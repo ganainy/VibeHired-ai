@@ -32,6 +32,11 @@ interface EmailClassification {
     /** Job title extracted from the email */
     extractedRole: string;
     confidence: 'high' | 'medium' | 'low';
+    /**
+     * 'application_response' — a reply/update on a job the user already applied to.
+     * 'job_offer'            — a recruiter or job board proactively offering the user a new position.
+     */
+    emailCategory: 'application_response' | 'job_offer';
 }
 
 // ── PII helpers ──────────────────────────────────────────────────────────────
@@ -71,14 +76,17 @@ Email Details:
 ${truncatedBody}
 
 Task:
-1. Determine if this email is related to a job application (e.g. rejection, interview invite, assessment, offer, acknowledgement, recruiter info).
+1. Determine if this email is related to a job application (e.g. rejection, interview invite, assessment, offer, acknowledgement, recruiter info, job board alert).
 2. If job-related, extract:
    - The company name
    - The job title / role (best guess from email context)
-   - The appropriate new status from ONLY these values: "Interview", "Assessment", "Rejected", "Offer". Use null if the email is an acknowledgment or contains info without a real status change.
+   - The appropriate new status from ONLY these values: "Interview", "Assessment", "Rejected", "Offer". Use null if the email is an acknowledgment, job recommendation, or contains info without a real status change.
    - A detailed note (2-4 sentences) summarising ALL key information from the email: interview details, salary/compensation figures, preparation tips, important context, or any actionable advice. Leave empty string if nothing useful.
    - A calendar event if — and only if — the email mentions a specific date and/or time for an interview, assessment, deadline or similar scheduled event. Use null if no concrete datetime is mentioned.
    - Your confidence level: "high" if the intent is very clear, "medium" if reasonably inferred, "low" if uncertain.
+   - The email category:
+     * "application_response" — the company is replying to a job application the user already submitted (rejection, interview invite, offer, assessment, acknowledgement).
+     * "job_offer" — a recruiter, headhunter, or job board (e.g. LinkedIn, XING, Stepstone, Indeed, Glassdoor) is proactively reaching out to suggest or offer the user new positions to apply to.
 
 For suggestedCalendarEvent.dateTimeISO: produce a full ISO 8601 datetime string. If only a date is given (no time), use 09:00:00 UTC on that date. If the year is ambiguous, assume the nearest future occurrence.
 
@@ -90,7 +98,8 @@ Return ONLY valid JSON with this exact structure (no markdown, no extra keys):
   "suggestedCalendarEvent": { "title": string, "description": string, "dateTimeISO": string, "notificationMinutesBefore": number } | null,
   "extractedCompany": string,
   "extractedRole": string,
-  "confidence": "high" | "medium" | "low"
+  "confidence": "high" | "medium" | "low",
+  "emailCategory": "application_response" | "job_offer"
 }`;
 }
 
@@ -181,6 +190,7 @@ export async function pollEmailsForUser(userId: string, since?: Date): Promise<n
             extractedCompany: '',
             extractedRole: '',
             confidence: 'low',
+            emailCategory: 'application_response',
         };
 
         if (aiAvailable) {
@@ -226,6 +236,7 @@ export async function pollEmailsForUser(userId: string, since?: Date): Promise<n
             suggestedNote: classification.suggestedNote || undefined,
             suggestedCalendarEvent: classification.suggestedCalendarEvent || undefined,
             confidence: classification.confidence,
+            emailCategory: classification.emailCategory ?? 'application_response',
             matchedCompanyName: match?.companyName ?? classification.extractedCompany,
             matchedJobTitle: match?.jobTitle ?? classification.extractedRole,
             status: 'pending',
@@ -246,6 +257,10 @@ export async function pollAllUsers(): Promise<void> {
     const profiles = await Profile.find({
         'integrations.google.enabled': true,
         'integrations.google.accessToken': { $exists: true, $ne: null },
+        $or: [
+            { 'settings.emailSuggestions.autoPoll': { $exists: false } },
+            { 'settings.emailSuggestions.autoPoll': true },
+        ],
     }).select('userId').lean();
 
     console.log(`[EmailSuggestionService] Polling ${profiles.length} Google-connected users`);
@@ -271,7 +286,7 @@ function fallbackClassify(subject: string, body: string, senderEmail: string): E
         /\b(application|applied|position|role|opportunity|candidate|hiring|recruiter|interview|offer|assessment|unfortunately|regret|not selected|moving forward)\b/.test(text);
 
     if (!isJobRelated) {
-        return { isJobRelated: false, suggestedStatus: null, suggestedNote: '', suggestedCalendarEvent: null, extractedCompany: '', extractedRole: '', confidence: 'low' };
+        return { isJobRelated: false, suggestedStatus: null, suggestedNote: '', suggestedCalendarEvent: null, extractedCompany: '', extractedRole: '', confidence: 'low', emailCategory: 'application_response' };
     }
 
     let suggestedStatus: JobStatus | null = null;
@@ -285,8 +300,13 @@ function fallbackClassify(subject: string, body: string, senderEmail: string): E
         suggestedStatus = 'Offer';
     }
 
+    // Heuristic: job boards / recruiters proactively reaching out → job_offer
+    const jobOfferDomains = /xing\.com|linkedin\.com|stepstone\.de|indeed\.com|glassdoor\.com|monster\.com|jobware\.de|arbeitsagentur\.de|experteer\.com|instaffo\.com|hays\.de|michael-page\.de|robertwalters\.de/;
+    const jobOfferKeywords = /\b(job recommendations?|new opportunities|jobs? that match|recommended jobs?|open positions? for you|we found .* jobs?|new jobs? near you|job alert|jobs? you might like)\b/;
+    const isJobOffer = jobOfferDomains.test(senderEmail) || jobOfferKeywords.test(text);
+
     // Try to extract company from sender domain
-    const domain = senderEmail.split('@')[1]?.replace(/\.(com|co\..+|io|net|org)$/, '') ?? '';
+    const domain = senderEmail.split('@')[1]?.replace(/\.(com|co\..+|io|net|org|de)$/, '') ?? '';
     const extractedCompany = domain.charAt(0).toUpperCase() + domain.slice(1);
 
     return {
@@ -297,5 +317,6 @@ function fallbackClassify(subject: string, body: string, senderEmail: string): E
         extractedCompany,
         extractedRole: '',
         confidence: suggestedStatus ? 'medium' : 'low',
+        emailCategory: isJobOffer ? 'job_offer' : 'application_response',
     };
 }

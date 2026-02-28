@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, GoogleGenerativeAIError, GenerativeModel, Part } from "@google/generative-ai";
 import fs from 'fs'; // Import fs for file reading
+import { GEMINI_FLASH } from '../constants/geminiModels';
 
 /**
  * Creates a Gemini client instance with the provided API key
@@ -9,8 +10,8 @@ import fs from 'fs'; // Import fs for file reading
 export const createGeminiClient = (apiKey: string) => {
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // Using a model that supports multimodal input including files (gemini-2.5-flash)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    // Using a model that supports multimodal input including files
+    const model = genAI.getGenerativeModel({ model: GEMINI_FLASH });
 
     return { model };
 };

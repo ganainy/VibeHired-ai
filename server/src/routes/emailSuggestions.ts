@@ -7,6 +7,7 @@
  * GET    /                  — list pending suggestions for the current user
  * GET    /preferences       — get email suggestion preferences
  * PUT    /preferences       — update email suggestion preferences
+ * PUT    /:id               — update an email suggestion (edit matched company/job)
  * POST   /:id/accept        — accept a suggestion (apply status + optional calendar event)
  * POST   /:id/add-note      — independently append suggested note to job
  * POST   /:id/reject        — reject / dismiss a suggestion
@@ -78,6 +79,7 @@ router.get(
 
         res.json({
             lookbackDays: profile.settings?.emailSuggestions?.lookbackDays ?? 14,
+            autoPoll: profile.settings?.emailSuggestions?.autoPoll ?? true,
             defaultProvider: profile.aiProviderSettings?.defaultProvider ?? null,
             inboxProvider: profile.aiProviderSettings?.inboxProvider ?? null,
         });
@@ -92,7 +94,7 @@ router.put(
     '/preferences',
     asyncHandler(async (req: Request, res: Response) => {
         const userId = String(req.user!._id);
-        const { lookbackDays, inboxProvider } = req.body;
+        const { lookbackDays, inboxProvider, autoPoll } = req.body;
 
         // Validate lookbackDays
         if (lookbackDays !== undefined) {
@@ -129,6 +131,10 @@ router.put(
             profile.settings.emailSuggestions.lookbackDays = Number(lookbackDays);
         }
 
+        if (autoPoll !== undefined) {
+            profile.settings.emailSuggestions.autoPoll = Boolean(autoPoll);
+        }
+
         // Update inboxProvider override (empty string or null clears the override)
         if (inboxProvider !== undefined) {
             if (!profile.aiProviderSettings) profile.aiProviderSettings = {};
@@ -139,9 +145,107 @@ router.put(
 
         res.json({
             lookbackDays: profile.settings.emailSuggestions.lookbackDays,
+            autoPoll: profile.settings.emailSuggestions.autoPoll ?? true,
             defaultProvider: profile.aiProviderSettings?.defaultProvider ?? null,
             inboxProvider: profile.aiProviderSettings?.inboxProvider ?? null,
         });
+    })
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/email-suggestions/:id
+// Update an email suggestion (edit matched company, job title, or job application)
+// Body: { matchedCompanyName?: string; matchedJobTitle?: string; jobApplicationId?: string | null; suggestedStatus?: JobStatus | null; calendarEvent?: { title?, description?, dateTimeISO?, notificationMinutesBefore? } | null }
+// ─────────────────────────────────────────────────────────────────────────────
+router.put(
+    '/:id',
+    asyncHandler(async (req: Request, res: Response) => {
+        const userId = String(req.user!._id);
+        const { id } = req.params;
+        const { matchedCompanyName, matchedJobTitle, jobApplicationId, suggestedStatus, emailCategory, calendarEvent } = req.body;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            res.status(400).json({ message: 'Invalid suggestion ID.' });
+            return;
+        }
+
+        const suggestion = await EmailSuggestion.findOne({ _id: id, userId });
+        if (!suggestion) {
+            res.status(404).json({ message: 'Suggestion not found.' });
+            return;
+        }
+
+        if (suggestion.status !== 'pending') {
+            res.status(409).json({ message: `Cannot edit a ${suggestion.status} suggestion.` });
+            return;
+        }
+
+        // Update fields if provided
+        if (matchedCompanyName !== undefined) {
+            suggestion.matchedCompanyName = matchedCompanyName;
+        }
+        if (matchedJobTitle !== undefined) {
+            suggestion.matchedJobTitle = matchedJobTitle;
+        }
+        if (jobApplicationId !== undefined) {
+            // Allow setting to null to unmatch, or to a valid ObjectId to match
+            if (jobApplicationId === null) {
+                suggestion.jobApplicationId = undefined;
+            } else if (mongoose.Types.ObjectId.isValid(jobApplicationId)) {
+                // Verify the job application belongs to the user
+                const job = await JobApplication.findOne({ _id: jobApplicationId, userId });
+                if (!job) {
+                    res.status(400).json({ message: 'Job application not found or does not belong to user.' });
+                    return;
+                }
+                suggestion.jobApplicationId = new mongoose.Types.ObjectId(jobApplicationId) as any;
+            }
+        }
+        if (emailCategory !== undefined) {
+            if (!['application_response', 'job_offer'].includes(emailCategory)) {
+                res.status(400).json({ message: 'emailCategory must be application_response or job_offer' });
+                return;
+            }
+            suggestion.emailCategory = emailCategory;
+        }
+
+        if (suggestedStatus !== undefined) {
+            const validStatuses = ['Applied', 'Not Applied', 'Interview', 'Assessment', 'Rejected', 'Offer', null];
+            if (!validStatuses.includes(suggestedStatus)) {
+                res.status(400).json({ message: 'Invalid suggested status.' });
+                return;
+            }
+            suggestion.suggestedStatus = suggestedStatus;
+        }
+
+        if (calendarEvent !== undefined) {
+            if (calendarEvent === null) {
+                suggestion.suggestedCalendarEvent = undefined;
+            } else {
+                const existing = suggestion.suggestedCalendarEvent || { title: '', description: '', dateTimeISO: '', notificationMinutesBefore: 30 };
+                if (calendarEvent.dateTimeISO !== undefined && calendarEvent.dateTimeISO !== '') {
+                    if (isNaN(Date.parse(calendarEvent.dateTimeISO))) {
+                        res.status(400).json({ message: 'calendarEvent.dateTimeISO must be a valid ISO 8601 date string.' });
+                        return;
+                    }
+                }
+                suggestion.suggestedCalendarEvent = {
+                    title: calendarEvent.title !== undefined ? String(calendarEvent.title) : existing.title,
+                    description: calendarEvent.description !== undefined ? String(calendarEvent.description) : existing.description,
+                    dateTimeISO: calendarEvent.dateTimeISO !== undefined ? String(calendarEvent.dateTimeISO) : existing.dateTimeISO,
+                    notificationMinutesBefore: calendarEvent.notificationMinutesBefore !== undefined
+                        ? Number(calendarEvent.notificationMinutesBefore)
+                        : existing.notificationMinutesBefore,
+                };
+            }
+        }
+
+        await suggestion.save();
+
+        // Populate jobApplicationId before returning
+        await suggestion.populate('jobApplicationId', 'jobTitle companyName status');
+
+        res.json({ message: 'Suggestion updated.', suggestion });
     })
 );
 

@@ -4,6 +4,7 @@ import { AIProvider, getProvider } from '../domain/providers/AIProvider';
 import { AdapterFactory } from '../domain/adapters/AdapterFactory';
 import { ModelAdapter } from '../domain/adapters/ModelAdapter';
 import { decrypt } from '../utils/encryption';
+import { GEMINI_FLASH } from '../constants/geminiModels';
 
 /**
  * Helper service for provider-aware AI operations
@@ -77,7 +78,7 @@ export function createAdapter(
         return AdapterFactory.create({
             provider: AIProvider.GEMINI,
             apiKey: geminiApiKey,
-            modelName: 'gemini-1.5-flash',
+            modelName: GEMINI_FLASH,
             temperature,
             maxTokens
         });
@@ -98,7 +99,7 @@ export function createAdapter(
         return AdapterFactory.create({
             provider: AIProvider.GEMINI,
             apiKey: geminiApiKey,
-            modelName: 'gemini-1.5-flash',
+            modelName: GEMINI_FLASH,
             temperature,
             maxTokens
         });
