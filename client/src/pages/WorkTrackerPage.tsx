@@ -131,6 +131,104 @@ const EmployerAvatar: React.FC<{ employer: { name: string; logoUrl?: string | nu
   );
 };
 
+const EmployerSelect = ({
+  employers,
+  value,
+  onChange,
+  disabled
+}: {
+  employers: Employer[];
+  value: string;
+  onChange: (id: string) => void;
+  disabled?: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const selected = employers.find((e) => e._id === value);
+
+  return (
+    <div className="relative w-full" ref={containerRef}>
+      <button
+        type="button"
+        className={`input-base w-full flex items-center justify-between transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => { if (!disabled) setIsOpen(!isOpen); }}
+        style={{ padding: '8px 12px', textAlign: 'left', minHeight: '40px' }}
+      >
+        {selected ? (
+          <div className="flex items-center gap-2 overflow-hidden">
+            <EmployerAvatar employer={selected} size={20} />
+            <span className="truncate" style={{ color: 'var(--text-primary)' }}>{selected.name}</span>
+          </div>
+        ) : (
+          <span style={{ color: 'var(--text-muted)' }}>Select employer…</span>
+        )}
+        <svg
+          className={`w-4 h-4 transition-transform flex-shrink-0 ml-2 ${isOpen ? 'transform rotate-180' : ''}`}
+          style={{ color: 'var(--text-muted)' }}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && !disabled && (
+        <div
+          className="absolute z-50 w-full mt-1 border rounded-lg shadow-xl overflow-y-auto max-h-60"
+          style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
+        >
+          {employers.length === 0 ? (
+            <div className="px-3 py-3 text-sm text-center" style={{ color: 'var(--text-muted)' }}>
+              No employers found
+            </div>
+          ) : (
+            <div className="py-1">
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors"
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-raised)')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                onClick={() => { onChange(''); setIsOpen(false); }}
+              >
+                <div style={{ width: 20, height: 20 }} className="flex-shrink-0" />
+                <span className="truncate flex-1" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Select employer…</span>
+              </button>
+              {employers.map((emp) => (
+                <button
+                  key={emp._id}
+                  type="button"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors"
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-raised)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  onClick={() => { onChange(emp._id); setIsOpen(false); }}
+                >
+                  <EmployerAvatar employer={emp} size={20} />
+                  <span className="truncate flex-1" style={{ color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                    {emp.name || 'Unnamed Employer'}
+                  </span>
+                  {value === emp._id && (
+                    <Check size={14} style={{ color: 'var(--accent)' }} className="flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface StatCardProps {
   label: string;
   value: string | number;
@@ -342,9 +440,11 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
                   {employers.length === 0 ? (
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No employers yet. Add one in the Employers tab.</p>
                   ) : (
-                    <select className="input-base w-full" value={employerId} onChange={(e) => handleEmployerChangeImport(e.target.value)}>
-                      {employers.map((emp) => <option key={emp._id} value={emp._id}>{emp.name}</option>)}
-                    </select>
+                    <EmployerSelect
+                      employers={employers}
+                      value={employerId}
+                      onChange={(id) => handleEmployerChangeImport(id)}
+                    />
                   )}
                 </div>
                 {hasSubLocationsImport && (
@@ -687,17 +787,11 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
               {employers.length === 0 ? (
                 <div className="alert-warning text-sm">No employers yet. Add one in the Employers tab first.</div>
               ) : (
-                <select
-                  className="input-base w-full"
+                <EmployerSelect
+                  employers={employers}
                   value={employerId}
-                  onChange={(e) => handleEmployerChange(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>Select employer…</option>
-                  {employers.map((emp) => (
-                    <option key={emp._id} value={emp._id}>{emp.name}</option>
-                  ))}
-                </select>
+                  onChange={(id) => handleEmployerChange(id)}
+                />
               )}
             </div>
           ) : (
