@@ -31,6 +31,11 @@ import {
   createReminder,
   parseSchedule,
   confirmScheduleImport,
+  getAppointmentTypes,
+  createAppointmentType,
+  updateAppointmentType,
+  deleteAppointmentType,
+  PopulatedAppointmentType,
   WorkEntry,
   WorkTrackerStats,
   WorkEntryType,
@@ -65,14 +70,15 @@ function formatDate(isoDate: string) {
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-function computePreviewHours(startTime: string, endTime: string): number {
+function computePreviewHours(startTime: string, endTime: string, breakMins: number = 0): number {
   if (!startTime || !endTime) return 0;
   const [sh, sm] = startTime.split(':').map(Number);
   const [eh, em] = endTime.split(':').map(Number);
   const startMins = sh * 60 + sm;
   let endMins = eh * 60 + em;
   if (endMins <= startMins) endMins += 24 * 60;
-  return Math.round(((endMins - startMins) / 60) * 100) / 100;
+  const totalMins = Math.max(0, (endMins - startMins) - breakMins);
+  return Math.round((totalMins / 60) * 100) / 100;
 }
 
 function groupEntriesByDate(entries: WorkEntry[]): Map<string, WorkEntry[]> {
@@ -135,7 +141,7 @@ interface StatCardProps {
 const StatCard: React.FC<StatCardProps> = ({ label, value, sub, icon, accent }) => (
   <div
     className="card flex items-start gap-4 p-5"
-    style={{ flex: '1 1 0', minWidth: 0 }}
+    style={{ flex: '1 1 160px' }}
   >
     <div
       style={{
@@ -570,25 +576,29 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
 
 interface EntryModalProps {
   employers: Employer[];
+  appointmentTypes: PopulatedAppointmentType[];
   editEntry?: WorkEntry | null;
   onClose: () => void;
   onSaved: (entry: WorkEntry) => void;
 }
 
-const EntryModal: React.FC<EntryModalProps> = ({ employers, editEntry, onClose, onSaved }) => {
-  const [employerId, setEmployerId] = useState(editEntry?.employerId._id ?? (employers[0]?._id ?? ''));
+const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, editEntry, onClose, onSaved }) => {
+  const [employerId, setEmployerId] = useState(editEntry?.employerId?._id ?? (employers[0]?._id ?? ''));
+  const [appointmentTypeId, setAppointmentTypeId] = useState(editEntry?.appointmentTypeId?._id ?? (appointmentTypes[0]?._id ?? ''));
   const [subLocationId, setSubLocationId] = useState(editEntry?.subLocationId ?? '');
   const [title, setTitle] = useState(editEntry?.title ?? '');
   const [type, setType] = useState<WorkEntryType>(editEntry?.type ?? 'shift');
   const [date, setDate] = useState(editEntry?.date ? editEntry.date.split('T')[0] : new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState(editEntry?.startTime ?? '09:00');
   const [endTime, setEndTime] = useState(editEntry?.endTime ?? '17:00');
+  const [breakMinutes, setBreakMinutes] = useState(editEntry?.breakMinutes?.toString() ?? '0');
+  const [paidKilometers, setPaidKilometers] = useState(editEntry?.paidKilometers?.toString() ?? '0');
   const [notes, setNotes] = useState(editEntry?.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const selectedEmployer = employers.find((e) => e._id === employerId);
-  const hasSubLocations = (selectedEmployer?.subLocations?.length ?? 0) > 0;
+  const hasSubLocations = type === 'shift' && (selectedEmployer?.subLocations?.length ?? 0) > 0;
 
   // Reset sub-location when employer changes
   const handleEmployerChange = (newId: string) => {
@@ -596,23 +606,27 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, editEntry, onClose, 
     setSubLocationId('');
   };
 
-  const previewHours = computePreviewHours(startTime, endTime);
+  const previewHours = computePreviewHours(startTime, endTime, parseInt(breakMinutes) || 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!employerId) return setError('Please select an employer.');
+    if (type === 'shift' && !employerId) return setError('Please select an employer for the shift.');
+    if (type === 'appointment' && !appointmentTypeId && !employerId) return setError('Please select an appointment type or employer.');
     if (!date) return setError('Date is required.');
     setSaving(true);
     setError('');
     try {
       const payload: CreateWorkEntryPayload = {
-        employerId,
+        employerId: type === 'shift' ? employerId : undefined,
+        appointmentTypeId: type === 'appointment' ? (appointmentTypeId || null) : undefined,
         subLocationId: subLocationId || undefined,
         title: title.trim() || undefined,
         type,
         date,
         startTime,
         endTime,
+        breakMinutes: parseInt(breakMinutes) || 0,
+        paidKilometers: parseFloat(paidKilometers) || 0,
         notes: notes.trim() || undefined,
       };
       let saved: WorkEntry;
@@ -665,28 +679,44 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, editEntry, onClose, 
             </div>
           </div>
 
-          {/* Employer */}
-          <div>
-            <label className="label-overline mb-2 block">Employer / Workplace</label>
-            {employers.length === 0 ? (
-              <div className="alert-warning text-sm">No employers yet. Add one in the Employers tab first.</div>
-            ) : (
+          {/* Dynamic Target: Employer or Appointment Type */}
+          {type === 'shift' ? (
+            <div>
+              <label className="label-overline mb-2 block">Employer / Workplace</label>
+              {employers.length === 0 ? (
+                <div className="alert-warning text-sm">No employers yet. Add one in the Employers tab first.</div>
+              ) : (
+                <select
+                  className="input-base w-full"
+                  value={employerId}
+                  onChange={(e) => handleEmployerChange(e.target.value)}
+                  required
+                >
+                  <option value="" disabled>Select employer…</option>
+                  {employers.map((emp) => (
+                    <option key={emp._id} value={emp._id}>{emp.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="label-overline mb-2 block">Appointment Type <span style={{ color: 'var(--text-muted)', fontStyle: 'normal' }}>(optional)</span></label>
               <select
                 className="input-base w-full"
-                value={employerId}
-                onChange={(e) => handleEmployerChange(e.target.value)}
-                required
+                value={appointmentTypeId}
+                onChange={(e) => setAppointmentTypeId(e.target.value)}
               >
-                <option value="" disabled>Select employer…</option>
-                {employers.map((emp) => (
-                  <option key={emp._id} value={emp._id}>{emp.name}</option>
+                <option value="">None / Custom</option>
+                {appointmentTypes.map((apt) => (
+                  <option key={apt._id} value={apt._id}>{apt.name}</option>
                 ))}
               </select>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Sub-location (only shown when employer has sub-locations) */}
-          {hasSubLocations && (
+          {/* Sub-location (only shown when employer has sub-locations and is shift) */}
+          {hasSubLocations && type === 'shift' && (
             <div>
               <label className="label-overline mb-2 block">
                 <MapPin size={11} className="inline mr-1 -mt-0.5" />
@@ -753,8 +783,37 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, editEntry, onClose, 
             </div>
           </div>
 
+          {type === 'shift' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label-overline mb-2 block">Unpaid break <span style={{ color: 'var(--text-muted)', fontStyle: 'normal', textTransform: 'lowercase' }}>(min)</span></label>
+                <input
+                  className="input-base w-full"
+                  type="number"
+                  min="0"
+                  step="5"
+                  placeholder="0"
+                  value={breakMinutes}
+                  onChange={(e) => setBreakMinutes(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label-overline mb-2 block">Travel distance <span style={{ color: 'var(--text-muted)', fontStyle: 'normal', textTransform: 'lowercase' }}>(km)</span></label>
+                <input
+                  className="input-base w-full"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="0.0"
+                  value={paidKilometers}
+                  onChange={(e) => setPaidKilometers(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Hours preview */}
-          {previewHours > 0 && (
+          {type === 'shift' && previewHours > 0 && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
               <Timer size={14} style={{ color: 'var(--accent)' }} />
               <span className="font-mono text-sm font-semibold" style={{ color: 'var(--accent)' }}>
@@ -1149,14 +1208,16 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const WorkTrackerPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'timelog' | 'employers'>('timelog');
+  const [activeTab, setActiveTab] = useState<'timelog' | 'employers' | 'appointments'>('timelog');
 
   // ── Data state ────────────────────────────────────────────────────────────
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [employers, setEmployers] = useState<Employer[]>([]);
+  const [appointmentTypes, setAppointmentTypes] = useState<PopulatedAppointmentType[]>([]);
   const [stats, setStats] = useState<WorkTrackerStats | null>(null);
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [loadingEmployers, setLoadingEmployers] = useState(true);
+  const [loadingAppointmentTypes, setLoadingAppointmentTypes] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
 
   // ── Month navigation ──────────────────────────────────────────────────────
@@ -1170,10 +1231,13 @@ const WorkTrackerPage: React.FC = () => {
   const [showEmployerModal, setShowEmployerModal] = useState(false);
   const [editingEmployer, setEditingEmployer] = useState<Employer | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showAppointmentTypeModal, setShowAppointmentTypeModal] = useState(false);
+  const [editingAppointmentType, setEditingAppointmentType] = useState<PopulatedAppointmentType | null>(null);
 
   // ── Inline action state (delete confirm, remind loading) ──────────────────
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [deletingEmployerId, setDeletingEmployerId] = useState<string | null>(null);
+  const [deletingAppointmentTypeId, setDeletingAppointmentTypeId] = useState<string | null>(null);
   const [remindLoadingId, setRemindLoadingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [expandedEmployers, setExpandedEmployers] = useState<Set<string>>(new Set());
@@ -1204,6 +1268,18 @@ const WorkTrackerPage: React.FC = () => {
     }
   }, []);
 
+  const fetchAppointmentTypes = useCallback(async () => {
+    setLoadingAppointmentTypes(true);
+    try {
+      const data = await getAppointmentTypes();
+      setAppointmentTypes(data);
+    } catch {
+      // Silently fail
+    } finally {
+      setLoadingAppointmentTypes(false);
+    }
+  }, []);
+
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
     try {
@@ -1218,6 +1294,7 @@ const WorkTrackerPage: React.FC = () => {
 
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
   useEffect(() => { fetchEmployers(); }, [fetchEmployers]);
+  useEffect(() => { fetchAppointmentTypes(); }, [fetchAppointmentTypes]);
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
   // ── Month navigation ──────────────────────────────────────────────────────
@@ -1307,11 +1384,33 @@ const WorkTrackerPage: React.FC = () => {
     setEmployers((prev) => prev.map((e) => e._id === empId ? { ...e, subLocations: subs } : e));
   };
 
+  // ── AppointmentType actions ────────────────────────────────────────────────
+  const handleAppointmentTypeSaved = (apt: PopulatedAppointmentType) => {
+    setShowAppointmentTypeModal(false);
+    setEditingAppointmentType(null);
+    setAppointmentTypes((prev) => {
+      const exists = prev.find((e) => e._id === apt._id);
+      if (exists) return prev.map((e) => (e._id === apt._id ? apt : e));
+      return [...prev, apt].sort((a, b) => a.name.localeCompare(b.name));
+    });
+  };
+
+  const handleDeleteAppointmentType = async (id: string) => {
+    if (deletingAppointmentTypeId !== id) { setDeletingAppointmentTypeId(id); return; }
+    try {
+      await deleteAppointmentType(id);
+      setAppointmentTypes((prev) => prev.filter((e) => e._id !== id));
+      setDeletingAppointmentTypeId(null);
+      fetchEntries(); // Reload entries since appointment types might have been removed
+    } catch { /* ignore */ }
+  };
+
   // ── Computed ──────────────────────────────────────────────────────────────
-  const monthHours = Math.round(entries.reduce((s, e) => s + e.hours, 0) * 10) / 10;
-  const monthPlanned = entries.filter((e) => e.status === 'planned').length;
-  const monthDone = entries.filter((e) => e.status === 'done').length;
-  const monthEmployers = new Set(entries.map((e) => e.employerId._id)).size;
+  const monthHours = Math.round(entries.reduce((s, e) => s + (e.type === 'shift' ? e.hours : 0), 0) * 10) / 10;
+  const monthPlanned = entries.filter((e) => e.status === 'planned' && e.type === 'shift').length;
+  const monthDone = entries.filter((e) => e.status === 'done' && e.type === 'shift').length;
+  const monthAppointments = entries.filter((e) => e.type === 'appointment').length;
+  const monthEmployers = new Set(entries.map((e) => e.employerId?._id).filter(Boolean)).size;
   const monthLabel = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`;
 
   const grouped = groupEntriesByDate(entries);
@@ -1325,19 +1424,21 @@ const WorkTrackerPage: React.FC = () => {
   type EmployerSummary = { totalHours: number; planned: number; done: number; lastDate: string | null };
   const employerSummary = new Map<string, EmployerSummary>();
   for (const entry of entries) {
-    const eid = entry.employerId._id;
-    const cur = employerSummary.get(eid) ?? { totalHours: 0, planned: 0, done: 0, lastDate: null };
-    cur.totalHours += entry.hours;
-    if (entry.status === 'planned') cur.planned++; else cur.done++;
-    if (!cur.lastDate || entry.date > cur.lastDate) cur.lastDate = entry.date;
-    employerSummary.set(eid, cur);
+    if (entry.type === 'shift' && entry.employerId) {
+      const eid = entry.employerId._id;
+      const cur = employerSummary.get(eid) ?? { totalHours: 0, planned: 0, done: 0, lastDate: null };
+      cur.totalHours += entry.hours;
+      if (entry.status === 'planned') cur.planned++; else cur.done++;
+      if (!cur.lastDate || entry.date > cur.lastDate) cur.lastDate = entry.date;
+      employerSummary.set(eid, cur);
+    }
   }
 
   // ── Shimmer rows ──────────────────────────────────────────────────────────
   const shimmerRows = Array.from({ length: 3 });
 
   const renderDayCard = (dateKey: string, dayEntries: WorkEntry[]) => {
-    const dayHours = dayEntries.reduce((sum, e) => sum + e.hours, 0);
+    const dayHours = dayEntries.reduce((sum, e) => sum + (e.type === 'shift' ? e.hours : 0), 0);
     const allDone = dayEntries.every((e) => e.status === 'done');
     return (
       <div key={dateKey} className="card overflow-hidden">
@@ -1367,9 +1468,15 @@ const WorkTrackerPage: React.FC = () => {
                 </button>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <EmployerAvatar employer={entry.employerId} size={22} />
+                    {entry.type === 'shift' && entry.employerId ? (
+                      <EmployerAvatar employer={entry.employerId} size={22} />
+                    ) : (
+                      <div style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <CalendarDays size={12} style={{ color: 'var(--text-muted)' }} />
+                      </div>
+                    )}
                     <span className="text-sm font-medium truncate" style={{ color: isDone ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: isDone ? 'line-through' : 'none' }}>
-                      {entry.employerId.name}
+                      {entry.type === 'appointment' && entry.appointmentTypeId ? entry.appointmentTypeId.name : entry.employerId?.name || 'Unknown'}
                       {entry.title && <span className="font-normal ml-1" style={{ color: 'var(--text-muted)' }}>&mdash; {entry.title}</span>}
                     </span>
                     {entry.subLocationName && (
@@ -1382,6 +1489,12 @@ const WorkTrackerPage: React.FC = () => {
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
                     <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>{entry.startTime} &ndash; {entry.endTime}</span>
                     <span className="font-mono text-xs font-semibold" style={{ color: isDone ? 'var(--jade)' : 'var(--accent)' }}>{entry.hours}h</span>
+                    {entry.breakMinutes > 0 && (
+                      <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>({entry.breakMinutes}m break)</span>
+                    )}
+                    {(entry.paidKilometers ?? 0) > 0 && (
+                      <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>({entry.paidKilometers} km)</span>
+                    )}
                     {entry.notes && (
                       <span className="text-xs truncate max-w-[220px]" style={{ color: 'var(--text-muted)' }} title={entry.notes}>{entry.notes}</span>
                     )}
@@ -1449,10 +1562,11 @@ const WorkTrackerPage: React.FC = () => {
             {[
               { key: 'timelog', label: 'Time Log', icon: <Clock size={15} /> },
               { key: 'employers', label: 'Employers', icon: <Building2 size={15} /> },
+              { key: 'appointments', label: 'Appointments', icon: <CalendarDays size={15} /> },
             ].map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as 'timelog' | 'employers')}
+                onClick={() => setActiveTab(tab.key as any)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
                 style={{
                   background: activeTab === tab.key ? 'var(--bg-raised)' : 'transparent',
@@ -1484,16 +1598,16 @@ const WorkTrackerPage: React.FC = () => {
             icon={<Building2 size={18} />}
           />
           <StatCard
-            label="Planned"
-            value={loadingEntries ? '—' : monthPlanned}
-            sub={monthLabel}
-            icon={<Circle size={18} />}
+            label="Shifts"
+            value={loadingEntries ? '—' : `${monthPlanned + monthDone}`}
+            sub={`${monthPlanned} planned · ${monthDone} done`}
+            icon={<Briefcase size={18} />}
           />
           <StatCard
-            label="Done"
-            value={loadingEntries ? '—' : monthDone}
+            label="Appointments"
+            value={loadingEntries ? '—' : monthAppointments}
             sub={monthLabel}
-            icon={<CheckCircle2 size={18} />}
+            icon={<CalendarDays size={18} />}
           />
         </div>
 
@@ -1501,8 +1615,8 @@ const WorkTrackerPage: React.FC = () => {
         {activeTab === 'timelog' && (
           <div className="space-y-6">
 
-            {/* Month navigator + Add button */}
-            <div className="flex items-center justify-between">
+            {/* Month navigator + Actions */}
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-2">
                 <button
                   onClick={prevMonth}
@@ -1523,22 +1637,24 @@ const WorkTrackerPage: React.FC = () => {
                 </button>
               </div>
 
-              <button
-                onClick={() => { setEditingEntry(null); setShowEntryModal(true); }}
-                className="btn-primary flex items-center gap-2 text-sm"
-              >
-                <Plus size={16} />
-                Add entry
-              </button>
-              <button
-                onClick={() => setShowImportModal(true)}
-                className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg transition-all"
-                style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-                title="Import schedule with AI"
-              >
-                <Sparkles size={15} />
-                <span className="hidden sm:inline">Import schedule</span>
-              </button>
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg transition-all"
+                  style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                  title="Import schedule with AI"
+                >
+                  <Sparkles size={15} />
+                  <span className="hidden sm:inline">Import schedule</span>
+                </button>
+                <button
+                  onClick={() => { setEditingEntry(null); setShowEntryModal(true); }}
+                  className="btn-primary flex items-center gap-2 text-sm"
+                >
+                  <Plus size={16} />
+                  <span className="hidden sm:inline">Add entry</span>
+                </button>
+              </div>
             </div>
 
             {/* Entry list */}
@@ -1714,6 +1830,77 @@ const WorkTrackerPage: React.FC = () => {
           </div>
         )}
 
+        {/* ═══════ APPOINTMENTS TAB ════════════════════════════════════════════ */}
+        {activeTab === 'appointments' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Appointment Types</h2>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Manage appointment types you use frequently.</p>
+              </div>
+              <button onClick={() => { setEditingAppointmentType(null); setShowAppointmentTypeModal(true); }} className="btn-primary flex items-center gap-2 text-sm max-w-fit">
+                <Plus size={16} /> <span className="hidden sm:inline">Add type</span>
+              </button>
+            </div>
+
+            {loadingAppointmentTypes ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {shimmerRows.map((_, i) => (
+                  <div key={i} className="card animate-pulse p-4 flex flex-col gap-3">
+                    <div className="shimmer h-8 w-8 rounded" />
+                    <div className="shimmer h-4 w-3/4 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : appointmentTypes.length === 0 ? (
+              <div className="card flex flex-col items-center justify-center py-16 text-center gap-4">
+                <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                  <CalendarDays size={24} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No appointment types yet</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Create appointment types like "Doctor" or "Meetings".</p>
+                </div>
+                <button onClick={() => { setEditingAppointmentType(null); setShowAppointmentTypeModal(true); }} className="btn-primary text-sm flex items-center gap-1.5">
+                  <Plus size={14} /> Add first appointment type
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {appointmentTypes.map((apt) => (
+                  <div key={apt._id} className="card p-5 group flex flex-col justify-between">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', color: 'var(--text-primary)', flexShrink: 0, fontWeight: 600 }}>
+                          {apt.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <h3 className="font-semibold text-sm truncate pr-2 w-full" style={{ color: 'var(--text-primary)' }}>
+                          {apt.name}
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--border-subtle)]">
+                      <button
+                        onClick={() => { setEditingAppointmentType(apt); setShowAppointmentTypeModal(true); }}
+                        className="btn-ghost flex-1 py-1.5 text-xs flex items-center justify-center gap-1.5"
+                      >
+                        <Pencil size={12} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAppointmentType(apt._id)}
+                        className="btn-ghost flex-1 py-1.5 text-xs flex items-center justify-center gap-1.5"
+                        style={{ color: deletingAppointmentTypeId === apt._id ? 'var(--ember)' : 'inherit', background: deletingAppointmentTypeId === apt._id ? 'rgba(255,82,82,0.1)' : 'transparent' }}
+                      >
+                        {deletingAppointmentTypeId === apt._id ? 'Confirm?' : <><Trash2 size={12} /> Delete</>}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
       {/* ── Modals ──────────────────────────────────────────────────────── */}
@@ -1728,6 +1915,7 @@ const WorkTrackerPage: React.FC = () => {
       {showEntryModal && (
         <EntryModal
           employers={employers}
+          appointmentTypes={appointmentTypes}
           editEntry={editingEntry}
           onClose={() => { setShowEntryModal(false); setEditingEntry(null); }}
           onSaved={handleEntrySaved}
@@ -1741,6 +1929,78 @@ const WorkTrackerPage: React.FC = () => {
           onSaved={handleEmployerSaved}
         />
       )}
+
+      {showAppointmentTypeModal && (
+        <AppointmentTypeModal
+          editAppointmentType={editingAppointmentType}
+          onClose={() => { setShowAppointmentTypeModal(false); setEditingAppointmentType(null); }}
+          onSaved={handleAppointmentTypeSaved}
+        />
+      )}
+    </div>
+  );
+};
+
+// ── AppointmentTypeModal Component ───────────────────────────────────────────
+interface AppointmentTypeModalProps {
+  editAppointmentType?: PopulatedAppointmentType | null;
+  onClose: () => void;
+  onSaved: (apt: PopulatedAppointmentType) => void;
+}
+const AppointmentTypeModal: React.FC<AppointmentTypeModalProps> = ({ editAppointmentType, onClose, onSaved }) => {
+  const [name, setName] = useState(editAppointmentType?.name ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return setError('Please enter a name.');
+    setSaving(true);
+    setError('');
+    try {
+      let saved;
+      if (editAppointmentType) {
+        saved = await updateAppointmentType(editAppointmentType._id, { name });
+      } else {
+        saved = await createAppointmentType({ name });
+      }
+      onSaved(saved);
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'Failed to save appointment type.');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="card w-full max-w-md animate-scale-in bg-white dark:bg-gray-800 shadow-xl border border-[var(--border-subtle)]">
+        <div className="flex items-center justify-between p-4 border-b border-[var(--border-subtle)]">
+          <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+            {editAppointmentType ? 'Edit appointment type' : 'Add appointment type'}
+          </h2>
+          <button onClick={onClose} className="p-1 rounded-md transition-colors hover:bg-[var(--bg-elevated)]" style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+          <div>
+            <label className="label-overline mb-2 block">Name</label>
+            <input
+              className="input-base w-full"
+              type="text"
+              placeholder="e.g. Doctor, Meeting..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          {error && <div className="alert-error flex items-center gap-2 text-sm"><AlertCircle size={15} /> {error}</div>}
+          <div className="flex gap-3 pt-1">
+            <button type="button" className="btn-secondary flex-1" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn-primary flex-1" disabled={saving}>
+              {saving ? 'Saving…' : editAppointmentType ? 'Save changes' : 'Add type'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

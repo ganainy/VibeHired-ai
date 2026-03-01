@@ -6,6 +6,11 @@ const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/
 export type WorkEntryType = 'shift' | 'appointment';
 export type WorkEntryStatus = 'planned' | 'done';
 
+export interface PopulatedAppointmentType {
+  _id: string;
+  name: string;
+}
+
 export interface PopulatedEmployer {
   _id: string;
   name: string;
@@ -15,7 +20,8 @@ export interface PopulatedEmployer {
 
 export interface WorkEntry {
   _id: string;
-  employerId: PopulatedEmployer;
+  employerId?: PopulatedEmployer;
+  appointmentTypeId?: PopulatedAppointmentType;
   subLocationId?: string;
   subLocationName?: string;
   title?: string;
@@ -24,6 +30,8 @@ export interface WorkEntry {
   startTime: string;   // 'HH:mm'
   endTime: string;     // 'HH:mm'
   hours: number;
+  breakMinutes: number;
+  paidKilometers?: number;
   status: WorkEntryStatus;
   notes?: string;
   googleCalendarEventId?: string;
@@ -41,13 +49,16 @@ export interface WorkTrackerStats {
 }
 
 export interface CreateWorkEntryPayload {
-  employerId: string;
+  employerId?: string;
+  appointmentTypeId?: string | null;
   subLocationId?: string;
   title?: string;
   type: WorkEntryType;
   date: string; // 'YYYY-MM-DD'
   startTime: string;
   endTime: string;
+  breakMinutes?: number;
+  paidKilometers?: number;
   notes?: string;
 }
 
@@ -103,6 +114,8 @@ export interface ParsedScheduleEntry {
   date: string;       // 'YYYY-MM-DD'
   startTime: string;  // 'HH:MM'
   endTime: string;    // 'HH:MM'
+  breakMinutes?: number;
+  paidKilometers?: number;
   notes: string | null;
 }
 
@@ -132,6 +145,8 @@ export interface ConfirmScheduleEntry {
   date: string;
   startTime: string;
   endTime: string;
+  breakMinutes?: number;
+  paidKilometers?: number;
   type?: WorkEntryType;
   notes?: string | null;
   subLocationId?: string;
@@ -147,4 +162,23 @@ export const confirmScheduleImport = async (
     { employerId, entries },
   );
   return res.data;
+};
+
+export const getAppointmentTypes = async (): Promise<PopulatedAppointmentType[]> => {
+  const { data } = await axios.get<PopulatedAppointmentType[]>(`${API_BASE_URL}/work-tracker/appointment-types`);
+  return data;
+};
+
+export const createAppointmentType = async (payload: { name: string }): Promise<PopulatedAppointmentType> => {
+  const { data } = await axios.post<PopulatedAppointmentType>(`${API_BASE_URL}/work-tracker/appointment-types`, payload);
+  return data;
+};
+
+export const updateAppointmentType = async (id: string, payload: { name: string }): Promise<PopulatedAppointmentType> => {
+  const { data } = await axios.put<PopulatedAppointmentType>(`${API_BASE_URL}/work-tracker/appointment-types/${id}`, payload);
+  return data;
+};
+
+export const deleteAppointmentType = async (id: string): Promise<void> => {
+  await axios.delete(`${API_BASE_URL}/work-tracker/appointment-types/${id}`);
 };

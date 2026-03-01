@@ -9,6 +9,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ValidationError, NotFoundError } from '../utils/errors/AppError';
 import WorkEntry, { computeHours } from '../models/WorkEntry';
 import Employer from '../models/Employer';
+import AppointmentType from '../models/AppointmentType';
 import Profile from '../models/Profile';
 import { env } from '../config/env';
 import { decrypt, encrypt } from '../utils/encryption';
@@ -111,6 +112,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
   const entries = await WorkEntry.find(filter)
     .populate('employerId', 'name logoUrl')
+    .populate('appointmentTypeId', 'name')
     .sort({ date: 1, startTime: 1 });
 
   res.json(entries);
@@ -130,11 +132,11 @@ router.get('/stats', asyncHandler(async (req: Request, res: Response) => {
   const [overall, monthly, statusBreakdown, activeEmployers] = await Promise.all([
     WorkEntry.aggregate([
       { $match: { userId } },
-      { $group: { _id: null, totalHours: { $sum: '$hours' }, totalEntries: { $sum: 1 } } },
+      { $group: { _id: null, totalHours: { $sum: { $cond: [{ $eq: ['$type', 'shift'] }, '$hours', 0] } }, totalEntries: { $sum: 1 } } },
     ]),
     WorkEntry.aggregate([
       { $match: { userId, date: { $gte: monthStart, $lt: monthEnd } } },
-      { $group: { _id: null, monthHours: { $sum: '$hours' } } },
+      { $group: { _id: null, monthHours: { $sum: { $cond: [{ $eq: ['$type', 'shift'] }, '$hours', 0] } } } },
     ]),
     WorkEntry.aggregate([
       { $match: { userId } },
@@ -157,26 +159,78 @@ router.get('/stats', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 /**
+ * GET /api/work-tracker/appointment-types
+ */
+router.get('/appointment-types', asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!._id;
+  const types = await AppointmentType.find({ userId }).sort({ name: 1 });
+  res.json(types);
+}));
+
+/**
+ * POST /api/work-tracker/appointment-types
+ */
+router.post('/appointment-types', asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!._id;
+  const { name } = req.body;
+  if (!name) throw new ValidationError('Name is required.');
+  const type = await AppointmentType.create({ userId, name: name.trim() });
+  res.status(201).json(type);
+}));
+
+/**
+ * PUT /api/work-tracker/appointment-types/:id
+ */
+router.put('/appointment-types/:id', asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!._id;
+  const type = await AppointmentType.findOne({ _id: req.params.id, userId });
+  if (!type) throw new NotFoundError('Appointment type not found.');
+  if (req.body.name) type.name = req.body.name.trim();
+  await type.save();
+  res.json(type);
+}));
+
+/**
+ * DELETE /api/work-tracker/appointment-types/:id
+ */
+router.delete('/appointment-types/:id', asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!._id;
+  await AppointmentType.findOneAndDelete({ _id: req.params.id, userId });
+  res.json({ message: 'Deleted' });
+}));
+
+/**
  * POST /api/work-tracker
  * Create a new work entry.
  */
 router.post('/', asyncHandler(async (req: Request, res: Response) => {
   const userId = String(req.user!._id);
-  const { employerId, title, type, date, startTime, endTime, notes, subLocationId } = req.body;
+  const { employerId, appointmentTypeId, title, type, date, startTime, endTime, breakMinutes = 0, paidKilometers = 0, notes, subLocationId } = req.body;
 
-  if (!employerId) throw new ValidationError('employerId is required.');
   if (!type || !['shift', 'appointment'].includes(type)) throw new ValidationError('type must be "shift" or "appointment".');
+  if (type === 'shift' && !employerId) throw new ValidationError('employerId is required for shifts.');
+  if (type === 'appointment' && !appointmentTypeId && !employerId) throw new ValidationError('appointmentTypeId or employerId is required for appointments.');
   if (!date) throw new ValidationError('date is required.');
   if (!startTime || !endTime) throw new ValidationError('startTime and endTime are required.');
 
-  // Verify employer belongs to this user
-  const employer = await Employer.findOne({ _id: employerId, userId });
-  if (!employer) throw new NotFoundError('Employer not found.');
+  // Verify employer
+  let employer;
+  if (employerId) {
+    employer = await Employer.findOne({ _id: employerId, userId });
+    if (!employer) throw new NotFoundError('Employer not found.');
+  }
+
+  // Verify appointment type
+  let appointmentType;
+  if (appointmentTypeId) {
+    appointmentType = await AppointmentType.findOne({ _id: appointmentTypeId, userId });
+    if (!appointmentType) throw new NotFoundError('Appointment type not found.');
+  }
 
   // Resolve sub-location name snapshot
   let subLocationName: string | undefined;
   let resolvedSubId: string | undefined;
-  if (subLocationId) {
+  if (subLocationId && employer) {
     const sub = employer.subLocations.find((s) => String(s._id) === subLocationId);
     if (!sub) throw new NotFoundError('Sub-location not found.');
     subLocationName = sub.name;
@@ -185,19 +239,25 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
 
   const entry = await WorkEntry.create({
     userId,
-    employerId,
+    employerId: employerId || undefined,
+    appointmentTypeId: appointmentTypeId || undefined,
     title: title?.trim() || undefined,
     type,
     date: new Date(date),
     startTime,
     endTime,
-    hours: computeHours(startTime, endTime),
+    breakMinutes,
+    paidKilometers,
+    hours: computeHours(startTime, endTime, breakMinutes),
     notes: notes?.trim() || undefined,
     subLocationId: resolvedSubId,
     subLocationName,
   });
 
-  const populated = await entry.populate('employerId', 'name logoUrl subLocations');
+  const populated = await entry.populate([
+    { path: 'employerId', select: 'name logoUrl subLocations' },
+    { path: 'appointmentTypeId', select: 'name' }
+  ]);
   res.status(201).json(populated);
 }));
 
@@ -210,15 +270,33 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
   const entry = await WorkEntry.findOne({ _id: req.params.id, userId });
   if (!entry) throw new NotFoundError('Work entry not found.');
 
-  const { employerId, title, type, date, startTime, endTime, notes, status, subLocationId } = req.body;
+  const { employerId, appointmentTypeId, title, type, date, startTime, endTime, breakMinutes, paidKilometers, notes, status, subLocationId } = req.body;
 
   if (employerId !== undefined) {
-    const employer = await Employer.findOne({ _id: employerId, userId });
-    if (!employer) throw new NotFoundError('Employer not found.');
-    entry.employerId = new mongoose.Types.ObjectId(employerId);
+    if (employerId === null || employerId === '') {
+      entry.employerId = undefined;
+    } else {
+      const employer = await Employer.findOne({ _id: employerId, userId });
+      if (!employer) throw new NotFoundError('Employer not found.');
+      entry.employerId = new mongoose.Types.ObjectId(employerId);
 
-    // Re-resolve sub-location against the new (or same) employer
-    if (subLocationId !== undefined) {
+      // Re-resolve sub-location against the new employer
+      if (subLocationId !== undefined) {
+        if (subLocationId === null || subLocationId === '') {
+          (entry as any).subLocationId = undefined;
+          (entry as any).subLocationName = undefined;
+        } else {
+          const sub = employer.subLocations.find((s) => String(s._id) === subLocationId);
+          if (!sub) throw new NotFoundError('Sub-location not found.');
+          (entry as any).subLocationId = subLocationId;
+          (entry as any).subLocationName = sub.name;
+        }
+      }
+    }
+  } else if (subLocationId !== undefined && entry.employerId) {
+    // Employer unchanged – still need to validate sub-location
+    const employer = await Employer.findOne({ _id: entry.employerId, userId });
+    if (employer) {
       if (subLocationId === null || subLocationId === '') {
         (entry as any).subLocationId = undefined;
         (entry as any).subLocationName = undefined;
@@ -229,20 +307,18 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
         (entry as any).subLocationName = sub.name;
       }
     }
-  } else if (subLocationId !== undefined) {
-    // Employer unchanged – still need to validate sub-location
-    const employer = await Employer.findOne({ _id: entry.employerId, userId });
-    if (!employer) throw new NotFoundError('Employer not found.');
-    if (subLocationId === null || subLocationId === '') {
-      (entry as any).subLocationId = undefined;
-      (entry as any).subLocationName = undefined;
+  }
+
+  if (appointmentTypeId !== undefined) {
+    if (appointmentTypeId === null || appointmentTypeId === '') {
+      entry.appointmentTypeId = undefined;
     } else {
-      const sub = employer.subLocations.find((s) => String(s._id) === subLocationId);
-      if (!sub) throw new NotFoundError('Sub-location not found.');
-      (entry as any).subLocationId = subLocationId;
-      (entry as any).subLocationName = sub.name;
+      const apt = await AppointmentType.findOne({ _id: appointmentTypeId, userId });
+      if (!apt) throw new NotFoundError('Appointment type not found.');
+      entry.appointmentTypeId = new mongoose.Types.ObjectId(appointmentTypeId);
     }
   }
+
   if (title !== undefined) entry.title = title?.trim() || undefined;
   if (type !== undefined) {
     if (!['shift', 'appointment'].includes(type)) throw new ValidationError('type must be "shift" or "appointment".');
@@ -251,6 +327,8 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
   if (date !== undefined) entry.date = new Date(date);
   if (startTime !== undefined) entry.startTime = startTime;
   if (endTime !== undefined) entry.endTime = endTime;
+  if (breakMinutes !== undefined) entry.breakMinutes = breakMinutes;
+  if (paidKilometers !== undefined) entry.paidKilometers = paidKilometers;
   if (notes !== undefined) entry.notes = notes?.trim() || undefined;
   if (status !== undefined) {
     if (!['planned', 'done'].includes(status)) throw new ValidationError('status must be "planned" or "done".');
@@ -258,12 +336,15 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Recompute hours if times changed
-  if (startTime !== undefined || endTime !== undefined) {
-    entry.hours = computeHours(entry.startTime, entry.endTime);
+  if (startTime !== undefined || endTime !== undefined || breakMinutes !== undefined) {
+    entry.hours = computeHours(entry.startTime, entry.endTime, entry.breakMinutes || 0);
   }
 
   await entry.save();
-  const populated = await entry.populate('employerId', 'name logoUrl subLocations');
+  const populated = await entry.populate([
+    { path: 'employerId', select: 'name logoUrl subLocations' },
+    { path: 'appointmentTypeId', select: 'name' }
+  ]);
   res.json(populated);
 }));
 
@@ -467,6 +548,8 @@ router.post('/import-schedule/confirm', asyncHandler(async (req: Request, res: R
         date: e.date,
         startTime: e.startTime,
         endTime: e.endTime,
+        breakMinutes: e.breakMinutes || 0,
+        paidKilometers: e.paidKilometers || 0,
         notes: e.notes || undefined,
         status,
       });
