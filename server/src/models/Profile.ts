@@ -88,6 +88,10 @@ export interface IProfile extends Document {
     emailSuggestions?: {
       lookbackDays?: number;
       autoPoll?: boolean;
+      /** Separate auto-scan toggle for application response emails */
+      autoPollApplications?: boolean;
+      /** Separate auto-scan toggle for job offer/lead emails */
+      autoPollJobLeads?: boolean;
     };
   };
   autoJobSettings?: {
@@ -325,6 +329,14 @@ const ProfileSchema: Schema = new Schema(
           max: 30,
         },
         autoPoll: {
+          type: Boolean,
+          default: true,
+        },
+        autoPollApplications: {
+          type: Boolean,
+          default: true,
+        },
+        autoPollJobLeads: {
           type: Boolean,
           default: true,
         },

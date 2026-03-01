@@ -153,8 +153,9 @@ async function matchJobApplication(
 /**
  * Polls Gmail for new messages for a single user, classifies them, and stores
  * pending EmailSuggestion documents.  Returns number of suggestions created.
+ * @param category - Optional category filter: 'application_response' or 'job_offer'
  */
-export async function pollEmailsForUser(userId: string, since?: Date): Promise<number> {
+export async function pollEmailsForUser(userId: string, since?: Date, category?: 'application_response' | 'job_offer'): Promise<number> {
     // Check Gmail scope is available before attempting any API calls
     const hasSco = await hasGmailScope(userId);
     if (!hasSco) return 0;
@@ -222,6 +223,11 @@ export async function pollEmailsForUser(userId: string, since?: Date): Promise<n
             continue;
         }
 
+        // Skip if category filter is set and doesn't match
+        if (category && classification.emailCategory !== category) {
+            continue;
+        }
+
         const match = await matchJobApplication(userId, classification.extractedCompany, classification.extractedRole);
 
         await EmailSuggestion.create({
@@ -258,18 +264,43 @@ export async function pollAllUsers(): Promise<void> {
         'integrations.google.enabled': true,
         'integrations.google.accessToken': { $exists: true, $ne: null },
         $or: [
-            { 'settings.emailSuggestions.autoPoll': { $exists: false } },
-            { 'settings.emailSuggestions.autoPoll': true },
+            { 'settings.emailSuggestions.autoPollApplications': { $exists: false } },
+            { 'settings.emailSuggestions.autoPollApplications': true },
+            { 'settings.emailSuggestions.autoPollJobLeads': { $exists: false } },
+            { 'settings.emailSuggestions.autoPollJobLeads': true },
         ],
-    }).select('userId').lean();
+    }).select('userId settings.emailSuggestions').lean();
 
     console.log(`[EmailSuggestionService] Polling ${profiles.length} Google-connected users`);
 
     for (const profile of profiles) {
         try {
-            const count = await pollEmailsForUser(String(profile.userId));
-            if (count > 0) {
-                console.log(`[EmailSuggestionService] Created ${count} suggestion(s) for user ${profile.userId}`);
+            const settings = profile.settings?.emailSuggestions ?? {};
+            const autoPollApplications = settings.autoPollApplications ?? true;
+            const autoPollJobLeads = settings.autoPollJobLeads ?? true;
+
+            let totalCreated = 0;
+
+            // Poll for application responses if enabled
+            if (autoPollApplications) {
+                const count = await pollEmailsForUser(String(profile.userId), undefined, 'application_response');
+                if (count > 0) {
+                    console.log(`[EmailSuggestionService] Created ${count} application response suggestion(s) for user ${profile.userId}`);
+                    totalCreated += count;
+                }
+            }
+
+            // Poll for job leads if enabled
+            if (autoPollJobLeads) {
+                const count = await pollEmailsForUser(String(profile.userId), undefined, 'job_offer');
+                if (count > 0) {
+                    console.log(`[EmailSuggestionService] Created ${count} job lead suggestion(s) for user ${profile.userId}`);
+                    totalCreated += count;
+                }
+            }
+
+            if (totalCreated > 0) {
+                console.log(`[EmailSuggestionService] Total: ${totalCreated} suggestion(s) for user ${profile.userId}`);
             }
         } catch (err) {
             console.error(`[EmailSuggestionService] Error polling user ${profile.userId}:`, err);

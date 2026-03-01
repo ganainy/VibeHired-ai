@@ -56,6 +56,7 @@ import {
   SubLocation,
 } from '../services/employerApi';
 import Spinner from '../components/common/Spinner';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -681,24 +682,54 @@ interface EntryModalProps {
   employers: Employer[];
   appointmentTypes: PopulatedAppointmentType[];
   editEntry?: WorkEntry | null;
+  preFilled?: {
+    type?: WorkEntryType;
+    employerId?: string;
+    appointmentTypeId?: string;
+    subLocationId?: string;
+    title?: string;
+    date?: string;
+    startTime?: string;
+    endTime?: string;
+    notes?: string;
+  };
   onClose: () => void;
   onSaved: (entry: WorkEntry) => void;
 }
 
-const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, editEntry, onClose, onSaved }) => {
-  const [employerId, setEmployerId] = useState(editEntry?.employerId?._id ?? (employers[0]?._id ?? ''));
-  const [appointmentTypeId, setAppointmentTypeId] = useState(editEntry?.appointmentTypeId?._id ?? (appointmentTypes[0]?._id ?? ''));
-  const [subLocationId, setSubLocationId] = useState(editEntry?.subLocationId ?? '');
-  const [title, setTitle] = useState(editEntry?.title ?? '');
-  const [type, setType] = useState<WorkEntryType>(editEntry?.type ?? 'shift');
-  const [date, setDate] = useState(editEntry?.date ? editEntry.date.split('T')[0] : new Date().toISOString().split('T')[0]);
-  const [startTime, setStartTime] = useState(editEntry?.startTime ?? '09:00');
-  const [endTime, setEndTime] = useState(editEntry?.endTime ?? '17:00');
+const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, editEntry, preFilled, onClose, onSaved }) => {
+  const [employerId, setEmployerId] = useState(editEntry?.employerId?._id ?? preFilled?.employerId ?? (employers[0]?._id ?? ''));
+  const [appointmentTypeId, setAppointmentTypeId] = useState(editEntry?.appointmentTypeId?._id ?? preFilled?.appointmentTypeId ?? (appointmentTypes[0]?._id ?? ''));
+  const [subLocationId, setSubLocationId] = useState(editEntry?.subLocationId ?? preFilled?.subLocationId ?? '');
+  const [title, setTitle] = useState(editEntry?.title ?? preFilled?.title ?? '');
+  const [type, setType] = useState<WorkEntryType>(editEntry?.type ?? preFilled?.type ?? 'shift');
+  const [date, setDate] = useState(editEntry?.date ? editEntry.date.split('T')[0] : preFilled?.date ?? new Date().toISOString().split('T')[0]);
+  const [startTime, setStartTime] = useState(editEntry?.startTime ?? preFilled?.startTime ?? '09:00');
+  const [endTime, setEndTime] = useState(editEntry?.endTime ?? preFilled?.endTime ?? '17:00');
   const [breakMinutes, setBreakMinutes] = useState(editEntry?.breakMinutes?.toString() ?? '0');
   const [paidKilometers, setPaidKilometers] = useState(editEntry?.paidKilometers?.toString() ?? '0');
-  const [notes, setNotes] = useState(editEntry?.notes ?? '');
+  const [notes, setNotes] = useState(editEntry?.notes ?? preFilled?.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Voice input for notes
+  const { startListening: startNotesListening, stopListening: stopNotesListening, transcript: notesTranscript, resetTranscript: resetNotesTranscript, isListening: isNotesListening, isSupported: isNotesSpeechSupported } = useSpeechRecognition();
+
+  // Handle transcript changes
+  useEffect(() => {
+    if (notesTranscript) {
+      setNotes(prev => (prev ? prev + ' ' : '') + notesTranscript.trim());
+      resetNotesTranscript();
+    }
+  }, [notesTranscript, resetNotesTranscript]);
+
+  const handleNotesVoiceInput = () => {
+    if (isNotesListening) {
+      stopNotesListening();
+    } else {
+      startNotesListening(document.documentElement.lang || 'en-US');
+    }
+  };
 
   const selectedEmployer = employers.find((e) => e._id === employerId);
   const hasSubLocations = type === 'shift' && (selectedEmployer?.subLocations?.length ?? 0) > 0;
@@ -922,7 +953,25 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
 
           {/* Notes */}
           <div>
-            <label className="label-overline mb-2 block">Notes <span style={{ color: 'var(--text-muted)', fontStyle: 'normal' }}>(optional)</span></label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="label-overline">Notes <span style={{ color: 'var(--text-muted)', fontStyle: 'normal' }}>(optional)</span></label>
+              {isNotesSpeechSupported && (
+                <button
+                  type="button"
+                  onClick={handleNotesVoiceInput}
+                  className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md transition-all"
+                  style={{
+                    background: isNotesListening ? 'var(--rose-bg)' : 'var(--bg-raised)',
+                    color: isNotesListening ? 'var(--rose)' : 'var(--text-muted)',
+                    border: '1px solid var(--border)'
+                  }}
+                  title={isNotesListening ? 'Stop recording' : 'Record notes with voice'}
+                >
+                  <Mic size={12} className={isNotesListening ? 'animate-pulse' : ''} />
+                  {isNotesListening ? 'Recording…' : 'Voice input'}
+                </button>
+              )}
+            </div>
             <textarea
               className="input-base w-full resize-none"
               rows={3}
@@ -1331,6 +1380,17 @@ const WorkTrackerPage: React.FC = () => {
   const [showAppointmentTypeModal, setShowAppointmentTypeModal] = useState(false);
   const [editingAppointmentType, setEditingAppointmentType] = useState<PopulatedAppointmentType | null>(null);
 
+  // ── Entry form state (for voice command pre-filling) ────────────────────
+  const [entryType, setEntryType] = useState<WorkEntryType>('shift');
+  const [entryEmployerId, setEntryEmployerId] = useState('');
+  const [entryAppointmentTypeId, setEntryAppointmentTypeId] = useState('');
+  const [entrySubLocationId, setEntrySubLocationId] = useState('');
+  const [entryTitle, setEntryTitle] = useState('');
+  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [entryStartTime, setEntryStartTime] = useState('09:00');
+  const [entryEndTime, setEntryEndTime] = useState('17:00');
+  const [entryNotes, setEntryNotes] = useState('');
+
   // ── Inline action state (delete confirm, remind loading) ──────────────────
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [deletingEmployerId, setDeletingEmployerId] = useState<string | null>(null);
@@ -1339,9 +1399,12 @@ const WorkTrackerPage: React.FC = () => {
   // ── Voice command state ───────────────────────────────────────────────────
   const [isListening, setIsListening] = useState(false);
   const [isMagicParsing, setIsMagicParsing] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [showVoicePreview, setShowVoicePreview] = useState(false);
   const [remindLoadingId, setRemindLoadingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [expandedEmployers, setExpandedEmployers] = useState<Set<string>>(new Set());
+  const voiceRecognitionRef = useRef<any>(null);
 
   // ── Fetch data ────────────────────────────────────────────────────────────
   const fetchEntries = useCallback(async () => {
@@ -1445,6 +1508,16 @@ const WorkTrackerPage: React.FC = () => {
   const handleEntrySaved = (entry: WorkEntry) => {
     setShowEntryModal(false);
     setEditingEntry(null);
+    // Reset pre-filled values
+    setEntryType('shift');
+    setEntryEmployerId('');
+    setEntryAppointmentTypeId('');
+    setEntrySubLocationId('');
+    setEntryTitle('');
+    setEntryDate(new Date().toISOString().split('T')[0]);
+    setEntryStartTime('09:00');
+    setEntryEndTime('17:00');
+    setEntryNotes('');
     setEntries((prev) => {
       const exists = prev.find((e) => e._id === entry._id);
       if (exists) return prev.map((e) => (e._id === entry._id ? entry : e));
@@ -1459,46 +1532,44 @@ const WorkTrackerPage: React.FC = () => {
   };
 
   const handleVoiceCommand = () => {
-    if (isListening || isMagicParsing) return;
+    // If already listening, stop it
+    if (isListening && voiceRecognitionRef.current) {
+      voiceRecognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+
+    // Don't start if parsing
+    if (isMagicParsing) return;
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return alert('Speech recognition is not supported in this browser. Please try Chrome or Edge.');
 
+    // Reset transcript and show preview
+    setVoiceTranscript('');
+    setShowVoicePreview(true);
+
     const recognition = new SpeechRecognition();
     recognition.lang = document.documentElement.lang || 'en-US';
-    recognition.interimResults = false;
+    recognition.interimResults = true; // Enable interim results for live preview
 
     recognition.onstart = () => setIsListening(true);
 
-    recognition.onresult = async (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setIsListening(false);
-      setIsMagicParsing(true);
-      try {
-        const parsed = await parseMagicPrompt({
-          text: transcript,
-          today: new Date().toISOString(),
-          employers: employers.map(e => ({ _id: e._id, name: e.name, subLocations: e.subLocations })),
-          appointmentTypes
-        });
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
 
-        // Open modal
-        setEditingEntry(null);
-        if (parsed.type) setType(parsed.type === 'appointment' ? 'appointment' : 'shift');
-        setEmployerId(parsed.employerId || '');
-        setAppointmentTypeId(parsed.appointmentTypeId || '');
-        setSubLocationId(parsed.subLocationId || '');
-        if (parsed.title) setTitle(parsed.title);
-        if (parsed.date) setDate(parsed.date);
-        if (parsed.startTime) setStartTime(parsed.startTime);
-        if (parsed.endTime) setEndTime(parsed.endTime);
-        if (parsed.notes) setNotes(parsed.notes);
-        setShowEntryModal(true);
-      } catch (err: any) {
-        console.error(err);
-        alert(err.response?.data?.message || 'Failed to parse voice command.');
-      } finally {
-        setIsMagicParsing(false);
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript;
+        }
       }
+
+      // Update the transcript state with both final and interim results
+      setVoiceTranscript(finalTranscript + interimTranscript);
     };
 
     recognition.onerror = (e: any) => {
@@ -1506,9 +1577,57 @@ const WorkTrackerPage: React.FC = () => {
       if (e.error !== 'no-speech') console.error('Speech recognition error:', e.error);
     };
 
-    recognition.onend = () => setIsListening(false);
+    recognition.onend = () => {
+      setIsListening(false);
+    };
 
+    voiceRecognitionRef.current = recognition;
     recognition.start();
+  };
+
+  const handleVoiceConfirm = async () => {
+    if (!voiceTranscript.trim()) return;
+
+    setIsListening(false);
+    setIsMagicParsing(true);
+    setShowVoicePreview(false);
+
+    try {
+      const parsed = await parseMagicPrompt({
+        text: voiceTranscript,
+        today: new Date().toISOString(),
+        employers: employers.map(e => ({ _id: e._id, name: e.name, subLocations: e.subLocations })),
+        appointmentTypes
+      });
+
+      // Open modal
+      setEditingEntry(null);
+      if (parsed.type) setEntryType(parsed.type === 'appointment' ? 'appointment' : 'shift');
+      setEntryEmployerId(parsed.employerId || '');
+      setEntryAppointmentTypeId(parsed.appointmentTypeId || '');
+      setEntrySubLocationId(parsed.subLocationId || '');
+      if (parsed.title) setEntryTitle(parsed.title);
+      if (parsed.date) setEntryDate(parsed.date);
+      if (parsed.startTime) setEntryStartTime(parsed.startTime);
+      if (parsed.endTime) setEntryEndTime(parsed.endTime);
+      if (parsed.notes) setEntryNotes(parsed.notes);
+      setShowEntryModal(true);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to parse voice command.');
+    } finally {
+      setIsMagicParsing(false);
+      setVoiceTranscript('');
+    }
+  };
+
+  const handleVoiceCancel = () => {
+    if (voiceRecognitionRef.current) {
+      voiceRecognitionRef.current.stop();
+    }
+    setIsListening(false);
+    setShowVoicePreview(false);
+    setVoiceTranscript('');
   };
 
   // ── Employer actions ──────────────────────────────────────────────────────
@@ -1793,17 +1912,17 @@ const WorkTrackerPage: React.FC = () => {
               <div className="flex items-center gap-2.5">
                 <button
                   onClick={handleVoiceCommand}
-                  disabled={isListening || isMagicParsing}
+                  disabled={isMagicParsing}
                   className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg transition-all"
                   style={{
                     background: isListening ? 'var(--rose-bg)' : isMagicParsing ? 'var(--amber-bg)' : 'var(--bg-elevated)',
                     color: isListening ? 'var(--rose)' : isMagicParsing ? 'var(--amber)' : 'var(--text-primary)',
                     border: '1px solid var(--border)'
                   }}
-                  title="Use voice to add entry"
+                  title={isListening ? 'Click to stop listening' : 'Use voice to add entry'}
                 >
                   {isMagicParsing ? <span className="animate-spin"><Clock size={15} /></span> : <Mic size={15} className={isListening ? 'animate-pulse' : ''} />}
-                  <span className="hidden sm:inline">{isListening ? 'Listening…' : isMagicParsing ? 'Parsing…' : 'AI Voice Add'}</span>
+                  <span className="hidden sm:inline">{isListening ? 'Stop' : isMagicParsing ? 'Parsing…' : 'AI Voice Add'}</span>
                 </button>
                 <button
                   onClick={() => setShowImportModal(true)}
@@ -1815,7 +1934,20 @@ const WorkTrackerPage: React.FC = () => {
                   <span className="hidden lg:inline">Import schedule</span>
                 </button>
                 <button
-                  onClick={() => { setEditingEntry(null); setShowEntryModal(true); }}
+                  onClick={() => {
+                    setEditingEntry(null);
+                    // Reset pre-filled values to defaults
+                    setEntryType('shift');
+                    setEntryEmployerId('');
+                    setEntryAppointmentTypeId('');
+                    setEntrySubLocationId('');
+                    setEntryTitle('');
+                    setEntryDate(new Date().toISOString().split('T')[0]);
+                    setEntryStartTime('09:00');
+                    setEntryEndTime('17:00');
+                    setEntryNotes('');
+                    setShowEntryModal(true);
+                  }}
                   className="btn-primary flex items-center gap-2 text-sm"
                 >
                   <Plus size={16} />
@@ -2065,6 +2197,17 @@ const WorkTrackerPage: React.FC = () => {
           employers={employers}
           appointmentTypes={appointmentTypes}
           editEntry={editingEntry}
+          preFilled={editingEntry ? undefined : {
+            type: entryType,
+            employerId: entryEmployerId,
+            appointmentTypeId: entryAppointmentTypeId,
+            subLocationId: entrySubLocationId,
+            title: entryTitle,
+            date: entryDate,
+            startTime: entryStartTime,
+            endTime: entryEndTime,
+            notes: entryNotes,
+          }}
           onClose={() => { setShowEntryModal(false); setEditingEntry(null); }}
           onSaved={handleEntrySaved}
         />
@@ -2083,6 +2226,16 @@ const WorkTrackerPage: React.FC = () => {
           editAppointmentType={editingAppointmentType}
           onClose={() => { setShowAppointmentTypeModal(false); setEditingAppointmentType(null); }}
           onSaved={handleAppointmentTypeSaved}
+        />
+      )}
+
+      {showVoicePreview && (
+        <VoicePreviewModal
+          transcript={voiceTranscript}
+          isListening={isListening}
+          isParsing={isMagicParsing}
+          onConfirm={handleVoiceConfirm}
+          onCancel={handleVoiceCancel}
         />
       )}
     </div>
@@ -2148,6 +2301,105 @@ const AppointmentTypeModal: React.FC<AppointmentTypeModalProps> = ({ editAppoint
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// ── VoicePreviewModal Component ────────────────────────────────────────────
+const VoicePreviewModal: React.FC<{
+  transcript: string;
+  isListening: boolean;
+  isParsing: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ transcript, isListening, isParsing, onConfirm, onCancel }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,14,23,0.82)', backdropFilter: 'blur(4px)' }}>
+      <div className="card-elevated w-full max-w-lg">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-3">
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: isListening ? 'var(--rose-bg)' : 'var(--accent-bg)',
+                border: `1px solid ${isListening ? 'var(--rose-dim)' : 'var(--accent-dim)'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: isListening ? 'var(--rose)' : 'var(--accent)',
+                flexShrink: 0,
+              }}
+            >
+              {isParsing ? <span className="animate-spin"><Clock size={20} /></span> : <Mic size={20} className={isListening ? 'animate-pulse' : ''} />}
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                {isListening ? 'Listening...' : isParsing ? 'Processing...' : 'Voice Command'}
+              </h2>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                {isListening ? 'Speak your command' : isParsing ? 'AI is parsing your command' : 'Review and edit before sending'}
+              </p>
+            </div>
+          </div>
+          <button className="btn-ghost p-1.5 rounded-lg" onClick={onCancel} disabled={isParsing}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Transcript display */}
+        <div className="p-6">
+          <div
+            className="w-full p-4 rounded-lg min-h-[120px]"
+            style={{
+              background: 'var(--bg-raised)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+              fontSize: '1rem',
+              lineHeight: '1.6',
+            }}
+          >
+            {transcript || (
+              <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                {isListening ? 'Listening...' : 'No speech detected yet'}
+              </span>
+            )}
+          </div>
+          {isListening && (
+            <p className="text-xs mt-3 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+              <span className="animate-pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
+              Speak now. The transcript will appear above.
+            </p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 px-6 pb-6 pt-2">
+          <button type="button" className="btn-secondary flex-1" onClick={onCancel} disabled={isParsing}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn-primary flex-1 flex items-center justify-center gap-2"
+            onClick={onConfirm}
+            disabled={isParsing || !transcript.trim()}
+          >
+            {isParsing ? (
+              <>
+                <span className="animate-spin"><Clock size={16} /></span>
+                Processing...
+              </>
+            ) : (
+              <>
+                <Sparkles size={16} />
+                Send to AI
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

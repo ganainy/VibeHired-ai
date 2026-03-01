@@ -114,8 +114,10 @@ export const getGmailScopeStatus = async (): Promise<{ hasScope: boolean }> => {
 /** Get email suggestion preferences for the current user. */
 export interface EmailSuggestionPreferences {
     lookbackDays: number;
-    /** Whether the server should automatically scan emails on the cron schedule. */
-    autoPoll: boolean;
+    /** Whether the server should automatically scan application response emails on the cron schedule. */
+    autoPollApplications: boolean;
+    /** Whether the server should automatically scan job offer/lead emails on the cron schedule. */
+    autoPollJobLeads: boolean;
     /** Global default AI provider configured for this user's account. */
     defaultProvider?: string | null;
     /** Provider override used exclusively for inbox email classification.
@@ -132,7 +134,7 @@ export const getPreferences = async (): Promise<EmailSuggestionPreferences> => {
 };
 
 /** Update email suggestion preferences for the current user. */
-export const updatePreferences = async (preferences: Partial<Pick<EmailSuggestionPreferences, 'lookbackDays' | 'inboxProvider' | 'autoPoll'>>): Promise<EmailSuggestionPreferences> => {
+export const updatePreferences = async (preferences: Partial<Pick<EmailSuggestionPreferences, 'lookbackDays' | 'inboxProvider' | 'autoPollApplications' | 'autoPollJobLeads'>>): Promise<EmailSuggestionPreferences> => {
     const { data } = await axios.put<EmailSuggestionPreferences>(
         `${API_BASE_URL}/email-suggestions/preferences`,
         preferences

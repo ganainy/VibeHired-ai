@@ -190,7 +190,8 @@ const EmailSuggestionsPage: React.FC = () => {
     const [hasScope, setHasScope] = useState<boolean | null>(null);
     const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
     const [lookbackDays, setLookbackDays] = useState(14);
-    const [autoPoll, setAutoPoll] = useState(true);
+    const [autoPollApplications, setAutoPollApplications] = useState(true);
+    const [autoPollJobLeads, setAutoPollJobLeads] = useState(true);
     const [defaultProvider, setDefaultProvider] = useState<string | null>(null);
     const [inboxProvider, setInboxProvider] = useState<string | null>(null);
     const [calendarUnchecked, setCalendarUnchecked] = useState<Set<string>>(new Set());
@@ -232,7 +233,8 @@ const EmailSuggestionsPage: React.FC = () => {
             setSuggestions(data);
             setHasScope(scopeResult.hasScope);
             setLookbackDays(prefs.lookbackDays);
-            setAutoPoll(prefs.autoPoll ?? true);
+            setAutoPollApplications(prefs.autoPollApplications ?? true);
+            setAutoPollJobLeads(prefs.autoPollJobLeads ?? true);
             setDefaultProvider(prefs.defaultProvider ?? null);
             setInboxProvider(prefs.inboxProvider ?? null);
             setNoteAddedLocally(new Set(data.filter((s) => s.noteAdded).map((s) => s._id)));
@@ -324,12 +326,21 @@ const EmailSuggestionsPage: React.FC = () => {
         }
     };
 
-    const handleAutoPollChange = async (value: boolean) => {
-        setAutoPoll(value);
+    const handleAutoPollApplicationsChange = async (value: boolean) => {
+        setAutoPollApplications(value);
         try {
-            await updatePreferences({ autoPoll: value });
+            await updatePreferences({ autoPollApplications: value });
         } catch {
-            setAutoPoll(!value); // revert on failure
+            setAutoPollApplications(!value); // revert on failure
+        }
+    };
+
+    const handleAutoPollJobLeadsChange = async (value: boolean) => {
+        setAutoPollJobLeads(value);
+        try {
+            await updatePreferences({ autoPollJobLeads: value });
+        } catch {
+            setAutoPollJobLeads(!value); // revert on failure
         }
     };
 
@@ -462,32 +473,61 @@ const EmailSuggestionsPage: React.FC = () => {
                                     className="mt-4 pt-4 flex flex-wrap gap-x-6 gap-y-2"
                                     style={{ borderTop: '1px solid var(--border)' }}
                                 >
-                                    {/* Auto-scan toggle */}
+                                    {/* Auto-scan toggle for Applications */}
                                     <label className="flex items-center gap-2.5 cursor-pointer select-none">
                                         <button
                                             role="switch"
-                                            aria-checked={autoPoll}
-                                            onClick={() => handleAutoPollChange(!autoPoll)}
+                                            aria-checked={autoPollApplications}
+                                            onClick={() => handleAutoPollApplicationsChange(!autoPollApplications)}
                                             className="relative shrink-0 transition-colors"
                                             style={{
                                                 width: 36, height: 20, borderRadius: 99,
-                                                background: autoPoll ? 'var(--accent)' : 'var(--bg-elevated)',
-                                                border: `1px solid ${autoPoll ? 'var(--accent)' : 'var(--border)'}`,
+                                                background: autoPollApplications ? 'var(--accent)' : 'var(--bg-elevated)',
+                                                border: `1px solid ${autoPollApplications ? 'var(--accent)' : 'var(--border)'}`,
                                             }}
                                         >
                                             <span
                                                 style={{
                                                     position: 'absolute', top: 2,
-                                                    left: autoPoll ? 17 : 2,
+                                                    left: autoPollApplications ? 17 : 2,
                                                     width: 14, height: 14, borderRadius: '50%',
-                                                    background: autoPoll ? '#000' : 'var(--text-muted)',
+                                                    background: autoPollApplications ? '#000' : 'var(--text-muted)',
                                                     transition: 'left 150ms',
                                                 }}
                                             />
                                         </button>
-                                        <span className="text-[11.5px]" style={{ color: autoPoll ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
-                                            <span style={{ color: 'var(--text-secondary)', fontWeight: autoPoll ? 600 : 400 }}>Auto-scan:</span>
-                                            {autoPoll ? ' every 2 hours while server is running' : ' disabled — manual scan only'}
+                                        <span className="text-[11.5px]" style={{ color: autoPollApplications ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+                                            <span style={{ color: 'var(--text-secondary)', fontWeight: autoPollApplications ? 600 : 400 }}>Auto-scan Applications:</span>
+                                            {autoPollApplications ? ' every 2 hours while server is running' : ' disabled — manual scan only'}
+                                        </span>
+                                    </label>
+
+                                    {/* Auto-scan toggle for Job Leads */}
+                                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                        <button
+                                            role="switch"
+                                            aria-checked={autoPollJobLeads}
+                                            onClick={() => handleAutoPollJobLeadsChange(!autoPollJobLeads)}
+                                            className="relative shrink-0 transition-colors"
+                                            style={{
+                                                width: 36, height: 20, borderRadius: 99,
+                                                background: autoPollJobLeads ? 'var(--accent)' : 'var(--bg-elevated)',
+                                                border: `1px solid ${autoPollJobLeads ? 'var(--accent)' : 'var(--border)'}`,
+                                            }}
+                                        >
+                                            <span
+                                                style={{
+                                                    position: 'absolute', top: 2,
+                                                    left: autoPollJobLeads ? 17 : 2,
+                                                    width: 14, height: 14, borderRadius: '50%',
+                                                    background: autoPollJobLeads ? '#000' : 'var(--text-muted)',
+                                                    transition: 'left 150ms',
+                                                }}
+                                            />
+                                        </button>
+                                        <span className="text-[11.5px]" style={{ color: autoPollJobLeads ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+                                            <span style={{ color: 'var(--text-secondary)', fontWeight: autoPollJobLeads ? 600 : 400 }}>Auto-scan Job Leads:</span>
+                                            {autoPollJobLeads ? ' every 2 hours while server is running' : ' disabled — manual scan only'}
                                         </span>
                                     </label>
 
@@ -666,7 +706,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                     All caught up
                                 </p>
                                 <p className="text-sm max-w-sm" style={{ color: 'var(--text-muted)' }}>
-                                    No pending suggestions. Click <strong style={{ color: 'var(--text-secondary)' }}>Scan inbox</strong> above to check for new job emails{autoPoll ? ', or wait for the automatic scan every 2 hours' : ''}.
+                                    No pending suggestions. Click <strong style={{ color: 'var(--text-secondary)' }}>Scan inbox</strong> above to check for new job emails{(autoPollApplications || autoPollJobLeads) ? ', or wait for the automatic scan every 2 hours' : ''}.
                                 </p>
                             </div>
                         )}

@@ -79,7 +79,8 @@ router.get(
 
         res.json({
             lookbackDays: profile.settings?.emailSuggestions?.lookbackDays ?? 14,
-            autoPoll: profile.settings?.emailSuggestions?.autoPoll ?? true,
+            autoPollApplications: profile.settings?.emailSuggestions?.autoPollApplications ?? true,
+            autoPollJobLeads: profile.settings?.emailSuggestions?.autoPollJobLeads ?? true,
             defaultProvider: profile.aiProviderSettings?.defaultProvider ?? null,
             inboxProvider: profile.aiProviderSettings?.inboxProvider ?? null,
         });
@@ -94,7 +95,7 @@ router.put(
     '/preferences',
     asyncHandler(async (req: Request, res: Response) => {
         const userId = String(req.user!._id);
-        const { lookbackDays, inboxProvider, autoPoll } = req.body;
+        const { lookbackDays, inboxProvider, autoPollApplications, autoPollJobLeads } = req.body;
 
         // Validate lookbackDays
         if (lookbackDays !== undefined) {
@@ -131,8 +132,12 @@ router.put(
             profile.settings.emailSuggestions.lookbackDays = Number(lookbackDays);
         }
 
-        if (autoPoll !== undefined) {
-            profile.settings.emailSuggestions.autoPoll = Boolean(autoPoll);
+        if (autoPollApplications !== undefined) {
+            profile.settings.emailSuggestions.autoPollApplications = Boolean(autoPollApplications);
+        }
+
+        if (autoPollJobLeads !== undefined) {
+            profile.settings.emailSuggestions.autoPollJobLeads = Boolean(autoPollJobLeads);
         }
 
         // Update inboxProvider override (empty string or null clears the override)
@@ -145,7 +150,8 @@ router.put(
 
         res.json({
             lookbackDays: profile.settings.emailSuggestions.lookbackDays,
-            autoPoll: profile.settings.emailSuggestions.autoPoll ?? true,
+            autoPollApplications: profile.settings.emailSuggestions.autoPollApplications ?? true,
+            autoPollJobLeads: profile.settings.emailSuggestions.autoPollJobLeads ?? true,
             defaultProvider: profile.aiProviderSettings?.defaultProvider ?? null,
             inboxProvider: profile.aiProviderSettings?.inboxProvider ?? null,
         });
