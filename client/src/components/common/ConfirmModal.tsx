@@ -1,112 +1,119 @@
-// client/src/components/common/ConfirmModal.tsx
-import React, { useEffect } from 'react';
+import React from 'react';
+import { AlertCircle, CalendarDays, X, Info, CheckCircle2 } from 'lucide-react';
 
 interface ConfirmModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-    title?: string;
+    show: boolean;
+    title: string;
     message: string;
-    confirmText?: string;
-    cancelText?: string;
-    confirmButtonStyle?: 'primary' | 'danger';
-    isLoading?: boolean;
+    onConfirm: () => void;
+    onClose: () => void;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    danger?: boolean;
+    type?: 'confirm' | 'alert' | 'info';
 }
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
-    isOpen,
-    onClose,
-    onConfirm,
+    show,
     title,
     message,
-    confirmText = 'OK',
-    cancelText = 'Cancel',
-    confirmButtonStyle = 'primary',
-    isLoading = false
+    onConfirm,
+    onClose,
+    confirmLabel = 'Bestätigen',
+    cancelLabel = 'Abbrechen',
+    danger = false,
+    type = 'confirm'
 }) => {
-    // Handle Escape key
-    useEffect(() => {
-        if (!isOpen) return;
+    if (!show) return null;
 
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !isLoading) {
-                onClose();
-            }
-        };
+    const isAlert = type === 'alert';
+    const isInfo = type === 'info';
 
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [isOpen, isLoading, onClose]);
-
-    if (!isOpen) return null;
-
-    const handleConfirm = () => {
-        if (!isLoading) {
-            onConfirm();
-        }
+    const getIcon = () => {
+        if (danger) return <AlertCircle size={24} />;
+        if (isAlert) return <Info size={24} />;
+        if (isInfo) return <CheckCircle2 size={24} />;
+        return <CalendarDays size={24} />;
     };
 
-    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target === e.currentTarget && !isLoading) {
-            onClose();
-        }
+    const getIconColor = () => {
+        if (danger) return '#ef4444';
+        if (isInfo) return 'var(--jade)';
+        return 'var(--accent)';
     };
 
-    const confirmButtonClasses = confirmButtonStyle === 'danger'
-        ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800 focus:ring-red-500'
-        : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 focus:ring-blue-500';
+    const getIconBg = () => {
+        if (danger) return 'rgba(239, 68, 68, 0.1)';
+        if (isInfo) return 'rgba(16, 185, 129, 0.1)';
+        return 'var(--accent-bg)';
+    };
+
+    const getIconBorder = () => {
+        if (danger) return 'rgba(239, 68, 68, 0.2)';
+        if (isInfo) return 'rgba(16, 185, 129, 0.2)';
+        return 'var(--accent-dim)';
+    };
 
     return (
         <div
-            className="fixed inset-0 bg-black bg-opacity-60 dark:bg-opacity-80 flex justify-center items-center z-50 transition-opacity duration-300 ease-in-out"
-            onClick={handleBackdropClick}
+            className="fixed inset-0 flex items-center justify-center z-[2000] p-4 animate-in fade-in duration-200"
+            style={{ background: 'rgba(5, 5, 8, 0.85)', backdropFilter: 'blur(4px)' }}
+            onClick={onClose}
         >
             <div
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 sm:mx-0"
+                className="card w-full max-w-sm overflow-hidden animate-in zoom-in duration-200"
+                style={{
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                    padding: 0
+                }}
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
-                {title && (
-                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                            {title}
-                        </h2>
-                    </div>
-                )}
-
-                {/* Content */}
-                <div className="px-6 py-4">
-                    <p className="text-gray-700 dark:text-gray-300">
-                        {message}
-                    </p>
-                </div>
-
-                {/* Footer */}
-                <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex justify-end p-2">
                     <button
                         onClick={onClose}
-                        disabled={isLoading}
-                        className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        className="p-1 rounded-lg hover:bg-white/5 transition-colors text-muted hover:text-white"
                     >
-                        {cancelText}
+                        <X size={18} />
                     </button>
-                    <button
-                        onClick={handleConfirm}
-                        disabled={isLoading}
-                        className={`px-4 py-2 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${confirmButtonClasses}`}
-                    >
-                        {isLoading ? (
-                            <span className="flex items-center gap-2">
-                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Processing...
-                            </span>
-                        ) : (
-                            confirmText
+                </div>
+
+                <div className="px-6 pb-6 mt-[-8px]">
+                    <div className="flex items-start gap-4 mb-5">
+                        <div
+                            style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 14,
+                                background: getIconBg(),
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: getIconColor(),
+                                border: `1px solid ${getIconBorder()}`,
+                                flexShrink: 0
+                            }}
+                        >
+                            {getIcon()}
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+                            <p className="text-sm" style={{ color: 'var(--text-muted)', lineHeight: '1.5' }}>{message}</p>
+                        </div>
+                    </div>
+                    <div className="flex gap-3 mt-2">
+                        {!isAlert && !isInfo && (
+                            <button className="btn-secondary flex-1" onClick={onClose}>{cancelLabel}</button>
                         )}
-                    </button>
+                        <button
+                            className="btn-primary flex-1"
+                            style={danger ? { background: '#ef4444', borderColor: '#ef4444', color: 'white' } : {}}
+                            onClick={() => { onConfirm(); onClose(); }}
+                        >
+                            {isAlert || isInfo ? 'Verstanden' : confirmLabel}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -114,4 +121,3 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 };
 
 export default ConfirmModal;
-

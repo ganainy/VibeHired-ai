@@ -96,6 +96,11 @@ export const createReminder = async (id: string): Promise<{ message: string; eve
   return res.data;
 };
 
+/** Delete the Google Calendar reminder for an entry. */
+export const deleteReminder = async (id: string): Promise<void> => {
+  await axios.delete(`${API_BASE_URL}/work-tracker/${id}/remind`);
+};
+
 // ── AI Schedule Import ────────────────────────────────────────────────────────
 
 /** A single entry candidate returned by the AI parser. */

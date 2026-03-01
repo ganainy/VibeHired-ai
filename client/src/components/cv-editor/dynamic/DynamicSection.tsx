@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CvSectionDescriptor } from '../../../types/cvDescriptor';
 import DynamicField from './DynamicField';
 import DynamicObjectEntry from './DynamicObjectEntry';
+import ConfirmModal from '../../common/ConfirmModal';
 
 interface DynamicSectionProps {
   descriptor: CvSectionDescriptor;
@@ -26,6 +27,19 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
 }) => {
   const [showImproveInput, setShowImproveInput] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    danger?: boolean;
+    type?: 'confirm' | 'alert' | 'info';
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => { },
+  });
 
   const [open, setOpen] = useState<boolean>(() => {
     const stored = localStorage.getItem(`cv_section_expanded_${descriptor.key}`);
@@ -119,7 +133,7 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
             type="button"
             onClick={() => setShowImproveInput((s) => !s)}
             disabled={improving}
-            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg disabled:opacity-50 transition-colors flex-shrink-0 ml-2 text-ink-950" style={{background:"var(--accent-bg)", color:"var(--accent)"}}
+            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg disabled:opacity-50 transition-colors flex-shrink-0 ml-2 text-ink-950" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}
             title="Improve this section with AI"
           >
             {improving ? (
@@ -141,15 +155,21 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (window.confirm(`Delete section "${descriptor.label}"? This cannot be undone.`)) {
-                onDelete();
-              }
+              setConfirmModal({
+                show: true,
+                title: 'Abschnitt löschen',
+                message: `Möchten Sie den Abschnitt "${descriptor.label}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
+                danger: true,
+                onConfirm: () => {
+                  onDelete();
+                }
+              });
             }}
             className="ml-1.5 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
             title="Delete this section"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 0 00-1-1h-4a1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>
         )}
@@ -157,8 +177,8 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
 
       {/* AI improve input */}
       {showImproveInput && open && (
-        <div className="px-4 py-3 border-b" style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)"}}>
-          <p className="text-xs mb-2" style={{color:"var(--accent)"}}>
+        <div className="px-4 py-3 border-b" style={{ background: "var(--accent-bg)", borderColor: "var(--accent-dim)" }}>
+          <p className="text-xs mb-2" style={{ color: "var(--accent)" }}>
             Optional: add specific instructions for the AI (e.g. "focus on leadership skills", "make it more concise").
           </p>
           <div className="flex gap-2">
@@ -167,14 +187,14 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
               value={customInstructions}
               onChange={(e) => setCustomInstructions(e.target.value)}
               placeholder="Custom instructions (optional)"
-              className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gold-400 border" style={{borderColor:"var(--accent-dim)"}}
+              className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gold-400 border" style={{ borderColor: "var(--accent-dim)" }}
               onKeyDown={(e) => { if (e.key === 'Enter') handleImprove(); }}
             />
             <button
               type="button"
               onClick={handleImprove}
               disabled={improving}
-              className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors text-ink-950" style={{background:"var(--accent)"}}
+              className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors text-ink-950" style={{ background: "var(--accent)" }}
             >
               Improve
             </button>
@@ -284,6 +304,16 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
 
         </div>
       )}
+
+      <ConfirmModal
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        danger={confirmModal.danger}
+        type={confirmModal.type}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+      />
     </div>
   );
 };

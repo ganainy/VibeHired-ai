@@ -22,6 +22,12 @@ import { env } from '../config/env';
 import { encrypt } from '../utils/encryption';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ValidationError } from '../utils/errors/AppError';
+import {
+    listUpcomingEvents,
+    createEvent,
+    updateEvent,
+    deleteCalendarEvent
+} from '../services/googleCalendarService';
 
 const router: Router = express.Router();
 
@@ -127,7 +133,7 @@ router.get('/callback', asyncHandler(async (req: Request, res: Response) => {
         { upsert: true }
     );
 
-    return res.redirect(`${frontendUrl}/settings?googleCalendar=connected`);
+    return res.redirect(`${frontendUrl}/calendar?googleCalendar=connected`);
 }));
 
 /**
@@ -165,6 +171,51 @@ router.delete('/disconnect', authMiddleware, asyncHandler(async (req: Request, r
     );
 
     res.json({ message: 'Google Calendar disconnected.' });
+}));
+
+/**
+ * GET /api/auth/google/events
+ * Returns upcoming Google Calendar events for the authenticated user.
+ * Query param: maxResults (optional, default 20)
+ */
+router.get('/events', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+    const userId = String(req.user!._id);
+    const maxResults = parseInt(String(req.query.maxResults ?? '50'), 10) || 50;
+    const { timeMin, timeMax } = req.query as Record<string, string>;
+    const events = await listUpcomingEvents(userId, { maxResults, timeMin, timeMax });
+    res.json(events);
+}));
+
+/**
+ * POST /api/auth/google/events
+ * Creates a new event in the user's primary Google Calendar.
+ */
+router.post('/events', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+    const userId = String(req.user!._id);
+    const event = await createEvent(userId, req.body);
+    res.status(201).json(event);
+}));
+
+/**
+ * PUT /api/auth/google/events/:id
+ * Updates an existing event in the user's primary Google Calendar.
+ */
+router.put('/events/:id', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+    const userId = String(req.user!._id);
+    const eventId = req.params.id;
+    const event = await updateEvent(userId, eventId, req.body);
+    res.json(event);
+}));
+
+/**
+ * DELETE /api/auth/google/events/:id
+ * Deletes an event from the user's primary Google Calendar.
+ */
+router.delete('/events/:id', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
+    const userId = String(req.user!._id);
+    const eventId = req.params.id;
+    await deleteCalendarEvent(userId, eventId);
+    res.status(204).send();
 }));
 
 // ─────────────────────────────────────────────────────────────────────────────

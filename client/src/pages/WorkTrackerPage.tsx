@@ -1,5 +1,6 @@
 // client/src/pages/WorkTrackerPage.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Clock,
   Calendar,
@@ -21,7 +22,9 @@ import {
   Check,
   Sparkles,
   FileText,
+  RefreshCw,
 } from 'lucide-react';
+import SimpleLoader from '../components/common/SimpleLoader';
 import {
   getEntries,
   getStats,
@@ -29,6 +32,7 @@ import {
   updateEntry,
   deleteEntry,
   createReminder,
+  deleteReminder,
   parseSchedule,
   confirmScheduleImport,
   WorkEntry,
@@ -48,6 +52,7 @@ import {
   Employer,
   SubLocation,
 } from '../services/employerApi';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -134,13 +139,13 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ label, value, sub, icon, accent }) => (
   <div
-    className="card flex items-start gap-4 p-5"
-    style={{ flex: '1 1 0', minWidth: 0 }}
+    className="card flex items-start gap-4 p-4"
+    style={{ flex: '1 1 180px', minWidth: '160px' }}
   >
     <div
       style={{
-        width: 40,
-        height: 40,
+        width: 36,
+        height: 36,
         borderRadius: 10,
         background: accent ? 'var(--accent-bg)' : 'var(--bg-elevated)',
         border: `1px solid ${accent ? 'var(--accent-dim)' : 'var(--border)'}`,
@@ -153,12 +158,12 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, sub, icon, accent }) 
     >
       {icon}
     </div>
-    <div style={{ minWidth: 0 }}>
-      <p className="label-overline mb-0.5">{label}</p>
-      <p className="font-mono text-2xl font-bold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+      <p className="label-overline mb-0.5 truncate" title={label}>{label}</p>
+      <p className="font-mono text-2xl font-bold truncate" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }} title={String(value)}>
         {value}
       </p>
-      {sub && <p className="font-mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{sub}</p>}
+      {sub && <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }} title={sub}>{sub}</p>}
     </div>
   </div>
 );
@@ -403,7 +408,6 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
                     <>
                       <FileText size={32} style={{ color: 'var(--jade)' }} />
                       <div className="text-center">
-                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{file.name}</p>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{(file.size / 1024).toFixed(0)} KB · {file.type}</p>
                         <button onClick={(e) => { e.stopPropagation(); setFile(null); }} className="text-xs mt-2 underline" style={{ color: 'var(--text-muted)' }}>Remove</button>
                       </div>
@@ -1149,6 +1153,7 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const WorkTrackerPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'timelog' | 'employers'>('timelog');
 
   // ── Data state ────────────────────────────────────────────────────────────
@@ -1177,6 +1182,19 @@ const WorkTrackerPage: React.FC = () => {
   const [remindLoadingId, setRemindLoadingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [expandedEmployers, setExpandedEmployers] = useState<Set<string>>(new Set());
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    danger?: boolean;
+    type?: 'confirm' | 'alert' | 'info';
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => { },
+  });
 
   // ── Fetch data ────────────────────────────────────────────────────────────
   const fetchEntries = useCallback(async () => {
@@ -1184,7 +1202,7 @@ const WorkTrackerPage: React.FC = () => {
     try {
       const month = `${viewYear}-${padZero(viewMonth)}`;
       const data = await getEntries({ month });
-      setEntries(data);
+      setEntries(data.filter(e => !!e.employerId));
     } catch {
       // Silently fail for now
     } finally {
@@ -1242,25 +1260,65 @@ const WorkTrackerPage: React.FC = () => {
     finally { setTogglingId(null); }
   };
 
-  const handleDeleteEntry = async (id: string) => {
-    if (deletingEntryId !== id) { setDeletingEntryId(id); return; } // first click = confirm
-    try {
-      await deleteEntry(id);
-      setEntries((prev) => prev.filter((e) => e._id !== id));
-      setDeletingEntryId(null);
-      fetchStats();
-    } catch { /* ignore */ }
+  const handleDeleteEntry = (id: string) => {
+    setConfirmModal({
+      show: true,
+      title: 'Eintrag löschen',
+      message: 'Möchten Sie diesen Zeiteintrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await deleteEntry(id);
+          setEntries((prev) => prev.filter((e) => e._id !== id));
+          fetchStats();
+        } catch { /* ignore */ }
+      }
+    });
   };
 
-  const handleCreateReminder = async (entry: WorkEntry) => {
-    setRemindLoadingId(entry._id);
-    try {
-      await createReminder(entry._id);
-      setEntries((prev) => prev.map((e) => e._id === entry._id ? { ...e, reminderCreated: true } : e));
-    } catch (err: any) {
-      alert(err?.response?.data?.message ?? 'Failed to create reminder. Make sure Google Calendar is connected in Settings.');
-    } finally {
-      setRemindLoadingId(null);
+  const handleToggleReminder = async (entry: WorkEntry) => {
+    if (entry.reminderCreated) {
+      setConfirmModal({
+        show: true,
+        title: 'Termin entfernen',
+        message: 'Soll der verknüpfte Termin wirklich aus Ihrem Google Kalender gelöscht werden?',
+        danger: true,
+        onConfirm: async () => {
+          setRemindLoadingId(entry._id);
+          try {
+            await deleteReminder(entry._id);
+            setEntries((prev) => prev.map((e) => e._id === entry._id ? { ...e, reminderCreated: false } : e));
+          } catch (err: any) {
+            setConfirmModal({
+              show: true,
+              title: 'Aktion fehlgeschlagen',
+              message: err?.response?.data?.message ?? 'Aktion fehlgeschlagen.',
+              type: 'alert',
+              danger: true,
+              onConfirm: () => { }
+            });
+          } finally {
+            setRemindLoadingId(null);
+          }
+        }
+      });
+    } else {
+      setRemindLoadingId(entry._id);
+      try {
+        await createReminder(entry._id);
+        setEntries((prev) => prev.map((e) => e._id === entry._id ? { ...e, reminderCreated: true } : e));
+      } catch (err: any) {
+        setConfirmModal({
+          show: true,
+          title: 'Aktion fehlgeschlagen',
+          message: err?.response?.data?.message ?? 'Aktion fehlgeschlagen. Prüfen Sie die Google Kalender-Verbindung.',
+          type: 'alert',
+          danger: true,
+          onConfirm: () => { }
+        });
+      } finally {
+        setRemindLoadingId(null);
+      }
     }
   };
 
@@ -1311,7 +1369,7 @@ const WorkTrackerPage: React.FC = () => {
   const monthHours = Math.round(entries.reduce((s, e) => s + e.hours, 0) * 10) / 10;
   const monthPlanned = entries.filter((e) => e.status === 'planned').length;
   const monthDone = entries.filter((e) => e.status === 'done').length;
-  const monthEmployers = new Set(entries.map((e) => e.employerId._id)).size;
+  const monthEmployers = new Set(entries.map((e) => e.employerId?._id).filter(Boolean)).size;
   const monthLabel = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`;
 
   const grouped = groupEntriesByDate(entries);
@@ -1325,16 +1383,14 @@ const WorkTrackerPage: React.FC = () => {
   type EmployerSummary = { totalHours: number; planned: number; done: number; lastDate: string | null };
   const employerSummary = new Map<string, EmployerSummary>();
   for (const entry of entries) {
-    const eid = entry.employerId._id;
+    const eid = entry.employerId?._id;
+    if (!eid) continue;
     const cur = employerSummary.get(eid) ?? { totalHours: 0, planned: 0, done: 0, lastDate: null };
     cur.totalHours += entry.hours;
     if (entry.status === 'planned') cur.planned++; else cur.done++;
     if (!cur.lastDate || entry.date > cur.lastDate) cur.lastDate = entry.date;
     employerSummary.set(eid, cur);
   }
-
-  // ── Shimmer rows ──────────────────────────────────────────────────────────
-  const shimmerRows = Array.from({ length: 3 });
 
   const renderDayCard = (dateKey: string, dayEntries: WorkEntry[]) => {
     const dayHours = dayEntries.reduce((sum, e) => sum + e.hours, 0);
@@ -1367,11 +1423,19 @@ const WorkTrackerPage: React.FC = () => {
                 </button>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <EmployerAvatar employer={entry.employerId} size={22} />
-                    <span className="text-sm font-medium truncate" style={{ color: isDone ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: isDone ? 'line-through' : 'none' }}>
-                      {entry.employerId.name}
-                      {entry.title && <span className="font-normal ml-1" style={{ color: 'var(--text-muted)' }}>&mdash; {entry.title}</span>}
-                    </span>
+                    {entry.employerId ? (
+                      <>
+                        <EmployerAvatar employer={entry.employerId} size={22} />
+                        <span className="text-sm font-medium truncate" style={{ color: isDone ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: isDone ? 'line-through' : 'none' }}>
+                          {entry.employerId.name}
+                          {entry.title && <span className="font-normal ml-1" style={{ color: 'var(--text-muted)' }}>&mdash; {entry.title}</span>}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-sm font-medium italic" style={{ color: 'var(--text-muted)' }}>
+                        Deleted Employer {entry.title && <span className="font-normal ml-1">&mdash; {entry.title}</span>}
+                      </span>
+                    )}
                     {entry.subLocationName && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
                         <MapPin size={9} />{entry.subLocationName}
@@ -1387,17 +1451,16 @@ const WorkTrackerPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 shrink-0 opacity-100 transition-opacity">
                   <button
-                    onClick={() => !entry.reminderCreated && !isReminding && handleCreateReminder(entry)}
-                    disabled={entry.reminderCreated || isReminding}
-                    title={entry.reminderCreated ? 'Reminder added to Google Calendar' : 'Add 1-day reminder to Google Calendar'}
+                    onClick={() => !isReminding && handleToggleReminder(entry)}
+                    title={entry.reminderCreated ? 'Termin löschen (Google Calendar)' : 'Termin in Google Calendar erstellen (24h Erinnerung)'}
                     className="p-1.5 rounded-lg transition-all"
-                    style={{ color: entry.reminderCreated ? 'var(--jade)' : 'var(--text-muted)', background: 'transparent', cursor: entry.reminderCreated ? 'default' : 'pointer', opacity: isReminding ? 0.5 : 1 }}
-                    onMouseEnter={(e) => { if (!entry.reminderCreated) (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
-                    onMouseLeave={(e) => { if (!entry.reminderCreated) (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
+                    style={{ color: entry.reminderCreated ? 'var(--jade)' : 'var(--text-muted)', background: 'transparent', cursor: 'pointer', opacity: isReminding ? 0.5 : 1 }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = entry.reminderCreated ? 'var(--jade)' : 'var(--text-muted)'; }}
                   >
-                    {entry.reminderCreated ? <CheckCircle2 size={16} /> : isReminding ? <span className="animate-spin inline-block"><CalendarDays size={16} /></span> : <CalendarDays size={16} />}
+                    {isReminding ? <span className="animate-spin inline-block"><RefreshCw size={16} /></span> : entry.reminderCreated ? <CheckCircle2 size={16} /> : <CalendarDays size={16} />}
                   </button>
                   <button
                     onClick={() => { setEditingEntry(entry); setShowEntryModal(true); }}
@@ -1412,12 +1475,12 @@ const WorkTrackerPage: React.FC = () => {
                   <button
                     onClick={() => handleDeleteEntry(entry._id)}
                     className="p-1.5 rounded-lg transition-all"
-                    style={{ color: isConfirmDelete ? 'var(--rose)' : 'var(--text-muted)' }}
-                    title={isConfirmDelete ? 'Click again to confirm delete' : 'Delete'}
+                    style={{ color: 'var(--text-muted)' }}
+                    title="Löschen"
                     onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.color = 'var(--rose)'}
-                    onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.color = isConfirmDelete ? 'var(--rose)' : 'var(--text-muted)'}
+                    onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}
                   >
-                    {isConfirmDelete ? <span className="text-[10px] font-mono font-bold px-1">confirm?</span> : <Trash2 size={14} />}
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </li>
@@ -1469,7 +1532,7 @@ const WorkTrackerPage: React.FC = () => {
         </div>
 
         {/* ── Stats bar ───────────────────────────────────────────────────── */}
-        <div className="flex flex-wrap gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="Total hours"
             value={loadingEntries ? '—' : `${monthHours}h`}
@@ -1544,15 +1607,9 @@ const WorkTrackerPage: React.FC = () => {
             {/* Entry list */}
             <div className="space-y-4">
               {loadingEntries ? (
-                shimmerRows.map((_, i) => (
-                  <div key={i} className="card animate-pulse">
-                    <div className="p-4 space-y-3">
-                      <div className="shimmer h-4 w-1/3 rounded" />
-                      <div className="shimmer h-12 rounded" />
-                      <div className="shimmer h-12 rounded" />
-                    </div>
-                  </div>
-                ))
+                <div className="py-20">
+                  <SimpleLoader message="Lade Einträge..." />
+                </div>
               ) : entries.length === 0 ? (
                 <div className="card flex flex-col items-center justify-center py-16 text-center gap-4">
                   <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
@@ -1623,8 +1680,14 @@ const WorkTrackerPage: React.FC = () => {
                             });
                           }}
                         >
-                          <EmployerAvatar employer={emp} size={28} />
-                          <span className="flex-1 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{emp.name}</span>
+                          {emp ? (
+                            <>
+                              <EmployerAvatar employer={emp} size={28} />
+                              <span className="flex-1 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{emp.name}</span>
+                            </>
+                          ) : (
+                            <span className="flex-1 text-sm font-medium italic" style={{ color: 'var(--text-muted)' }}>Missing Employer ({empId})</span>
+                          )}
                           <span className="font-mono text-sm font-bold" style={{ color: 'var(--accent)' }}>{summary.totalHours}h</span>
                           <ChevronRight size={14} style={{ color: 'var(--text-muted)', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
                         </button>
@@ -1673,16 +1736,8 @@ const WorkTrackerPage: React.FC = () => {
             </div>
 
             {loadingEmployers ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="card animate-pulse p-5 flex items-center gap-4">
-                    <div className="shimmer w-12 h-12 rounded-xl" />
-                    <div className="flex-1 space-y-2">
-                      <div className="shimmer h-4 w-3/4 rounded" />
-                      <div className="shimmer h-3 w-1/2 rounded" />
-                    </div>
-                  </div>
-                ))}
+              <div className="py-20">
+                <SimpleLoader message="Lade Arbeitgeber..." />
               </div>
             ) : employers.length === 0 ? (
               <div className="card flex flex-col items-center justify-center py-16 text-center gap-4">
@@ -1741,6 +1796,16 @@ const WorkTrackerPage: React.FC = () => {
           onSaved={handleEmployerSaved}
         />
       )}
+
+      <ConfirmModal
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        danger={confirmModal.danger}
+        type={confirmModal.type}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+      />
     </div>
   );
 };

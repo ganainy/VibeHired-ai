@@ -1,6 +1,7 @@
 // ATS Score Card component - displays overall ATS scores from Gemini AI
 import React from 'react';
 import { AtsScores } from '../../services/atsApi';
+import SimpleLoader from '../common/SimpleLoader';
 
 interface AtsScoreCardProps {
     atsScores: AtsScores | null;
@@ -14,9 +15,9 @@ interface CircularProgressProps {
     color?: string;
 }
 
-const CircularProgress: React.FC<CircularProgressProps> = ({ 
-    score, 
-    size = 120, 
+const CircularProgress: React.FC<CircularProgressProps> = ({
+    score,
+    size = 120,
     strokeWidth = 8,
     color = 'blue'
 }) => {
@@ -75,21 +76,8 @@ const CircularProgress: React.FC<CircularProgressProps> = ({
 const AtsScoreCard: React.FC<AtsScoreCardProps> = ({ atsScores, isLoading }) => {
     if (isLoading) {
         return (
-            <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col items-center p-6 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                        <div className="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mb-4"></div>
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
-                    </div>
-                    <div className="flex flex-col items-center p-6 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                        <div className="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mb-4"></div>
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
-                    </div>
-                </div>
+            <div className="p-12 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm">
+                <SimpleLoader message="Analyzing ATS compatibility..." />
             </div>
         );
     }
@@ -147,7 +135,7 @@ const AtsScoreCard: React.FC<AtsScoreCardProps> = ({ atsScores, isLoading }) => 
                     Powered by Gemini AI
                 </span>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Overall ATS Score */}
                 <div className={`p-6 rounded-xl bg-gradient-to-br ${getScoreBgGradient(overallScore)} border border-gray-200 dark:border-gray-700 transition-all hover:shadow-md`}>
@@ -166,11 +154,10 @@ const AtsScoreCard: React.FC<AtsScoreCardProps> = ({ atsScores, isLoading }) => 
                         <div className="flex flex-col items-center">
                             <CircularProgress score={overallScore} size={140} color={overallColor} />
                             <div className="mt-4 text-center">
-                                <div className={`text-lg font-semibold mb-1 ${
-                                    overallColor === 'green' ? 'text-green-700 dark:text-green-400' :
+                                <div className={`text-lg font-semibold mb-1 ${overallColor === 'green' ? 'text-green-700 dark:text-green-400' :
                                     overallColor === 'yellow' ? 'text-yellow-700 dark:text-yellow-400' :
-                                    'text-red-700 dark:text-red-400'
-                                }`}>
+                                        'text-red-700 dark:text-red-400'
+                                    }`}>
                                     {getScoreInterpretation(overallScore)}
                                 </div>
                                 <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -202,11 +189,10 @@ const AtsScoreCard: React.FC<AtsScoreCardProps> = ({ atsScores, isLoading }) => 
                         <div className="flex flex-col items-center">
                             <CircularProgress score={skillMatchScore} size={140} color={skillColor} />
                             <div className="mt-4 text-center">
-                                <div className={`text-lg font-semibold mb-1 ${
-                                    skillColor === 'green' ? 'text-green-700 dark:text-green-400' :
+                                <div className={`text-lg font-semibold mb-1 ${skillColor === 'green' ? 'text-green-700 dark:text-green-400' :
                                     skillColor === 'yellow' ? 'text-yellow-700 dark:text-yellow-400' :
-                                    'text-red-700 dark:text-red-400'
-                                }`}>
+                                        'text-red-700 dark:text-red-400'
+                                    }`}>
                                     {getScoreInterpretation(skillMatchScore)}
                                 </div>
                                 <div className="text-sm text-gray-600 dark:text-gray-400">

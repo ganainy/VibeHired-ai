@@ -5,6 +5,15 @@ import { encrypt, decrypt } from '../utils/encryption';
 import { env } from '../config/env';
 import { IReminder } from '../models/JobApplication';
 
+export interface CalendarEventItem {
+    id: string;
+    summary: string;
+    start: { dateTime?: string; date?: string };
+    end: { dateTime?: string; date?: string };
+    location?: string;
+    description?: string;
+}
+
 /** Returns a configured OAuth2Client for the given user, refreshing tokens if needed. */
 async function getOAuth2Client(userId: string) {
     if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
@@ -104,6 +113,72 @@ export async function createCalendarEvent(
 }
 
 /**
+ * Create a general Google Calendar event.
+ */
+export async function createEvent(
+    userId: string,
+    eventData: {
+        summary: string;
+        description?: string;
+        location?: string;
+        start: { dateTime: string; timeZone?: string };
+        end: { dateTime: string; timeZone?: string };
+    }
+): Promise<CalendarEventItem> {
+    const auth = await getOAuth2Client(userId);
+    const calendar = google.calendar({ version: 'v3', auth });
+
+    const response = await calendar.events.insert({
+        calendarId: 'primary',
+        requestBody: eventData,
+    });
+
+    const item = response.data;
+    return {
+        id: item.id ?? '',
+        summary: item.summary ?? '',
+        start: { dateTime: item.start?.dateTime ?? undefined, date: item.start?.date ?? undefined },
+        end: { dateTime: item.end?.dateTime ?? undefined, date: item.end?.date ?? undefined },
+        location: item.location ?? undefined,
+        description: item.description ?? undefined,
+    };
+}
+
+/**
+ * Update a Google Calendar event.
+ */
+export async function updateEvent(
+    userId: string,
+    eventId: string,
+    eventData: {
+        summary: string;
+        description?: string;
+        location?: string;
+        start: { dateTime: string; timeZone?: string };
+        end: { dateTime: string; timeZone?: string };
+    }
+): Promise<CalendarEventItem> {
+    const auth = await getOAuth2Client(userId);
+    const calendar = google.calendar({ version: 'v3', auth });
+
+    const response = await calendar.events.update({
+        calendarId: 'primary',
+        eventId,
+        requestBody: eventData,
+    });
+
+    const item = response.data;
+    return {
+        id: item.id ?? '',
+        summary: item.summary ?? '',
+        start: { dateTime: item.start?.dateTime ?? undefined, date: item.start?.date ?? undefined },
+        end: { dateTime: item.end?.dateTime ?? undefined, date: item.end?.date ?? undefined },
+        location: item.location ?? undefined,
+        description: item.description ?? undefined,
+    };
+}
+
+/**
  * Delete a Google Calendar event.
  * Silently ignores 404 errors (event already deleted on Google's side).
  */
@@ -137,4 +212,40 @@ export async function isGoogleConnected(userId: string): Promise<boolean> {
     } catch {
         return false;
     }
+}
+
+/**
+ * List events from the user's primary Google Calendar.
+ */
+export async function listUpcomingEvents(
+    userId: string,
+    options: { maxResults?: number; timeMin?: string; timeMax?: string } = {}
+): Promise<CalendarEventItem[]> {
+    const auth = await getOAuth2Client(userId);
+    const calendar = google.calendar({ version: 'v3', auth });
+
+    const response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin: options.timeMin || new Date().toISOString(),
+        timeMax: options.timeMax || undefined,
+        maxResults: options.maxResults || 50,
+        singleEvents: true,
+        orderBy: 'startTime',
+    });
+
+    const items = response.data.items ?? [];
+    return items.map((item) => ({
+        id: item.id ?? '',
+        summary: item.summary ?? '(No title)',
+        start: {
+            dateTime: item.start?.dateTime ?? undefined,
+            date: item.start?.date ?? undefined,
+        },
+        end: {
+            dateTime: item.end?.dateTime ?? undefined,
+            date: item.end?.date ?? undefined,
+        },
+        location: item.location ?? undefined,
+        description: item.description ?? undefined,
+    }));
 }

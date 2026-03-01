@@ -1,6 +1,7 @@
 // ATS Analysis Panel - merged component displaying scores and detailed feedback from Gemini AI
 import React, { useState } from 'react';
 import { AtsScores } from '../../services/atsApi';
+import SimpleLoader from '../common/SimpleLoader';
 
 interface AtsFeedbackPanelProps {
     atsScores: AtsScores | null;
@@ -127,21 +128,8 @@ const AtsFeedbackPanel: React.FC<AtsFeedbackPanelProps> = ({ atsScores, isLoadin
 
     if (isLoading) {
         return (
-            <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 animate-pulse"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col items-center p-6 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                        <div className="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mb-4"></div>
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
-                    </div>
-                    <div className="flex flex-col items-center p-6 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                        <div className="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mb-4"></div>
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse"></div>
-                    </div>
-                </div>
+            <div className="p-12 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm">
+                <SimpleLoader message="Loading ATS feedback..." />
             </div>
         );
     }

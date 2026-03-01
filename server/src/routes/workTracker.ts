@@ -345,6 +345,29 @@ router.post('/:id/remind', asyncHandler(async (req: Request, res: Response) => {
   res.json({ message: 'Reminder created.', eventId });
 }));
 
+/**
+ * DELETE /api/work-tracker/:id/remind
+ * Deletes the associated Google Calendar event and clears reminder status.
+ */
+router.delete('/:id/remind', asyncHandler(async (req: Request, res: Response) => {
+  const userId = String(req.user!._id);
+  const entry = await WorkEntry.findOne({ _id: req.params.id, userId });
+  if (!entry) throw new NotFoundError('Work entry not found.');
+
+  if (entry.googleCalendarEventId) {
+    try {
+      const auth = await getOAuth2Client(userId);
+      const calendar = google.calendar({ version: 'v3', auth });
+      await calendar.events.delete({ calendarId: 'primary', eventId: entry.googleCalendarEventId });
+    } catch { /* Ignore if already deleted in calendar */ }
+    entry.googleCalendarEventId = undefined;
+    entry.reminderCreated = false;
+    await entry.save();
+  }
+
+  res.json({ message: 'Reminder removed.' });
+}));
+
 // ── AI Schedule Import ────────────────────────────────────────────────────────
 
 /**

@@ -24,6 +24,7 @@ import { getAllTemplates } from '../templates/config';
 import Sidebar from '../components/cv-management/Sidebar';
 import CreateBranchModal from '../components/cv-management/CreateBranchModal';
 import { validateCvFile, formatFileSize } from '../lib/utils';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 const CVManagementPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -81,6 +82,19 @@ const CVManagementPage: React.FC = () => {
 
   // Track original CV data for unsaved changes detection
   const originalCvDataRef = useRef<JsonResumeSchema | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    danger?: boolean;
+    type?: 'confirm' | 'alert' | 'info';
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => { },
+  });
   const [saveTrigger, setSaveTrigger] = useState<number>(0); // Force recalculation after save
 
   // Track last analyzed CV hash to avoid re-analyzing unchanged CVs
@@ -701,32 +715,31 @@ const CVManagementPage: React.FC = () => {
     }
   }, [activeCvId, autoSaveEnabled, handleSaveCv]);
 
-  const handleDeleteCv = async (cvId: string) => {
-    if (!window.confirm('Are you sure you want to delete this CV? This action cannot be undone.')) {
-      return;
-    }
-
-    setIsDeleting(true);
-    try {
-      await deleteCv(cvId);
-
-      // Update local state - remove the CV from allCvs list
-      const remaining = allCvs.filter((cv: CVDocument) => cv._id !== cvId);
-      setAllCvs(remaining);
-
-      // Switch to another CV if we were viewing the deleted one
-      if (activeCvId === cvId) {
-        const nextCv = remaining.find(cv => !cv.jobApplicationId) || remaining[0] || null;
-        setActiveCvId(nextCv?._id || null);
+  const handleDeleteCv = (cvId: string) => {
+    setConfirmModal({
+      show: true,
+      title: 'CV löschen',
+      message: 'Möchten Sie diesen Lebenslauf wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+      danger: true,
+      onConfirm: async () => {
+        setIsDeleting(true);
+        try {
+          await deleteCv(cvId);
+          const remaining = allCvs.filter((cv: CVDocument) => cv._id !== cvId);
+          setAllCvs(remaining);
+          if (activeCvId === cvId) {
+            const nextCv = remaining.find(cv => !cv.jobApplicationId) || remaining[0] || null;
+            setActiveCvId(nextCv?._id || null);
+          }
+          setToast({ message: 'CV deleted successfully.', type: 'success' });
+        } catch (error: any) {
+          console.error("Error deleting CV:", error);
+          setToast({ message: error.message || 'Failed to delete CV.', type: 'error' });
+        } finally {
+          setIsDeleting(false);
+        }
       }
-
-      setToast({ message: 'CV deleted successfully.', type: 'success' });
-    } catch (error: any) {
-      console.error("Error deleting CV:", error);
-      setToast({ message: error.message || 'Failed to delete CV.', type: 'error' });
-    } finally {
-      setIsDeleting(false);
-    }
+    });
   };
 
   const handleRenameBranch = async (cvId: string, newName: string) => {
@@ -949,12 +962,12 @@ const CVManagementPage: React.FC = () => {
             {creationMode === 'choose' && (
               <div className="max-w-3xl mx-auto mt-10">
                 <div className="text-center mb-8">
-                  <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-lg" style={{background: 'linear-gradient(135deg, var(--accent-dim), var(--accent))'}}>
+                  <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-lg" style={{ background: 'linear-gradient(135deg, var(--accent-dim), var(--accent))' }}>
                     <svg className="w-8 h-8 text-ink-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
                     {masterCv ? 'Update Your CV' : 'Create Your CV'}
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto text-lg">
@@ -1001,7 +1014,7 @@ const CVManagementPage: React.FC = () => {
             {creationMode === 'upload' && (
               <div className="max-w-2xl mx-auto mt-10">
                 <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>Import Your CV</h2>
+                  <h2 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Import Your CV</h2>
                   <p className="text-gray-600 dark:text-gray-400">Upload a PDF, DOCX, or RTF file.</p>
                 </div>
 
@@ -1079,6 +1092,16 @@ const CVManagementPage: React.FC = () => {
         onUploadBranchFromFile={handleUploadBranchFromFile}
         allCvs={allCvs}
         isLoading={isCreatingBranch}
+      />
+
+      <ConfirmModal
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        danger={confirmModal.danger}
+        type={confirmModal.type}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal(prev => ({ ...prev, show: false }))}
       />
     </div>
   );
