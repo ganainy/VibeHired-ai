@@ -707,4 +707,54 @@ router.post('/import-schedule/confirm', asyncHandler(async (req: Request, res: R
   res.status(201).json({ message: `${created.length} entr${created.length === 1 ? 'y' : 'ies'} added.`, count: created.length, ids: created });
 }));
 
+/**
+ * POST /api/work-tracker/parse-magic-prompt
+ * Accepts a spoken or typed text prompt and returns a structured work entry object.
+ */
+router.post('/parse-magic-prompt', asyncHandler(async (req: Request, res: Response) => {
+  const userId = String(req.user!._id);
+  const { text, today, employers, appointmentTypes } = req.body;
+
+  if (!text) throw new ValidationError('Text prompt is required.');
+
+  const apiKey = await getGeminiKey(userId);
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: GEMINI_FLASH });
+
+  const systemPrompt = `You are an AI assistant parsing a voice/text command to log a work shift or appointment.
+Today's date is ${today}.
+Available Employers (JSON):
+${JSON.stringify(employers)}
+Available Appointment Types (JSON):
+${JSON.stringify(appointmentTypes)}
+
+Extract the requested work entry details. 
+Return ONLY a valid JSON object matching this structure:
+{
+  "type": "shift" | "appointment",
+  "employerId": "ID string or null if unable to match",
+  "appointmentTypeId": "ID string or null if unable to match",
+  "subLocationId": "ID string or null if matched from employer's subLocations",
+  "title": "Short descriptive title or empty string",
+  "date": "YYYY-MM-DD",
+  "startTime": "HH:MM (24h format)",
+  "endTime": "HH:MM (24h format)",
+  "notes": "Any extra notes from the text"
+}
+
+If the user mentions an employer that fuzzy matches one of the 'Available Employers', set type: "shift" and employerId to its _id. Also match subLocation if mentioned.
+If they mention an appointment type, set type: "appointment" and the appointmentTypeId.
+Otherwise guess the type properly based on context.`;
+
+  const result = await model.generateContent(`${systemPrompt}\n\nUser command: "${text}"`);
+
+  try {
+    const cleaned = result.response.text().replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    const raw = JSON.parse(cleaned);
+    res.json(raw);
+  } catch (e: any) {
+    throw new ValidationError(`AI could not parse the command. ${e.message}`);
+  }
+}));
+
 export default router;

@@ -21,6 +21,7 @@ import {
   Check,
   Sparkles,
   FileText,
+  Mic,
 } from 'lucide-react';
 import {
   getEntries,
@@ -41,6 +42,7 @@ import {
   WorkEntryType,
   WorkEntryStatus,
   CreateWorkEntryPayload,
+  parseMagicPrompt,
 } from '../services/workTrackerApi';
 import {
   getEmployers,
@@ -1333,6 +1335,10 @@ const WorkTrackerPage: React.FC = () => {
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [deletingEmployerId, setDeletingEmployerId] = useState<string | null>(null);
   const [deletingAppointmentTypeId, setDeletingAppointmentTypeId] = useState<string | null>(null);
+
+  // ── Voice command state ───────────────────────────────────────────────────
+  const [isListening, setIsListening] = useState(false);
+  const [isMagicParsing, setIsMagicParsing] = useState(false);
   const [remindLoadingId, setRemindLoadingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [expandedEmployers, setExpandedEmployers] = useState<Set<string>>(new Set());
@@ -1450,6 +1456,59 @@ const WorkTrackerPage: React.FC = () => {
       return prev;
     });
     fetchStats();
+  };
+
+  const handleVoiceCommand = () => {
+    if (isListening || isMagicParsing) return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert('Speech recognition is not supported in this browser. Please try Chrome or Edge.');
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = document.documentElement.lang || 'en-US';
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = async (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setIsListening(false);
+      setIsMagicParsing(true);
+      try {
+        const parsed = await parseMagicPrompt({
+          text: transcript,
+          today: new Date().toISOString(),
+          employers: employers.map(e => ({ _id: e._id, name: e.name, subLocations: e.subLocations })),
+          appointmentTypes
+        });
+
+        // Open modal
+        setEditingEntry(null);
+        if (parsed.type) setType(parsed.type === 'appointment' ? 'appointment' : 'shift');
+        setEmployerId(parsed.employerId || '');
+        setAppointmentTypeId(parsed.appointmentTypeId || '');
+        setSubLocationId(parsed.subLocationId || '');
+        if (parsed.title) setTitle(parsed.title);
+        if (parsed.date) setDate(parsed.date);
+        if (parsed.startTime) setStartTime(parsed.startTime);
+        if (parsed.endTime) setEndTime(parsed.endTime);
+        if (parsed.notes) setNotes(parsed.notes);
+        setShowEntryModal(true);
+      } catch (err: any) {
+        console.error(err);
+        alert(err.response?.data?.message || 'Failed to parse voice command.');
+      } finally {
+        setIsMagicParsing(false);
+      }
+    };
+
+    recognition.onerror = (e: any) => {
+      setIsListening(false);
+      if (e.error !== 'no-speech') console.error('Speech recognition error:', e.error);
+    };
+
+    recognition.onend = () => setIsListening(false);
+
+    recognition.start();
   };
 
   // ── Employer actions ──────────────────────────────────────────────────────
@@ -1733,13 +1792,27 @@ const WorkTrackerPage: React.FC = () => {
 
               <div className="flex items-center gap-2.5">
                 <button
+                  onClick={handleVoiceCommand}
+                  disabled={isListening || isMagicParsing}
+                  className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg transition-all"
+                  style={{
+                    background: isListening ? 'var(--rose-bg)' : isMagicParsing ? 'var(--amber-bg)' : 'var(--bg-elevated)',
+                    color: isListening ? 'var(--rose)' : isMagicParsing ? 'var(--amber)' : 'var(--text-primary)',
+                    border: '1px solid var(--border)'
+                  }}
+                  title="Use voice to add entry"
+                >
+                  {isMagicParsing ? <span className="animate-spin"><Clock size={15} /></span> : <Mic size={15} className={isListening ? 'animate-pulse' : ''} />}
+                  <span className="hidden sm:inline">{isListening ? 'Listening…' : isMagicParsing ? 'Parsing…' : 'AI Voice Add'}</span>
+                </button>
+                <button
                   onClick={() => setShowImportModal(true)}
                   className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg transition-all"
                   style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
                   title="Import schedule with AI"
                 >
                   <Sparkles size={15} />
-                  <span className="hidden sm:inline">Import schedule</span>
+                  <span className="hidden lg:inline">Import schedule</span>
                 </button>
                 <button
                   onClick={() => { setEditingEntry(null); setShowEntryModal(true); }}

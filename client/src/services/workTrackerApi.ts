@@ -226,3 +226,9 @@ export const updateAppointmentType = async (id: string, payload: { name: string 
 export const deleteAppointmentType = async (id: string): Promise<void> => {
   await axios.delete(`${API_BASE_URL}/work-tracker/appointment-types/${id}`);
 };
+
+/** Send a magic voice/text prompt to create an entry */
+export const parseMagicPrompt = async (payload: { text: string; today: string; employers: any[]; appointmentTypes: any[] }): Promise<Partial<CreateWorkEntryPayload>> => {
+  const res = await axios.post<Partial<CreateWorkEntryPayload>>(`${API_BASE_URL}/work-tracker/parse-magic-prompt`, payload);
+  return res.data;
+};
