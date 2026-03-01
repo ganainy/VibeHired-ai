@@ -45,10 +45,10 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ jobs
     }, [jobs]);
 
     return (
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-100 dark:border-zinc-800 h-full">
+        <div className="p-6 rounded-lg border h-full transition-all duration-300" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
             <div className="flex justify-between items-center mb-6">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Recent Activity</h3>
-                <Link to="/" className="text-sm hover:underline" style={{color:'var(--accent)'}}>
+                <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Recent Activity</h3>
+                <Link to="/" className="text-sm hover:underline transition-colors" style={{ color: 'var(--accent)' }}>
                     View All
                 </Link>
             </div>
@@ -56,38 +56,46 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ jobs
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
                     <thead>
-                        <tr className="text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-zinc-800">
+                        <tr className="text-xs font-semibold uppercase tracking-wider border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
                             <th className="pb-3 pl-2">Company</th>
                             <th className="pb-3 hidden sm:table-cell">Role</th>
                             <th className="pb-3">Status</th>
                             <th className="pb-3 text-right pr-2">Updated</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
-                        {recentJobs.map(job => (
-                            <tr key={job._id} className="group hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                <td className="py-3 pl-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
-                                            {job.companyName.substring(0, 1)}
+                    <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                        {recentJobs.length > 0 ? (
+                            recentJobs.map(job => (
+                                <tr key={job._id} className="group transition-colors" style={{ borderBottomColor: 'var(--border)' }}>
+                                    <td className="py-3 pl-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded flex items-center justify-center font-bold text-xs uppercase transition-colors" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
+                                                {job.companyName.substring(0, 1)}
+                                            </div>
+                                            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{job.companyName}</span>
                                         </div>
-                                        <span className="font-medium text-slate-900 dark:text-white">{job.companyName}</span>
-                                    </div>
-                                </td>
-                                <td className="py-3 text-sm text-slate-600 dark:text-slate-400 hidden sm:table-cell">
-                                    {job.jobTitle}
-                                </td>
-                                <td className="py-3">
-                                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${statusColors[job.status] || statusColors['Not Applied']}`}>
-                                        <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-60"></span>
-                                        {job.status}
-                                    </span>
-                                </td>
-                                <td className="py-3 text-right text-xs text-slate-500 dark:text-slate-400 pr-2">
-                                    {formatTimeAgo(job.updatedAt)}
+                                    </td>
+                                    <td className="py-3 text-sm hidden sm:table-cell" style={{ color: 'var(--text-secondary)' }}>
+                                        {job.jobTitle}
+                                    </td>
+                                    <td className="py-3">
+                                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${statusColors[job.status] || statusColors['Not Applied']}`}>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-60"></span>
+                                            {job.status}
+                                        </span>
+                                    </td>
+                                    <td className="py-3 text-right text-xs pr-2" style={{ color: 'var(--text-muted)' }}>
+                                        {formatTimeAgo(job.updatedAt)}
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={4} className="py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+                                    No recent activity found.
                                 </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>

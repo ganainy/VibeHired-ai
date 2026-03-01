@@ -96,53 +96,79 @@ export const ApplicationsByStatusChart: React.FC<ApplicationsByStatusChartProps>
     const getColorClass = (label: string) => {
         switch (label) {
             case 'Applied':
-                return 'bg-blue-500';
+                return 'var(--azure)';
             case 'Interviewing':
-                return 'bg-yellow-500';
+                return 'var(--amber)';
             case 'Offers':
-                return 'bg-green-500';
+                return 'var(--jade)';
             case 'Saved':
-                return 'bg-blue-200 dark:bg-blue-900';
+                return 'var(--text-muted)';
             default:
-                return 'bg-gray-500';
+                return 'var(--text-muted)';
+        }
+    };
+
+    const getStrokeColor = (label: string) => {
+        switch (label) {
+            case 'Applied':
+                return 'var(--azure)';
+            case 'Interviewing':
+                return 'var(--amber)';
+            case 'Offers':
+                return 'var(--jade)';
+            case 'Saved':
+                return 'var(--text-muted)';
+            default:
+                return 'var(--text-muted)';
         }
     };
 
     return (
-        <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-            <div className="relative w-40 h-40 flex-shrink-0 mx-auto md:mx-0">
+        <div className="flex flex-col items-center justify-center gap-8 py-2">
+            <div className="relative w-36 h-36 flex-shrink-0">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                     <path
-                        className="stroke-current text-blue-200 dark:text-blue-900"
+                        style={{ stroke: 'var(--bg-elevated)' }}
                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                         fill="none"
-                        strokeWidth="4"
+                        strokeWidth="3"
                     />
-                    {statusData.map((status, index) => (
+                    {statusData.map((status) => (
                         <path
                             key={status.label}
-                            className={`stroke-current ${status.color}`}
+                            style={{ stroke: getStrokeColor(status.label) }}
                             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                             fill="none"
                             strokeDasharray={status.dashArray}
                             strokeDashoffset={status.dashOffset}
                             strokeLinecap="round"
-                            strokeWidth="4"
+                            strokeWidth="3.5"
+                            className="transition-all duration-1000 ease-in-out"
                         />
                     ))}
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold text-gray-900 dark:text-white">{total}</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Total</span>
+                    <span className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>{total}</span>
+                    <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-muted)' }}>Total Apps</span>
                 </div>
             </div>
-            <div className="space-y-3 flex-1">
+            <div className="w-full space-y-3">
                 {statusData.map((status) => (
-                    <div key={status.label} className="flex items-center">
-                        <span className={`h-3 w-3 rounded-full ${getColorClass(status.label)}`}></span>
-                        <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">
-                            {status.label}: {status.count}
-                        </span>
+                    <div key={status.label} className="flex items-center justify-between text-sm group">
+                        <div className="flex items-center gap-2.5">
+                            <span className="h-2.5 w-2.5 rounded-full transition-all group-hover:scale-125" style={{ background: getColorClass(status.label) }}></span>
+                            <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>
+                                {status.label}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800" style={{ color: 'var(--text-primary)' }}>
+                                {Math.round((status.count / total) * 100)}%
+                            </span>
+                            <span className="font-bold min-w-[20px] text-right" style={{ color: 'var(--text-primary)' }}>
+                                {status.count}
+                            </span>
+                        </div>
                     </div>
                 ))}
             </div>

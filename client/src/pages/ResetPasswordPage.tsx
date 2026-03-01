@@ -3,13 +3,9 @@ import React, { useState, FormEvent } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { resetPassword } from '../services/authApi';
+import Spinner from '../components/common/Spinner';
 
-const Spinner = () => (
-  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-  </svg>
-);
+
 
 const EyeIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -209,8 +205,8 @@ const ResetPasswordPage: React.FC = () => {
                     borderColor: confirmPassword && confirmPassword !== password
                       ? 'rgba(244,100,100,0.6)'
                       : confirmPassword && confirmPassword === password
-                      ? 'rgba(45,212,160,0.5)'
-                      : 'var(--border)',
+                        ? 'rgba(45,212,160,0.5)'
+                        : 'var(--border)',
                   }}
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = 'var(--accent)';
@@ -220,8 +216,8 @@ const ResetPasswordPage: React.FC = () => {
                     e.currentTarget.style.borderColor = confirmPassword && confirmPassword !== password
                       ? 'rgba(244,100,100,0.6)'
                       : confirmPassword && confirmPassword === password
-                      ? 'rgba(45,212,160,0.5)'
-                      : 'var(--border)';
+                        ? 'rgba(45,212,160,0.5)'
+                        : 'var(--border)';
                     e.currentTarget.style.boxShadow = 'none';
                   }}
                 />
@@ -241,7 +237,7 @@ const ResetPasswordPage: React.FC = () => {
                 onMouseEnter={(e) => { if (!isLoading) (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent-hover)'; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent)'; }}
               >
-                {isLoading ? <><Spinner /><span>Updating…</span></> : 'Update password'}
+                {isLoading ? <><Spinner size="xs" /><span>Updating…</span></> : 'Update password'}
               </button>
             </form>
           </>

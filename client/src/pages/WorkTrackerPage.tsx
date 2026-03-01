@@ -53,6 +53,7 @@ import {
   Employer,
   SubLocation,
 } from '../services/employerApi';
+import Spinner from '../components/common/Spinner';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1434,8 +1435,7 @@ const WorkTrackerPage: React.FC = () => {
     }
   }
 
-  // ── Shimmer rows ──────────────────────────────────────────────────────────
-  const shimmerRows = Array.from({ length: 3 });
+
 
   const renderDayCard = (dateKey: string, dayEntries: WorkEntry[]) => {
     const dayHours = dayEntries.reduce((sum, e) => sum + (e.type === 'shift' ? e.hours : 0), 0);
@@ -1660,15 +1660,9 @@ const WorkTrackerPage: React.FC = () => {
             {/* Entry list */}
             <div className="space-y-4">
               {loadingEntries ? (
-                shimmerRows.map((_, i) => (
-                  <div key={i} className="card animate-pulse">
-                    <div className="p-4 space-y-3">
-                      <div className="shimmer h-4 w-1/3 rounded" />
-                      <div className="shimmer h-12 rounded" />
-                      <div className="shimmer h-12 rounded" />
-                    </div>
-                  </div>
-                ))
+                <div className="h-64 flex items-center justify-center card">
+                  <Spinner size="lg" />
+                </div>
               ) : entries.length === 0 ? (
                 <div className="card flex flex-col items-center justify-center py-16 text-center gap-4">
                   <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
@@ -1789,16 +1783,8 @@ const WorkTrackerPage: React.FC = () => {
             </div>
 
             {loadingEmployers ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="card animate-pulse p-5 flex items-center gap-4">
-                    <div className="shimmer w-12 h-12 rounded-xl" />
-                    <div className="flex-1 space-y-2">
-                      <div className="shimmer h-4 w-3/4 rounded" />
-                      <div className="shimmer h-3 w-1/2 rounded" />
-                    </div>
-                  </div>
-                ))}
+              <div className="h-64 flex items-center justify-center card w-full">
+                <Spinner size="lg" />
               </div>
             ) : employers.length === 0 ? (
               <div className="card flex flex-col items-center justify-center py-16 text-center gap-4">
@@ -1844,13 +1830,8 @@ const WorkTrackerPage: React.FC = () => {
             </div>
 
             {loadingAppointmentTypes ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {shimmerRows.map((_, i) => (
-                  <div key={i} className="card animate-pulse p-4 flex flex-col gap-3">
-                    <div className="shimmer h-8 w-8 rounded" />
-                    <div className="shimmer h-4 w-3/4 rounded" />
-                  </div>
-                ))}
+              <div className="h-64 flex items-center justify-center card w-full">
+                <Spinner size="lg" />
               </div>
             ) : appointmentTypes.length === 0 ? (
               <div className="card flex flex-col items-center justify-center py-16 text-center gap-4">

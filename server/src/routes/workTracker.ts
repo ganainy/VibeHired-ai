@@ -159,6 +159,129 @@ router.get('/stats', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 /**
+ * GET /api/work-tracker/analytics
+ * Detailed analytics for charts (daily hours, employer breakdown).
+ * Query params: ?month=YYYY-MM
+ */
+router.get('/analytics', asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!._id;
+  const monthStr = req.query.month as string; // 'YYYY-MM'
+
+  let start: Date;
+  let end: Date;
+
+  if (monthStr) {
+    const [year, month] = monthStr.split('-').map(Number);
+    start = new Date(Date.UTC(year, month - 1, 1));
+    end = new Date(Date.UTC(year, month, 1));
+  } else {
+    const now = new Date();
+    start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  }
+
+  // 1. Daily Hours & Breakdown by Employer (for stacked bar chart)
+  const entries = await WorkEntry.find({
+    userId,
+    date: { $gte: start, $lt: end },
+    status: 'done' // Usually analytics focus on completed work
+  }).populate('employerId', 'name');
+
+  const dailyMap: Record<string, any> = {};
+  const employerMap: Record<string, any> = {};
+
+  entries.forEach(entry => {
+    const dateKey = entry.date.toISOString().split('T')[0];
+    const empName = entry.type === 'shift' ? ((entry.employerId as any)?.name || 'Unknown') : 'Appointment';
+    const hours = entry.hours || 0;
+
+    // Daily breakdown
+    if (!dailyMap[dateKey]) {
+      dailyMap[dateKey] = { date: dateKey, totalHours: 0, entries: [] };
+    }
+    dailyMap[dateKey].totalHours += hours;
+    dailyMap[dateKey].entries.push({
+      type: entry.type,
+      employer: empName,
+      hours: hours,
+      breakMinutes: entry.breakMinutes || 0,
+      paidKm: entry.paidKilometers || 0
+    });
+
+    // Employer breakdown (Only for shifts)
+    if (entry.type === 'shift') {
+      const empId = String(entry.employerId?._id || 'unknown');
+      if (!employerMap[empId]) {
+        employerMap[empId] = { id: empId, name: empName, hours: 0, count: 0 };
+      }
+      employerMap[empId].hours += hours;
+      employerMap[empId].count += 1;
+    }
+  });
+
+  const dailyHours = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
+  const employerBreakdown = Object.values(employerMap).sort((a, b) => b.hours - a.hours);
+
+  // 2. Aggregated Summary
+  const summary = {
+    totalHours: entries.reduce((acc, curr) => acc + (curr.hours || 0), 0),
+    totalEntries: entries.length,
+    avgHoursPerDay: dailyHours.length > 0
+      ? entries.reduce((acc, curr) => acc + (curr.hours || 0), 0) / dailyHours.length
+      : 0,
+    totalBreakMinutes: entries.reduce((acc, curr) => acc + (curr.breakMinutes || 0), 0),
+    totalPaidKm: entries.reduce((acc, curr) => acc + (curr.paidKilometers || 0), 0)
+  };
+
+  res.json({
+    dailyHours,
+    employerBreakdown,
+    summary
+  });
+}));
+
+/**
+ * GET /api/work-tracker/months
+ * Get all unique months (YYYY-MM) that have work entries for the user.
+ */
+router.get('/months', asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!._id;
+
+  const months = await WorkEntry.aggregate([
+    { $match: { userId: new mongoose.Types.ObjectId(userId as string) } },
+    {
+      $group: {
+        _id: {
+          year: { $year: '$date' },
+          month: { $month: '$date' }
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        month: {
+          $concat: [
+            { $toString: '$_id.year' },
+            '-',
+            {
+              $cond: [
+                { $lt: ['$_id.month', 10] },
+                { $concat: ['0', { $toString: '$_id.month' }] },
+                { $toString: '$_id.month' }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    { $sort: { month: -1 } }
+  ]);
+
+  res.json(months.map(m => m.month));
+}));
+
+/**
  * GET /api/work-tracker/appointment-types
  */
 router.get('/appointment-types', asyncHandler(async (req: Request, res: Response) => {

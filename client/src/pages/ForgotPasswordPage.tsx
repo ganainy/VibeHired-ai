@@ -3,13 +3,9 @@ import React, { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { forgotPassword } from '../services/authApi';
+import Spinner from '../components/common/Spinner';
 
-const Spinner = () => (
-  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-  </svg>
-);
+
 
 const SunIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -163,7 +159,7 @@ const ForgotPasswordPage: React.FC = () => {
                 onMouseEnter={(e) => { if (!isLoading) (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent-hover)'; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent)'; }}
               >
-                {isLoading ? <><Spinner /><span>Sending…</span></> : 'Send reset link'}
+                {isLoading ? <><Spinner size="xs" /><span>Sending…</span></> : 'Send reset link'}
               </button>
             </form>
           </>

@@ -48,6 +48,33 @@ export interface WorkTrackerStats {
   activeEmployersCount: number;
 }
 
+export interface WorkTrackerAnalytics {
+  dailyHours: {
+    date: string;
+    totalHours: number;
+    entries: {
+      type: WorkEntryType;
+      employer: string;
+      hours: number;
+      breakMinutes: number;
+      paidKm: number;
+    }[];
+  }[];
+  employerBreakdown: {
+    id: string;
+    name: string;
+    hours: number;
+    count: number;
+  }[];
+  summary: {
+    totalHours: number;
+    totalEntries: number;
+    avgHoursPerDay: number;
+    totalBreakMinutes: number;
+    totalPaidKm: number;
+  };
+}
+
 export interface CreateWorkEntryPayload {
   employerId?: string;
   appointmentTypeId?: string | null;
@@ -81,6 +108,18 @@ export const getEntries = async (filters?: GetEntriesFilters): Promise<WorkEntry
 /** Fetch summary stats. */
 export const getStats = async (): Promise<WorkTrackerStats> => {
   const res = await axios.get<WorkTrackerStats>(`${API_BASE_URL}/work-tracker/stats`);
+  return res.data;
+};
+
+/** Fetch detailed analytics for charts. */
+export const getWorkTrackerAnalytics = async (month?: string): Promise<WorkTrackerAnalytics> => {
+  const res = await axios.get<WorkTrackerAnalytics>(`${API_BASE_URL}/work-tracker/analytics`, { params: { month } });
+  return res.data;
+};
+
+/** Get all unique months (YYYY-MM) with work entries. */
+export const getWorkMonths = async (): Promise<string[]> => {
+  const res = await axios.get<string[]>(`${API_BASE_URL}/work-tracker/months`);
   return res.data;
 };
 

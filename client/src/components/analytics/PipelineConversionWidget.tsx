@@ -4,9 +4,10 @@ import { ApplicationStats } from '../../services/analyticsApi';
 
 interface PipelineConversionWidgetProps {
     stats: ApplicationStats | null;
+    hideCardStyles?: boolean;
 }
 
-export const PipelineConversionWidget: React.FC<PipelineConversionWidgetProps> = ({ stats }) => {
+export const PipelineConversionWidget: React.FC<PipelineConversionWidgetProps> = ({ stats, hideCardStyles = false }) => {
 
     const data = React.useMemo(() => {
         if (!stats) return { applied: 0, interview: 0, offer: 0, rejected: 0 };
@@ -25,35 +26,46 @@ export const PipelineConversionWidget: React.FC<PipelineConversionWidgetProps> =
         return Math.round((value / total) * 100);
     };
 
+    const containerStyles = hideCardStyles
+        ? "w-full space-y-8"
+        : "p-6 rounded-lg border h-full transition-all duration-300";
+
+    const containerInlineStyles = hideCardStyles
+        ? {}
+        : { background: 'var(--bg-surface)', borderColor: 'var(--border)' };
+
     return (
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-100 dark:border-zinc-800 h-full">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-6">Pipeline Conversion</h3>
+        <div className={containerStyles} style={containerInlineStyles}>
+            {!hideCardStyles && <h3 className="font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>Pipeline Conversion</h3>}
 
             <div className="space-y-6">
                 {/* Applied Stage */}
                 <div>
                     <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-600 dark:text-slate-300">Applied</span>
-                        <span className="text-slate-900 dark:text-white font-medium">{data.applied}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>Applied</span>
+                        <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{data.applied}</span>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-2">
-                        <div className="bg-slate-400 dark:bg-slate-500 h-2 rounded-full w-full"></div>
+                    <div className="w-full rounded-full h-2" style={{ background: 'var(--bg-elevated)' }}>
+                        <div className="h-2 rounded-full w-full transition-all duration-500" style={{ background: 'var(--accent-dim)' }}></div>
                     </div>
                 </div>
 
                 {/* Rejected Stage */}
                 <div>
                     <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-600 dark:text-slate-300">Rejected</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>Rejected</span>
                         <div className="flex gap-2">
-                            <span className="text-slate-900 dark:text-white font-medium">{data.rejected}</span>
-                            <span className="text-slate-400">({getPercentage(data.rejected, data.applied)}%)</span>
+                            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{data.rejected}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>({getPercentage(data.rejected, data.applied)}%)</span>
                         </div>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-2">
+                    <div className="w-full rounded-full h-2" style={{ background: 'var(--bg-elevated)' }}>
                         <div
-                            className="bg-red-500 h-2 rounded-full"
-                            style={{ width: `${getPercentage(data.rejected, data.applied)}%` }}
+                            className="h-2 rounded-full transition-all duration-700 ease-out"
+                            style={{
+                                width: `${getPercentage(data.rejected, data.applied)}%`,
+                                background: 'var(--rose)'
+                            }}
                         ></div>
                     </div>
                 </div>
@@ -61,16 +73,19 @@ export const PipelineConversionWidget: React.FC<PipelineConversionWidgetProps> =
                 {/* Interview Stage */}
                 <div>
                     <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-600 dark:text-slate-300">Interview</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>Interview</span>
                         <div className="flex gap-2">
-                            <span className="text-slate-900 dark:text-white font-medium">{data.interview}</span>
-                            <span className="text-slate-400">({getPercentage(data.interview, data.applied)}%)</span>
+                            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{data.interview}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>({getPercentage(data.interview, data.applied)}%)</span>
                         </div>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-2">
+                    <div className="w-full rounded-full h-2" style={{ background: 'var(--bg-elevated)' }}>
                         <div
-                            className="bg-blue-500 h-2 rounded-full"
-                            style={{ width: `${getPercentage(data.interview, data.applied)}%` }}
+                            className="h-2 rounded-full transition-all duration-700 ease-out delay-100"
+                            style={{
+                                width: `${getPercentage(data.interview, data.applied)}%`,
+                                background: 'var(--accent)'
+                            }}
                         ></div>
                     </div>
                 </div>
@@ -78,36 +93,22 @@ export const PipelineConversionWidget: React.FC<PipelineConversionWidgetProps> =
                 {/* Offer Stage */}
                 <div>
                     <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-600 dark:text-slate-300">Offer</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>Offer</span>
                         <div className="flex gap-2">
-                            <span className="text-slate-900 dark:text-white font-medium">{data.offer}</span>
-                            <span className="text-slate-400">({getPercentage(data.offer, data.applied)}%)</span>
+                            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{data.offer}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>({getPercentage(data.offer, data.applied)}%)</span>
                         </div>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-2">
+                    <div className="w-full rounded-full h-2" style={{ background: 'var(--bg-elevated)' }}>
                         <div
-                            className="bg-emerald-500 h-2 rounded-full"
-                            style={{ width: `${getPercentage(data.offer, data.applied)}%` }}
+                            className="h-2 rounded-full transition-all duration-1000 ease-out delay-200"
+                            style={{
+                                width: `${getPercentage(data.offer, data.applied)}%`,
+                                background: 'var(--emerald)'
+                            }}
                         ></div>
                     </div>
                 </div>
-            </div>
-
-            {/* Insight Box */}
-            <div className="mt-8 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-lg border border-slate-100 dark:border-zinc-800 flex gap-3">
-                <div className="text-amber-500 mt-0.5">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                    </svg>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    {data.applied === 0 
-                        ? <>Start applying to jobs to see your pipeline conversion metrics here. Quality applications lead to better conversion rates!</>
-                        : data.interview === 0
-                            ? <>No interviews yet. Focus on tailoring your resume to each job description to improve your chances.</>
-                            : <>Great progress! A <span className="font-semibold text-slate-900 dark:text-white">{getPercentage(data.interview, data.applied)}%</span> interview rate shows your applications are getting noticed. Keep refining your approach!</>
-                    }
-                </p>
             </div>
         </div>
     );

@@ -1,5 +1,6 @@
 // client/src/pages/EmailSuggestionsPage.tsx
 import React, { useCallback, useEffect, useState } from 'react';
+import Spinner from '../components/common/Spinner';
 import {
     listPendingSuggestions,
     acceptSuggestion,
@@ -206,12 +207,12 @@ const EmailSuggestionsPage: React.FC = () => {
 
     const switchTab = (tab: 'application_response' | 'job_offer') => {
         setActiveTab(tab);
-        try { localStorage.setItem('emailSuggestions.activeTab', tab); } catch {}
+        try { localStorage.setItem('emailSuggestions.activeTab', tab); } catch { }
     };
 
     const toggleHowItWorks = () => setHowItWorksOpen((v) => {
         const next = !v;
-        try { localStorage.setItem('emailSuggestions.howItWorksOpen', String(next)); } catch {}
+        try { localStorage.setItem('emailSuggestions.howItWorksOpen', String(next)); } catch { }
         return next;
     });
 
@@ -358,576 +359,570 @@ const EmailSuggestionsPage: React.FC = () => {
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar px-2" style={{ background: 'var(--bg-base)' }}>
-        <div className="max-w-3xl mx-auto px-4 md:px-6 lg:px-8">
-        <div className="py-6 md:py-8 space-y-8 pb-12">
+            <div className="max-w-3xl mx-auto px-4 md:px-6 lg:px-8">
+                <div className="py-6 md:py-8 space-y-8 pb-12">
 
-            {/* ── Page header ── */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-2.5 mb-1.5">
-                        <span style={{ color: 'var(--accent)' }}><InboxIcon /></span>
-                        <h1
-                            className="text-2xl md:text-3xl font-display font-semibold tracking-tight"
-                            style={{ color: 'var(--text-primary)' }}
-                        >
-                            Email Inbox
-                        </h1>
-                        {suggestions.length > 0 && (
-                            <span
-                                className="px-2 py-0.5 rounded-full text-xs font-bold"
-                                style={{ backgroundColor: 'var(--accent)', color: '#000' }}
-                            >
-                                {suggestions.length}
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-                        AI-detected status changes from your job application emails, ready to review before applying.
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                    <select
-                        value={lookbackDays}
-                        onChange={(e) => handleLookbackDaysChange(Number(e.target.value))}
-                        className="input-base !w-auto text-sm"
-                    >
-                        <option value={1}>Last 1 day</option>
-                        <option value={7}>Last 7 days</option>
-                        <option value={14}>Last 14 days</option>
-                        <option value={30}>Last 30 days</option>
-                    </select>
-                    <button
-                        onClick={handlePoll}
-                        disabled={polling}
-                        className="btn-primary flex items-center gap-2"
-                    >
-                        <RefreshIcon spinning={polling} />
-                        {polling ? 'Scanning…' : 'Scan inbox'}
-                    </button>
-                </div>
-            </div>
-
-            {/* ── How it works ── */}
-            <div className="card overflow-hidden">
-                {/* Header / toggle row */}
-                <button
-                    type="button"
-                    onClick={toggleHowItWorks}
-                    className="w-full flex items-center justify-between px-5 py-4 text-left"
-                >
-                    <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                        How it works
-                    </p>
-                    <span
-                        style={{
-                            color: 'var(--text-muted)',
-                            display: 'inline-flex',
-                            transform: howItWorksOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 200ms',
-                        }}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                    </span>
-                </button>
-
-                {/* Collapsible body */}
-                {howItWorksOpen && (
-                <div className="px-5 pb-5" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                    {HOW_IT_WORKS.map((step, i) => (
-                        <div key={i} className="flex gap-3">
-                            <div
-                                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                                style={{ backgroundColor: 'rgba(232,184,68,0.1)', color: 'var(--accent)' }}
-                            >
-                                <step.icon />
-                            </div>
-                            <div>
-                                <p className="text-[13px] font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>
-                                    {step.title}
-                                </p>
-                                <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                                    {step.description}
-                                </p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                <div
-                    className="mt-4 pt-4 flex flex-wrap gap-x-6 gap-y-2"
-                    style={{ borderTop: '1px solid var(--border)' }}
-                >
-                    {/* Auto-scan toggle */}
-                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                        <button
-                            role="switch"
-                            aria-checked={autoPoll}
-                            onClick={() => handleAutoPollChange(!autoPoll)}
-                            className="relative shrink-0 transition-colors"
-                            style={{
-                                width: 36, height: 20, borderRadius: 99,
-                                background: autoPoll ? 'var(--accent)' : 'var(--bg-elevated)',
-                                border: `1px solid ${autoPoll ? 'var(--accent)' : 'var(--border)'}`,
-                            }}
-                        >
-                            <span
-                                style={{
-                                    position: 'absolute', top: 2,
-                                    left: autoPoll ? 17 : 2,
-                                    width: 14, height: 14, borderRadius: '50%',
-                                    background: autoPoll ? '#000' : 'var(--text-muted)',
-                                    transition: 'left 150ms',
-                                }}
-                            />
-                        </button>
-                        <span className="text-[11.5px]" style={{ color: autoPoll ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
-                            <span style={{ color: 'var(--text-secondary)', fontWeight: autoPoll ? 600 : 400 }}>Auto-scan:</span>
-                            {autoPoll ? ' every 2 hours while server is running' : ' disabled — manual scan only'}
-                        </span>
-                    </label>
-
-                    <p className="text-[11.5px]" style={{ color: 'var(--text-muted)' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Matched emails:</span> labelled <code style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, backgroundColor: 'var(--bg-elevated)' }}>job-tracker-processed</code> in Gmail so they're never shown twice
-                    </p>
-                    <p className="text-[11.5px]" style={{ color: 'var(--text-muted)' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Privacy:</span> email bodies are only sent to your own configured AI provider
-                    </p>
-                </div>
-                </div>
-                )}
-            </div>
-
-            {/* ── Privacy & AI provider section ── */}
-            {(() => {
-                const effectiveProvider = inboxProvider || defaultProvider;
-                const isExternal = effectiveProvider === 'gemini' || effectiveProvider === 'openrouter';
-                return (
-                    <div
-                        className="card p-5"
-                        style={isExternal ? { backgroundColor: 'rgba(239,68,68,0.04)', borderColor: 'rgba(239,68,68,0.22)' } : undefined}
-                    >
-                        <div className="flex items-start gap-3">
-                            <div
-                                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                                style={{
-                                    backgroundColor: isExternal ? 'rgba(239,68,68,0.1)' : 'rgba(232,184,68,0.1)',
-                                    color: isExternal ? '#ef4444' : 'var(--accent)',
-                                }}
-                            >
-                                <ShieldIcon />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                                    Privacy &amp; AI provider
-                                </p>
-                                {isExternal ? (
-                                    <p className="text-[12px] mb-3 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                                        Your current AI provider (<strong style={{ color: 'var(--text-secondary)' }}>{effectiveProvider}</strong>) is an external service.
-                                        Email subjects and partial body text are sent to that provider’s servers for classification.
-                                        For maximum privacy, select <strong style={{ color: 'var(--text-secondary)' }}>Ollama (local)</strong> below to keep all email content on your own machine.
-                                    </p>
-                                ) : (
-                                    <p className="text-[12px] mb-3 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                                        {effectiveProvider === 'ollama'
-                                            ? 'Email content is classified by your local Ollama model — nothing leaves your machine.'
-                                            : 'Configure which AI provider processes your emails. Choose a local Ollama model to keep email content fully private.'}
-                                    </p>
-                                )}
-                                <div className="flex items-center gap-3 flex-wrap">
-                                    <label className="text-[11.5px] font-medium shrink-0" style={{ color: 'var(--text-secondary)' }}>
-                                        AI provider for inbox:
-                                    </label>
-                                    <select
-                                        value={inboxProvider ?? ''}
-                                        onChange={(e) => handleInboxProviderChange(e.target.value || null)}
-                                        className="input-base !w-auto text-sm"
+                    {/* ── Page header ── */}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-2.5 mb-1.5">
+                                <span style={{ color: 'var(--accent)' }}><InboxIcon /></span>
+                                <h1
+                                    className="text-2xl md:text-3xl font-display font-semibold tracking-tight"
+                                    style={{ color: 'var(--text-primary)' }}
+                                >
+                                    Email Inbox
+                                </h1>
+                                {suggestions.length > 0 && (
+                                    <span
+                                        className="px-2 py-0.5 rounded-full text-xs font-bold"
+                                        style={{ backgroundColor: 'var(--accent)', color: '#000' }}
                                     >
-                                        <option value="">Follow global setting ({defaultProvider ?? 'none set'})</option>
-                                        <option value="ollama">Ollama (local — most private)</option>
-                                        <option value="gemini">Gemini</option>
-                                        <option value="openrouter">OpenRouter</option>
-                                    </select>
-                                </div>
+                                        {suggestions.length}
+                                    </span>
+                                )}
                             </div>
-                        </div>
-                    </div>
-                );
-            })()}
-            {hasScope === false && (
-                <div
-                    className="card p-5"
-                    style={{ backgroundColor: 'rgba(251,191,36,0.06)', borderColor: 'rgba(251,191,36,0.25)' }}
-                >
-                    <div className="flex items-start gap-3">
-                        <div
-                            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: 'rgba(251,191,36,0.12)', color: '#fbbf24' }}
-                        >
-                            <MailIcon />
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                                Gmail access not granted
+                            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+                                AI-detected status changes from your job application emails, ready to review before applying.
                             </p>
-                            <p className="text-[12.5px] mb-3" style={{ color: 'var(--text-muted)' }}>
-                                Your Google account is not connected, or it was connected before this feature was added and needs re-authorisation with Gmail read permissions. Your existing Calendar connection and data will be preserved.
-                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                            <select
+                                value={lookbackDays}
+                                onChange={(e) => handleLookbackDaysChange(Number(e.target.value))}
+                                className="input-base !w-auto text-sm"
+                            >
+                                <option value={1}>Last 1 day</option>
+                                <option value={7}>Last 7 days</option>
+                                <option value={14}>Last 14 days</option>
+                                <option value={30}>Last 30 days</option>
+                            </select>
                             <button
-                                onClick={handleConnectGmail}
+                                onClick={handlePoll}
+                                disabled={polling}
                                 className="btn-primary flex items-center gap-2"
                             >
-                                <LinkIcon />
-                                Connect / reconnect Google account
+                                <RefreshIcon spinning={polling} />
+                                {polling ? 'Scanning…' : 'Scan inbox'}
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
 
-            {/* ── Suggestion list ── */}
-            <div className="space-y-3">
-                {/* Tabs */}
-                {!loading && (() => {
-                    const appCount = suggestions.filter(s => (s.emailCategory ?? 'application_response') === 'application_response').length;
-                    const offerCount = suggestions.filter(s => s.emailCategory === 'job_offer').length;
-                    return (
-                        <div
-                            className="flex items-center gap-1 p-1 rounded-xl"
-                            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                    {/* ── How it works ── */}
+                    <div className="card overflow-hidden">
+                        {/* Header / toggle row */}
+                        <button
+                            type="button"
+                            onClick={toggleHowItWorks}
+                            className="w-full flex items-center justify-between px-5 py-4 text-left"
                         >
-                            {([
-                                { key: 'application_response' as const, label: 'Applications', count: appCount },
-                                { key: 'job_offer' as const, label: 'Job Leads', count: offerCount },
-                            ]).map(({ key, label, count }) => {
-                                const isActive = activeTab === key;
-                                return (
-                                    <button
-                                        key={key}
-                                        type="button"
-                                        onClick={() => switchTab(key)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                                How it works
+                            </p>
+                            <span
+                                style={{
+                                    color: 'var(--text-muted)',
+                                    display: 'inline-flex',
+                                    transform: howItWorksOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                    transition: 'transform 200ms',
+                                }}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="6 9 12 15 18 9" />
+                                </svg>
+                            </span>
+                        </button>
+
+                        {/* Collapsible body */}
+                        {howItWorksOpen && (
+                            <div className="px-5 pb-5" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                                    {HOW_IT_WORKS.map((step, i) => (
+                                        <div key={i} className="flex gap-3">
+                                            <div
+                                                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                                                style={{ backgroundColor: 'rgba(232,184,68,0.1)', color: 'var(--accent)' }}
+                                            >
+                                                <step.icon />
+                                            </div>
+                                            <div>
+                                                <p className="text-[13px] font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>
+                                                    {step.title}
+                                                </p>
+                                                <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                                                    {step.description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div
+                                    className="mt-4 pt-4 flex flex-wrap gap-x-6 gap-y-2"
+                                    style={{ borderTop: '1px solid var(--border)' }}
+                                >
+                                    {/* Auto-scan toggle */}
+                                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                        <button
+                                            role="switch"
+                                            aria-checked={autoPoll}
+                                            onClick={() => handleAutoPollChange(!autoPoll)}
+                                            className="relative shrink-0 transition-colors"
+                                            style={{
+                                                width: 36, height: 20, borderRadius: 99,
+                                                background: autoPoll ? 'var(--accent)' : 'var(--bg-elevated)',
+                                                border: `1px solid ${autoPoll ? 'var(--accent)' : 'var(--border)'}`,
+                                            }}
+                                        >
+                                            <span
+                                                style={{
+                                                    position: 'absolute', top: 2,
+                                                    left: autoPoll ? 17 : 2,
+                                                    width: 14, height: 14, borderRadius: '50%',
+                                                    background: autoPoll ? '#000' : 'var(--text-muted)',
+                                                    transition: 'left 150ms',
+                                                }}
+                                            />
+                                        </button>
+                                        <span className="text-[11.5px]" style={{ color: autoPoll ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+                                            <span style={{ color: 'var(--text-secondary)', fontWeight: autoPoll ? 600 : 400 }}>Auto-scan:</span>
+                                            {autoPoll ? ' every 2 hours while server is running' : ' disabled — manual scan only'}
+                                        </span>
+                                    </label>
+
+                                    <p className="text-[11.5px]" style={{ color: 'var(--text-muted)' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Matched emails:</span> labelled <code style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, backgroundColor: 'var(--bg-elevated)' }}>job-tracker-processed</code> in Gmail so they're never shown twice
+                                    </p>
+                                    <p className="text-[11.5px]" style={{ color: 'var(--text-muted)' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Privacy:</span> email bodies are only sent to your own configured AI provider
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── Privacy & AI provider section ── */}
+                    {(() => {
+                        const effectiveProvider = inboxProvider || defaultProvider;
+                        const isExternal = effectiveProvider === 'gemini' || effectiveProvider === 'openrouter';
+                        return (
+                            <div
+                                className="card p-5"
+                                style={isExternal ? { backgroundColor: 'rgba(239,68,68,0.04)', borderColor: 'rgba(239,68,68,0.22)' } : undefined}
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div
+                                        className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                                         style={{
-                                            background: isActive ? 'var(--bg-raised)' : 'transparent',
-                                            border: isActive ? '1px solid var(--border-bright)' : '1px solid transparent',
-                                            color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-                                            boxShadow: isActive ? '0 1px 4px rgba(14,14,23,0.4)' : 'none',
+                                            backgroundColor: isExternal ? 'rgba(239,68,68,0.1)' : 'rgba(232,184,68,0.1)',
+                                            color: isExternal ? '#ef4444' : 'var(--accent)',
                                         }}
                                     >
-                                        {label}
-                                        {count > 0 && (
-                                            <span
-                                                className="px-1.5 py-0.5 rounded-full text-xs font-bold leading-none"
-                                                style={{
-                                                    backgroundColor: isActive ? 'var(--accent)' : 'var(--bg-raised)',
-                                                    color: isActive ? '#000' : 'var(--text-muted)',
-                                                }}
-                                            >
-                                                {count}
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    );
-                })()}
-
-                <div className="flex items-center justify-between">
-                    <p className="label-overline">
-                        Pending review
-                    </p>
-                    {suggestions.length > 0 && (
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                            {suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length} suggestion{suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length !== 1 ? 's' : ''} waiting
-                        </p>
-                    )}
-                </div>
-
-                {loading && (
-                    <div className="space-y-3 animate-stagger">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="card p-5 space-y-3">
-                                <div className="shimmer h-5 w-1/3 rounded-lg" />
-                                <div className="shimmer h-4 w-full rounded-lg" />
-                                <div className="shimmer h-4 w-2/3 rounded-lg" />
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {!loading && suggestions.length === 0 && (
-                    <div className="card p-10 flex flex-col items-center text-center">
-                        <div
-                            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-                            style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
-                        >
-                            <InboxIcon />
-                        </div>
-                        <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                            All caught up
-                        </p>
-                        <p className="text-sm max-w-sm" style={{ color: 'var(--text-muted)' }}>
-                            No pending suggestions. Click <strong style={{ color: 'var(--text-secondary)' }}>Scan inbox</strong> above to check for new job emails{autoPoll ? ', or wait for the automatic scan every 2 hours' : ''}.
-                        </p>
-                    </div>
-                )}
-
-                {!loading && suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length === 0 && suggestions.length > 0 && (
-                    <div className="card p-8 flex flex-col items-center text-center">
-                        <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                            No {activeTab === 'job_offer' ? 'job lead' : 'application'} emails pending
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                            Switch to the other tab to see your {activeTab === 'job_offer' ? 'application responses' : 'job leads'}.
-                        </p>
-                    </div>
-                )}
-
-                {!loading && suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).map((s) => {
-                    const busy = actionIds.has(s._id);
-                    const noteBusy = actionIds.has(`note-${s._id}`);
-                    const job = s.jobApplicationId as any;
-                    const isCalChecked = !calendarUnchecked.has(s._id);
-                    const isNoteAdded = noteAddedLocally.has(s._id);
-                    const hasCalEvent = !!s.suggestedCalendarEvent;
-                    return (
-                        <div
-                            key={s._id}
-                            className="card p-5"
-                            style={{ opacity: busy ? 0.5 : 1, transition: 'opacity 150ms' }}
-                        >
-                            {/* Company / status row */}
-                            <div className="flex items-start justify-between gap-3 mb-3">
-                                <div className="min-w-0">
-                                    <p className="text-[15px] font-bold" style={{ color: 'var(--text-primary)' }}>
-                                        {s.matchedCompanyName || s.senderName || 'Unknown sender'}
-                                    </p>
-                                    {s.matchedJobTitle && (
-                                        <p className="text-[12.5px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                                            {s.matchedJobTitle}
-                                        </p>
-                                    )}
-                                </div>
-                                {s.suggestedStatus && <StatusPill status={s.suggestedStatus} />}
-                            </div>
-
-                            {/* Email subject + snippet */}
-                            <div
-                                className="flex items-start gap-2 rounded-xl px-3.5 py-2.5 mb-3"
-                                style={{ backgroundColor: 'var(--bg-elevated)' }}
-                            >
-                                <span className="shrink-0 mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                                    <MailIcon />
-                                </span>
-                                <div className="min-w-0">
-                                    <p className="text-[12px] font-medium" style={{ color: 'var(--text-secondary)' }}>
-                                        {s.emailSubject}
-                                    </p>
-                                    <p className="text-[11.5px] mt-1 leading-relaxed line-clamp-3" style={{ color: 'var(--text-muted)' }}>
-                                        {s.emailSnippet}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* ── Section 2: Note ── */}
-                            {s.suggestedNote && (
-                                <div
-                                    className="rounded-xl px-3.5 py-3 mb-3"
-                                    style={{
-                                        backgroundColor: 'rgba(232,184,68,0.06)',
-                                        border: '1px solid rgba(232,184,68,0.15)',
-                                    }}
-                                >
-                                    <div className="flex items-center justify-between gap-3 mb-1.5">
-                                        <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
-                                            <NoteIcon /> AI note
-                                        </p>
-                                        {job && (
-                                            <button
-                                                onClick={() => handleAddNote(s)}
-                                                disabled={noteBusy || isNoteAdded}
-                                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                                                style={{
-                                                    backgroundColor: isNoteAdded ? 'rgba(34,197,94,0.12)' : 'rgba(232,184,68,0.15)',
-                                                    color: isNoteAdded ? '#22c55e' : 'var(--accent)',
-                                                    border: `1px solid ${isNoteAdded ? 'rgba(34,197,94,0.3)' : 'rgba(232,184,68,0.3)'}`,
-                                                    opacity: noteBusy ? 0.6 : 1,
-                                                    cursor: isNoteAdded ? 'default' : 'pointer',
-                                                }}
-                                            >
-                                                {isNoteAdded ? (<><CheckIcon /> Added to job</>) : noteBusy ? 'Adding…' : 'Add to job notes'}
-                                            </button>
-                                        )}
+                                        <ShieldIcon />
                                     </div>
-                                    <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                                        {s.suggestedNote}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* ── Section 3: Calendar event ── */}
-                            {hasCalEvent && (
-                                <div
-                                    className="rounded-xl px-3.5 py-3 mb-3"
-                                    style={{
-                                        backgroundColor: hasScope ? 'rgba(59,130,246,0.05)' : 'rgba(150,150,150,0.05)',
-                                        border: `1px solid ${hasScope ? 'rgba(59,130,246,0.18)' : 'rgba(150,150,150,0.18)'}`,
-                                        opacity: hasScope ? 1 : 0.7,
-                                    }}
-                                >
-                                    <div className="flex items-start gap-3">
-                                        {hasScope && (
-                                            <input
-                                                type="checkbox"
-                                                checked={isCalChecked}
-                                                onChange={(e) => {
-                                                    setCalendarUnchecked((prev) => {
-                                                        const next = new Set(prev);
-                                                        if (!e.target.checked) next.add(s._id); else next.delete(s._id);
-                                                        return next;
-                                                    });
-                                                }}
-                                                className="mt-1 shrink-0 cursor-pointer"
-                                                style={{ accentColor: '#3b82f6' }}
-                                            />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[13px] font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                                            Privacy &amp; AI provider
+                                        </p>
+                                        {isExternal ? (
+                                            <p className="text-[12px] mb-3 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                                                Your current AI provider (<strong style={{ color: 'var(--text-secondary)' }}>{effectiveProvider}</strong>) is an external service.
+                                                Email subjects and partial body text are sent to that provider’s servers for classification.
+                                                For maximum privacy, select <strong style={{ color: 'var(--text-secondary)' }}>Ollama (local)</strong> below to keep all email content on your own machine.
+                                            </p>
+                                        ) : (
+                                            <p className="text-[12px] mb-3 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                                                {effectiveProvider === 'ollama'
+                                                    ? 'Email content is classified by your local Ollama model — nothing leaves your machine.'
+                                                    : 'Configure which AI provider processes your emails. Choose a local Ollama model to keep email content fully private.'}
+                                            </p>
                                         )}
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-[11px] font-semibold mb-1 flex items-center gap-1.5"
-                                                style={{ color: hasScope ? '#3b82f6' : 'var(--text-muted)' }}>
-                                                <CalendarIcon />
-                                                {hasScope
-                                                    ? (isCalChecked ? 'Add to calendar when applied' : 'Skip calendar event')
-                                                    : 'Calendar event detected'}
-                                                {!hasScope && (
-                                                    <button
-                                                        onClick={handleConnectGmail}
-                                                        className="ml-2 underline text-[11px] font-normal"
-                                                        style={{ color: 'var(--accent)' }}
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            <label className="text-[11.5px] font-medium shrink-0" style={{ color: 'var(--text-secondary)' }}>
+                                                AI provider for inbox:
+                                            </label>
+                                            <select
+                                                value={inboxProvider ?? ''}
+                                                onChange={(e) => handleInboxProviderChange(e.target.value || null)}
+                                                className="input-base !w-auto text-sm"
+                                            >
+                                                <option value="">Follow global setting ({defaultProvider ?? 'none set'})</option>
+                                                <option value="ollama">Ollama (local — most private)</option>
+                                                <option value="gemini">Gemini</option>
+                                                <option value="openrouter">OpenRouter</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                    {hasScope === false && (
+                        <div
+                            className="card p-5"
+                            style={{ backgroundColor: 'rgba(251,191,36,0.06)', borderColor: 'rgba(251,191,36,0.25)' }}
+                        >
+                            <div className="flex items-start gap-3">
+                                <div
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                                    style={{ backgroundColor: 'rgba(251,191,36,0.12)', color: '#fbbf24' }}
+                                >
+                                    <MailIcon />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                                        Gmail access not granted
+                                    </p>
+                                    <p className="text-[12.5px] mb-3" style={{ color: 'var(--text-muted)' }}>
+                                        Your Google account is not connected, or it was connected before this feature was added and needs re-authorisation with Gmail read permissions. Your existing Calendar connection and data will be preserved.
+                                    </p>
+                                    <button
+                                        onClick={handleConnectGmail}
+                                        className="btn-primary flex items-center gap-2"
+                                    >
+                                        <LinkIcon />
+                                        Connect / reconnect Google account
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── Suggestion list ── */}
+                    <div className="space-y-3">
+                        {/* Tabs */}
+                        {!loading && (() => {
+                            const appCount = suggestions.filter(s => (s.emailCategory ?? 'application_response') === 'application_response').length;
+                            const offerCount = suggestions.filter(s => s.emailCategory === 'job_offer').length;
+                            return (
+                                <div
+                                    className="flex items-center gap-1 p-1 rounded-xl"
+                                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                                >
+                                    {([
+                                        { key: 'application_response' as const, label: 'Applications', count: appCount },
+                                        { key: 'job_offer' as const, label: 'Job Leads', count: offerCount },
+                                    ]).map(({ key, label, count }) => {
+                                        const isActive = activeTab === key;
+                                        return (
+                                            <button
+                                                key={key}
+                                                type="button"
+                                                onClick={() => switchTab(key)}
+                                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                                                style={{
+                                                    background: isActive ? 'var(--bg-raised)' : 'transparent',
+                                                    border: isActive ? '1px solid var(--border-bright)' : '1px solid transparent',
+                                                    color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                                                    boxShadow: isActive ? '0 1px 4px rgba(14,14,23,0.4)' : 'none',
+                                                }}
+                                            >
+                                                {label}
+                                                {count > 0 && (
+                                                    <span
+                                                        className="px-1.5 py-0.5 rounded-full text-xs font-bold leading-none"
+                                                        style={{
+                                                            backgroundColor: isActive ? 'var(--accent)' : 'var(--bg-raised)',
+                                                            color: isActive ? '#000' : 'var(--text-muted)',
+                                                        }}
                                                     >
-                                                        Connect Google Calendar →
+                                                        {count}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })()}
+
+                        <div className="flex items-center justify-between">
+                            <p className="label-overline">
+                                Pending review
+                            </p>
+                            {suggestions.length > 0 && (
+                                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                    {suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length} suggestion{suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length !== 1 ? 's' : ''} waiting
+                                </p>
+                            )}
+                        </div>
+
+                        {loading && (
+                            <div className="h-64 flex items-center justify-center card">
+                                <Spinner size="md" />
+                            </div>
+                        )}
+
+                        {!loading && suggestions.length === 0 && (
+                            <div className="card p-10 flex flex-col items-center text-center">
+                                <div
+                                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                                    style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+                                >
+                                    <InboxIcon />
+                                </div>
+                                <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                                    All caught up
+                                </p>
+                                <p className="text-sm max-w-sm" style={{ color: 'var(--text-muted)' }}>
+                                    No pending suggestions. Click <strong style={{ color: 'var(--text-secondary)' }}>Scan inbox</strong> above to check for new job emails{autoPoll ? ', or wait for the automatic scan every 2 hours' : ''}.
+                                </p>
+                            </div>
+                        )}
+
+                        {!loading && suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length === 0 && suggestions.length > 0 && (
+                            <div className="card p-8 flex flex-col items-center text-center">
+                                <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                                    No {activeTab === 'job_offer' ? 'job lead' : 'application'} emails pending
+                                </p>
+                                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                    Switch to the other tab to see your {activeTab === 'job_offer' ? 'application responses' : 'job leads'}.
+                                </p>
+                            </div>
+                        )}
+
+                        {!loading && suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).map((s) => {
+                            const busy = actionIds.has(s._id);
+                            const noteBusy = actionIds.has(`note-${s._id}`);
+                            const job = s.jobApplicationId as any;
+                            const isCalChecked = !calendarUnchecked.has(s._id);
+                            const isNoteAdded = noteAddedLocally.has(s._id);
+                            const hasCalEvent = !!s.suggestedCalendarEvent;
+                            return (
+                                <div
+                                    key={s._id}
+                                    className="card p-5"
+                                    style={{ opacity: busy ? 0.5 : 1, transition: 'opacity 150ms' }}
+                                >
+                                    {/* Company / status row */}
+                                    <div className="flex items-start justify-between gap-3 mb-3">
+                                        <div className="min-w-0">
+                                            <p className="text-[15px] font-bold" style={{ color: 'var(--text-primary)' }}>
+                                                {s.matchedCompanyName || s.senderName || 'Unknown sender'}
+                                            </p>
+                                            {s.matchedJobTitle && (
+                                                <p className="text-[12.5px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                                    {s.matchedJobTitle}
+                                                </p>
+                                            )}
+                                        </div>
+                                        {s.suggestedStatus && <StatusPill status={s.suggestedStatus} />}
+                                    </div>
+
+                                    {/* Email subject + snippet */}
+                                    <div
+                                        className="flex items-start gap-2 rounded-xl px-3.5 py-2.5 mb-3"
+                                        style={{ backgroundColor: 'var(--bg-elevated)' }}
+                                    >
+                                        <span className="shrink-0 mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                            <MailIcon />
+                                        </span>
+                                        <div className="min-w-0">
+                                            <p className="text-[12px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+                                                {s.emailSubject}
+                                            </p>
+                                            <p className="text-[11.5px] mt-1 leading-relaxed line-clamp-3" style={{ color: 'var(--text-muted)' }}>
+                                                {s.emailSnippet}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* ── Section 2: Note ── */}
+                                    {s.suggestedNote && (
+                                        <div
+                                            className="rounded-xl px-3.5 py-3 mb-3"
+                                            style={{
+                                                backgroundColor: 'rgba(232,184,68,0.06)',
+                                                border: '1px solid rgba(232,184,68,0.15)',
+                                            }}
+                                        >
+                                            <div className="flex items-center justify-between gap-3 mb-1.5">
+                                                <p className="text-[11px] font-semibold flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
+                                                    <NoteIcon /> AI note
+                                                </p>
+                                                {job && (
+                                                    <button
+                                                        onClick={() => handleAddNote(s)}
+                                                        disabled={noteBusy || isNoteAdded}
+                                                        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                                                        style={{
+                                                            backgroundColor: isNoteAdded ? 'rgba(34,197,94,0.12)' : 'rgba(232,184,68,0.15)',
+                                                            color: isNoteAdded ? '#22c55e' : 'var(--accent)',
+                                                            border: `1px solid ${isNoteAdded ? 'rgba(34,197,94,0.3)' : 'rgba(232,184,68,0.3)'}`,
+                                                            opacity: noteBusy ? 0.6 : 1,
+                                                            cursor: isNoteAdded ? 'default' : 'pointer',
+                                                        }}
+                                                    >
+                                                        {isNoteAdded ? (<><CheckIcon /> Added to job</>) : noteBusy ? 'Adding…' : 'Add to job notes'}
                                                     </button>
                                                 )}
+                                            </div>
+                                            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                                {s.suggestedNote}
                                             </p>
-                                            <p className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>
-                                                {s.suggestedCalendarEvent!.title}
-                                            </p>
-                                            <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                                                {formatCalEventDate(s.suggestedCalendarEvent!.dateTimeISO)}
-                                            </p>
-                                            {s.suggestedCalendarEvent!.description && (
-                                                <p className="text-[11.5px] mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                                                    {s.suggestedCalendarEvent!.description}
+                                        </div>
+                                    )}
+
+                                    {/* ── Section 3: Calendar event ── */}
+                                    {hasCalEvent && (
+                                        <div
+                                            className="rounded-xl px-3.5 py-3 mb-3"
+                                            style={{
+                                                backgroundColor: hasScope ? 'rgba(59,130,246,0.05)' : 'rgba(150,150,150,0.05)',
+                                                border: `1px solid ${hasScope ? 'rgba(59,130,246,0.18)' : 'rgba(150,150,150,0.18)'}`,
+                                                opacity: hasScope ? 1 : 0.7,
+                                            }}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                {hasScope && (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isCalChecked}
+                                                        onChange={(e) => {
+                                                            setCalendarUnchecked((prev) => {
+                                                                const next = new Set(prev);
+                                                                if (!e.target.checked) next.add(s._id); else next.delete(s._id);
+                                                                return next;
+                                                            });
+                                                        }}
+                                                        className="mt-1 shrink-0 cursor-pointer"
+                                                        style={{ accentColor: '#3b82f6' }}
+                                                    />
+                                                )}
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-[11px] font-semibold mb-1 flex items-center gap-1.5"
+                                                        style={{ color: hasScope ? '#3b82f6' : 'var(--text-muted)' }}>
+                                                        <CalendarIcon />
+                                                        {hasScope
+                                                            ? (isCalChecked ? 'Add to calendar when applied' : 'Skip calendar event')
+                                                            : 'Calendar event detected'}
+                                                        {!hasScope && (
+                                                            <button
+                                                                onClick={handleConnectGmail}
+                                                                className="ml-2 underline text-[11px] font-normal"
+                                                                style={{ color: 'var(--accent)' }}
+                                                            >
+                                                                Connect Google Calendar →
+                                                            </button>
+                                                        )}
+                                                    </p>
+                                                    <p className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                                        {s.suggestedCalendarEvent!.title}
+                                                    </p>
+                                                    <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                                        {formatCalEventDate(s.suggestedCalendarEvent!.dateTimeISO)}
+                                                    </p>
+                                                    {s.suggestedCalendarEvent!.description && (
+                                                        <p className="text-[11.5px] mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                                                            {s.suggestedCalendarEvent!.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Match status + actions row */}
+                                    <div className="flex items-end justify-between gap-3">
+                                        <div className="text-[11.5px] space-y-1" style={{ color: 'var(--text-muted)' }}>
+                                            {job ? (
+                                                <p>
+                                                    Matched to:{' '}
+                                                    <span style={{ color: 'var(--text-secondary)' }}>
+                                                        {job.companyName} — {job.jobTitle}
+                                                    </span>
+                                                    {' '}
+                                                    <span
+                                                        className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ml-1"
+                                                        style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+                                                    >
+                                                        currently {job.status}
+                                                    </span>
                                                 </p>
+                                            ) : (
+                                                <p style={{ color: 'rgba(251,191,36,0.85)' }}>
+                                                    ⚠ No matching job found
+                                                </p>
+                                            )}
+                                            <p>{CONFIDENCE_LABELS[s.confidence]}</p>
+                                        </div>
+
+                                        <div className="flex gap-2 shrink-0">
+                                            <a
+                                                href={`https://mail.google.com/mail/u/0/#all/${s.gmailMessageId}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="btn-ghost text-sm flex items-center gap-1.5"
+                                                title="Open email in Gmail"
+                                            >
+                                                <ExternalLinkIcon /> Gmail
+                                            </a>
+                                            <button
+                                                onClick={() => setEditingSuggestion(s)}
+                                                disabled={busy}
+                                                className="btn-secondary text-sm flex items-center gap-1.5"
+                                                title="Edit suggestion"
+                                            >
+                                                <EditIcon /> Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleReject(s)}
+                                                disabled={busy}
+                                                className="btn-danger text-sm flex items-center gap-1.5"
+                                            >
+                                                <XIcon /> Dismiss
+                                            </button>
+                                            {(s.suggestedStatus || (hasCalEvent && hasScope)) && (
+                                                <button
+                                                    onClick={() => handleAccept(s)}
+                                                    disabled={busy}
+                                                    className="btn-primary text-sm flex items-center gap-1.5"
+                                                >
+                                                    <CheckIcon />
+                                                    {s.suggestedStatus ? 'Apply' : 'Save to calendar'}
+                                                </button>
                                             )}
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                            );
+                        })}
+                    </div>
 
-                            {/* Match status + actions row */}
-                            <div className="flex items-end justify-between gap-3">
-                                <div className="text-[11.5px] space-y-1" style={{ color: 'var(--text-muted)' }}>
-                                    {job ? (
-                                        <p>
-                                            Matched to:{' '}
-                                            <span style={{ color: 'var(--text-secondary)' }}>
-                                                {job.companyName} — {job.jobTitle}
-                                            </span>
-                                            {' '}
-                                            <span
-                                                className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ml-1"
-                                                style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
-                                            >
-                                                currently {job.status}
-                                            </span>
-                                        </p>
-                                    ) : (
-                                        <p style={{ color: 'rgba(251,191,36,0.85)' }}>
-                                            ⚠ No matching job found
-                                        </p>
-                                    )}
-                                    <p>{CONFIDENCE_LABELS[s.confidence]}</p>
-                                </div>
+                    {/* Edit Suggestion Modal */}
+                    {editingSuggestion && (
+                        <EditSuggestionModal
+                            suggestion={editingSuggestion}
+                            onClose={() => setEditingSuggestion(null)}
+                            onSave={handleEditSave}
+                        />
+                    )}
 
-                                <div className="flex gap-2 shrink-0">
-                                    <a
-                                        href={`https://mail.google.com/mail/u/0/#all/${s.gmailMessageId}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="btn-ghost text-sm flex items-center gap-1.5"
-                                        title="Open email in Gmail"
-                                    >
-                                        <ExternalLinkIcon /> Gmail
-                                    </a>
-                                    <button
-                                        onClick={() => setEditingSuggestion(s)}
-                                        disabled={busy}
-                                        className="btn-secondary text-sm flex items-center gap-1.5"
-                                        title="Edit suggestion"
-                                    >
-                                        <EditIcon /> Edit
-                                    </button>
-                                    <button
-                                        onClick={() => handleReject(s)}
-                                        disabled={busy}
-                                        className="btn-danger text-sm flex items-center gap-1.5"
-                                    >
-                                        <XIcon /> Dismiss
-                                    </button>
-                                    {(s.suggestedStatus || (hasCalEvent && hasScope)) && (
-                                        <button
-                                            onClick={() => handleAccept(s)}
-                                            disabled={busy}
-                                            className="btn-primary text-sm flex items-center gap-1.5"
-                                        >
-                                            <CheckIcon />
-                                            {s.suggestedStatus ? 'Apply' : 'Save to calendar'}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+                    {/* Toast */}
+                    {toast && (
+                        <div
+                            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-xl text-sm font-medium shadow-xl whitespace-nowrap"
+                            style={{
+                                backgroundColor: toast.type === 'err' ? 'rgba(244,100,100,0.12)' : 'var(--bg-elevated)',
+                                border: `1px solid ${toast.type === 'err' ? 'rgba(244,100,100,0.3)' : 'var(--border)'}`,
+                                color: toast.type === 'err' ? 'var(--rose, #f46464)' : 'var(--text-primary)',
+                                animation: 'fadeUp 200ms ease',
+                            }}
+                        >
+                            {toast.msg}
                         </div>
-                    );
-                })}
-            </div>
+                    )}
 
-            {/* Edit Suggestion Modal */}
-            {editingSuggestion && (
-                <EditSuggestionModal
-                    suggestion={editingSuggestion}
-                    onClose={() => setEditingSuggestion(null)}
-                    onSave={handleEditSave}
-                />
-            )}
-
-            {/* Toast */}
-            {toast && (
-                <div
-                    className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-xl text-sm font-medium shadow-xl whitespace-nowrap"
-                    style={{
-                        backgroundColor: toast.type === 'err' ? 'rgba(244,100,100,0.12)' : 'var(--bg-elevated)',
-                        border: `1px solid ${toast.type === 'err' ? 'rgba(244,100,100,0.3)' : 'var(--border)'}`,
-                        color: toast.type === 'err' ? 'var(--rose, #f46464)' : 'var(--text-primary)',
-                        animation: 'fadeUp 200ms ease',
-                    }}
-                >
-                    {toast.msg}
-                </div>
-            )}
-
-            <style>{`
+                    <style>{`
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes fadeUp {
                     from { opacity: 0; transform: translateX(-50%) translateY(8px); }
                     to   { opacity: 1; transform: translateX(-50%) translateY(0); }
                 }
             `}</style>
-        </div>
-        </div>
+                </div>
+            </div>
         </div>
     );
 };
