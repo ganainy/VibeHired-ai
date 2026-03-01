@@ -1,5 +1,6 @@
 // client/src/pages/EmailSuggestionsPage.tsx
 import React, { useCallback, useEffect, useState } from 'react';
+import Spinner from '../components/common/Spinner';
 import {
     listPendingSuggestions,
     acceptSuggestion,
@@ -13,7 +14,6 @@ import {
 } from '../services/emailSuggestionsApi';
 import { getGoogleConnectUrl } from '../services/googleCalendarApi';
 import EditSuggestionModal from '../components/email-suggestions/EditSuggestionModal';
-import SimpleLoader from '../components/common/SimpleLoader';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -649,8 +649,8 @@ const EmailSuggestionsPage: React.FC = () => {
                         </div>
 
                         {loading && (
-                            <div className="py-12">
-                                <SimpleLoader message="Searching for job emails..." height="auto" />
+                            <div className="h-64 flex items-center justify-center card">
+                                <Spinner size="md" />
                             </div>
                         )}
 

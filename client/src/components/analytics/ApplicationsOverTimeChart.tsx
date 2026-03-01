@@ -121,6 +121,14 @@ export const ApplicationsOverTimeChart: React.FC<ApplicationsOverTimeChartProps>
         });
     };
 
+    const totals = useMemo(() => {
+        const counts: Record<string, number> = {};
+        VISIBLE_STATUSES.forEach(status => {
+            counts[status] = chartData.reduce((acc, curr) => acc + (curr[status as keyof typeof curr] as number || 0), 0);
+        });
+        return counts;
+    }, [chartData]);
+
     const hasData = chartData.some(item =>
         VISIBLE_STATUSES.some(status => (item[status as keyof typeof item] as number) > 0)
     );
@@ -187,16 +195,16 @@ export const ApplicationsOverTimeChart: React.FC<ApplicationsOverTimeChartProps>
     }
 
     return (
-        <div className="flex flex-col gap-4 h-full">
-            {/* Legend */}
-            <div className="flex flex-wrap gap-2 text-xs">
+        <div className="flex flex-col gap-6 h-full">
+            {/* Legend with Totals */}
+            <div className="flex flex-wrap gap-3">
                 {VISIBLE_STATUSES.map(status => (
                     <button
                         key={status}
                         onClick={() => toggleStatus(status)}
-                        className={`flex items-center gap-1.5 px-2 py-1 rounded-full border transition-all ${hiddenStatuses.has(status)
-                            ? 'opacity-40 border-gray-300 dark:border-gray-600'
-                            : 'opacity-100 border-gray-300 dark:border-gray-600 bg-white dark:bg-zinc-800'
+                        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border transition-all ${hiddenStatuses.has(status)
+                            ? 'opacity-40 border-transparent bg-zinc-50 dark:bg-zinc-900/50'
+                            : 'opacity-100 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-sm'
                             }`}
                         title={hiddenStatuses.has(status) ? `Show ${status}` : `Hide ${status}`}
                     >
@@ -204,7 +212,10 @@ export const ApplicationsOverTimeChart: React.FC<ApplicationsOverTimeChartProps>
                             className="w-2.5 h-2.5 rounded-full"
                             style={{ backgroundColor: STATUS_CONFIG[status].color }}
                         />
-                        <span className="text-gray-700 dark:text-gray-300">{STATUS_CONFIG[status].label}</span>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{STATUS_CONFIG[status].label}</span>
+                            <span className="text-[10px] font-black text-gray-400 dark:text-gray-500">{totals[status]}</span>
+                        </div>
                     </button>
                 ))}
             </div>

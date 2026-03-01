@@ -320,15 +320,16 @@ These are `@layer components` classes — use them directly, no Tailwind prefixe
 <span className="status-not-applied">Saved</span>
 ```
 
-### Loading / skeleton state
+### Loading State
 
-```tsx
-<div className="space-y-3 animate-stagger">
-  <div className="shimmer h-5 w-3/4 rounded-lg" />
-  <div className="shimmer h-5 w-1/2 rounded-lg" />
-  <div className="shimmer h-5 w-2/3 rounded-lg" />
-</div>
-```
+Standardized patterns for indicating activity. Always import the shared `Spinner` from `@/components/common/Spinner`.
+
+| Size | Pixels | Usage |
+|------|--------|-------|
+| `xs` | `12x12` | Inside tight buttons (e.g., auth forms) |
+| `sm` | `16x16` | Standard buttons, small cards |
+| `md` | `24x24` | Default size, section loading |
+| `lg` | `32x32` | Center-page loading, large modules |
 
 ---
 

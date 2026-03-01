@@ -56,10 +56,10 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
     return (
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-100 dark:border-zinc-800 flex flex-col h-full relative">
+        <div className="bg-white dark:bg-zinc-900 px-6 py-6 pb-4 rounded-xl border border-zinc-100 dark:border-zinc-800 flex flex-col h-full relative" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
             <div className="flex justify-between items-start mb-6">
-                <h3 className="font-semibold text-slate-900 dark:text-white">Weekly Goal</h3>
-                <div className="relative" ref={menuRef}>
+                <h3 className="text-sm font-bold uppercase tracking-widest w-full text-center" style={{ color: 'var(--text-muted)' }}>Weekly Goal</h3>
+                <div className="absolute right-4 top-4" ref={menuRef}>
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
@@ -87,7 +87,7 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
             <div className="flex-1 flex flex-col items-center justify-center">
                 {isEditing ? (
                     <div className="flex flex-col items-center gap-3 animate-in fade-in duration-200">
-                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Set Weekly Target</label>
+                        <label className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>Set Target</label>
                         <input
                             type="number"
                             min="1"
@@ -97,7 +97,8 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
                                 if (e.key === 'Enter') handleSave();
                                 if (e.key === 'Escape') setIsEditing(false);
                             }}
-                            className="w-20 text-center border border-slate-300 dark:border-zinc-700 rounded-md px-2 py-1 bg-transparent text-slate-900 dark:text-white font-bold"
+                            className="w-20 text-center border-b-2 border-accent-dim bg-transparent text-xl font-bold py-1 focus:outline-none focus:border-accent"
+                            style={{ color: 'var(--text-primary)' }}
                             autoFocus
                         />
                         <div className="flex gap-2">
@@ -116,52 +117,45 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
                         </div>
                     </div>
                 ) : (
-                    <div className="relative w-40 h-40 flex items-center justify-center">
-                        {/* Background Circle */}
-                        <svg className="w-full h-full transform -rotate-90">
-                            <circle
-                                cx="80"
-                                cy="80"
-                                r={radius}
-                                stroke="currentColor"
-                                strokeWidth="12"
-                                fill="transparent"
-                                className="text-slate-100 dark:text-zinc-800"
+                    <div className="relative w-36 h-36 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <path
+                                style={{ stroke: 'var(--bg-elevated)' }}
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                strokeWidth="3"
                             />
-                            {/* Progress Circle */}
-                            <circle
-                                cx="80"
-                                cy="80"
-                                r={radius}
-                                stroke="currentColor"
-                                strokeWidth="12"
-                                fill="transparent"
-                                strokeDasharray={circumference}
-                                strokeDashoffset={strokeDashoffset}
+                            <path
+                                style={{ stroke: 'var(--accent)' }}
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                strokeDasharray={`${percentage}, 100`}
+                                strokeDashoffset="0"
                                 strokeLinecap="round"
-                                className="text-gold-500 dark:text-gold-400 transition-all duration-1000 ease-out"
+                                strokeWidth="3.5"
+                                className="transition-all duration-1000 ease-in-out"
                             />
                         </svg>
-                        <div className="absolute flex flex-col items-center">
-                            <span className="text-3xl font-bold text-slate-900 dark:text-white">{currentWeekCount}</span>
-                            <span className="text-sm text-slate-500 dark:text-slate-400">of {target} sent</span>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>{currentWeekCount}</span>
+                            <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'var(--text-muted)' }}>of {target} sent</span>
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="mt-6 text-center">
-                <p className="text-sm text-slate-600 dark:text-slate-300">
+            <div className="mt-8 text-center px-2">
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     {percentage >= 100
-                        ? "You've hit your weekly applications target! Great job!"
+                        ? "You've hit your weekly target! Great job!"
                         : currentWeekCount === 0
-                            ? <>Get started by sending your first application this week!</>
-                            : <>You're on track to hit your weekly applications target. <span className="text-green-600 dark:text-green-400 font-medium">Keep it up!</span></>
+                            ? <>Start by sending your first application this week!</>
+                            : <>On track to hit your weekly target. <span style={{ color: 'var(--jade)' }} className="font-bold uppercase tracking-widest text-[10px]">Keep it up!</span></>
                     }
                 </p>
-                <div className="flex justify-between text-xs text-slate-400 mt-4">
+                <div className="flex justify-between items-center text-[10px] uppercase tracking-tighter font-bold mt-6 pt-4 border-t" style={{ borderColor: 'var(--border-dim)', color: 'var(--text-muted)' }}>
                     <span>Goal Period</span>
-                    <span>{(() => {
+                    <span style={{ color: 'var(--text-secondary)' }}>{(() => {
                         const now = new Date();
                         const day = now.getDay();
                         const daysToMonday = day === 0 ? 6 : day - 1;

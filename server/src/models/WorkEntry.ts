@@ -6,7 +6,8 @@ export type WorkEntryStatus = 'planned' | 'done';
 
 export interface IWorkEntry extends Document {
   userId: mongoose.Types.ObjectId;
-  employerId: mongoose.Types.ObjectId;
+  employerId?: mongoose.Types.ObjectId;
+  appointmentTypeId?: mongoose.Types.ObjectId;
   subLocationId?: string;   // ObjectId string of the embedded sub-location
   subLocationName?: string; // Name snapshot at time of creation
   title?: string; // Optional label (e.g. "Team standup", "Morning shift")
@@ -15,6 +16,8 @@ export interface IWorkEntry extends Document {
   startTime: string; // 'HH:mm' e.g. '09:00'
   endTime: string;   // 'HH:mm' e.g. '17:00'
   hours: number;     // Computed duration in hours (decimal)
+  breakMinutes: number; // Unpaid break in minutes (subtracted from hours)
+  paidKilometers?: number; // Optional paid distance compensation in km
   status: WorkEntryStatus;
   notes?: string;
   googleCalendarEventId?: string;
@@ -23,14 +26,15 @@ export interface IWorkEntry extends Document {
   updatedAt?: Date;
 }
 
-/** Compute decimal hours from HH:mm strings. Handles overnight shifts (end < start). */
-function computeHours(startTime: string, endTime: string): number {
+/** Compute decimal hours from HH:mm strings. Handles overnight shifts (end < start). Deducts unpaid break. */
+function computeHours(startTime: string, endTime: string, breakMinutes: number = 0): number {
   const [sh, sm] = startTime.split(':').map(Number);
   const [eh, em] = endTime.split(':').map(Number);
   const startMins = sh * 60 + sm;
   let endMins = eh * 60 + em;
   if (endMins <= startMins) endMins += 24 * 60; // overnight
-  return Math.round(((endMins - startMins) / 60) * 100) / 100;
+  const totalMins = Math.max(0, (endMins - startMins) - breakMinutes);
+  return Math.round((totalMins / 60) * 100) / 100;
 }
 
 const WorkEntrySchema: Schema = new Schema(
@@ -44,7 +48,13 @@ const WorkEntrySchema: Schema = new Schema(
     employerId: {
       type: Schema.Types.ObjectId,
       ref: 'Employer',
-      required: true,
+      required: false,
+      index: true,
+    },
+    appointmentTypeId: {
+      type: Schema.Types.ObjectId,
+      ref: 'AppointmentType',
+      required: false,
       index: true,
     },
     subLocationId: {
@@ -85,6 +95,16 @@ const WorkEntrySchema: Schema = new Schema(
       required: true,
       default: 0,
     },
+    breakMinutes: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    paidKilometers: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
     status: {
       type: String,
       enum: ['planned', 'done'],
@@ -110,8 +130,8 @@ const WorkEntrySchema: Schema = new Schema(
 // Auto-compute hours before saving
 WorkEntrySchema.pre('save', function (next) {
   const entry = this as unknown as IWorkEntry;
-  if (entry.isModified('startTime') || entry.isModified('endTime') || entry.isNew) {
-    entry.hours = computeHours(entry.startTime, entry.endTime);
+  if (entry.isModified('startTime') || entry.isModified('endTime') || entry.isModified('breakMinutes') || entry.isNew) {
+    entry.hours = computeHours(entry.startTime, entry.endTime, entry.breakMinutes || 0);
   }
   next();
 });
