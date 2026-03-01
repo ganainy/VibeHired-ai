@@ -922,7 +922,7 @@ const EmployerCard: React.FC<EmployerCardProps> = ({ emp, deletingEmployerId, on
           </p>
         </div>
         {/* Actions */}
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1">
           <button
             onClick={onEdit}
             className="p-1.5 rounded-lg transition-all"
@@ -1003,7 +1003,7 @@ const EmployerCard: React.FC<EmployerCardProps> = ({ emp, deletingEmployerId, on
                     <span className="flex-1 text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
                       {sl.name}
                     </span>
-                    <div className="flex gap-0.5 opacity-0 group-hover/sl:opacity-100 transition-opacity">
+                    <div className="flex gap-0.5">
                       <button
                         onClick={() => { setEditingSubId(sl._id); setEditingSubName(sl.name); }}
                         className="p-1 rounded transition-colors"
@@ -1500,7 +1500,7 @@ const WorkTrackerPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => !entry.reminderCreated && !isReminding && handleCreateReminder(entry)}
                     disabled={entry.reminderCreated || isReminding}
