@@ -3,12 +3,14 @@ import { Loader2 } from 'lucide-react';
 
 interface SimpleLoaderProps {
     message?: string;
+    description?: string;
     height?: string | number;
     size?: number;
 }
 
 const SimpleLoader: React.FC<SimpleLoaderProps> = ({
     message = 'Loading...',
+    description,
     height = '200px',
     size = 32
 }) => {
@@ -20,11 +22,18 @@ const SimpleLoader: React.FC<SimpleLoaderProps> = ({
             <div className="animate-spin" style={{ color: 'var(--accent)' }}>
                 <Loader2 size={size} />
             </div>
-            {message && (
-                <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-                    {message}
-                </p>
-            )}
+            <div className="text-center">
+                {message && (
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {message}
+                    </p>
+                )}
+                {description && (
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                        {description}
+                    </p>
+                )}
+            </div>
         </div>
     );
 };

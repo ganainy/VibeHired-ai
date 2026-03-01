@@ -528,8 +528,8 @@ const CalendarPage: React.FC = () => {
     const handleDeleteEvent = (id: string) => {
         setConfirmModal({
             show: true,
-            title: 'Termin löschen',
-            message: 'Möchten Sie diesen Kalender-Termin wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+            title: 'Delete Event',
+            message: 'Are you sure you want to delete this calendar event? This action cannot be undone.',
             danger: true,
             onConfirm: async () => {
                 try {
@@ -538,8 +538,8 @@ const CalendarPage: React.FC = () => {
                 } catch (err: any) {
                     setConfirmModal({
                         show: true,
-                        title: 'Fehler beim Löschen',
-                        message: err?.response?.data?.message ?? 'Aktion fehlgeschlagen.',
+                        title: 'Error Deleting',
+                        message: err?.response?.data?.message ?? 'The action failed.',
                         type: 'alert',
                         danger: true,
                         onConfirm: () => { }

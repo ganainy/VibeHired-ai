@@ -1,5 +1,6 @@
 import React from 'react';
 import { WorkTrackerAnalytics } from '../../services/workTrackerApi';
+import SimpleLoader from '../common/SimpleLoader';
 
 interface WorkTrackerStatsWidgetProps {
     data: WorkTrackerAnalytics['summary'] | null;
@@ -9,10 +10,8 @@ interface WorkTrackerStatsWidgetProps {
 export const WorkTrackerStatsWidget: React.FC<WorkTrackerStatsWidgetProps> = ({ data, isLoading }) => {
     if (isLoading) {
         return (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-24 rounded-xl animate-pulse" style={{ background: 'var(--bg-elevated)' }}></div>
-                ))}
+            <div className="py-8">
+                <SimpleLoader message="Lade Statistiken..." height="100px" />
             </div>
         );
     }

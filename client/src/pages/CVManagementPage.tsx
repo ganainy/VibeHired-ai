@@ -718,8 +718,8 @@ const CVManagementPage: React.FC = () => {
   const handleDeleteCv = (cvId: string) => {
     setConfirmModal({
       show: true,
-      title: 'CV löschen',
-      message: 'Möchten Sie diesen Lebenslauf wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+      title: 'Delete CV',
+      message: 'Are you sure you want to delete this CV? This action cannot be undone.',
       danger: true,
       onConfirm: async () => {
         setIsDeleting(true);

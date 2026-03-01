@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { AtsScores } from '../../services/atsApi';
 import { SectionAnalysisResult } from '../../services/analysisApi';
+import SimpleLoader from '../common/SimpleLoader';
 
 interface GeneralCvAtsPanelProps {
     atsScores: AtsScores | null;
@@ -113,22 +114,8 @@ const GeneralCvAtsPanel: React.FC<GeneralCvAtsPanelProps> = ({ atsScores, analys
 
     if (isLoading) {
         return (
-            <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="h-6 w-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse"></div>
-                    <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded w-40 animate-pulse"></div>
-                </div>
-                <div className="space-y-4">
-                    <div className="h-40 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg animate-pulse"></div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="h-32 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg animate-pulse"></div>
-                        <div className="h-32 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg animate-pulse"></div>
-                    </div>
-                    <div className="h-24 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg animate-pulse"></div>
-                </div>
-                <div className="mt-4 text-center">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">Analyzing your CV...</p>
-                </div>
+            <div className="p-12 card flex flex-col items-center justify-center min-h-[300px]">
+                <SimpleLoader message="Analyzing your CV for ATS compatibility..." height="auto" />
             </div>
         );
     }

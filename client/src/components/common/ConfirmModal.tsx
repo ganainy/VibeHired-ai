@@ -19,8 +19,8 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
     message,
     onConfirm,
     onClose,
-    confirmLabel = 'Bestätigen',
-    cancelLabel = 'Abbrechen',
+    confirmLabel = 'Confirm',
+    cancelLabel = 'Cancel',
     danger = false,
     type = 'confirm'
 }) => {
@@ -111,7 +111,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                             style={danger ? { background: '#ef4444', borderColor: '#ef4444', color: 'white' } : {}}
                             onClick={() => { onConfirm(); onClose(); }}
                         >
-                            {isAlert || isInfo ? 'Verstanden' : confirmLabel}
+                            {isAlert || isInfo ? 'Got it' : confirmLabel}
                         </button>
                     </div>
                 </div>

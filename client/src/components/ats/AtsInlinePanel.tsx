@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { AtsScores } from '../../services/atsApi';
 import Spinner from '../common/Spinner';
+import SimpleLoader from '../common/SimpleLoader';
 
 export interface AtsInlinePanelProps {
     atsScores: AtsScores | null;
@@ -113,40 +114,26 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
             (atsScores.skillMatchDetails?.missingSkills ?? []).forEach(sk => items.push({ text: `Add the missing skill "${sk}" to the skills section`, type: 'skill' }));
         }
         return items;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [atsScores]);
 
     // ── Loading / Scanning states ─────────────────────────────────────────────
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center py-8">
-                <Spinner size="lg" />
-                <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">Loading ATS scores…</span>
+            <div className="py-8">
+                <SimpleLoader message="Loading ATS scores…" height="auto" />
             </div>
         );
     }
 
     if (isScanning) {
         return (
-            <div className="flex flex-col items-center justify-center py-8 px-6 text-center gap-6">
-                <div className="relative w-20 h-20">
-                    <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg animate-pulse" style={{background:"linear-gradient(135deg, var(--accent-dim), var(--accent))"}}>
-
-                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                    </div>
-                    <div className="absolute inset-0">
-                        <svg className="w-full h-full animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 80 80">
-                            <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="4" fill="none" style={{color:'var(--border)'}} />
-                            <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="4" fill="none" strokeDasharray="56 170" strokeLinecap="round" style={{color:'var(--accent)'}} />
-                        </svg>
-                    </div>
-                </div>
-                <div>
-                    <p className="font-semibold text-gray-900 dark:text-gray-100">Analyzing your CV…</p>
-                    <p className="text-sm mt-1" style={{color:'var(--accent)'}}>{progressMessage || 'This usually takes 15–30 seconds'}</p>
-                </div>
+            <div className="py-12 flex flex-col items-center justify-center text-center">
+                <SimpleLoader
+                    message="Analyzing your CV..."
+                    description={progressMessage || "This usually takes 15–30 seconds"}
+                    height="auto"
+                />
             </div>
         );
     }
@@ -154,8 +141,8 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
     if (!atsScores) {
         return (
             <div className="flex flex-col items-center justify-center py-8 px-6 text-center gap-5">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{background:'var(--accent-bg)', border:'1px solid var(--accent-dim)'}}>
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{color:'var(--accent)'}}>
+                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--accent)' }}>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                 </div>
@@ -280,7 +267,7 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                                 <span>{remainingCount} improvement{remainingCount !== 1 ? 's' : ''} remaining</span>
                                 {appliedCount > 0 && <span className="ml-2 text-green-600 dark:text-green-400">· {appliedCount} applied ✓</span>}
                                 <span className="block mt-0.5">Select items and click Apply Selected</span>
-                              </>
+                            </>
                             : appliedCount > 0
                                 ? <span className="text-green-600 dark:text-green-400">All {appliedCount} improvement{appliedCount !== 1 ? 's' : ''} applied ✓</span>
                                 : 'Your CV is well-optimized for this job!'}
@@ -334,7 +321,7 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
                                     Apply Selected{someSelected ? ` (${selectedCount})` : ''}
-                                  </>
+                                </>
                             }
                         </button>
                     </div>

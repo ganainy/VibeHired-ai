@@ -20,6 +20,7 @@ import axios from 'axios';
 import ErrorAlert from '../components/common/ErrorAlert';
 import SendToPhoneButton from '../components/jobs/SendToPhoneButton';
 import Spinner from '../components/common/Spinner';
+import SimpleLoader from '../components/common/SimpleLoader';
 import Toast from '../components/common/Toast';
 import JobStatusBadge from '../components/jobs/JobStatusBadge';
 import { getJobRecommendation, JobRecommendation } from '../services/jobRecommendationApi';
@@ -1588,8 +1589,8 @@ const ReviewFinalizePage: React.FC = () => {
             // Optimistic update - update local state immediately
             setCoverLetterText(generatedText);
             setFinalPdfFiles(prev => ({ ...prev, cl: null }));
-            setJobApplication(prev => prev ? { 
-                ...prev, 
+            setJobApplication(prev => prev ? {
+                ...prev,
                 draftCoverLetterText: generatedText,
                 suggestedCoverLetterFilename: suggestedFilename || prev.suggestedCoverLetterFilename,
                 generatedCoverLetterFilename: undefined
@@ -1971,7 +1972,7 @@ const ReviewFinalizePage: React.FC = () => {
     if (isLoading) {
         return (
             <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
-                <Spinner size="lg" />
+                <SimpleLoader message="Loading job details..." height="auto" />
             </div>
         );
     }
@@ -2109,9 +2110,9 @@ const ReviewFinalizePage: React.FC = () => {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="p-3 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
-                                        style={{background:'var(--accent-bg)', color:'var(--accent)', border:'1px solid var(--accent-dim)'}}
-                                        onMouseEnter={e=>(e.currentTarget.style.background='var(--accent-bg-hover,rgba(232,184,68,0.14))')}
-                                        onMouseLeave={e=>(e.currentTarget.style.background='var(--accent-bg)')}
+                                        style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-bg-hover,rgba(232,184,68,0.14))')}
+                                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent-bg)')}
                                         title={`View Job Posting ${parseMultipleUrls(jobApplication.jobUrl || '').length > 1 ? `(${idx + 1})` : ''}: ${url}`}
                                     >
                                         <span className="material-symbols-outlined text-[20px]">open_in_new</span>
@@ -2398,7 +2399,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         <option value={jobDetailsForm.baseCvId}>Current saved CV ({jobDetailsForm.baseCvId})</option>
                                                     )}
                                                     {availableCvs.map((cv) => (
-                                                        <option key={cv.id} value={cv.id}>{cv.name}</option>
+                                                        <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
                                                     ))}
                                                 </select>
                                                 <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Choose which CV version to use as the default for this job.</p>
@@ -2563,7 +2564,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
                                             <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
                                                 <strong className="text-text-main-light dark:text-text-main-dark">Contact Email:</strong>{' '}
-                                                <a href={`mailto:${jobApplication.contactEmail}`} className="hover:underline" style={{color: 'var(--accent)'}}>
+                                                <a href={`mailto:${jobApplication.contactEmail}`} className="hover:underline" style={{ color: 'var(--accent)' }}>
                                                     {jobApplication.contactEmail}
                                                 </a>
                                             </span>
@@ -2597,7 +2598,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
                                             <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
                                                 <strong className="text-text-main-light dark:text-text-main-dark">Application Portal:</strong>{' '}
-                                                <a href={jobApplication.applicationUrl} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{color: 'var(--accent)'}}>
+                                                <a href={jobApplication.applicationUrl} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--accent)' }}>
                                                     {jobApplication.applicationUrl.length > 50 ? jobApplication.applicationUrl.substring(0, 50) + '...' : jobApplication.applicationUrl}
                                                 </a>
                                             </span>
@@ -2914,7 +2915,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="mt-4 flex items-center gap-2 p-3 rounded-lg text-sm" style={{background:'var(--accent-bg)', color:'var(--text-secondary)', border:'1px solid var(--accent-dim)'}}>
+                                        <div className="mt-4 flex items-center gap-2 p-3 rounded-lg text-sm" style={{ background: 'var(--accent-bg)', color: 'var(--text-secondary)', border: '1px solid var(--accent-dim)' }}>
                                             <span className="material-symbols-outlined text-base">info</span>
                                             <p>
                                                 To regenerate the cover letter with different instructions, please delete the current cover letter using the trash icon above.
@@ -2923,8 +2924,8 @@ const ReviewFinalizePage: React.FC = () => {
 
                                         {/* Cover Letter Library Panel */}
                                         {showClLibraryPanel && (
-                                            <div className="mt-4 p-4 rounded-xl space-y-4" style={{background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)'}}>
-                                                <h3 className="text-sm font-semibold flex items-center gap-2" style={{color: 'var(--accent)'}}>
+                                            <div className="mt-4 p-4 rounded-xl space-y-4" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
+                                                <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--accent)' }}>
                                                     <span className="material-symbols-outlined text-base">folder_open</span>
                                                     Attach Cover Letter from Library
                                                 </h3>
@@ -2940,7 +2941,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={selectedBaseClId}
                                                         onChange={(e) => { setSelectedBaseClId(e.target.value); setClUploadFile(null); }}
                                                         disabled={!!clUploadFile || isApplyingBaseCl}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 disabled:opacity-50" style={{caretColor: 'var(--accent)'}}
+                                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 disabled:opacity-50" style={{ caretColor: 'var(--accent)' }}
                                                     >
                                                         <option value="">— choose a cover letter —</option>
                                                         {baseCoverLetters.map(cl => (
@@ -2978,7 +2979,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         <button
                                                             onClick={() => clUploadFileRef.current?.click()}
                                                             disabled={isApplyingBaseCl}
-                                                        className="flex items-center gap-2 px-3 py-2 text-sm border border-dashed rounded-lg transition-colors disabled:opacity-50" style={{borderColor: 'var(--border)', color: 'var(--text-secondary)'}}
+                                                            className="flex items-center gap-2 px-3 py-2 text-sm border border-dashed rounded-lg transition-colors disabled:opacity-50" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
                                                         >
                                                             <span className="material-symbols-outlined text-base">upload_file</span>
                                                             Choose file…
@@ -3046,14 +3047,13 @@ const ReviewFinalizePage: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setClCreationMode('ai')}
-                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
-                                                clCreationMode === 'ai'
-                                                    ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
-                                            }`}
-                                            style={clCreationMode === 'ai' ? {background: 'var(--accent-bg)', borderColor: 'var(--accent)'} : {}}
+                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${clCreationMode === 'ai'
+                                                ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
+                                                }`}
+                                            style={clCreationMode === 'ai' ? { background: 'var(--accent-bg)', borderColor: 'var(--accent)' } : {}}
                                         >
                                             <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'ai' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}
-                                                style={clCreationMode === 'ai' ? {background: 'var(--accent)'} : {}}>
+                                                style={clCreationMode === 'ai' ? { background: 'var(--accent)' } : {}}>
                                                 <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
                                             </div>
                                             <div>
@@ -3061,7 +3061,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Let the AI write a tailored cover letter based on your CV and the job description.</p>
                                             </div>
                                             {clCreationMode === 'ai' && (
-                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{background: 'var(--accent)'}}>
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{ background: 'var(--accent)' }}>
                                                     <span className="material-symbols-outlined text-[14px]">check</span>
                                                 </span>
                                             )}
@@ -3071,14 +3071,13 @@ const ReviewFinalizePage: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setClCreationMode('import')}
-                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
-                                                clCreationMode === 'import'
-                                                    ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
-                                            }`}
-                                            style={clCreationMode === 'import' ? {background: 'var(--accent-bg)', borderColor: 'var(--accent)'} : {}}
+                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${clCreationMode === 'import'
+                                                ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
+                                                }`}
+                                            style={clCreationMode === 'import' ? { background: 'var(--accent-bg)', borderColor: 'var(--accent)' } : {}}
                                         >
                                             <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'import' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}
-                                                style={clCreationMode === 'import' ? {background: 'var(--accent)'} : {}}>
+                                                style={clCreationMode === 'import' ? { background: 'var(--accent)' } : {}}>
                                                 <span className="material-symbols-outlined text-[22px]">upload_file</span>
                                             </div>
                                             <div>
@@ -3086,7 +3085,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Upload a PDF / DOCX file or pick an existing one from your library.</p>
                                             </div>
                                             {clCreationMode === 'import' && (
-                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{background: 'var(--accent)'}}>
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{ background: 'var(--accent)' }}>
                                                     <span className="material-symbols-outlined text-[14px]">check</span>
                                                 </span>
                                             )}
@@ -3097,7 +3096,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     {clCreationMode === 'import' && (
                                         <div className="card p-8 space-y-6">
                                             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                                                <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>folder_open</span>
+                                                <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>folder_open</span>
                                                 Attach Cover Letter
                                             </h3>
 
@@ -3116,8 +3115,8 @@ const ReviewFinalizePage: React.FC = () => {
                                                     onChange={(e) => { const f = e.target.files?.[0] ?? null; setClUploadFile(f); if (f) setSelectedBaseClId(''); }}
                                                 />
                                                 {clUploadFile ? (
-                                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{background: "var(--accent-bg)", borderColor: "var(--accent-dim)", border: "1px solid var(--accent-dim)"}}>
-                                                        <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>description</span>
+                                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: "var(--accent-bg)", borderColor: "var(--accent-dim)", border: "1px solid var(--accent-dim)" }}>
+                                                        <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>description</span>
                                                         <span className="flex-1 truncate text-sm text-gray-800 dark:text-gray-200 font-medium">{clUploadFile.name}</span>
                                                         <button
                                                             onClick={() => { setClUploadFile(null); if (clUploadFileRef.current) clUploadFileRef.current.value = ''; }}
@@ -3196,142 +3195,142 @@ const ReviewFinalizePage: React.FC = () => {
 
                                     {/* ── Option A form: AI Generate ── */}
                                     {clCreationMode === 'ai' && (
-                                    <>
-                                    {coverLetterError && (
-                                        <div className="mb-6">
-                                            <ErrorAlert
-                                                message={coverLetterError}
-                                                onDismiss={() => setCoverLetterError(null)}
-                                            />
-                                        </div>
-                                    )}
-
-                                    <div className="card p-8 space-y-8">
-                                        {/* Target Role Section */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>work</span>
-                                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Target Role</h3>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="space-y-2">
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                        Job Title
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={tailoredJobTitle}
-                                                        onChange={(e) => setTailoredJobTitle(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
-                                                        placeholder="e.g. Senior Product Manager"
+                                        <>
+                                            {coverLetterError && (
+                                                <div className="mb-6">
+                                                    <ErrorAlert
+                                                        message={coverLetterError}
+                                                        onDismiss={() => setCoverLetterError(null)}
                                                     />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                        Company Name
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={tailoredCompanyName}
-                                                        onChange={(e) => setTailoredCompanyName(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
-                                                        placeholder="e.g. Acme Innovations"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
+                                            )}
 
-                                        {/* Job Description Section */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>description</span>
-                                                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Job Description</h3>
-                                                </div>
-                                            </div>
-                                            <div className="relative">
-                                                <textarea
-                                                    value={tailoredJobDescription}
-                                                    onChange={(e) => setTailoredJobDescription(e.target.value)}
-                                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base min-h-[200px]"
-                                                    placeholder="Paste the full job description here... Our AI will analyze key requirements."
-                                                ></textarea>
-                                            </div>
-                                        </div>
-
-                                        {/* Base Resume Selection */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>folder</span>
-                                                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Base Resume</h3>
-                                                </div>
-                                                <div className="relative">
-                                                    <select
-                                                        value={selectedClBaseCvId}
-                                                        onChange={(e) => handleSelectedClBaseCvIdChange(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
-                                                    >
-                                                        {currentCvId && hasLocalCv && (
-                                                            <option value="__job_cv__">📄 This Job's CV (attached)</option>
-                                                        )}
-                                                        {availableCvs.map(cv => (
-                                                            <option key={cv.id} value={cv.id}>{cv.name}</option>
-                                                        ))}
-                                                        {availableCvs.length === 0 && <option value="master">Loading CVs...</option>}
-                                                    </select>
-                                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
-                                                        <span className="material-symbols-outlined">expand_more</span>
+                                            <div className="card p-8 space-y-8">
+                                                {/* Target Role Section */}
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>work</span>
+                                                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Target Role</h3>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div className="space-y-2">
+                                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                Job Title
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={tailoredJobTitle}
+                                                                onChange={(e) => setTailoredJobTitle(e.target.value)}
+                                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
+                                                                placeholder="e.g. Senior Product Manager"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                Company Name
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={tailoredCompanyName}
+                                                                onChange={(e) => setTailoredCompanyName(e.target.value)}
+                                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
+                                                                placeholder="e.g. Acme Innovations"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                    Select the CV version to use for this cover letter.
-                                                </p>
-                                            </div>
-                                        </div>
 
-                                        {/* Custom Instructions */}
-                                        <PromptChecklist
-                                            type="coverLetter"
-                                            onChange={setClCustomInstructions}
-                                        />
+                                                {/* Job Description Section */}
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>description</span>
+                                                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Job Description</h3>
+                                                        </div>
+                                                    </div>
+                                                    <div className="relative">
+                                                        <textarea
+                                                            value={tailoredJobDescription}
+                                                            onChange={(e) => setTailoredJobDescription(e.target.value)}
+                                                            className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base min-h-[200px]"
+                                                            placeholder="Paste the full job description here... Our AI will analyze key requirements."
+                                                        ></textarea>
+                                                    </div>
+                                                </div>
 
-                                        {/* Footer Actions */}
-                                        <div className="mt-8 flex items-center justify-end gap-4">
-                                            <button
-                                                onClick={() => navigate('/dashboard')}
-                                                className="px-6 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                onClick={handleGenerateCoverLetter}
-                                                disabled={isGeneratingCoverLetter || !hasMasterCv || !tailoredJobDescription}
-                                                className="btn-primary font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                                            >
-                                                {isGeneratingCoverLetter ? (
-                                                    <>
-                                                        <Spinner size="sm" className="text-white" />
-                                                        <span>Generating...</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span className="material-symbols-outlined text-white">auto_awesome</span>
-                                                        <span>Generate Cover Letter</span>
-                                                    </>
+                                                {/* Base Resume Selection */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>folder</span>
+                                                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Base Resume</h3>
+                                                        </div>
+                                                        <div className="relative">
+                                                            <select
+                                                                value={selectedClBaseCvId}
+                                                                onChange={(e) => handleSelectedClBaseCvIdChange(e.target.value)}
+                                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
+                                                            >
+                                                                {currentCvId && hasLocalCv && (
+                                                                    <option value="__job_cv__">📄 This Job's CV (attached)</option>
+                                                                )}
+                                                                {availableCvs.map(cv => (
+                                                                    <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
+                                                                ))}
+                                                                {availableCvs.length === 0 && <option value="master">Loading CVs...</option>}
+                                                            </select>
+                                                            <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                                                <span className="material-symbols-outlined">expand_more</span>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                            Select the CV version to use for this cover letter.
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Custom Instructions */}
+                                                <PromptChecklist
+                                                    type="coverLetter"
+                                                    onChange={setClCustomInstructions}
+                                                />
+
+                                                {/* Footer Actions */}
+                                                <div className="mt-8 flex items-center justify-end gap-4">
+                                                    <button
+                                                        onClick={() => navigate('/dashboard')}
+                                                        className="px-6 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={handleGenerateCoverLetter}
+                                                        disabled={isGeneratingCoverLetter || !hasMasterCv || !tailoredJobDescription}
+                                                        className="btn-primary font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                                                    >
+                                                        {isGeneratingCoverLetter ? (
+                                                            <>
+                                                                <Spinner size="sm" className="text-white" />
+                                                                <span>Generating...</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <span className="material-symbols-outlined text-white">auto_awesome</span>
+                                                                <span>Generate Cover Letter</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </div>
+
+                                                {!hasMasterCv && (
+                                                    <div className="mt-4 text-center">
+                                                        <p className="text-sm text-amber-600 dark:text-amber-400">
+                                                            ⚠️ You need to upload a CV first. Go to <Link to="/manage-cv" className="underline font-medium">CV Management</Link> to upload it.
+                                                        </p>
+                                                    </div>
                                                 )}
-                                            </button>
-                                        </div>
-
-                                        {!hasMasterCv && (
-                                            <div className="mt-4 text-center">
-                                                <p className="text-sm text-amber-600 dark:text-amber-400">
-                                                    ⚠️ You need to upload a CV first. Go to <Link to="/manage-cv" className="underline font-medium">CV Management</Link> to upload it.
-                                                </p>
                                             </div>
-                                        )}
-                                    </div>
-                                    </>
+                                        </>
                                     )}
                                 </div>
                             )}
@@ -3344,7 +3343,7 @@ const ReviewFinalizePage: React.FC = () => {
                             {/* Raw PDF attached — no JSON, show placeholder */}
                             {hasLocalCv && (!cvData || !cvData.basics || Object.keys(cvData.basics).length === 0) && !liveCvDescriptor ? (
                                 <div className="p-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center gap-4 text-center">
-                                    <span className="material-symbols-outlined text-5xl" style={{color:'var(--accent)'}}>description</span>
+                                    <span className="material-symbols-outlined text-5xl" style={{ color: 'var(--accent)' }}>description</span>
                                     <div>
                                         <p className="text-base font-semibold text-gray-800 dark:text-gray-200">CV attached as PDF</p>
                                         {currentCvFilename && (
@@ -3465,7 +3464,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             <details className="group">
                                                 <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-transparent group-open:border-zinc-100 dark:group-open:border-zinc-800">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="flex items-center justify-center w-8 h-8 rounded-lg text-ink-950 shadow-sm" style={{background: 'var(--accent)'}}>
+                                                        <div className="flex items-center justify-center w-8 h-8 rounded-lg text-ink-950 shadow-sm" style={{ background: 'var(--accent)' }}>
                                                             <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
                                                         </div>
                                                         <div>
@@ -3496,7 +3495,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                                         {change.description}
                                                                     </p>
                                                                     <p className="text-xs text-zinc-500 dark:text-zinc-500 flex items-center gap-2 italic">
-                                                                        <span className="w-1 h-1 rounded-full" style={{background:'var(--accent)'}}></span>
+                                                                        <span className="w-1 h-1 rounded-full" style={{ background: 'var(--accent)' }}></span>
                                                                         {change.reason}
                                                                     </p>
                                                                 </div>
@@ -3513,7 +3512,7 @@ const ReviewFinalizePage: React.FC = () => {
                                         <details className="group">
                                             <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-transparent group-open:border-zinc-100 dark:group-open:border-zinc-800">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg text-ink-950 shadow-sm" style={{background:'var(--accent)'}}>
+                                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg text-ink-950 shadow-sm" style={{ background: 'var(--accent)' }}>
                                                         <span className="material-symbols-outlined text-[20px]">troubleshoot</span>
                                                     </div>
                                                     <div>
@@ -3531,11 +3530,10 @@ const ReviewFinalizePage: React.FC = () => {
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     {atsScores && (
-                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                                                            (atsScores.score ?? 0) >= 80 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(atsScores.score ?? 0) >= 80 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                                                             : (atsScores.score ?? 0) >= 60 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                                                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                                                        }`}>
+                                                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                                            }`}>
                                                             {Math.round(atsScores.score ?? 0)}%
                                                         </span>
                                                     )}
@@ -3597,11 +3595,10 @@ const ReviewFinalizePage: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setCvCreationMode('ai')}
-                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
-                                                cvCreationMode === 'ai' ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
-                                            }`}
+                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${cvCreationMode === 'ai' ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
+                                                }`}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'ai' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`} style={cvCreationMode === 'ai' ? {background:'var(--accent)'} : {}}>
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'ai' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`} style={cvCreationMode === 'ai' ? { background: 'var(--accent)' } : {}}>
                                                 <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
                                             </div>
                                             <div>
@@ -3609,7 +3606,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Let the AI tailor your CV to the job description automatically.</p>
                                             </div>
                                             {cvCreationMode === 'ai' && (
-                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{background:'var(--accent)'}}>
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{ background: 'var(--accent)' }}>
                                                     <span className="material-symbols-outlined text-[14px]">check</span>
                                                 </span>
                                             )}
@@ -3619,11 +3616,10 @@ const ReviewFinalizePage: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setCvCreationMode('import')}
-                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${
-                                                cvCreationMode === 'import' ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
-                                            }`}
+                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${cvCreationMode === 'import' ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
+                                                }`}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'import' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`} style={cvCreationMode === 'import' ? {background:'var(--accent)'} : {}}>
+                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'import' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`} style={cvCreationMode === 'import' ? { background: 'var(--accent)' } : {}}>
                                                 <span className="material-symbols-outlined text-[22px]">upload_file</span>
                                             </div>
                                             <div>
@@ -3631,7 +3627,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                 <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Upload a PDF / DOCX file or pick an existing one from your library.</p>
                                             </div>
                                             {cvCreationMode === 'import' && (
-                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{background:'var(--accent)'}}>
+                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{ background: 'var(--accent)' }}>
                                                     <span className="material-symbols-outlined text-[14px]">check</span>
                                                 </span>
                                             )}
@@ -3642,7 +3638,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     {cvCreationMode === 'import' && (
                                         <div className="card p-8 space-y-6">
                                             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                                                <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>folder_open</span>
+                                                <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>folder_open</span>
                                                 Attach CV
                                             </h3>
 
@@ -3661,8 +3657,8 @@ const ReviewFinalizePage: React.FC = () => {
                                                     onChange={(e) => { const f = e.target.files?.[0] ?? null; setCvImportFile(f); if (f) setSelectedBaseCvIdForImport(''); }}
                                                 />
                                                 {cvImportFile ? (
-                                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{background: "var(--accent-bg)", borderColor: "var(--accent-dim)", border: "1px solid var(--accent-dim)"}}>
-                                                        <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>description</span>
+                                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: "var(--accent-bg)", borderColor: "var(--accent-dim)", border: "1px solid var(--accent-dim)" }}>
+                                                        <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>description</span>
                                                         <span className="flex-1 truncate text-sm text-gray-800 dark:text-gray-200 font-medium">{cvImportFile.name}</span>
                                                         <button
                                                             onClick={() => { setCvImportFile(null); if (cvImportFileRef.current) cvImportFileRef.current.value = ''; }}
@@ -3702,7 +3698,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                     >
                                                         <option value="">— choose a saved CV —</option>
                                                         {availableCvs.map(cv => (
-                                                            <option key={cv.id} value={cv.id}>{cv.name}</option>
+                                                            <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
                                                         ))}
                                                     </select>
                                                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
@@ -3741,134 +3737,134 @@ const ReviewFinalizePage: React.FC = () => {
 
                                     {/* ── Option A form: AI Generate ── */}
                                     {cvCreationMode === 'ai' && (
-                                    <>
-                                    {generateCvError && (
-                                        <div className="mb-6">
-                                            <ErrorAlert
-                                                message={generateCvError}
-                                                onDismiss={() => setGenerateCvError(null)}
-                                            />
-                                        </div>
-                                    )}
-
-                                    <div className="card p-8 space-y-8">
-                                        {/* Target Role Section */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>work</span>
-                                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Target Role</h3>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="space-y-2">
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                        Job Title
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={tailoredJobTitle}
-                                                        onChange={(e) => setTailoredJobTitle(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
-                                                        placeholder="e.g. Senior Product Manager"
+                                        <>
+                                            {generateCvError && (
+                                                <div className="mb-6">
+                                                    <ErrorAlert
+                                                        message={generateCvError}
+                                                        onDismiss={() => setGenerateCvError(null)}
                                                     />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                        Company Name
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={tailoredCompanyName}
-                                                        onChange={(e) => setTailoredCompanyName(e.target.value)}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
-                                                        placeholder="e.g. Acme Innovations"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
+                                            )}
 
-                                        {/* Job Description Section */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>description</span>
-                                                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Job Description</h3>
-                                                </div>
-                                            </div>
-                                            <div className="relative">
-                                                <textarea
-                                                    value={tailoredJobDescription}
-                                                    onChange={(e) => setTailoredJobDescription(e.target.value)}
-                                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base min-h-[200px]"
-                                                    placeholder="Paste the full job description here... Our AI will analyze key requirements and skills."
-                                                ></textarea>
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-4">
-                                            {/* Base Resume - Now Full Width or in a grid if we add more items later, currently logic kept it in grid but requested full width for prompt means prompt moves out */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                                            <div className="card p-8 space-y-8">
+                                                {/* Target Role Section */}
                                                 <div className="space-y-4">
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        <span className="material-symbols-outlined" style={{color:"var(--accent)"}}>folder</span>
-                                                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Base Resume</h3>
+                                                        <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>work</span>
+                                                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Target Role</h3>
                                                     </div>
-                                                    <div className="relative">
-                                                        <select
-                                                            value={selectedBaseCvId}
-                                                            onChange={(e) => handleSelectedBaseCvIdChange(e.target.value)}
-                                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
-                                                        >
-                                                            <option value="">— Not selected —</option>
-                                                            {availableCvs.map(cv => (
-                                                                <option key={cv.id} value={cv.id}>{cv.name}</option>
-                                                            ))}
-                                                            {availableCvs.length === 0 && <option value="master">Loading CVs...</option>}
-                                                        </select>
-                                                        <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
-                                                            <span className="material-symbols-outlined">expand_more</span>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div className="space-y-2">
+                                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                Job Title
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={tailoredJobTitle}
+                                                                onChange={(e) => setTailoredJobTitle(e.target.value)}
+                                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
+                                                                placeholder="e.g. Senior Product Manager"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                Company Name
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={tailoredCompanyName}
+                                                                onChange={(e) => setTailoredCompanyName(e.target.value)}
+                                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
+                                                                placeholder="e.g. Acme Innovations"
+                                                            />
                                                         </div>
                                                     </div>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                        Select the version you want to tailor for this application.
-                                                    </p>
+                                                </div>
+
+                                                {/* Job Description Section */}
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>description</span>
+                                                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Job Description</h3>
+                                                        </div>
+                                                    </div>
+                                                    <div className="relative">
+                                                        <textarea
+                                                            value={tailoredJobDescription}
+                                                            onChange={(e) => setTailoredJobDescription(e.target.value)}
+                                                            className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base min-h-[200px]"
+                                                            placeholder="Paste the full job description here... Our AI will analyze key requirements and skills."
+                                                        ></textarea>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-4">
+                                                    {/* Base Resume - Now Full Width or in a grid if we add more items later, currently logic kept it in grid but requested full width for prompt means prompt moves out */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>folder</span>
+                                                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Base Resume</h3>
+                                                            </div>
+                                                            <div className="relative">
+                                                                <select
+                                                                    value={selectedBaseCvId}
+                                                                    onChange={(e) => handleSelectedBaseCvIdChange(e.target.value)}
+                                                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
+                                                                >
+                                                                    <option value="">— Not selected —</option>
+                                                                    {availableCvs.map(cv => (
+                                                                        <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
+                                                                    ))}
+                                                                    {availableCvs.length === 0 && <option value="master">Loading CVs...</option>}
+                                                                </select>
+                                                                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                                                    <span className="material-symbols-outlined">expand_more</span>
+                                                                </div>
+                                                            </div>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                Select the version you want to tailor for this application.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Custom Instructions - Full Width */}
+                                                    <PromptChecklist
+                                                        type="cv"
+                                                        onChange={setCustomInstructions}
+                                                    />
                                                 </div>
                                             </div>
 
-                                            {/* Custom Instructions - Full Width */}
-                                            <PromptChecklist
-                                                type="cv"
-                                                onChange={setCustomInstructions}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Footer Actions */}
-                                    <div className="mt-8 flex items-center justify-end gap-4">
-                                        <button
-                                            onClick={() => navigate('/dashboard')}
-                                            className="px-6 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={handleGenerateSpecificCv}
-                                            disabled={isGeneratingCv || !hasMasterCv || !tailoredJobDescription}
-                                            className="btn-primary font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                                        >
-                                            {isGeneratingCv ? (
-                                                <>
-                                                    <Spinner size="sm" className="text-white" />
-                                                    <span>Generating...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="material-symbols-outlined text-white">auto_awesome</span>
-                                                    <span>Generate Tailored CV</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                    </>)}
+                                            {/* Footer Actions */}
+                                            <div className="mt-8 flex items-center justify-end gap-4">
+                                                <button
+                                                    onClick={() => navigate('/dashboard')}
+                                                    className="px-6 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={handleGenerateSpecificCv}
+                                                    disabled={isGeneratingCv || !hasMasterCv || !tailoredJobDescription}
+                                                    className="btn-primary font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                                                >
+                                                    {isGeneratingCv ? (
+                                                        <>
+                                                            <Spinner size="sm" className="text-white" />
+                                                            <span>Generating...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span className="material-symbols-outlined text-white">auto_awesome</span>
+                                                            <span>Generate Tailored CV</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </>)}
                                 </div>
                             )}
                         </div>
@@ -3918,35 +3914,30 @@ const ReviewFinalizePage: React.FC = () => {
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                         <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
                             <div className="p-8">
-                                <div className="flex justify-center mb-8">
-                                    <div className="relative">
-                                        <div className="w-20 h-20 rounded-full flex items-center justify-center animate-pulse" style={{background:"var(--accent-bg)"}}>
-                                            <span className="material-symbols-outlined text-4xl" style={{color:"var(--accent)"}}>auto_awesome</span>
-                                        </div>
-                                        <div className="absolute inset-0 border-4 rounded-full border-t-transparent animate-spin" style={{borderColor:"var(--accent)"}}></div>
-                                    </div>
+                                <div className="flex justify-center mb-6">
+                                    <SimpleLoader
+                                        message={
+                                            generationStep === 'analyzing' ? 'Analyzing Job Requirements...' :
+                                                generationStep === 'matching' ? 'Matching Skills & Experience...' :
+                                                    generationStep === 'tailoring' ? 'Tailoring Your Resume...' :
+                                                        'Finalizing Document...'
+                                        }
+                                        description={
+                                            generationStep === 'analyzing' ? 'Identifying key keywords and requirements from the job description.' :
+                                                generationStep === 'matching' ? 'Finding the best projects and experiences from your history.' :
+                                                    generationStep === 'tailoring' ? 'Rewriting descriptions to highlight relevance and impact.' :
+                                                        'Formatting your new CV for maximum impact.'
+                                        }
+                                        height="auto"
+                                    />
                                 </div>
-
-                                <h3 className="text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-2">
-                                    {generationStep === 'analyzing' && 'Analyzing Job Requirements...'}
-                                    {generationStep === 'matching' && 'Matching Skills & Experience...'}
-                                    {generationStep === 'tailoring' && 'Tailoring Your Resume...'}
-                                    {generationStep === 'finalizing' && 'Finalizing Document...'}
-                                </h3>
-
-                                <p className="text-center text-gray-500 dark:text-gray-400 mb-8 text-sm">
-                                    {generationStep === 'analyzing' && 'Identifying key keywords and requirements from the job description.'}
-                                    {generationStep === 'matching' && 'Finding the best projects and experiences from your history.'}
-                                    {generationStep === 'tailoring' && 'Rewriting descriptions to highlight relevance and impact.'}
-                                    {generationStep === 'finalizing' && 'Formatting your new CV for maximum impact.'}
-                                </p>
 
                                 {/* Progress Steps */}
                                 <div className="space-y-4">
                                     <div className="relative pt-1">
                                         <div className="flex mb-2 items-center justify-between">
                                             <div className="text-right">
-                                                <span className="text-xs font-semibold inline-block" style={{color:'var(--accent)'}}>
+                                                <span className="text-xs font-semibold inline-block" style={{ color: 'var(--accent)' }}>
                                                     {Math.round(generationProgress)}%
                                                 </span>
                                             </div>
@@ -3957,10 +3948,10 @@ const ReviewFinalizePage: React.FC = () => {
                                     </div>
 
                                     <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-medium text-gray-400">
-                                        <div style={generationStep === 'analyzing' || generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? {color:"var(--accent)"} : {}}>Analyze</div>
-                                        <div style={generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? {color:"var(--accent)"} : {}}>Match</div>
-                                        <div style={generationStep === 'tailoring' || generationStep === 'finalizing' ? {color:"var(--accent)"} : {}}>Tailor</div>
-                                        <div style={generationStep === 'finalizing' ? {color:"var(--accent)"} : {}}>Finalize</div>
+                                        <div style={generationStep === 'analyzing' || generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? { color: "var(--accent)" } : {}}>Analyze</div>
+                                        <div style={generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? { color: "var(--accent)" } : {}}>Match</div>
+                                        <div style={generationStep === 'tailoring' || generationStep === 'finalizing' ? { color: "var(--accent)" } : {}}>Tailor</div>
+                                        <div style={generationStep === 'finalizing' ? { color: "var(--accent)" } : {}}>Finalize</div>
                                     </div>
                                 </div>
                             </div>
@@ -4017,7 +4008,7 @@ const ReviewFinalizePage: React.FC = () => {
                 isGeneratingCoverLetter && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in duration-200">
-                            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-2" style={{background:"var(--accent-bg)"}}>
+                            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-2" style={{ background: "var(--accent-bg)" }}>
                                 <Spinner size="lg" />
                             </div>
                             <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Generating Cover Letter</h3>

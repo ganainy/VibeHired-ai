@@ -20,6 +20,7 @@ import {
 } from '../services/autoJobApi';
 import Toast from '../components/common/Toast';
 import Spinner from '../components/common/Spinner';
+import SimpleLoader from '../components/common/SimpleLoader';
 import ConfirmModal from '../components/common/ConfirmModal';
 import JobRecommendationBadge from '../components/jobs/JobRecommendationBadge';
 import { formatDate } from '../utils/dateUtils';
@@ -592,8 +593,8 @@ const AutoJobsPage: React.FC = () => {
 
     if (isLoading && jobs.length === 0) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <Spinner size="lg" />
+            <div className="flex items-center justify-center py-20">
+                <SimpleLoader message="Loading automatic job suggestions..." height="auto" />
             </div>
         );
     }
@@ -655,7 +656,7 @@ const AutoJobsPage: React.FC = () => {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <h1 className="page-title">Auto Jobs</h1>
-                        <p className="mt-1" style={{color: 'var(--text-secondary)'}}>
+                        <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
                             Automated job discovery and application preparation
                         </p>
                     </div>
@@ -732,7 +733,7 @@ const AutoJobsPage: React.FC = () => {
 
                 {/* Configuration Card */}
                 <div className="card p-6">
-                    <h2 className="text-xl font-bold mb-4" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>Configuration</h2>
+                    <h2 className="text-xl font-bold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Configuration</h2>
 
                     <div className="space-y-4">
                         {/* Keywords */}
@@ -791,7 +792,7 @@ const AutoJobsPage: React.FC = () => {
                                             key={index}
                                             type="button"
                                             onClick={() => handleLocationSelect(suggestion)}
-                                            className="w-full text-left px-4 py-2 text-sm transition-colors" style={{color: 'var(--text-primary)'}}
+                                            className="w-full text-left px-4 py-2 text-sm transition-colors" style={{ color: 'var(--text-primary)' }}
                                         >
                                             {suggestion}
                                         </button>
@@ -1279,7 +1280,7 @@ const AutoJobsPage: React.FC = () => {
                                                         <button
                                                             onClick={() => handlePromote(job._id)}
                                                             className="inline-flex items-center justify-center w-9 h-9 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
-                                                            style={{background:'var(--jade-bg)', color:'var(--jade)', border:'1px solid rgba(45,212,160,0.3)'}}
+                                                            style={{ background: 'var(--jade-bg)', color: 'var(--jade)', border: '1px solid rgba(45,212,160,0.3)' }}
                                                             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,212,160,0.18)')}
                                                             onMouseLeave={e => (e.currentTarget.style.background = 'var(--jade-bg)')}
                                                             title="Save to main dashboard"
@@ -1292,7 +1293,7 @@ const AutoJobsPage: React.FC = () => {
                                                     <button
                                                         onClick={() => handleDelete(job._id)}
                                                         className="inline-flex items-center justify-center w-9 h-9 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
-                                                        style={{background:'var(--rose-bg)', color:'var(--rose)', border:'1px solid rgba(244,100,100,0.3)'}}
+                                                        style={{ background: 'var(--rose-bg)', color: 'var(--rose)', border: '1px solid rgba(244,100,100,0.3)' }}
                                                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(244,100,100,0.18)')}
                                                         onMouseLeave={e => (e.currentTarget.style.background = 'var(--rose-bg)')}
                                                         title="Delete"
@@ -1349,14 +1350,14 @@ const AutoJobsPage: React.FC = () => {
             {/* Confirmation Modal */}
             {confirmModal && (
                 <ConfirmModal
-                    isOpen={confirmModal.isOpen}
+                    show={confirmModal.isOpen}
                     onClose={() => setConfirmModal(null)}
                     onConfirm={confirmModal.onConfirm}
-                    title={confirmModal.title}
+                    title={confirmModal.title || 'Confirm'}
                     message={confirmModal.message}
-                    confirmText={confirmModal.confirmText}
-                    cancelText={confirmModal.cancelText}
-                    confirmButtonStyle={confirmModal.confirmButtonStyle}
+                    confirmLabel={confirmModal.confirmText}
+                    cancelLabel={confirmModal.cancelText}
+                    danger={confirmModal.confirmButtonStyle === 'danger'}
                 />
             )}
         </div>

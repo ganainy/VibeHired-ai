@@ -21,6 +21,7 @@ import indeedLogo from '../assets/indeed-svgrepo-com.svg';
 import xingLogo from '../assets/xing-logo-svgrepo-com.svg';
 import stepstoneLogo from '../assets/stepstone-svgrepo-com.svg';
 import Spinner from '../components/common/Spinner';
+import SimpleLoader from '../components/common/SimpleLoader';
 import Toast from '../components/common/Toast';
 import DuplicateJobWarningModal from '../components/jobs/DuplicateJobWarningModal';
 
@@ -571,13 +572,13 @@ const DashboardPage: React.FC = () => {
 
   // Per-status colors for the dropdown option rows (dot + label)
   const statusOptionColors: Record<JobApplication['status'], { dot: string; text: string }> = {
-    'Not Applied': { dot: 'bg-slate-400',   text: 'text-slate-500 dark:text-slate-300' },
-    'Applied':     { dot: 'bg-green-400',   text: 'text-green-700 dark:text-green-300' },
-    'Interview':   { dot: 'bg-gold-400',    text: 'text-gold-700  dark:text-gold-300' },
-    'Assessment':  { dot: 'bg-amber-400',   text: 'text-amber-700 dark:text-amber-300' },
-    'Rejected':    { dot: 'bg-red-400',     text: 'text-red-700   dark:text-red-300' },
-    'Closed':      { dot: 'bg-gray-500',    text: 'text-gray-600  dark:text-gray-400' },
-    'Offer':       { dot: 'bg-emerald-400', text: 'text-emerald-700 dark:text-emerald-300' },
+    'Not Applied': { dot: 'bg-slate-400', text: 'text-slate-500 dark:text-slate-300' },
+    'Applied': { dot: 'bg-green-400', text: 'text-green-700 dark:text-green-300' },
+    'Interview': { dot: 'bg-gold-400', text: 'text-gold-700  dark:text-gold-300' },
+    'Assessment': { dot: 'bg-amber-400', text: 'text-amber-700 dark:text-amber-300' },
+    'Rejected': { dot: 'bg-red-400', text: 'text-red-700   dark:text-red-300' },
+    'Closed': { dot: 'bg-gray-500', text: 'text-gray-600  dark:text-gray-400' },
+    'Offer': { dot: 'bg-emerald-400', text: 'text-emerald-700 dark:text-emerald-300' },
   };
 
   // Handle status change
@@ -617,7 +618,7 @@ const DashboardPage: React.FC = () => {
           </svg>
         </button>
         {isOpen && (
-          <div className="absolute z-50 mt-1 w-44 rounded-xl shadow-xl py-1 overflow-hidden" style={{background: 'var(--bg-elevated)', border: '1px solid var(--border)'}}>
+          <div className="absolute z-50 mt-1 w-44 rounded-xl shadow-xl py-1 overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
             {statusOptions.map((status) => (
               <button
                 key={status}
@@ -627,7 +628,7 @@ const DashboardPage: React.FC = () => {
                   setIsOpen(false);
                 }}
                 className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 transition-colors ${statusOptionColors[status]?.text ?? 'text-gray-700 dark:text-gray-200'}`}
-                style={job.status === status ? {background: 'var(--bg-raised)'} : undefined}
+                style={job.status === status ? { background: 'var(--bg-raised)' } : undefined}
               >
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusOptionColors[status]?.dot ?? 'bg-gray-400'}`} />
                 {status}
@@ -698,8 +699,8 @@ const DashboardPage: React.FC = () => {
   // --- Render Loading State ---
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size="lg" />
+      <div className="flex items-center justify-center min-h-screen">
+        <SimpleLoader message="Loading dashboard..." height="auto" />
       </div>
     );
   }
@@ -733,7 +734,7 @@ const DashboardPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
             <h1 className="page-title">Job Dashboard</h1>
-            <p style={{color: 'var(--text-secondary)'}}>Manage your job applications and track your progress</p>
+            <p style={{ color: 'var(--text-secondary)' }}>Manage your job applications and track your progress</p>
           </div>
           {(() => {
             const todayCount = jobs.filter(job => {
@@ -786,11 +787,11 @@ const DashboardPage: React.FC = () => {
 
                   {/* File chosen – show name and remove button */}
                   {preExtractionCvFile && (
-                    <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)'}}>
-                      <svg className="w-4 h-4 flex-shrink-0" style={{color: 'var(--accent)'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
+                      <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--accent)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span className="text-xs truncate flex-1" style={{color: 'var(--accent)'}}>{preExtractionCvFile.name}</span>
+                      <span className="text-xs truncate flex-1" style={{ color: 'var(--accent)' }}>{preExtractionCvFile.name}</span>
                       <button
                         type="button"
                         onClick={() => { setPreExtractionCvFile(null); if (cvFileInputRef.current) cvFileInputRef.current.value = ''; }}
@@ -825,7 +826,7 @@ const DashboardPage: React.FC = () => {
                       type="button"
                       onClick={() => cvFileInputRef.current?.click()}
                       disabled={isCreatingFromText}
-                      className="mt-1.5 text-xs disabled:opacity-40 flex items-center gap-1 transition-opacity" style={{color: 'var(--accent)'}}
+                      className="mt-1.5 text-xs disabled:opacity-40 flex items-center gap-1 transition-opacity" style={{ color: 'var(--accent)' }}
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -918,16 +919,16 @@ const DashboardPage: React.FC = () => {
                 />
                 {/* Loading overlay */}
                 {isCreatingFromText && (
-                  <div className="absolute inset-0 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-3" style={{background: 'color-mix(in srgb, var(--bg-surface) 85%, transparent)'}}>
+                  <div className="absolute inset-0 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-3" style={{ background: 'color-mix(in srgb, var(--bg-surface) 85%, transparent)' }}>
                     <div className="relative">
-                      <svg className="animate-spin h-10 w-10" style={{color: 'var(--accent)'}} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin h-10 w-10" style={{ color: 'var(--accent)' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-semibold" style={{color: 'var(--text-primary)'}}>Extracting job details...</p>
-                      <p className="text-xs mt-1" style={{color: 'var(--text-muted)'}}>AI is analyzing the job description</p>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Extracting job details...</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>AI is analyzing the job description</p>
                     </div>
                   </div>
                 )}
@@ -1028,7 +1029,7 @@ const DashboardPage: React.FC = () => {
               <div className="flex-1 min-w-[200px]">
                 <label className="block text-xs font-medium mb-1.5 label-overline" htmlFor="filter-title">Search (Title, Company, Contact)</label>
                 <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{color:'var(--text-muted)'}}>
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
                     <SearchIcon />
                   </div>
                   <input
@@ -1084,14 +1085,13 @@ const DashboardPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setFilterFavorite(!filterFavorite)}
-                      className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-sm font-medium transition-all ${
-                        filterFavorite
-                          ? 'text-ink-950 border-transparent'
-                          : 'border-transparent hover:opacity-80'
-                      }`}
+                      className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-sm font-medium transition-all ${filterFavorite
+                        ? 'text-ink-950 border-transparent'
+                        : 'border-transparent hover:opacity-80'
+                        }`}
                       style={filterFavorite
-                        ? {background:'var(--accent)', color:'#0e0e17'}
-                        : {background:'var(--bg-raised)', color:'var(--text-secondary)', border:'1px solid var(--border)'}}
+                        ? { background: 'var(--accent)', color: '#0e0e17' }
+                        : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                       title="Favorites only"
                     >
                       <StarIcon filled={filterFavorite} />
@@ -1102,11 +1102,11 @@ const DashboardPage: React.FC = () => {
                       onClick={() => setFilterHasNotes(!filterHasNotes)}
                       className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-sm font-medium transition-all hover:opacity-80"
                       style={filterHasNotes
-                        ? {background:'var(--accent)', color:'#0e0e17', border:'1px solid transparent'}
-                        : {background:'var(--bg-raised)', color:'var(--text-secondary)', border:'1px solid var(--border)'}}
+                        ? { background: 'var(--accent)', color: '#0e0e17', border: '1px solid transparent' }
+                        : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                       title="Only show jobs with notes"
                     >
-                      <span className="material-symbols-outlined text-base" style={{fontSize:'16px'}}>sticky_note_2</span>
+                      <span className="material-symbols-outlined text-base" style={{ fontSize: '16px' }}>sticky_note_2</span>
                       <span>Has Notes</span>
                     </button>
 
@@ -1114,10 +1114,10 @@ const DashboardPage: React.FC = () => {
                       <button
                         onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); }}
                         className="inline-flex items-center gap-1 h-10 px-3 rounded-lg text-sm font-medium transition-all hover:opacity-80"
-                        style={{background:'var(--bg-raised)', color:'var(--text-muted)', border:'1px solid var(--border)'}}
+                        style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
                         title="Clear all filters"
                       >
-                        <span className="material-symbols-outlined" style={{fontSize:'15px'}}>close</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>close</span>
                         <span>Clear</span>
                       </button>
                     )}
@@ -1277,7 +1277,7 @@ const DashboardPage: React.FC = () => {
                             {job.contactEmail || job.contactPhone || job.hiringManagerName ? (
                               <div className="flex flex-col gap-0.5 text-xs">
                                 {job.contactEmail && (
-                                  <a href={`mailto:${job.contactEmail}`} className="hover:underline truncate block" style={{color: 'var(--accent)'}} title={`Email: ${job.contactEmail}`}>
+                                  <a href={`mailto:${job.contactEmail}`} className="hover:underline truncate block" style={{ color: 'var(--accent)' }} title={`Email: ${job.contactEmail}`}>
                                     📧 {job.contactEmail.length > 12 ? job.contactEmail.substring(0, 12) + '...' : job.contactEmail}
                                   </a>
                                 )}
@@ -1295,11 +1295,11 @@ const DashboardPage: React.FC = () => {
                             ) : job.contact ? (
                               // Legacy contact field fallback
                               job.contact.includes('@') ? (
-                                <a href={`mailto:${job.contact}`} className="hover:underline truncate block" style={{color: 'var(--accent)'}} title={`Email ${job.contact}`}>
+                                <a href={`mailto:${job.contact}`} className="hover:underline truncate block" style={{ color: 'var(--accent)' }} title={`Email ${job.contact}`}>
                                   {job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}
                                 </a>
                               ) : job.contact.startsWith('http') ? (
-                                <a href={job.contact} target="_blank" rel="noopener noreferrer" className="hover:underline truncate block" style={{color: 'var(--accent)'}} title={job.contact}>
+                                <a href={job.contact} target="_blank" rel="noopener noreferrer" className="hover:underline truncate block" style={{ color: 'var(--accent)' }} title={job.contact}>
                                   {job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}
                                 </a>
                               ) : (
@@ -1327,7 +1327,7 @@ const DashboardPage: React.FC = () => {
                                   href={url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors" style={{color: 'var(--accent)'}}
+                                  className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors" style={{ color: 'var(--accent)' }}
                                   title={`Open: ${url}`}
                                 >
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -1345,8 +1345,8 @@ const DashboardPage: React.FC = () => {
                               <button
                                 onClick={(e) => handleToggleFavorite(job, e)}
                                 className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${job.isFavorite
-                                    ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70'
-                                    : 'text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50'
+                                  ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70'
+                                  : 'text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50'
                                   }`}
                                 title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                               >
@@ -1409,9 +1409,9 @@ const DashboardPage: React.FC = () => {
         {/* Add/Edit Modal */}
         {modalMode && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
-            <div className="card-elevated p-6 rounded-2xl shadow-2xl w-full max-w-lg mx-4 sm:mx-0 flex flex-col" style={{maxHeight: '90vh'}}>
+            <div className="card-elevated p-6 rounded-2xl shadow-2xl w-full max-w-lg mx-4 sm:mx-0 flex flex-col" style={{ maxHeight: '90vh' }}>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>
+                <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
                   Add New Job Manually
                 </h2>
                 <button
@@ -1436,7 +1436,7 @@ const DashboardPage: React.FC = () => {
                   {/* Job Title */}
                   <div className="mb-5">
                     <label htmlFor="jobTitle" className="label-overline mb-2 block">
-                      Job Title <span style={{color: 'var(--rose)'}}>*</span>
+                      Job Title <span style={{ color: 'var(--rose)' }}>*</span>
                     </label>
                     <input
                       type="text"
@@ -1452,7 +1452,7 @@ const DashboardPage: React.FC = () => {
                   {/* Company Name */}
                   <div className="mb-5">
                     <label htmlFor="companyName" className="label-overline mb-2 block">
-                      Company Name <span style={{color: 'var(--rose)'}}>*</span>
+                      Company Name <span style={{ color: 'var(--rose)' }}>*</span>
                     </label>
                     <input
                       type="text"
@@ -1520,7 +1520,7 @@ const DashboardPage: React.FC = () => {
                         </option>
                       ))}
                     </select>
-                    <p className="mt-1 text-xs" style={{color: 'var(--text-muted)'}}>
+                    <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
                       Choose which CV version to use as the base for this job application
                     </p>
                   </div>
@@ -1613,7 +1613,7 @@ const DashboardPage: React.FC = () => {
                       placeholder="https://example.com/job-posting"
                       className="input-base w-full"
                     />
-                    <p className="mt-1.5 text-[10px] uppercase tracking-wider font-semibold" style={{color: 'var(--text-muted)'}}>
+                    <p className="mt-1.5 text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-muted)' }}>
                       Separate multiples with commas or spaces
                     </p>
                   </div>
@@ -1664,7 +1664,7 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 {/* Modal Action Buttons */}
-                <div className="flex justify-end gap-3 pt-4 mt-4" style={{borderTop: '1px solid var(--border)'}}>
+                <div className="flex justify-end gap-3 pt-4 mt-4" style={{ borderTop: '1px solid var(--border)' }}>
                   <button
                     type="button"
                     onClick={handleCloseModal}
@@ -1706,20 +1706,20 @@ const DashboardPage: React.FC = () => {
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
             <div className="card-elevated p-6 rounded-2xl shadow-2xl w-full max-w-md mx-4">
               <div className="flex items-center gap-4 mb-4">
-                <div className="flex-shrink-0 p-3 rounded-full" style={{background: 'color-mix(in srgb, var(--rose) 15%, transparent)', color: 'var(--rose)'}}>
+                <div className="flex-shrink-0 p-3 rounded-full" style={{ background: 'color-mix(in srgb, var(--rose) 15%, transparent)', color: 'var(--rose)' }}>
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold" style={{fontFamily: 'var(--font-display)', color: 'var(--text-primary)'}}>Delete Job Application</h3>
-                  <p className="text-sm mt-1" style={{color: 'var(--text-secondary)'}}>
+                  <h3 className="text-lg font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Delete Job Application</h3>
+                  <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                     Are you sure you want to delete this job application? This action cannot be undone.
                   </p>
                 </div>
               </div>
-              <div className="p-3 rounded-xl mb-4" style={{background: 'var(--bg-elevated)', border: '1px solid var(--border)'}}>
-                <p className="text-sm font-semibold" style={{color: 'var(--text-primary)'}}>{deleteConfirmModal.jobTitle}</p>
+              <div className="p-3 rounded-xl mb-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{deleteConfirmModal.jobTitle}</p>
               </div>
               <div className="flex justify-end gap-3">
                 <button onClick={handleDeleteCancel} className="btn-secondary">
