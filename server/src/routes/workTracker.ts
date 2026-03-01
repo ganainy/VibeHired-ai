@@ -498,9 +498,10 @@ router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
  */
 router.post('/:id/remind', asyncHandler(async (req: Request, res: Response) => {
   const userId = String(req.user!._id);
-  const entry = await WorkEntry.findOne({ _id: req.params.id, userId }).populate<{
-    employerId: { name: string; logoUrl?: string };
-  }>('employerId', 'name logoUrl');
+  const entry = await WorkEntry.findOne({ _id: req.params.id, userId }).populate([
+    { path: 'employerId', select: 'name logoUrl' },
+    { path: 'appointmentTypeId', select: 'name' }
+  ]);
 
   if (!entry) throw new NotFoundError('Work entry not found.');
   if (entry.reminderCreated && entry.googleCalendarEventId) {
@@ -510,8 +511,8 @@ router.post('/:id/remind', asyncHandler(async (req: Request, res: Response) => {
   const auth = await getOAuth2Client(userId);
   const calendar = google.calendar({ version: 'v3', auth });
 
-  const employerName = (entry.employerId as unknown as { name: string }).name;
-  const entryTitle = entry.title ? `${employerName} — ${entry.title}` : employerName;
+  const entityName = entry.employerId ? (entry.employerId as any).name : (entry.appointmentTypeId as any)?.name ?? 'Appointment';
+  const entryTitle = entry.title ? `${entityName} — ${entry.title}` : entityName;
 
   // Build start/end DateTimes from date + startTime + endTime
   const dateStr = entry.date.toISOString().split('T')[0]; // 'YYYY-MM-DD'
