@@ -11,6 +11,10 @@ import {
     CreateMaterialDto,
     UpdateMaterialDto,
 } from '../services/interviewMaterialService';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GEMINI_FLASH } from '../constants/geminiModels';
+import Profile from '../models/Profile';
+import { decrypt } from '../utils/encryption';
 
 /**
  * GET /api/interview-materials?jobId=:id
@@ -104,4 +108,67 @@ export const remove = async (req: ValidatedRequest, res: Response) => {
     const { id } = req.params;
     await deleteMaterial(userId, id);
     res.status(204).send();
+};
+
+/**
+ * POST /api/interview-materials/generate-title
+ * Generate a title for a learning material using AI.
+ */
+export const generateTitle = async (req: ValidatedRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new AuthorizationError('User not authenticated');
+
+    const { type, content, description } = req.body;
+
+    if (!type) {
+        res.status(400).json({ message: 'type is required' });
+        return;
+    }
+
+    // Get user's Gemini API key
+    const profile = await Profile.findOne({ userId });
+    const encryptedKey =
+        (profile as any)?.aiProviderSettings?.providers?.gemini?.accessToken ??
+        (profile as any)?.integrations?.gemini?.accessToken;
+    let apiKey: string | null | undefined = null;
+    if (encryptedKey) {
+        apiKey = decrypt(encryptedKey);
+    }
+    if (!apiKey) {
+        apiKey = process.env.GEMINI_API_KEY;
+    }
+    if (!apiKey) {
+        res.status(500).json({ message: 'AI service not configured' });
+        return;
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: GEMINI_FLASH });
+
+    // Build context based on material type
+    let context = '';
+    if (type === 'file') {
+        context = 'Generate a concise, descriptive title for a learning material file. The title should be 3-8 words long and clearly indicate what the material covers.';
+    } else if (type === 'text') {
+        context = `Generate a concise, descriptive title for a learning material with the following content:\n\n${content || '(No content provided)'}\n\nThe title should be 3-8 words long and summarize the main topic.`;
+    } else if (type === 'markdown') {
+        context = `Generate a concise, descriptive title for a learning material with the following markdown content:\n\n${content || '(No content provided)'}\n\nThe title should be 3-8 words long and summarize the main topic.`;
+    } else if (type === 'link') {
+        context = `Generate a concise, descriptive title for a learning material link${description ? ` with the following description: ${description}` : ''}.\n\nThe title should be 3-8 words long and indicate what the linked resource covers.`;
+    } else {
+        context = 'Generate a concise, descriptive title for a learning material. The title should be 3-8 words long.';
+    }
+
+    const systemPrompt = `You are an AI assistant helping to name learning materials for interview preparation.
+${context}
+
+Return ONLY the title as a plain string, no quotes, no markdown formatting.`;
+
+    try {
+        const result = await model.generateContent(systemPrompt);
+        const title = result.response.text().trim();
+        res.json({ title });
+    } catch (e: any) {
+        res.status(500).json({ message: `Failed to generate title: ${e.message}` });
+    }
 };

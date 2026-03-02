@@ -194,8 +194,8 @@ const EventRow: React.FC<EventRowProps> = ({ event, onEdit, onDelete }) => (
             )}
         </div>
 
-        {/* Actions - hidden by default, shown on group hover */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Actions - always visible */}
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
             <button
                 onClick={() => onEdit(event)}
                 className="p-1.5 rounded-lg hover:bg-elevated transition-colors"

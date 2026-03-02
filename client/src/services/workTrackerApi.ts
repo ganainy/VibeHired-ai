@@ -87,6 +87,7 @@ export interface CreateWorkEntryPayload {
   breakMinutes?: number;
   paidKilometers?: number;
   notes?: string;
+  addToCalendar?: boolean;
 }
 
 export interface UpdateWorkEntryPayload extends Partial<CreateWorkEntryPayload> {

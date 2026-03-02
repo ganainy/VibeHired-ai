@@ -102,3 +102,18 @@ export async function deleteMaterial(materialId: string): Promise<void> {
     });
     await handleResponse<void>(res);
 }
+
+/** Generate a title for a learning material using AI */
+export async function generateMaterialTitle(
+    type: string,
+    content?: string,
+    description?: string
+): Promise<{ title: string }> {
+    const res = await fetch(`${API_BASE_URL}/interview-materials/generate-title`, {
+        method: 'POST',
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ type, content, description }),
+    });
+    const data = await handleResponse<{ title: string }>(res);
+    return data;
+}

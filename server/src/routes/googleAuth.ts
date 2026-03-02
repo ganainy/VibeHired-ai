@@ -210,11 +210,20 @@ router.put('/events/:id', authMiddleware, asyncHandler(async (req: Request, res:
 /**
  * DELETE /api/auth/google/events/:id
  * Deletes an event from the user's primary Google Calendar.
+ * Also clears the reminder status on any linked work entry.
  */
 router.delete('/events/:id', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
     const userId = String(req.user!._id);
     const eventId = req.params.id;
     await deleteCalendarEvent(userId, eventId);
+
+    // Clear reminder status on any linked work entry
+    const WorkEntry = (await import('../models/WorkEntry')).default;
+    await WorkEntry.updateMany(
+        { userId, googleCalendarEventId: eventId },
+        { $set: { googleCalendarEventId: undefined, reminderCreated: false } }
+    );
+
     res.status(204).send();
 }));
 

@@ -165,15 +165,25 @@ router.get('/stats', asyncHandler(async (req: Request, res: Response) => {
  */
 router.get('/analytics', asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!._id;
-  const monthStr = req.query.month as string; // 'YYYY-MM'
+  const monthStr = req.query.month as string; // 'YYYY-MM' or special values like 'current-month', 'last-month'
 
   let start: Date;
   let end: Date;
 
-  if (monthStr) {
+  // Try to parse as YYYY-MM format
+  const isValidYearMonth = monthStr && /^[0-9]{4}-[0-9]{2}$/.test(monthStr);
+
+  if (isValidYearMonth) {
     const [year, month] = monthStr.split('-').map(Number);
-    start = new Date(Date.UTC(year, month - 1, 1));
-    end = new Date(Date.UTC(year, month, 1));
+    if (month >= 1 && month <= 12) {
+      start = new Date(Date.UTC(year, month - 1, 1));
+      end = new Date(Date.UTC(year, month, 1));
+    } else {
+      // Invalid month, default to current month
+      const now = new Date();
+      start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    }
   } else {
     const now = new Date();
     start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -191,6 +201,10 @@ router.get('/analytics', asyncHandler(async (req: Request, res: Response) => {
   const employerMap: Record<string, any> = {};
 
   entries.forEach(entry => {
+    // Skip entries with invalid dates
+    if (!entry.date || isNaN(entry.date.getTime())) {
+      return;
+    }
     const dateKey = entry.date.toISOString().split('T')[0];
     const empName = entry.type === 'shift' ? ((entry.employerId as any)?.name || 'Unknown') : 'Appointment';
     const hours = entry.hours || 0;
@@ -328,12 +342,14 @@ router.delete('/appointment-types/:id', asyncHandler(async (req: Request, res: R
  */
 router.post('/', asyncHandler(async (req: Request, res: Response) => {
   const userId = String(req.user!._id);
-  const { employerId, appointmentTypeId, title, type, date, startTime, endTime, breakMinutes = 0, paidKilometers = 0, notes, subLocationId } = req.body;
+  const { employerId, appointmentTypeId, title, type, date, startTime, endTime, breakMinutes = 0, paidKilometers = 0, notes, subLocationId, addToCalendar } = req.body;
 
   if (!type || !['shift', 'appointment'].includes(type)) throw new ValidationError('type must be "shift" or "appointment".');
   if (type === 'shift' && !employerId) throw new ValidationError('employerId is required for shifts.');
   if (type === 'appointment' && !appointmentTypeId && !employerId) throw new ValidationError('appointmentTypeId or employerId is required for appointments.');
   if (!date) throw new ValidationError('date is required.');
+  const parsedDate = new Date(date);
+  if (isNaN(parsedDate.getTime())) throw new ValidationError('Invalid date format.');
   if (!startTime || !endTime) throw new ValidationError('startTime and endTime are required.');
 
   // Verify employer
@@ -366,7 +382,7 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
     appointmentTypeId: appointmentTypeId || undefined,
     title: title?.trim() || undefined,
     type,
-    date: new Date(date),
+    date: parsedDate,
     startTime,
     endTime,
     breakMinutes,
@@ -377,11 +393,55 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
     subLocationName,
   });
 
+  // Create calendar event if requested
+  let calendarEventCreated = false;
+  if (addToCalendar) {
+    try {
+      const auth = await getOAuth2Client(userId);
+      const calendar = google.calendar({ version: 'v3', auth });
+
+      const entityName = employer?.name || appointmentType?.name || 'Work Entry';
+      const entryTitle = title ? `${entityName} — ${title}` : entityName;
+
+      const startDateTime = new Date(`${parsedDate.toISOString().split('T')[0]}T${startTime}:00`);
+      const endDateTime = new Date(`${parsedDate.toISOString().split('T')[0]}T${endTime}:00`);
+      if (endDateTime <= startDateTime) endDateTime.setDate(endDateTime.getDate() + 1);
+
+      const event = {
+        summary: entryTitle,
+        description: [
+          `Type: ${type === 'shift' ? 'Work Shift' : 'Appointment'}`,
+          `Hours: ${computeHours(startTime, endTime, breakMinutes)}h (${startTime} – ${endTime})`,
+          notes ? `Notes: ${notes}` : '',
+          '',
+          'Added via VibeHired Time Tracker',
+        ].filter(Boolean).join('\n'),
+        start: { dateTime: startDateTime.toISOString(), timeZone: 'UTC' },
+        end: { dateTime: endDateTime.toISOString(), timeZone: 'UTC' },
+        reminders: {
+          useDefault: false,
+          overrides: [{ method: 'popup', minutes: 1440 }],
+        },
+      };
+
+      const response = await calendar.events.insert({ calendarId: 'primary', requestBody: event });
+      const eventId = response.data.id;
+      if (eventId) {
+        entry.googleCalendarEventId = eventId;
+        entry.reminderCreated = true;
+        await entry.save();
+        calendarEventCreated = true;
+      }
+    } catch (calErr) {
+      console.error('Failed to create calendar event:', calErr);
+    }
+  }
+
   const populated = await entry.populate([
     { path: 'employerId', select: 'name logoUrl subLocations' },
     { path: 'appointmentTypeId', select: 'name' }
   ]);
-  res.status(201).json(populated);
+  res.status(201).json({ ...populated.toObject(), calendarEventCreated });
 }));
 
 /**

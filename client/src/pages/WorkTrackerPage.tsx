@@ -30,6 +30,7 @@ import {
   updateEntry,
   deleteEntry,
   createReminder,
+  deleteReminder,
   parseSchedule,
   confirmScheduleImport,
   getAppointmentTypes,
@@ -709,8 +710,10 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
   const [breakMinutes, setBreakMinutes] = useState(editEntry?.breakMinutes?.toString() ?? '0');
   const [paidKilometers, setPaidKilometers] = useState(editEntry?.paidKilometers?.toString() ?? '0');
   const [notes, setNotes] = useState(editEntry?.notes ?? preFilled?.notes ?? '');
+  const [addToCalendar, setAddToCalendar] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [calendarWarning, setCalendarWarning] = useState('');
 
   // Voice input for notes
   const { startListening: startNotesListening, stopListening: stopNotesListening, transcript: notesTranscript, resetTranscript: resetNotesTranscript, isListening: isNotesListening, isSupported: isNotesSpeechSupported } = useSpeechRecognition();
@@ -762,12 +765,21 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
         breakMinutes: parseInt(breakMinutes) || 0,
         paidKilometers: parseFloat(paidKilometers) || 0,
         notes: notes.trim() || undefined,
+        addToCalendar,
       };
       let saved: WorkEntry;
+      let calendarCreated = false;
       if (editEntry) {
         saved = await updateEntry(editEntry._id, payload);
       } else {
-        saved = await createEntry(payload);
+        const result = await createEntry(payload);
+        saved = result;
+        // @ts-ignore - calendarEventCreated may be in response
+        calendarCreated = result.calendarEventCreated;
+      }
+      // Show warning if calendar event wasn't created but was requested
+      if (addToCalendar && !calendarCreated) {
+        setCalendarWarning('Calendar event could not be created. Make sure Google Calendar is connected in Settings.');
       }
       onSaved(saved);
     } catch (err: any) {
@@ -981,9 +993,38 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
             />
           </div>
 
+          {/* Add to Calendar toggle */}
+          <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg" style={{ backgroundColor: 'var(--accent-bg)' }}>
+                <CalendarDays size={16} style={{ color: 'var(--accent)' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Add to Calendar</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Create a calendar event for this entry</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAddToCalendar(!addToCalendar)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${addToCalendar ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+              style={{ backgroundColor: addToCalendar ? 'var(--accent)' : undefined }}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${addToCalendar ? 'translate-x-6' : 'translate-x-1'}`}
+              />
+            </button>
+          </div>
+
           {error && (
             <div className="alert-error flex items-center gap-2 text-sm">
               <AlertCircle size={15} /> {error}
+            </div>
+          )}
+
+          {calendarWarning && (
+            <div className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent)' }}>
+              <CalendarDays size={15} /> {calendarWarning}
             </div>
           )}
 
@@ -1458,6 +1499,15 @@ const WorkTrackerPage: React.FC = () => {
 
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
   useEffect(() => { fetchEmployers(); }, [fetchEmployers]);
+
+  // Refresh entries when window gains focus (e.g., after switching from Calendar page)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchEntries();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchEntries]);
   useEffect(() => { fetchAppointmentTypes(); }, [fetchAppointmentTypes]);
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
@@ -1500,6 +1550,18 @@ const WorkTrackerPage: React.FC = () => {
       setEntries((prev) => prev.map((e) => e._id === entry._id ? { ...e, reminderCreated: true } : e));
     } catch (err: any) {
       alert(err?.response?.data?.message ?? 'Failed to create reminder. Make sure Google Calendar is connected in Settings.');
+    } finally {
+      setRemindLoadingId(null);
+    }
+  };
+
+  const handleRemoveReminder = async (entry: WorkEntry) => {
+    setRemindLoadingId(entry._id);
+    try {
+      await deleteReminder(entry._id);
+      setEntries((prev) => prev.map((e) => e._id === entry._id ? { ...e, reminderCreated: false } : e));
+    } catch (err: any) {
+      alert(err?.response?.data?.message ?? 'Failed to remove reminder.');
     } finally {
       setRemindLoadingId(null);
     }
@@ -1774,11 +1836,11 @@ const WorkTrackerPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-                    onClick={() => !entry.reminderCreated && !isReminding && handleCreateReminder(entry)}
-                    disabled={entry.reminderCreated || isReminding}
-                    title={entry.reminderCreated ? 'Reminder added to Google Calendar' : 'Add 1-day reminder to Google Calendar'}
+                    onClick={() => entry.reminderCreated ? handleRemoveReminder(entry) : (!isReminding && handleCreateReminder(entry))}
+                    disabled={isReminding}
+                    title={entry.reminderCreated ? 'Click to remove reminder from Google Calendar' : 'Add 1-day reminder to Google Calendar'}
                     className="p-1.5 rounded-lg transition-all"
-                    style={{ color: entry.reminderCreated ? 'var(--jade)' : 'var(--text-muted)', background: 'transparent', cursor: entry.reminderCreated ? 'default' : 'pointer', opacity: isReminding ? 0.5 : 1 }}
+                    style={{ color: entry.reminderCreated ? 'var(--jade)' : 'var(--text-muted)', background: 'transparent', cursor: isReminding ? 'not-allowed' : 'pointer', opacity: isReminding ? 0.5 : 1 }}
                     onMouseEnter={(e) => { if (!entry.reminderCreated) (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
                     onMouseLeave={(e) => { if (!entry.reminderCreated) (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
                   >

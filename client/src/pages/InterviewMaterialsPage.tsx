@@ -1,7 +1,7 @@
 // client/src/pages/InterviewMaterialsPage.tsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { getGlobalMaterials, deleteMaterial, updateMaterial } from '../services/interviewMaterialsApi';
+import { getGlobalMaterials, deleteMaterial, updateMaterial, createMaterial, generateMaterialTitle } from '../services/interviewMaterialsApi';
 import { InterviewMaterial, MaterialJobRef, MaterialType } from '../types/interviewMaterial';
 import MaterialPreviewModal, { canPreviewInline } from '../components/jobs/MaterialPreviewModal';
 
@@ -16,25 +16,25 @@ function formatBytes(bytes: number): string {
 
 function iconForType(type: MaterialType): string {
     switch (type) {
-        case 'pdf':      return 'picture_as_pdf';
-        case 'image':    return 'image';
-        case 'docx':     return 'description';
-        case 'text':     return 'article';
+        case 'pdf': return 'picture_as_pdf';
+        case 'image': return 'image';
+        case 'docx': return 'description';
+        case 'text': return 'article';
         case 'markdown': return 'code';
-        case 'link':     return 'link';
-        default:         return 'attach_file';
+        case 'link': return 'link';
+        default: return 'attach_file';
     }
 }
 
 function colorForType(type: MaterialType): string {
     switch (type) {
-        case 'pdf':      return 'text-red-500';
-        case 'image':    return 'text-purple-500';
-        case 'docx':     return 'text-blue-500';
-        case 'text':     return 'text-green-500';
+        case 'pdf': return 'text-red-500';
+        case 'image': return 'text-purple-500';
+        case 'docx': return 'text-blue-500';
+        case 'text': return 'text-green-500';
         case 'markdown': return 'text-cyan-500';
-        case 'link':     return 'text-amber-500';
-        default:         return 'text-gray-400';
+        case 'link': return 'text-amber-500';
+        default: return 'text-gray-400';
     }
 }
 
@@ -50,16 +50,28 @@ function getJobId(material: InterviewMaterial): string | null {
     return (material.jobApplicationId as MaterialJobRef)._id;
 }
 
+// ── Add Form Types ─────────────────────────────────────────────────────────────
+
+type AddMode = 'idle' | 'file' | 'bulk' | 'text' | 'markdown' | 'link';
+
+interface AddFormState {
+    title: string;
+    description: string;
+    content: string;
+    url: string;
+}
+
 // ── Material card ──────────────────────────────────────────────────────────────
 
 const GlobalMaterialCard: React.FC<{
     material: InterviewMaterial;
     showJobChip?: boolean;
+    isAssignedToJob?: boolean;
     onRemoveGlobal: (id: string) => void;
     onDelete: (id: string) => void;
     onPreview: (m: InterviewMaterial) => void;
     isUpdating: boolean;
-}> = ({ material, showJobChip = false, onRemoveGlobal, onDelete, onPreview, isUpdating }) => {
+}> = ({ material, showJobChip = false, isAssignedToJob = false, onRemoveGlobal, onDelete, onPreview, isUpdating }) => {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const isLink = material.type === 'link';
     const clickable = canPreviewInline(material.type) || isLink;
@@ -77,9 +89,8 @@ const GlobalMaterialCard: React.FC<{
     return (
         <div
             onClick={clickable ? handleCardClick : undefined}
-            className={`group relative flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-200 ${
-                clickable ? 'cursor-pointer hover:border-opacity-60' : ''
-            }`}
+            className={`group relative flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-200 ${clickable ? 'cursor-pointer hover:border-opacity-60' : ''
+                }`}
             style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
         >
             {/* Type icon */}
@@ -156,7 +167,7 @@ const GlobalMaterialCard: React.FC<{
                                 <span className="material-symbols-outlined text-base">open_in_new</span>
                             </a>
                         )}
-                        {jobId && (
+                        {isAssignedToJob && (
                             <Link
                                 to={`/jobs/${jobId}/review/materials`}
                                 title="Go to job"
@@ -221,6 +232,28 @@ interface JobGroup {
     materials: InterviewMaterial[];
 }
 
+const STORAGE_KEY = 'interviewMaterials_openGroups';
+
+const loadOpenGroups = (): Set<string> => {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            return new Set(JSON.parse(saved));
+        }
+    } catch (e) {
+        console.error('Failed to load open groups:', e);
+    }
+    return new Set();
+};
+
+const saveOpenGroups = (groups: Set<string>) => {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(groups)));
+    } catch (e) {
+        console.error('Failed to save open groups:', e);
+    }
+};
+
 const GroupedView: React.FC<{
     groups: JobGroup[];
     onRemoveGlobal: (id: string) => void;
@@ -228,16 +261,27 @@ const GroupedView: React.FC<{
     onPreview: (m: InterviewMaterial) => void;
     updatingIds: Set<string>;
 }> = ({ groups, onRemoveGlobal, onDelete, onPreview, updatingIds }) => {
-    const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(groups.map(g => g.jobId)));
+    const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+        const saved = loadOpenGroups();
+        // Keep only groups that still exist
+        const existingGroupIds = new Set(groups.map(g => g.jobId));
+        const filtered = new Set([...saved].filter(id => existingGroupIds.has(id)));
+        // If no saved state, default to all expanded
+        return filtered.size > 0 ? filtered : new Set(groups.map(g => g.jobId));
+    });
 
     const toggleGroup = (jobId: string) => {
         setOpenGroups(prev => {
             const next = new Set(prev);
             if (next.has(jobId)) next.delete(jobId);
             else next.add(jobId);
+            // Save to localStorage
+            saveOpenGroups(next);
             return next;
         });
     };
+
+    const isGroupOpen = (jobId: string) => openGroups.has(jobId);
 
     if (groups.length === 0) return null;
 
@@ -271,15 +315,17 @@ const GroupedView: React.FC<{
                             >
                                 {group.materials.length} item{group.materials.length !== 1 ? 's' : ''}
                             </span>
-                            <Link
-                                to={`/jobs/${group.jobId}/review/materials`}
-                                className="text-xs px-2 py-1 rounded-md transition-colors hover:underline flex items-center gap-0.5"
-                                style={{ color: 'var(--text-muted)' }}
-                                onClick={e => e.stopPropagation()}
-                            >
-                                View job
-                                <span className="material-symbols-outlined text-xs">arrow_outward</span>
-                            </Link>
+                            {group.jobId !== '__unassigned__' && (
+                                <Link
+                                    to={`/jobs/${group.jobId}/review/materials`}
+                                    className="text-xs px-2 py-1 rounded-md transition-colors hover:underline flex items-center gap-0.5"
+                                    style={{ color: 'var(--text-muted)' }}
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    View job
+                                    <span className="material-symbols-outlined text-xs">arrow_outward</span>
+                                </Link>
+                            )}
                             <span className="material-symbols-outlined text-base transition-transform duration-200" style={{ color: 'var(--text-muted)', transform: openGroups.has(group.jobId) ? 'rotate(180deg)' : 'rotate(0)' }}>
                                 expand_more
                             </span>
@@ -287,13 +333,14 @@ const GroupedView: React.FC<{
                     </button>
 
                     {/* Items */}
-                    {openGroups.has(group.jobId) && (
+                    {isGroupOpen(group.jobId) && (
                         <div className="p-3 grid gap-2" style={{ backgroundColor: 'var(--bg-surface)' }}>
                             {group.materials.map(m => (
                                 <GlobalMaterialCard
                                     key={m._id}
                                     material={m}
                                     showJobChip={false}
+                                    isAssignedToJob={false}
                                     onRemoveGlobal={onRemoveGlobal}
                                     onDelete={onDelete}
                                     onPreview={onPreview}
@@ -320,6 +367,21 @@ const InterviewMaterialsPage: React.FC = () => {
     const [search, setSearch] = useState('');
     const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
     const [previewMaterial, setPreviewMaterial] = useState<InterviewMaterial | null>(null);
+    const [addMode, setAddMode] = useState<AddMode>('idle');
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [pendingFile, setPendingFile] = useState<File | null>(null);
+    const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+    const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number; errors: string[] } | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [form, setForm] = useState<AddFormState>({
+        title: '',
+        description: '',
+        content: '',
+        url: '',
+    });
 
     const load = useCallback(async () => {
         setIsLoading(true);
@@ -413,6 +475,122 @@ const InterviewMaterialsPage: React.FC = () => {
         }
     };
 
+    // ── Form helpers ─────────────────────────────────────────────────────────
+
+    const resetForm = () => {
+        setForm({ title: '', description: '', content: '', url: '' });
+        setPendingFile(null);
+        setPendingFiles([]);
+        setBulkProgress(null);
+        setAddMode('idle');
+    };
+
+    const handleFilesSelected = (files: File[]) => {
+        if (files.length === 0) return;
+        if (files.length === 1) {
+            // Single file: show form so user can edit title/description
+            setPendingFile(files[0]);
+            const baseName = files[0].name.replace(/\.[^.]+$/, '');
+            setForm(f => ({ ...f, title: baseName }));
+            setAddMode('file');
+        } else {
+            // Multiple files: show bulk queue
+            setPendingFiles(files);
+            setAddMode('bulk');
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) handleFilesSelected(files);
+    };
+
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files ?? []);
+        if (files.length > 0) handleFilesSelected(files);
+        e.target.value = '';
+    };
+
+    const handleGenerateTitle = async () => {
+        setIsGeneratingTitle(true);
+        setError(null);
+        try {
+            const type = addMode === 'file' ? 'file' : addMode as MaterialType;
+            const content = form.content || undefined;
+            const description = form.description || undefined;
+            const result = await generateMaterialTitle(type, content, description);
+            setForm(f => ({ ...f, title: result.title }));
+        } catch (e: any) {
+            setError(e.message ?? 'Failed to generate title');
+        } finally {
+            setIsGeneratingTitle(false);
+        }
+    };
+
+    const handleBulkUpload = async () => {
+        if (pendingFiles.length === 0) return;
+        setIsSubmitting(true);
+        setBulkProgress({ done: 0, total: pendingFiles.length, errors: [] });
+        const created: InterviewMaterial[] = [];
+        const errors: string[] = [];
+        for (const file of pendingFiles) {
+            try {
+                const title = file.name.replace(/\.[^.]+$/, '');
+                const material = await createMaterial({ jobApplicationId: null, title, isGlobal: true }, file);
+                created.push(material);
+            } catch (e: any) {
+                errors.push(`${file.name}: ${e.message ?? 'Upload failed'}`);
+            }
+            setBulkProgress(prev => prev ? { ...prev, done: prev.done + 1, errors } : null);
+        }
+        setMaterials(prev => [...created.reverse(), ...prev]);
+        setIsSubmitting(false);
+        if (errors.length > 0) {
+            setError(`${errors.length} file(s) failed to upload:\n${errors.join('\n')}`);
+        }
+        resetForm();
+    };
+
+    const handleSubmit = async () => {
+        if (!form.title.trim()) return;
+        setIsSubmitting(true);
+        setError(null);
+        try {
+            let payload;
+
+            if (addMode === 'file' && pendingFile) {
+                payload = {
+                    jobApplicationId: null,
+                    title: form.title.trim(),
+                    description: form.description.trim() || undefined,
+                    isGlobal: true,
+                };
+                const created = await createMaterial(payload, pendingFile);
+                setMaterials(prev => [created, ...prev]);
+            } else {
+                const type = addMode as MaterialType;
+                payload = {
+                    jobApplicationId: null,
+                    type,
+                    title: form.title.trim(),
+                    description: form.description.trim() || undefined,
+                    content: (type === 'text' || type === 'markdown') ? form.content : undefined,
+                    url: type === 'link' ? form.url.trim() : undefined,
+                    isGlobal: true,
+                };
+                const created = await createMaterial(payload);
+                setMaterials(prev => [created, ...prev]);
+            }
+            resetForm();
+        } catch (e: any) {
+            setError(e.message ?? 'Failed to save material');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
@@ -499,6 +677,306 @@ const InterviewMaterialsPage: React.FC = () => {
                 )}
             </div>
 
+            {/* ── Drop zone / Add buttons ── */}
+            {addMode === 'idle' && (
+                <div className="space-y-3">
+                    {/* Drag-drop upload zone */}
+                    <div
+                        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                        onDragLeave={() => setIsDragOver(false)}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="relative flex flex-col items-center justify-center gap-2 p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200"
+                        style={{
+                            borderColor: isDragOver ? 'var(--accent)' : 'var(--border)',
+                            backgroundColor: isDragOver ? 'var(--accent-bg)' : 'var(--bg-elevated)',
+                        }}
+                    >
+                        <span
+                            className="material-symbols-outlined text-3xl"
+                            style={{ color: isDragOver ? 'var(--accent)' : 'var(--text-muted)' }}
+                        >
+                            cloud_upload
+                        </span>
+                        <p className="text-sm font-medium" style={{ color: isDragOver ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                            Drag & drop files, or click to browse
+                        </p>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            PDF, DOCX, PNG, JPG, TXT, MD — up to 30 MB each
+                        </p>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,.txt,.md"
+                            onChange={handleFileInputChange}
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+
+                    {/* Quick add buttons */}
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            onClick={() => setAddMode('text')}
+                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
+                            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-elevated)' }}
+                        >
+                            <span className="material-symbols-outlined text-sm text-green-500">article</span>
+                            Add Note
+                        </button>
+                        <button
+                            onClick={() => setAddMode('markdown')}
+                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
+                            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-elevated)' }}
+                        >
+                            <span className="material-symbols-outlined text-sm text-cyan-500">code</span>
+                            Add Markdown
+                        </button>
+                        <button
+                            onClick={() => setAddMode('link')}
+                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
+                            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-elevated)' }}
+                        >
+                            <span className="material-symbols-outlined text-sm text-amber-500">link</span>
+                            Add Link
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Bulk Upload Queue ── */}
+            {addMode === 'bulk' && (
+                <div
+                    className="rounded-xl border p-4 space-y-3"
+                    style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--accent)', borderWidth: '1.5px' }}
+                >
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-base text-amber-500">upload_file</span>
+                            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                {pendingFiles.length} file{pendingFiles.length !== 1 ? 's' : ''} ready to upload
+                            </span>
+                        </div>
+                        <button onClick={resetForm} disabled={isSubmitting} style={{ color: 'var(--text-muted)' }}>
+                            <span className="material-symbols-outlined text-base">close</span>
+                        </button>
+                    </div>
+
+                    {/* File list */}
+                    <ul className="max-h-48 overflow-y-auto space-y-1.5">
+                        {pendingFiles.map((file, i) => (
+                            <li key={i} className="flex items-center gap-2 text-xs px-2.5 py-2 rounded-lg" style={{ backgroundColor: 'var(--bg-surface)' }}>
+                                <span className="material-symbols-outlined text-sm flex-shrink-0" style={{ color: 'var(--text-muted)' }}>attach_file</span>
+                                <span className="flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{file.name}</span>
+                                <span className="flex-shrink-0" style={{ color: 'var(--text-muted)' }}>{formatBytes(file.size)}</span>
+                            </li>
+                        ))}
+                    </ul>
+
+                    {/* Progress bar */}
+                    {bulkProgress && (
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
+                                <span>Uploading…</span>
+                                <span>{bulkProgress.done} / {bulkProgress.total}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-surface)' }}>
+                                <div
+                                    className="h-full rounded-full transition-all duration-300"
+                                    style={{ width: `${(bulkProgress.done / bulkProgress.total) * 100}%`, backgroundColor: 'var(--accent)' }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-1">
+                        <button
+                            onClick={resetForm}
+                            disabled={isSubmitting}
+                            className="text-xs px-3 py-2 rounded-lg border transition-colors disabled:opacity-50"
+                            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleBulkUpload}
+                            disabled={isSubmitting}
+                            className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-text, #1a1200)' }}
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <span className="inline-block w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin" />
+                                    Uploading…
+                                </>
+                            ) : (
+                                <>
+                                    <span className="material-symbols-outlined text-sm">cloud_upload</span>
+                                    Upload {pendingFiles.length} file{pendingFiles.length !== 1 ? 's' : ''}
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Add Form ── */}
+            {addMode !== 'idle' && addMode !== 'bulk' && (
+                <div
+                    className="rounded-xl border p-4 space-y-3"
+                    style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--accent)', borderWidth: '1.5px' }}
+                >
+                    {/* Form header */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className={`material-symbols-outlined text-base ${colorForType(addMode === 'file' ? (pendingFile?.type.startsWith('image/') ? 'image' : 'pdf') : addMode as MaterialType)}`}>
+                                {iconForType(addMode === 'file' ? (pendingFile?.type.startsWith('image/') ? 'image' : 'pdf') : addMode as MaterialType)}
+                            </span>
+                            <span className="text-sm font-semibold capitalize" style={{ color: 'var(--text-primary)' }}>
+                                {addMode === 'file' ? pendingFile?.name : `New ${addMode}`}
+                            </span>
+                        </div>
+                        <button onClick={resetForm} style={{ color: 'var(--text-muted)' }}>
+                            <span className="material-symbols-outlined text-base">close</span>
+                        </button>
+                    </div>
+
+                    {/* Title */}
+                    <div>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                            <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                                Title <span className="text-red-500">*</span>
+                            </label>
+                            <button
+                                type="button"
+                                onClick={handleGenerateTitle}
+                                disabled={isGeneratingTitle}
+                                className="p-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-amber-100/10"
+                                style={{
+                                    backgroundColor: isGeneratingTitle ? 'var(--bg-elevated)' : 'var(--accent-bg)',
+                                    color: isGeneratingTitle ? 'var(--text-muted)' : 'var(--accent)',
+                                    border: `1px solid ${isGeneratingTitle ? 'var(--border)' : 'var(--accent-dim)'}`,
+                                }}
+                                title="Generate title with AI"
+                            >
+                                {isGeneratingTitle ? (
+                                    <span className="inline-block w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent)' }} />
+                                ) : (
+                                    <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                                )}
+                            </button>
+                        </div>
+                        <input
+                            type="text"
+                            value={form.title}
+                            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                            placeholder="Enter a title for this material"
+                            className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400"
+                            style={{
+                                backgroundColor: 'var(--bg-surface)',
+                                borderColor: 'var(--border)',
+                                color: 'var(--text-primary)',
+                            }}
+                        />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                            Description <span style={{ color: 'var(--text-muted)' }}>(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={form.description}
+                            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                            placeholder="Short description of what this material covers"
+                            className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400"
+                            style={{
+                                backgroundColor: 'var(--bg-surface)',
+                                borderColor: 'var(--border)',
+                                color: 'var(--text-primary)',
+                            }}
+                        />
+                    </div>
+
+                    {/* Content (text / markdown) */}
+                    {(addMode === 'text' || addMode === 'markdown') && (
+                        <div>
+                            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                                Content <span className="text-red-500">*</span>
+                                {addMode === 'markdown' && (
+                                    <span style={{ color: 'var(--text-muted)' }}> — Markdown supported</span>
+                                )}
+                            </label>
+                            <textarea
+                                value={form.content}
+                                onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+                                placeholder={addMode === 'markdown' ? '# My notes\n\n- Key point 1\n- Key point 2' : 'Write your notes here...'}
+                                rows={6}
+                                className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400 font-mono resize-y"
+                                style={{
+                                    backgroundColor: 'var(--bg-surface)',
+                                    borderColor: 'var(--border)',
+                                    color: 'var(--text-primary)',
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {/* URL (link) */}
+                    {addMode === 'link' && (
+                        <div>
+                            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+                                URL <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="url"
+                                value={form.url}
+                                onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
+                                placeholder="https://..."
+                                className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400"
+                                style={{
+                                    backgroundColor: 'var(--bg-surface)',
+                                    borderColor: 'var(--border)',
+                                    color: 'var(--text-primary)',
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex justify-end gap-2 pt-1">
+                        <button
+                            onClick={resetForm}
+                            disabled={isSubmitting}
+                            className="text-xs px-3 py-2 rounded-lg border transition-colors disabled:opacity-50"
+                            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={isSubmitting || !form.title.trim()}
+                            className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-text, #1a1200)' }}
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <span className="inline-block w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin" />
+                                    Saving…
+                                </>
+                            ) : (
+                                <>
+                                    <span className="material-symbols-outlined text-sm">add</span>
+                                    Add to Library
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Content */}
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -519,7 +997,7 @@ const InterviewMaterialsPage: React.FC = () => {
                     <p className="text-sm max-w-xs" style={{ color: 'var(--text-muted)' }}>
                         {search
                             ? 'Try a different search term'
-                            : 'Open a job, go to the Materials tab, and toggle "Add to Prep Library" on any item'}
+                            : 'Add general learning materials here, or open a job and toggle "Add to Prep Library" on any item'}
                     </p>
                     {!search && (
                         <Link
@@ -546,7 +1024,8 @@ const InterviewMaterialsPage: React.FC = () => {
                         <GlobalMaterialCard
                             key={m._id}
                             material={m}
-                            showJobChip={true}
+                            showJobChip={!!getJobId(m)}
+                            isAssignedToJob={!!getJobId(m)}
                             onRemoveGlobal={handleRemoveGlobal}
                             onDelete={handleDelete}
                             onPreview={setPreviewMaterial}
