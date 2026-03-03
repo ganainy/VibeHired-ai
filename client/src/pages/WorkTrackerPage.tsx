@@ -660,7 +660,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
             >
               {parsing
                 ? <><div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: 'currentColor', borderTopColor: 'transparent' }} />Extracting…</>
-                : <><Sparkles size={15} />Extract with AI<span className="text-[10px] font-bold ml-0.5 px-1.5 py-0.5 rounded opacity-70" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>1 cr</span></>}
+                : <><Sparkles size={15} />Extract with AI<span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 cr</span></>}
             </button>
           )}
 
@@ -1989,7 +1989,7 @@ const WorkTrackerPage: React.FC = () => {
                 >
                   {isMagicParsing ? <span className="animate-spin"><Clock size={15} /></span> : <Mic size={15} className={isListening ? 'animate-pulse' : ''} />}
                   <span className="hidden sm:inline">{isListening ? 'Stop' : isMagicParsing ? 'Parsing…' : 'AI Voice Add'}</span>
-                  {!isListening && !isMagicParsing && <span className="text-[10px] font-bold opacity-60">1 cr</span>}
+                  {!isListening && !isMagicParsing && <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 cr</span>}
                 </button>
                 <button
                   onClick={() => setShowImportModal(true)}
@@ -1999,6 +1999,7 @@ const WorkTrackerPage: React.FC = () => {
                 >
                   <Sparkles size={15} />
                   <span className="hidden lg:inline">Import schedule</span>
+                  <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 cr</span>
                 </button>
                 <button
                   onClick={() => {

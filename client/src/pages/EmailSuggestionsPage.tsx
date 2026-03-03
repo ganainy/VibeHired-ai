@@ -433,6 +433,7 @@ const EmailSuggestionsPage: React.FC = () => {
                             >
                                 <RefreshIcon spinning={polling} />
                                 {polling ? 'Scanning…' : 'Scan inbox'}
+                                {!polling && <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 cr</span>}
                             </button>
                         </div>
                     </div>
@@ -710,6 +711,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                 >
                                     <RefreshIcon spinning={polling} />
                                     {polling ? 'Scanning…' : 'Scan inbox now'}
+                                    {!polling && <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 cr</span>}
                                 </button>
                             </div>
                         )}

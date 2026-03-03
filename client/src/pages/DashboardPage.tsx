@@ -952,6 +952,7 @@ const DashboardPage: React.FC = () => {
                     <>
                       <SparklesIcon />
                       <span>Extract with AI</span>
+                      <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 cr</span>
                     </>
                   )}
                 </button>

@@ -690,7 +690,7 @@ const AutoJobsPage: React.FC = () => {
                                     <span>{isTriggering ? 'Starting...' : 'Running...'}</span>
                                 </>
                             ) : (
-                                <>🚀 Run Now <span className="text-[10px] font-bold opacity-70" style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '1px 5px', borderRadius: '4px' }}>0.1 cr/job</span></>
+                                <>🚀 Run Now <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>0.1 cr/job</span></>
                             )}
                         </button>
                     </div>

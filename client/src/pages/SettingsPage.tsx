@@ -359,16 +359,44 @@ const SettingsPage: React.FC = () => {
             <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4">Quick Stats</h3>
             <div className="space-y-3">
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">CV Improvements</span>
+                <span className="text-zinc-500">CV Improvements <span className="text-zinc-400">· 2 cr</span></span>
                 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.analysis || 0}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">CV Generation</span>
+                <span className="text-zinc-500">CV Generation <span className="text-zinc-400">· 3 cr</span></span>
                 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.cvGeneration || 0}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">AI Chat Messages</span>
+                <span className="text-zinc-500">AI Chat Messages <span className="text-zinc-400">· 1 cr</span></span>
                 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.chatMessages || 0}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Job Extractions <span className="text-zinc-400">· 1 cr</span></span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.jobExtraction || 0}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Interview Prep <span className="text-zinc-400">· 3 cr</span></span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.interview || 0}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Cover Letters <span className="text-zinc-400">· 3 cr</span></span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.coverLetter || 0}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">ATS Scoring <span className="text-zinc-400">· 2 cr</span></span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.atsScoring || 0}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">CV Parsing <span className="text-zinc-400">· 2 cr</span></span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.cvParsing || 0}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Email Scans <span className="text-zinc-400">· 1 cr</span></span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.emailScan || 0}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-500">Auto Jobs <span className="text-zinc-400">· 0.1 cr/job</span></span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.autoJobsWorkflow || 0}</span>
               </div>
               <div className="pt-3 border-t border-zinc-100 dark:border-zinc-700 flex justify-between text-xs">
                 <span className="text-zinc-400 italic">Resets on</span>

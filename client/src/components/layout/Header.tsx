@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import appLogo from '../../assets/app-logo.png';
 // ── Inbox icon (email suggestions) ───────────────────────────────────────────────────────
 const InboxIconMobile = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -12,10 +13,7 @@ const InboxIconMobile = () => (
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 const Logo = () => (
-    <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="28" height="28" rx="8" fill="currentColor" fillOpacity="0.12" />
-        <path d="M8 10h12M10 7h8M7 10v11a1 1 0 001 1h12a1 1 0 001-1V10M11 14h6M11 17h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <img src={appLogo} alt="VibeHired" width="24" height="24" style={{ borderRadius: '6px', display: 'block', objectFit: 'contain' }} />
 );
 
 const HamburgerIcon = () => (

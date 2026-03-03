@@ -593,744 +593,402 @@ const PortfolioSetupPage: React.FC = () => {
     );
   }
 
-  const progressPercentage = ((activeTab + 1) / 5) * 100;
+  // Simplified: only 2 tabs – Setup (0) and Community (1)
+  const setupTab = activeTab <= 3 ? 0 : 1;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-display">
       <main className="flex-grow flex justify-center py-6 lg:py-8 px-4 sm:px-6 lg:px-8">
-        <div className="w-full flex flex-col">
-          {/* Page Heading */}
-          <div className="flex flex-wrap justify-between gap-4 p-4 items-center">
-            <div className="flex flex-col gap-2">
-              <h1 className="text-zinc-900 dark:text-white text-2xl font-bold leading-tight">
-                Portfolio Setup
-              </h1>
-              <p className="text-zinc-600 dark:text-zinc-400 text-base font-normal leading-normal">
-                Connect your accounts, configure your data, and publish your professional portfolio in minutes.
-              </p>
-            </div>
+        <div className="w-full max-w-3xl mx-auto flex flex-col gap-8">
+
+          {/* ── Page Header ─────────────────────────────────── */}
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Your Portfolio</h1>
+            <p className="mt-1 text-zinc-500 dark:text-zinc-400 text-sm">
+              Connect your accounts, curate your projects and profile, then go live — all in one place.
+            </p>
           </div>
 
-          {/* Tabs */}
-          <div className="mt-6">
-            <div className="flex border-b border-gray-200 dark:border-gray-700/80 gap-4 sm:gap-8 px-4 overflow-x-auto">
-              <button
-                onClick={() => handleTabChange(0)}
-                className={`flex items-center justify-center gap-2 border-b-[3px] pb-[13px] pt-4 transition-colors whitespace-nowrap ${activeTab === 0
-                  ? 'border-b-primary text-gray-900 dark:text-white'
-                  : 'border-b-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                  }`}
-              >
-                <span className="material-symbols-outlined text-base">link</span>
-                <p className="text-sm font-bold leading-normal tracking-[0.015em]">Connect Accounts</p>
-              </button>
-              <button
-                onClick={() => handleTabChange(1)}
-                className={`flex items-center justify-center gap-2 border-b-[3px] pb-[13px] pt-4 transition-colors whitespace-nowrap ${activeTab === 1
-                  ? 'border-b-primary text-gray-900 dark:text-white'
-                  : 'border-b-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                  }`}
-              >
-                <span className="material-symbols-outlined text-base">code</span>
-                <p className="text-sm font-bold leading-normal tracking-[0.015em]">GitHub Repos</p>
-              </button>
-              <button
-                onClick={() => handleTabChange(2)}
-                className={`flex items-center justify-center gap-2 border-b-[3px] pb-[13px] pt-4 transition-colors whitespace-nowrap ${activeTab === 2
-                  ? 'border-b-primary text-gray-900 dark:text-white'
-                  : 'border-b-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                  }`}
-              >
-                <span className="material-symbols-outlined text-base">work</span>
-                <p className="text-sm font-bold leading-normal tracking-[0.015em]">LinkedIn Data</p>
-              </button>
-              <button
-                onClick={() => handleTabChange(3)}
-                className={`flex items-center justify-center gap-2 border-b-[3px] pb-[13px] pt-4 transition-colors whitespace-nowrap ${activeTab === 3
-                  ? 'border-b-primary text-gray-900 dark:text-white'
-                  : 'border-b-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                  }`}
-              >
-                <span className="material-symbols-outlined text-base">publish</span>
-                <p className="text-sm font-bold leading-normal tracking-[0.015em]">Publish</p>
-              </button>
-              <button
-                onClick={() => handleTabChange(4)}
-                className={`flex items-center justify-center gap-2 border-b-[3px] pb-[13px] pt-4 transition-colors whitespace-nowrap ${activeTab === 4
-                  ? 'border-b-primary text-gray-900 dark:text-white'
-                  : 'border-b-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                  }`}
-              >
-                <span className="material-symbols-outlined text-base">groups</span>
-                <p className="text-sm font-bold leading-normal tracking-[0.015em]">Community</p>
-              </button>
-            </div>
+          {/* ── Tabs ────────────────────────────────────────── */}
+          <div className="flex border-b border-gray-200 dark:border-gray-700 gap-6">
+            <button
+              onClick={() => { setActiveTab(0); setSearchParams({ tab: '0' }); }}
+              className={`pb-3 pt-1 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${setupTab === 0
+                ? 'border-primary text-gray-900 dark:text-white'
+                : 'border-transparent text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                }`}
+            >
+              Setup
+            </button>
+            <button
+              onClick={() => { setActiveTab(4); setSearchParams({ tab: '4' }); }}
+              className={`pb-3 pt-1 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${setupTab === 1
+                ? 'border-primary text-gray-900 dark:text-white'
+                : 'border-transparent text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                }`}
+            >
+              Community
+            </button>
           </div>
 
-          {/* Progress Bar */}
-          <div className="flex flex-col gap-2 p-4 mt-4">
-            <div className="flex gap-6 justify-between">
-              <p className="text-gray-700 dark:text-gray-300 text-base font-medium leading-normal">
-                Step {activeTab + 1} of 5: {stepNames[activeTab]}
-              </p>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-              <div
-                className="bg-primary h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
-          </div>
+          {error && <div className="mb-2"><ErrorAlert message={error} /></div>}
 
-          {/* Main Content Area */}
-          <div className="flex flex-col gap-8 p-4 mt-4">
-            {error && (
-              <div className="mb-4">
-                <ErrorAlert message={error} />
-              </div>
-            )}
+          {/* ══════════════════════════════════════════════════
+              SETUP TAB
+          ══════════════════════════════════════════════════ */}
+          {setupTab === 0 && (
+            <div className="flex flex-col gap-8">
 
-            {/* Tab 1: Connect Accounts */}
-            {
-              activeTab === 0 && (
-                <>
-                  <div className="text-center">
-                    <h2 className="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">
-                      Connect Your Professional Accounts
-                    </h2>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">
-                      Sync your data from GitHub and LinkedIn to build your portfolio automatically.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* GitHub Card */}
-                    <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 rounded-xl p-6 flex flex-col items-center text-center shadow-sm hover:shadow-lg transition-shadow duration-300">
-                      <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center mb-4">
-                        <svg className="w-10 h-10 text-gray-800 dark:text-white" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">GitHub</h3>
-                      <p className="text-gray-500 dark:text-gray-400 mt-2 mb-4 text-sm">
-                        Showcase your coding projects, contributions, and technical skills automatically.
-                      </p>
-
-                      <div className="w-full space-y-3 mb-4">
-                        <input
-                          type="text"
-                          value={githubUrl}
-                          onChange={(e) => {
-                            setGithubUrl(e.target.value);
-                            const url = e.target.value;
-                            const username = url.split('/').pop()?.replace('.git', '') || '';
-                            setGithubUsername(username);
-                          }}
-                          placeholder="https://github.com/username"
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                        <div className="space-y-1">
-                          <input
-                            id="github-token-input"
-                            type="password"
-                            value={githubToken}
-                            onChange={(e) => setGithubToken(e.target.value)}
-                            placeholder="GitHub Personal Access Token (Optional)"
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                          <div className="text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
-                            <p>Optional - Only needed for higher rate limits</p>
-                            <p>Public repos work without setup (60 requests/hour)</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={handleImportGitHub}
-                          disabled={!githubUsername || isImporting}
-                          className="w-full flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 text-sm font-bold hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isImporting ? (
-                            <>
-                              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              <span>Importing...</span>
-                            </>
-                          ) : (
-                            <span>Connect</span>
-                          )}
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-4 text-sm text-gray-500 dark:text-gray-400">
-                        {isGitHubConnected ? (
-                          <>
-                            <span className="material-symbols-outlined text-base text-green-600 dark:text-green-400">check_circle</span>
-                            <span className="text-green-600 dark:text-green-400">Connected</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="material-symbols-outlined text-base">cancel</span>
-                            <span>Not Connected</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* LinkedIn Card */}
-                    <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 rounded-xl p-6 flex flex-col items-center text-center shadow-sm hover:shadow-lg transition-shadow duration-300">
-                      <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
-                        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--accent)' }}>
-                          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path>
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">LinkedIn</h3>
-                      <p className="text-gray-500 dark:text-gray-400 mt-2 mb-4 text-sm">
-                        Sync your professional experience, education, and skills to keep your portfolio up-to-date.
-                      </p>
-
-                      <div className="w-full space-y-3 mb-4">
-                        <input
-                          type="text"
-                          value={linkedinUrl}
-                          onChange={(e) => setLinkedinUrl(e.target.value)}
-                          placeholder="https://linkedin.com/in/username"
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                        <button
-                          onClick={handleSyncLinkedIn}
-                          disabled={!linkedinUrl || isSyncing}
-                          className="w-full flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isSyncing ? (
-                            <>
-                              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              <span>Syncing...</span>
-                            </>
-                          ) : (
-                            <span>Connect</span>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* LinkedIn Error Display */}
-                      {linkedInError && (
-                        <div className={`w-full mt-3 p-4 rounded-lg border ${isApiKeyError(linkedInError)
-                          ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700'
-                          : 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-800'
-                          }`}>
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 mt-0.5">
-                              {isApiKeyError(linkedInError) ? (
-                                <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                              ) : (
-                                <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className={`text-sm font-semibold mb-1 ${isApiKeyError(linkedInError)
-                                ? 'text-amber-800 dark:text-amber-300'
-                                : 'text-red-800 dark:text-red-300'
-                                }`}>
-                                {isApiKeyError(linkedInError) ? 'API Key Required' : 'Sync Error'}
-                              </h3>
-                              <p className={`text-sm mb-3 ${isApiKeyError(linkedInError)
-                                ? 'text-amber-700 dark:text-amber-400'
-                                : 'text-red-700 dark:text-red-400'
-                                }`}>
-                                {linkedInError}
-                              </p>
-                              {isApiKeyError(linkedInError) && (
-                                <Link
-                                  to="/settings"
-                                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors bg-amber-600 hover:bg-amber-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  </svg>
-                                  Go to Settings
-                                </Link>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-2 mt-4 text-sm">
-                        {isLinkedInConnected ? (
-                          <>
-                            <span className="material-symbols-outlined text-base text-green-600 dark:text-green-400">check_circle</span>
-                            <span className="text-green-600 dark:text-green-400">Connected</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="material-symbols-outlined text-base text-gray-500 dark:text-gray-400">cancel</span>
-                            <span className="text-gray-500 dark:text-gray-400">Not Connected</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )
-            }
-
-            {/* Tab 1: Configure GitHub Repositories */}
-            {
-              activeTab === 1 && (
-                <>
-                  <div className="text-center">
-                    <h2 className="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">
-                      Configure GitHub Repositories
-                    </h2>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">
-                      Choose which repositories to display in your portfolio.
-                    </p>
-                  </div>
-
-                  {/* GitHub Repositories Section */}
-                  <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">GitHub Repositories</h3>
-                    {projects.length === 0 ? (
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">
-                        No GitHub repositories imported yet. Import them from the Connect Accounts tab.
-                      </p>
-                    ) : (
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <SortableContext
-                          items={projects.map((p) => p._id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          <div className="space-y-3">
-                            {projects.map((project) => (
-                              <SortableProjectItem
-                                key={project._id}
-                                project={project}
-                                onToggleVisibility={handleToggleProjectVisibility}
-                              />
-                            ))}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
-                    )}
-                  </div>
-                </>
-              )
-            }
-
-            {/* Tab 2: Configure LinkedIn Data */}
-            {
-              activeTab === 2 && (
-                <>
-                  <div className="text-center">
-                    <h2 className="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">
-                      Configure LinkedIn Data
-                    </h2>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">
-                      Review and edit your LinkedIn data before adding it to your portfolio.
-                    </p>
-                  </div>
-
-                  {/* Editable LinkedIn Data Section */}
-                  <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Edit Your Information</h3>
-                      {!isLinkedInConnected && (
-                        <span className="text-xs px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full">
-                          Sync LinkedIn first to auto-fill fields
-                        </span>
-                      )}
-                    </div>
-                    {!isLinkedInConnected && !linkedInData.name && !linkedInData.title && (
-                      <div className="mb-4 p-4 rounded-lg" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
-                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                          <span className="font-medium" style={{ color: 'var(--accent)' }}>No LinkedIn data found.</span> Go to the "Connect Accounts" tab and sync your LinkedIn profile to automatically fill these fields with your LinkedIn information.
-                        </p>
-                      </div>
-                    )}
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Full Name
-                        </label>
-                        <input
-                          type="text"
-                          value={linkedInData.name}
-                          onChange={(e) => setLinkedInData({ ...linkedInData, name: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                          placeholder="Your full name"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Professional Title
-                        </label>
-                        <input
-                          type="text"
-                          value={linkedInData.title}
-                          onChange={(e) => setLinkedInData({ ...linkedInData, title: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                          placeholder="e.g., Software Engineer, Product Manager"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Bio / Summary
-                        </label>
-                        <textarea
-                          value={linkedInData.bio}
-                          onChange={(e) => setLinkedInData({ ...linkedInData, bio: e.target.value })}
-                          rows={4}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                          placeholder="Write a brief summary about yourself..."
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Location
-                        </label>
-                        <input
-                          type="text"
-                          value={linkedInData.location}
-                          onChange={(e) => setLinkedInData({ ...linkedInData, location: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                          placeholder="e.g., San Francisco, CA"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* LinkedIn Visibility Settings Section */}
-                  <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Visibility Settings</h3>
-                    <div className="space-y-4">
-                      <label className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">Show Name, Title & Bio</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Display your LinkedIn name, title, and bio</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={linkedInSettings.showLinkedInName}
-                            onChange={(e) => setLinkedInSettings({ ...linkedInSettings, showLinkedInName: e.target.checked })}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                        </label>
-                      </label>
-
-                      <label className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">Show Experience</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Display your work experience from LinkedIn</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={linkedInSettings.showLinkedInExperience}
-                            onChange={(e) => setLinkedInSettings({ ...linkedInSettings, showLinkedInExperience: e.target.checked })}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                        </label>
-                      </label>
-
-                      <label className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">Show Skills</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Display your skills from LinkedIn</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={linkedInSettings.showLinkedInSkills}
-                            onChange={(e) => setLinkedInSettings({ ...linkedInSettings, showLinkedInSkills: e.target.checked })}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                        </label>
-                      </label>
-
-                      <label className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">Show Languages</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Display your languages from LinkedIn</p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={linkedInSettings.showLinkedInLanguages}
-                            onChange={(e) => setLinkedInSettings({ ...linkedInSettings, showLinkedInLanguages: e.target.checked })}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/40 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                        </label>
-                      </label>
-                    </div>
-                  </div>
-                </>
-              )
-            }
-
-            {/* Tab 3: Publish Portfolio */}
-            {
-              activeTab === 3 && (
-                <div className="flex flex-col gap-6">
-                  <div className="text-center">
-                    <h2 className="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">
-                      Publish Your Portfolio
-                    </h2>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">
-                      Make your portfolio visible to the public and share it with the world.
-                    </p>
-                  </div>
-
-                  {/* Username Configuration */}
-                  <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 rounded-xl p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Portfolio Username</h3>
-                    <div className="flex gap-3">
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={portfolioUsername || 'Not set'}
-                          readOnly
-                          disabled
-                          placeholder="your-username"
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm cursor-not-allowed opacity-75"
-                        />
-                        {portfolioUsername && (
-                          <p className="text-gray-500 dark:text-gray-400 text-xs mt-2">
-                            Your portfolio will be at: {window.location.origin}/portfolio/{portfolioUsername}
-                          </p>
-                        )}
-                        {!portfolioUsername && (
-                          <p className="text-amber-600 dark:text-amber-400 text-xs mt-2">
-                            No username set. Your portfolio URL will use your email address.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Publish/Unpublish Section - Improved UX */}
-                  <div className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 rounded-xl p-8 shadow-sm">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-4">
-                          {profile?.isPublished ? (
-                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30">
-                              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-600">
-                              <svg className="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                              </svg>
-                            </div>
-                          )}
-                          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Portfolio Status</h3>
-                        </div>
-
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                          {profile?.isPublished
-                            ? 'Your portfolio is currently published and visible to the public. Anyone with the link can view it.'
-                            : 'Your portfolio is currently unpublished and not visible to the public. Publish it to make it accessible.'}
-                        </p>
-
-                        {profile?.isPublished && portfolioUsername && (
-                          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Portfolio URL</p>
-                            <a
-                              href={`${window.location.origin}/portfolio/${portfolioUsername}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-sm text-primary font-medium hover:text-primary/80 transition-colors break-all"
-                            >
-                              <span>{window.location.origin}/portfolio/{portfolioUsername}</span>
-                              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                            </a>
-                          </div>
-                        )}
-                        {profile?.isPublished && !portfolioUsername && (
-                          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
-                            <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-400 mb-1">⚠️ No Username Set</p>
-                            <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                              Please set a username above to get your portfolio URL.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-shrink-0">
-                        <button
-                          onClick={handleTogglePublish}
-                          disabled={isTogglingPublish}
-                          className={`flex min-w-[140px] items-center justify-center rounded-lg h-12 px-6 text-base font-bold leading-normal tracking-[0.015em] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg ${profile?.isPublished
-                            ? 'bg-red-600 hover:bg-red-700 text-white'
-                            : 'bg-primary text-white hover:bg-primary/90'
-                            }`}
-                        >
-                          {isTogglingPublish ? (
-                            <>
-                              <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              <span>Processing...</span>
-                            </>
-                          ) : profile?.isPublished ? (
-                            <>
-                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              <span>Unpublish</span>
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                              </svg>
-                              <span>Publish</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
+              {/* ── Step 1: Connect ─────────────────────────── */}
+              <section className="flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">1</span>
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white">Connect Your Accounts</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">We pull your projects and experience directly — no copy-pasting.</p>
                   </div>
                 </div>
-              )
-            }
 
-            {/* Tab 4: Community Portfolios */}
-            {activeTab === 4 && (
-              <div className="flex flex-col gap-6">
-                <div className="text-center">
-                  <h2 className="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">
-                    Community Portfolios
-                  </h2>
-                  <p className="text-gray-500 dark:text-gray-400 mt-1">
-                    Explore portfolios created by other users and get inspired.
-                  </p>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {publishedProfiles.map((profile) => (
-                    <a
-                      key={profile._id}
-                      href={`/portfolio/${profile.username}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full"
+                  {/* GitHub card */}
+                  <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-5 flex flex-col gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg className="w-6 h-6 text-gray-800 dark:text-white" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-gray-900 dark:text-white">GitHub</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Import your public repositories</p>
+                      </div>
+                      {isGitHubConnected && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium flex-shrink-0">Connected</span>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={githubUrl}
+                        onChange={(e) => {
+                          setGithubUrl(e.target.value);
+                          const url = e.target.value;
+                          setGithubUsername(url.split('/').pop()?.replace('.git', '') || '');
+                        }}
+                        placeholder="https://github.com/username"
+                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <div>
+                        <input
+                          id="github-token-input"
+                          type="password"
+                          value={githubToken}
+                          onChange={(e) => setGithubToken(e.target.value)}
+                          placeholder="Personal Access Token (optional)"
+                          className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Only needed to avoid rate limits on public repos.</p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleImportGitHub}
+                      disabled={!githubUsername || isImporting}
+                      className="flex items-center justify-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <div className="h-32 bg-gradient-to-r from-blue-500 to-primary/80 relative">
-                        {profile.profileImageUrl ? (
-                          <img
-                            src={profile.profileImageUrl}
-                            alt={profile.name}
-                            className="absolute -bottom-8 left-6 w-16 h-16 rounded-full border-4 border-white dark:border-gray-800 object-cover"
-                          />
-                        ) : (
-                          <div className="absolute -bottom-8 left-6 w-16 h-16 rounded-full border-4 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xl font-bold text-gray-500">
-                            {profile.name?.charAt(0) || profile.username.charAt(0)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-6 pt-10 flex-grow flex flex-col">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">
-                          {profile.name || profile.username}
-                        </h3>
-                        <p className="text-sm text-primary mb-2 truncate">@{profile.username}</p>
-                        {profile.title && (
-                          <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-3 line-clamp-1">
-                            {profile.title}
-                          </p>
-                        )}
-                        {profile.bio && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 mb-4 flex-grow">
-                            {profile.bio}
-                          </p>
-                        )}
-                        <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700/50 flex items-center justify-between text-xs text-gray-500">
-                          <span>Joined {new Date(profile.createdAt).toLocaleDateString()}</span>
-                          <span className="group-hover:translate-x-1 transition-transform flex items-center gap-1 text-primary">
-                            View <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                          </span>
-                        </div>
-                      </div>
-                    </a>
-                  ))}
+                      {isImporting ? (
+                        <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Importing…</>
+                      ) : isGitHubConnected ? (
+                        <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Refresh from GitHub</>
+                      ) : (
+                        'Connect GitHub'
+                      )}
+                    </button>
+                  </div>
 
-                  {publishedProfiles.length === 0 && !isLoading && (
-                    <div className="col-span-full text-center py-12">
-                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  {/* LinkedIn card */}
+                  <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-5 flex flex-col gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--accent)' }}>
+                          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                         </svg>
                       </div>
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No portfolios found</h3>
-                      <p className="text-gray-500 dark:text-gray-400">
-                        Be the first to publish your portfolio!
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-gray-900 dark:text-white">LinkedIn</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Import experience, skills & bio</p>
+                      </div>
+                      {isLinkedInConnected && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium flex-shrink-0">Connected</span>
+                      )}
                     </div>
+
+                    <input
+                      type="text"
+                      value={linkedinUrl}
+                      onChange={(e) => setLinkedinUrl(e.target.value)}
+                      placeholder="https://linkedin.com/in/username"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+
+                    {linkedInError && (
+                      <div className={`p-3 rounded-lg border text-xs ${isApiKeyError(linkedInError)
+                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400'
+                        : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400'
+                        }`}>
+                        {linkedInError}
+                        {isApiKeyError(linkedInError) && (
+                          <Link to="/settings" className="block mt-1.5 underline font-medium">Go to Settings →</Link>
+                        )}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleSyncLinkedIn}
+                      disabled={!linkedinUrl || isSyncing}
+                      className="flex items-center justify-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-white"
+                      style={{ background: 'var(--accent)' }}
+                    >
+                      {isSyncing ? (
+                        <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Syncing…</>
+                      ) : isLinkedInConnected ? (
+                        <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Refresh from LinkedIn</>
+                      ) : (
+                        'Connect LinkedIn'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {/* ── Step 2: Projects ────────────────────────── */}
+              <section className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">2</span>
+                    <div>
+                      <h2 className="text-base font-bold text-gray-900 dark:text-white">Choose Projects to Display</h2>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Drag to reorder · toggle the switch to show or hide each project.</p>
+                    </div>
+                  </div>
+                  {isGitHubConnected && (
+                    <button
+                      onClick={handleImportGitHub}
+                      disabled={!githubUsername || isImporting}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-40"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                      {isImporting ? 'Refreshing…' : 'Refresh'}
+                    </button>
                   )}
                 </div>
-              </div>
-            )}
 
-            {/* Action Buttons */}
-            {activeTab !== 3 && activeTab !== 4 && (
-              <div className="flex justify-end pt-6 border-t border-gray-200 dark:border-gray-700/80 mt-4">
-                <button
-                  onClick={handleSaveAndContinue}
-                  disabled={isSaving}
-                  className="flex min-w-[120px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-11 px-6 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Saving...</span>
-                    </>
+                <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+                  {!isGitHubConnected || projects.length === 0 ? (
+                    <div className="text-center py-6 text-gray-400 dark:text-gray-500">
+                      <svg className="w-10 h-10 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                      <p className="text-sm">No GitHub projects yet. Connect GitHub above to import them.</p>
+                    </div>
                   ) : (
-                    <span className="truncate">Save & Continue</span>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                      <SortableContext items={projects.map((p) => p._id)} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-3">
+                          {projects.map((project) => (
+                            <SortableProjectItem key={project._id} project={project} onToggleVisibility={handleToggleProjectVisibility} />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   )}
-                </button>
-              </div>
-            )}
-          </div>
+                </div>
+              </section>
+
+              {/* ── Step 3: Profile Info ─────────────────────── */}
+              <section className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">3</span>
+                    <div>
+                      <h2 className="text-base font-bold text-gray-900 dark:text-white">Edit Your Profile Info</h2>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Auto-filled from LinkedIn — you can edit anything before publishing.</p>
+                    </div>
+                  </div>
+                  {isLinkedInConnected && (
+                    <button
+                      onClick={handleSyncLinkedIn}
+                      disabled={!linkedinUrl || isSyncing}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-40"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                      {isSyncing ? 'Refreshing…' : 'Refresh from LinkedIn'}
+                    </button>
+                  )}
+                </div>
+
+                {!isLinkedInConnected && !linkedInData.name && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg text-sm" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
+                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--accent)' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <p style={{ color: 'var(--text-secondary)' }}>Connect LinkedIn above to auto-fill these fields, or fill them in manually.</p>
+                  </div>
+                )}
+
+                <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Full Name</label>
+                      <input type="text" value={linkedInData.name} onChange={(e) => setLinkedInData({ ...linkedInData, name: e.target.value })} placeholder="Your full name" className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Professional Title</label>
+                      <input type="text" value={linkedInData.title} onChange={(e) => setLinkedInData({ ...linkedInData, title: e.target.value })} placeholder="e.g. Software Engineer" className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Location</label>
+                    <input type="text" value={linkedInData.location} onChange={(e) => setLinkedInData({ ...linkedInData, location: e.target.value })} placeholder="e.g. Berlin, Germany" className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Bio / Summary</label>
+                    <textarea value={linkedInData.bio} onChange={(e) => setLinkedInData({ ...linkedInData, bio: e.target.value })} rows={4} placeholder="A short intro about yourself…" className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+                  </div>
+                </div>
+
+                {/* Visibility toggles */}
+                <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">What to show on your portfolio</p>
+                  <div className="space-y-2">
+                    {[
+                      { key: 'showLinkedInName' as const, label: 'Name, title & bio' },
+                      { key: 'showLinkedInExperience' as const, label: 'Work experience' },
+                      { key: 'showLinkedInSkills' as const, label: 'Skills' },
+                      { key: 'showLinkedInLanguages' as const, label: 'Languages' },
+                    ].map(({ key, label }) => (
+                      <label key={key} className="flex items-center justify-between py-2 px-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                        <div className="relative inline-flex items-center cursor-pointer ml-4">
+                          <input type="checkbox" checked={linkedInSettings[key]} onChange={(e) => setLinkedInSettings({ ...linkedInSettings, [key]: e.target.checked })} className="sr-only peer" />
+                          <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button onClick={handleSaveLinkedInData} disabled={isSaving} className="flex items-center gap-2 h-9 px-5 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-40">
+                    {isSaving ? <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Saving…</> : 'Save Profile Info'}
+                  </button>
+                </div>
+              </section>
+
+              {/* ── Step 4: Publish ──────────────────────────── */}
+              <section className="flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">4</span>
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white">Go Live</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Make your portfolio publicly accessible with a shareable URL.</p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-6 flex flex-col sm:flex-row sm:items-center gap-6">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${profile?.isPublished ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${profile?.isPublished ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                        {profile?.isPublished ? 'Published' : 'Not published'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {profile?.isPublished
+                        ? 'Your portfolio is live and visible to anyone with the link.'
+                        : 'Your portfolio is currently private. Publish it so recruiters and others can find you.'}
+                    </p>
+                    {profile?.isPublished && portfolioUsername && (
+                      <a
+                        href={`${window.location.origin}/portfolio/${portfolioUsername}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 mt-3 text-sm text-primary font-medium hover:underline break-all"
+                      >
+                        {window.location.origin}/portfolio/{portfolioUsername}
+                        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      </a>
+                    )}
+                    {!portfolioUsername && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">⚠ No username set — contact support or set one during registration.</p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleTogglePublish}
+                    disabled={isTogglingPublish}
+                    className={`flex-shrink-0 flex items-center justify-center gap-2 h-10 px-6 rounded-lg text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${profile?.isPublished ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-primary text-white hover:bg-primary/90'}`}
+                  >
+                    {isTogglingPublish ? (
+                      <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Working…</>
+                    ) : profile?.isPublished ? (
+                      'Unpublish'
+                    ) : (
+                      'Publish Portfolio'
+                    )}
+                  </button>
+                </div>
+              </section>
+
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════
+              COMMUNITY TAB
+          ══════════════════════════════════════════════════ */}
+          {setupTab === 1 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {publishedProfiles.map((prof) => (
+                <a
+                  key={prof._id}
+                  href={`/portfolio/${prof.username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-lg transition-all flex flex-col h-full"
+                >
+                  <div className="h-28 bg-gradient-to-r from-blue-500 to-primary/80 relative">
+                    {prof.profileImageUrl ? (
+                      <img src={prof.profileImageUrl} alt={prof.name} className="absolute -bottom-7 left-5 w-14 h-14 rounded-full border-4 border-white dark:border-gray-800 object-cover" />
+                    ) : (
+                      <div className="absolute -bottom-7 left-5 w-14 h-14 rounded-full border-4 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-lg font-bold text-gray-500">
+                        {prof.name?.charAt(0) || prof.username.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5 pt-10 flex-grow flex flex-col">
+                    <h3 className="font-bold text-gray-900 dark:text-white truncate">{prof.name || prof.username}</h3>
+                    <p className="text-xs text-primary mb-2">@{prof.username}</p>
+                    {prof.title && <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-2 line-clamp-1">{prof.title}</p>}
+                    {prof.bio && <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 flex-grow">{prof.bio}</p>}
+                    <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50 flex justify-between text-xs text-gray-400">
+                      <span>Joined {new Date(prof.createdAt).toLocaleDateString()}</span>
+                      <span className="group-hover:translate-x-1 transition-transform text-primary flex items-center gap-1">View <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+
+              {publishedProfiles.length === 0 && !isLoading && (
+                <div className="col-span-full text-center py-16 text-gray-400">
+                  <svg className="w-12 h-12 mx-auto mb-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  <p className="text-sm">No portfolios published yet. Be the first!</p>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </main>
 
-      {/* Toast Notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 };

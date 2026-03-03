@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { getGoogleLoginUrl, resendVerificationEmail } from '../services/authApi';
 import Spinner from '../components/common/Spinner';
+import appLogo from '../assets/app-logo.png';
 
 
 
@@ -256,9 +257,7 @@ const RegisterPage: React.FC = () => {
         {/* Brand */}
         <div className="relative z-10 flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--accent-bg, rgba(232,184,68,0.15))', border: '1px solid rgba(232,184,68,0.25)' }}>
-            <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
-              <path d="M8 10h12M10 7h8M7 10v11a1 1 0 001 1h12a1 1 0 001-1V10M11 14h6M11 17h4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <img src={appLogo} alt="VibeHired" width="18" height="18" style={{ display: 'block', objectFit: 'contain' }} />
           </div>
           <span className="text-lg font-semibold" style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}>VibeHired</span>
         </div>
@@ -307,10 +306,7 @@ const RegisterPage: React.FC = () => {
         {/* Top bar */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2 md:hidden">
-            <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
-              <rect width="28" height="28" rx="8" fill="var(--accent)" fillOpacity="0.12" />
-              <path d="M8 10h12M10 7h8M7 10v11a1 1 0 001 1h12a1 1 0 001-1V10M11 14h6M11 17h4" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <img src={appLogo} alt="VibeHired" width="22" height="22" style={{ display: 'block', objectFit: 'contain', borderRadius: '5px' }} />
             <span className="font-semibold" style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}>VibeHired</span>
           </div>
           <div className="md:ml-auto">

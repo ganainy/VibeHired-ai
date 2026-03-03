@@ -5,20 +5,19 @@ import { Project } from '../../services/portfolioApi';
 interface ProjectsProps {
   projects: Project[];
   username: string;
-  isDarkMode?: boolean;
 }
 
-// Generate gradient placeholder based on project index
-const getGradientClass = (index: number): string => {
-  const gradients = [
-    'bg-gradient-to-br from-indigo-400 to-purple-500',
-    'bg-gradient-to-br from-pink-400 to-red-500',
-    'bg-gradient-to-br from-cyan-400 to-blue-500',
-    'bg-gradient-to-br from-green-400 to-teal-500',
-    'bg-gradient-to-br from-amber-400 to-orange-500',
-    'bg-gradient-to-br from-teal-500 to-indigo-600',
+// Subtle accent-tinted placeholder backgrounds (design-system aligned)
+const getPlaceholderStyle = (index: number): React.CSSProperties => {
+  const styles: React.CSSProperties[] = [
+    { background: 'linear-gradient(135deg, var(--bg-elevated), var(--bg-raised))' },
+    { background: 'linear-gradient(135deg, rgba(232,184,68,0.12), var(--bg-elevated))' },
+    { background: 'linear-gradient(135deg, var(--bg-raised), rgba(232,184,68,0.08))' },
+    { background: 'linear-gradient(135deg, var(--bg-surface), var(--bg-elevated))' },
+    { background: 'linear-gradient(135deg, rgba(232,184,68,0.06), var(--bg-raised))' },
+    { background: 'linear-gradient(135deg, var(--bg-elevated), var(--bg-surface))' },
   ];
-  return gradients[index % gradients.length];
+  return styles[index % styles.length];
 };
 
 // Get the main programming language from project technologies
@@ -108,7 +107,7 @@ const getLanguageLogoUrl = (language: string | null): string | null => {
   return `https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/${iconName}.svg`;
 };
 
-const Projects: React.FC<ProjectsProps> = ({ projects, isDarkMode = false }) => {
+const Projects: React.FC<ProjectsProps> = ({ projects }) => {
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [showAll, setShowAll] = useState(false);
 
@@ -147,14 +146,8 @@ const Projects: React.FC<ProjectsProps> = ({ projects, isDarkMode = false }) => 
     return (
       <section className="py-16 md:py-24" id="work">
         <div className="max-w-4xl mx-auto text-center mb-12">
-          <h2 className={`text-3xl font-bold mb-4 ${
-            isDarkMode ? 'text-white' : 'text-slate-900'
-          }`}>
-            Selected Work
-          </h2>
-          <p className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            No projects available yet.
-          </p>
+          <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Selected Work</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>No projects available yet.</p>
         </div>
       </section>
     );
@@ -163,14 +156,8 @@ const Projects: React.FC<ProjectsProps> = ({ projects, isDarkMode = false }) => 
   return (
     <section className="py-16 md:py-24" id="work">
       <div className="max-w-4xl mx-auto text-center mb-12">
-        <h2 className={`text-3xl font-bold mb-4 ${
-          isDarkMode ? 'text-white' : 'text-slate-900'
-        }`}>
-          Selected Work
-        </h2>
-        <p className={`mt-4 ${
-          isDarkMode ? 'text-slate-400' : 'text-slate-600'
-        }`}>
+        <h2 className="text-3xl font-bold mb-4" style={{ fontFamily: 'var(--font-display)' }}>Selected Work</h2>
+        <p className="mt-4" style={{ color: 'var(--text-secondary)' }}>
           Here are some projects I've worked on. Each one represents a unique challenge and learning experience.
         </p>
       </div>
@@ -180,13 +167,12 @@ const Projects: React.FC<ProjectsProps> = ({ projects, isDarkMode = false }) => 
         <div className="flex flex-wrap justify-center gap-2 mb-8">
           <button
             onClick={() => setSelectedFilter('all')}
-            className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ${
-              selectedFilter === 'all'
-                ? 'bg-primary text-white scale-110 shadow-md'
-                : isDarkMode
-                ? 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:scale-105 hover:shadow-md'
-                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:scale-105 hover:shadow-md'
-            }`}
+            className="px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 hover:scale-105"
+            style={{
+              background: selectedFilter === 'all' ? 'var(--accent)' : 'var(--bg-elevated)',
+              color: selectedFilter === 'all' ? 'var(--color-ink-950, #0e0e17)' : 'var(--text-secondary)',
+              border: selectedFilter === 'all' ? 'none' : '1px solid var(--border)',
+            }}
           >
             All
           </button>
@@ -194,13 +180,12 @@ const Projects: React.FC<ProjectsProps> = ({ projects, isDarkMode = false }) => 
             <button
               key={tech}
               onClick={() => setSelectedFilter(tech)}
-              className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 capitalize ${
-                selectedFilter === tech
-                  ? 'bg-primary text-white scale-110 shadow-md'
-                  : isDarkMode
-                  ? 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:scale-105 hover:shadow-md'
-                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:scale-105 hover:shadow-md'
-              }`}
+              className="px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 capitalize hover:scale-105"
+              style={{
+                background: selectedFilter === tech ? 'var(--accent)' : 'var(--bg-elevated)',
+                color: selectedFilter === tech ? 'var(--color-ink-950, #0e0e17)' : 'var(--text-secondary)',
+                border: selectedFilter === tech ? 'none' : '1px solid var(--border)',
+              }}
             >
               {tech}
             </button>
@@ -211,7 +196,7 @@ const Projects: React.FC<ProjectsProps> = ({ projects, isDarkMode = false }) => 
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {displayedProjects.map((project, index) => (
-          <ProjectCard key={project._id} project={project} index={index} isDarkMode={isDarkMode} />
+          <ProjectCard key={project._id} project={project} index={index} />
         ))}
       </div>
 
@@ -220,7 +205,7 @@ const Projects: React.FC<ProjectsProps> = ({ projects, isDarkMode = false }) => 
         <div className="mt-12 text-center">
           <button
             onClick={() => setShowAll(true)}
-            className="px-6 py-3 bg-primary text-ink-950 font-semibold rounded-lg shadow-md hover:bg-gold-600 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="btn-primary"
           >
             Load More Projects
           </button>
@@ -234,11 +219,7 @@ const Projects: React.FC<ProjectsProps> = ({ projects, isDarkMode = false }) => 
               setShowAll(false);
               window.scrollTo({ top: document.getElementById('work')?.offsetTop || 0, behavior: 'smooth' });
             }}
-            className={`px-6 py-3 font-semibold rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg ${
-              isDarkMode 
-                ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' 
-                : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-            }`}
+            className="btn-secondary"
           >
             Show Less
           </button>
@@ -251,22 +232,22 @@ const Projects: React.FC<ProjectsProps> = ({ projects, isDarkMode = false }) => 
 interface ProjectCardProps {
   project: Project;
   index: number;
-  isDarkMode?: boolean;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, isDarkMode = false }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
   const [imageError, setImageError] = useState(false);
   const [logoError, setLogoError] = useState(false);
-  const gradientClass = getGradientClass(index);
+  const placeholderStyle = getPlaceholderStyle(index);
   const mainLanguage = getMainLanguage(project.technologies);
   const languageLogoUrl = getLanguageLogoUrl(mainLanguage);
 
   return (
-    <div className={`rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group ${
-      isDarkMode ? 'bg-slate-900' : 'bg-white'
-    }`}>
-      {/* Project Image */}
-      <div className={`h-48 flex items-center justify-center ${gradientClass} transition-transform duration-300 group-hover:scale-105`}>
+    <div
+      className="card rounded-xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group"
+      style={{ border: '1px solid var(--border)' }}
+    >
+      {/* Project Image / Placeholder */}
+      <div className="h-48 flex items-center justify-center transition-transform duration-300 group-hover:scale-105" style={placeholderStyle}>
         {project.imageUrl && !imageError ? (
           <img
             className="w-full h-full object-cover"
@@ -280,11 +261,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, isDarkMode = 
               <img
                 src={languageLogoUrl}
                 alt={mainLanguage || 'Language logo'}
-                className="h-20 w-20 invert brightness-0"
+                className="h-16 w-16 opacity-70"
+                style={{ filter: 'invert(1) sepia(1) saturate(3) hue-rotate(5deg) brightness(0.7)' }}
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <div className="text-white/80 text-4xl font-bold">
+              <div className="text-4xl font-bold" style={{ color: 'var(--accent)', fontFamily: 'var(--font-display)', opacity: 0.85 }}>
                 {project.title.charAt(0).toUpperCase()}
               </div>
             )}
@@ -294,34 +276,29 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, isDarkMode = 
 
       {/* Project Content */}
       <div className="p-6">
-        <h3 className={`text-xl font-semibold mb-2 transition-colors duration-300 group-hover:text-primary ${
-          isDarkMode ? 'text-white' : 'text-slate-900'
-        }`}>
+        <h3
+          className="text-xl font-semibold mb-2 transition-colors duration-300"
+          style={{ color: 'var(--text-primary)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+        >
           {project.title}
         </h3>
-        <p className={`mt-2 text-sm line-clamp-4 ${
-          isDarkMode ? 'text-slate-400' : 'text-slate-600'
-        }`}>
+        <p className="mt-2 text-sm line-clamp-4" style={{ color: 'var(--text-secondary)' }}>
           {project.description}
         </p>
         {project.technologies && project.technologies.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-1.5">
             {project.technologies.slice(0, 4).map((tech, techIndex) => (
               <span
                 key={techIndex}
-                className={`text-xs px-2 py-1 rounded transition-all duration-300 hover:scale-110 hover:shadow-sm ${
-                  isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                }`}
+                className="badge badge-ink text-xs"
               >
                 {tech}
               </span>
             ))}
             {project.technologies.length > 4 && (
-              <span className={`text-xs px-2 py-1 rounded transition-all duration-300 hover:scale-110 hover:shadow-sm ${
-                isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-              }`}>
-                +{project.technologies.length - 4}
-              </span>
+              <span className="badge badge-ink text-xs">+{project.technologies.length - 4}</span>
             )}
           </div>
         )}
@@ -330,11 +307,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, isDarkMode = 
             href={project.githubUrl || project.projectUrl || '#'}
             target="_blank"
             rel="noopener noreferrer"
-            className={`mt-6 block w-full text-center py-2 px-4 border rounded-md text-sm font-medium transition-all duration-300 hover:scale-105 hover:shadow-md ${
-              isDarkMode
-                ? 'border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-primary'
-                : 'border-slate-300 text-slate-700 hover:bg-slate-100 hover:border-primary'
-            }`}
+            className="btn-ghost mt-5 block w-full text-center text-sm"
           >
             {project.githubUrl ? 'View Code' : 'View Project'}
           </a>

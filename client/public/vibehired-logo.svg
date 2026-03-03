@@ -1,0 +1,8 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background tile -->
+  <rect width="100" height="100" rx="22" fill="#12121e"/>
+  <!-- Gold checkmark — "hired" check -->
+  <path d="M18 54 L40 76 L82 28" stroke="#e8b844" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- 4-pointed sparkle at checkmark tip — AI spark -->
+  <path d="M82 6 L85 11 L90 14 L85 17 L82 22 L79 17 L74 14 L79 11 Z" fill="#e8b844"/>
+</svg>

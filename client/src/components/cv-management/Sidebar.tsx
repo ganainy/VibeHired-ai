@@ -171,6 +171,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         </svg>
                                     </div>
                                     <span className="text-[10px] font-bold uppercase tracking-tight">New CV</span>
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 cr</span>
                                 </button>
                             )}
 
