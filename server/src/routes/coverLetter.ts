@@ -8,6 +8,7 @@ import Profile from '../models/Profile';
 import { generateCoverLetter, CoverLetterResponse } from '../services/coverLetterService';
 import { JsonResumeSchema } from '../types/jsonresume';
 import mongoose from 'mongoose';
+import { usageLimiter } from '../middleware/usageLimiter';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pdfParse = require('pdf-parse') as (buffer: Buffer, options?: object) => Promise<{ text: string }>;
 
@@ -182,6 +183,6 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
 };
 
 // Route definition
-router.post('/:jobId', generateCoverLetterHandler);
+router.post('/:jobId', usageLimiter('coverLetter'), generateCoverLetterHandler);
 
 export default router;

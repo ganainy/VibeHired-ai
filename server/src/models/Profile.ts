@@ -52,22 +52,6 @@ export interface IProfile extends Document {
       accessToken?: string;
       enabled?: boolean;
     };
-    apify?: {
-      accessToken?: string;
-      enabled?: boolean;
-    };
-    gemini?: {
-      accessToken?: string;
-      enabled?: boolean;
-    };
-    openRouter?: {
-      accessToken?: string;
-      enabled?: boolean;
-    };
-    ollama?: {
-      baseUrl?: string;
-      enabled?: boolean;
-    };
     google?: {
       accessToken?: string;
       refreshToken?: string;
@@ -106,26 +90,6 @@ export interface IProfile extends Document {
     schedule?: string; // cron expression
   };
   aiProviderSettings?: {
-    defaultProvider?: 'gemini' | 'openrouter' | 'ollama';
-    /** Override provider used exclusively for inbox email classification. Allows
-     *  routing email content to a local Ollama model even when the global
-     *  default is an external provider such as Gemini or OpenRouter. */
-    inboxProvider?: 'gemini' | 'openrouter' | 'ollama';
-    defaultModel?: string;
-    providers?: {
-      gemini?: {
-        accessToken?: string;
-        enabled?: boolean;
-      };
-      openrouter?: {
-        accessToken?: string;
-        enabled?: boolean;
-      };
-      ollama?: {
-        baseUrl?: string;
-        enabled?: boolean;
-      };
-    };
     // Multi-provider settings for batch processing
     provider?: string;
     batchSize?: number;
@@ -243,37 +207,6 @@ const ProfileSchema: Schema = new Schema(
           default: false,
         },
       },
-      apify: {
-        accessToken: String,
-        enabled: {
-          type: Boolean,
-          default: false,
-        },
-      },
-      gemini: {
-        accessToken: String,
-        enabled: {
-          type: Boolean,
-          default: false,
-        },
-      },
-      openRouter: {
-        accessToken: String,
-        enabled: {
-          type: Boolean,
-          default: false,
-        },
-      },
-      ollama: {
-        baseUrl: {
-          type: String,
-          default: 'http://localhost:11434',
-        },
-        enabled: {
-          type: Boolean,
-          default: false,
-        },
-      },
       google: {
         accessToken: String,
         refreshToken: String,
@@ -380,47 +313,10 @@ const ProfileSchema: Schema = new Schema(
       },
     },
     aiProviderSettings: {
-      defaultProvider: {
-        type: String,
-        enum: ['gemini', 'openrouter', 'ollama'],
-      },
-      inboxProvider: {
-        type: String,
-        enum: ['gemini', 'openrouter', 'ollama'],
-      },
-      defaultModel: {
-        type: String,
-      },
-      providers: {
-        gemini: {
-          accessToken: String,
-          enabled: {
-            type: Boolean,
-            default: false,
-          },
-        },
-        openrouter: {
-          accessToken: String,
-          enabled: {
-            type: Boolean,
-            default: false,
-          },
-        },
-        ollama: {
-          baseUrl: {
-            type: String,
-            default: 'http://localhost:11434',
-          },
-          enabled: {
-            type: Boolean,
-            default: false,
-          },
-        },
-      },
       // Multi-provider settings
       provider: {
         type: String,
-        enum: ['gemini', 'openrouter', 'ollama'],
+        enum: ['gemini'],
         default: 'gemini',
       },
       batchSize: {
@@ -442,7 +338,6 @@ const ProfileSchema: Schema = new Schema(
           type: String,
           default: GEMINI_PRO,
         },
-
       },
     },
     customPrompts: {

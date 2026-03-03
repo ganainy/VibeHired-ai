@@ -24,6 +24,10 @@ import EmailSuggestionsPage from './pages/EmailSuggestionsPage';
 import InterviewMaterialsPage from './pages/InterviewMaterialsPage';
 import WorkTrackerPage from './pages/WorkTrackerPage';
 import CalendarPage from './pages/CalendarPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import SubscriptionsPage from './pages/SubscriptionsPage';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -68,6 +72,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/google" element={<GoogleAuthCallbackPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
@@ -89,6 +94,7 @@ function App() {
         <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
         <Route path="/portfolio-setup" element={<ProtectedRoute><PortfolioSetupPage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        <Route path="/subscriptions" element={<ProtectedRoute><SubscriptionsPage /></ProtectedRoute>} />
         <Route path="/email-suggestions" element={<ProtectedRoute><EmailSuggestionsPage /></ProtectedRoute>} />
         <Route path="/interview-materials" element={<ProtectedRoute><InterviewMaterialsPage /></ProtectedRoute>} />
         <Route path="/work-tracker" element={<ProtectedRoute><WorkTrackerPage /></ProtectedRoute>} />
@@ -105,6 +111,9 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute><AdminUsersPage /></ProtectedRoute>} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route
           path="*"

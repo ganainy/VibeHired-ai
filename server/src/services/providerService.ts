@@ -12,141 +12,66 @@ import { GEMINI_FLASH } from '../constants/geminiModels';
  */
 
 /**
- * Get API key for a specific provider from profile
- * @param profile - User's profile
- * @param provider - AI provider
- * @returns Decrypted API key or null
- */
-export function getProviderApiKey(profile: any, provider: AIProvider): string | null {
-    const strategy = ProviderRegistry.get(provider);
-    if (!strategy) {
-        return null;
-    }
-
-    const apiKey = strategy.getApiKey(profile);
-    return apiKey;
-}
-
-/**
- * Get Gemini API key as fallback
- * @param profile - User's profile
+ * Get Gemini API key from environment variable
  * @returns Gemini API key
  */
-export function getGeminiApiKey(profile: any): string {
-    const encryptedKey = profile?.integrations?.gemini?.accessToken;
-
-    if (encryptedKey) {
-        const decryptedKey = decrypt(encryptedKey);
-        if (decryptedKey) {
-            return decryptedKey;
-        }
-    }
-
-    // Fallback to environment variable
+export function getGeminiApiKey(): string {
     const envKey = process.env.GEMINI_API_KEY;
     if (!envKey) {
-        throw new Error('Gemini API key not configured');
+        throw new Error('Gemini API key not configured on server');
     }
-
     return envKey;
 }
 
 /**
- * Create a model adapter with automatic fallback to Gemini
- * @param profile - User's profile
- * @param provider - Desired AI provider
+ * Create a model adapter for Gemini
+ * @param profile - User's profile (kept for signature compatibility)
+ * @param provider - Ignored (always Gemini)
  * @param modelName - Model name to use
  * @param temperature - Temperature setting (default: 0.7)
  * @param maxTokens - Max tokens (default: 8192)
  * @returns ModelAdapter instance
  */
 export function createAdapter(
-    profile: any,
-    provider: string | undefined,
+    _profile: any,
+    _provider: string | undefined,
     modelName: string,
     temperature: number = 0.7,
     maxTokens: number = 8192
 ): ModelAdapter {
-    const selectedProvider = getProvider(provider);
-    const geminiApiKey = getGeminiApiKey(profile);
+    const geminiApiKey = getGeminiApiKey();
 
-    // Try to get API key for selected provider
-    const apiKey = getProviderApiKey(profile, selectedProvider);
-
-    if (!apiKey) {
-        console.warn(`No API key for ${selectedProvider}, falling back to Gemini`);
-        return AdapterFactory.create({
-            provider: AIProvider.GEMINI,
-            apiKey: geminiApiKey,
-            modelName: GEMINI_FLASH,
-            temperature,
-            maxTokens
-        });
-    }
-
-    // Create adapter with fallback
-    try {
-        return AdapterFactory.create({
-            provider: selectedProvider,
-            apiKey,
-            modelName,
-            temperature,
-            maxTokens
-        });
-    } catch (error) {
-        console.error(`Failed to create adapter for ${selectedProvider}:`, error);
-        console.log('Falling back to Gemini');
-        return AdapterFactory.create({
-            provider: AIProvider.GEMINI,
-            apiKey: geminiApiKey,
-            modelName: GEMINI_FLASH,
-            temperature,
-            maxTokens
-        });
-    }
+    return AdapterFactory.create({
+        provider: AIProvider.GEMINI,
+        apiKey: geminiApiKey,
+        modelName: modelName || GEMINI_FLASH,
+        temperature,
+        maxTokens
+    });
 }
 
 /**
- * Execute an AI operation with automatic retry and fallback
+ * Execute an AI operation with automatic retry
  * @param operation - Async function that performs the AI operation
- * @param fallbackOperation - Optional fallback operation using Gemini
  * @returns Result of the operation
  */
 export async function executeWithFallback<T>(
     operation: () => Promise<T>,
-    fallbackOperation?: () => Promise<T>
+    _fallbackOperation?: () => Promise<T>
 ): Promise<T> {
     try {
         return await operation();
     } catch (error) {
-        console.error('Primary operation failed:', error);
-
-        if (fallbackOperation) {
-            console.log('Attempting fallback operation...');
-            try {
-                return await fallbackOperation();
-            } catch (fallbackError) {
-                console.error('Fallback operation also failed:', fallbackError);
-                throw fallbackError;
-            }
-        }
-
+        console.error('Operation failed:', error);
         throw error;
     }
 }
 
 /**
  * Get rate limit delay for a provider
- * @param provider - AI provider
+ * @param provider - AI provider (ignored)
  * @returns Delay in milliseconds
  */
-export function getRateLimitDelay(provider: string | undefined): number {
-    const selectedProvider = getProvider(provider);
-    const strategy = ProviderRegistry.get(selectedProvider);
-
-    if (!strategy) {
-        return 4500; // Default to Gemini's delay
-    }
-
-    return strategy.getRateLimitDelay();
+export function getRateLimitDelay(_provider: string | undefined): number {
+    return 4500; // Default to Gemini's delay
 }

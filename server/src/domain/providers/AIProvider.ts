@@ -5,9 +5,7 @@
  * Provides type-safe provider names throughout the application
  */
 export enum AIProvider {
-    GEMINI = 'gemini',
-    OPENROUTER = 'openrouter',
-    OLLAMA = 'ollama'
+    GEMINI = 'gemini'
 }
 
 /**

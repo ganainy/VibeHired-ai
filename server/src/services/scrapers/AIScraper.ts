@@ -5,8 +5,7 @@ import { cleanHtmlForAi } from '../../utils/htmlCleaner';
 import { IScraper } from '../../interfaces/scraper.interface';
 
 /**
- * AI-based scraper that uses the user's configured AI provider to extract job descriptions from HTML
- * Uses the AI provider selected in the user's settings (Gemini, OpenRouter, Ollama, etc.)
+ * AI-based scraper that uses Gemini to extract job descriptions from HTML
  */
 export class AIScraper implements IScraper {
     /**

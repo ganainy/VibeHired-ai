@@ -61,6 +61,13 @@ const SettingsIcon = () => (
     </svg>
 );
 
+const CreditCardIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+);
+
 const PrepLibraryIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
@@ -136,6 +143,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
 
     const isActiveRoute = (path: string) => {
         if (path === '/dashboard') return location.pathname === '/dashboard';
+        if (path === '/admin') return location.pathname === '/admin';
         return location.pathname.startsWith(path);
     };
 
@@ -150,6 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
         { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
         { path: '/portfolio-setup', label: 'Portfolio', icon: PortfolioIcon },
         { path: '/settings', label: 'Settings', icon: SettingsIcon },
+        { path: '/subscriptions', label: 'Subscription', icon: CreditCardIcon },
     ];
 
     const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : 'U';
@@ -254,6 +263,59 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                             </Link>
                         );
                     })}
+
+                    {/* Admin Section */}
+                    {(user?.role === 'admin' || user?.role === 'owner') && (
+                        <div className="mt-8 space-y-0.5">
+                            {!isCollapsed && (
+                                <p className="px-4 mb-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">Admin</p>
+                            )}
+                            {[
+                                { path: '/admin', label: 'Admin Dashboard', icon: AnalyticsIcon },
+                                { path: '/admin/users', label: 'User Management', icon: PortfolioIcon },
+                            ].map((item) => {
+                                const isActive = isActiveRoute(item.path);
+                                return (
+                                    <Link
+                                        key={item.path}
+                                        to={item.path}
+                                        title={isCollapsed ? item.label : undefined}
+                                        className="flex items-center rounded-lg transition-all duration-150 group relative"
+                                        style={{
+                                            padding: isCollapsed ? '10px' : '9px 12px',
+                                            justifyContent: isCollapsed ? 'center' : 'flex-start',
+                                            gap: isCollapsed ? '0' : '10px',
+                                            backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.09))' : 'transparent',
+                                            color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (!isActive) {
+                                                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-elevated)';
+                                                (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (!isActive) {
+                                                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                                (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
+                                            }
+                                        }}
+                                    >
+                                        {isActive && (
+                                            <span
+                                                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
+                                                style={{ backgroundColor: 'var(--accent)' }}
+                                            />
+                                        )}
+                                        <item.icon />
+                                        {!isCollapsed && (
+                                            <span className="text-[0.875rem] font-medium tracking-[-0.01em]">{item.label}</span>
+                                        )}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </nav>
 
@@ -262,6 +324,21 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                 className="border-t px-3 py-4 space-y-2"
                 style={{ borderColor: 'var(--border)' }}
             >
+                {/* Remaining Credits Badge */}
+                {user && (
+                    <div
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold ${(user.credits ?? 0) < 10 ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-gold-500/10 text-gold-600 border border-gold-500/20'
+                            }`}
+                        title="Remaining AI Credits"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                        </svg>
+                        {!isCollapsed && <span>{user.credits ?? 0} Credits</span>}
+                        {isCollapsed && <span>{user.credits ?? 0}</span>}
+                    </div>
+                )}
+
                 {/* User chip */}
                 <div
                     className="flex items-center rounded-lg overflow-hidden"

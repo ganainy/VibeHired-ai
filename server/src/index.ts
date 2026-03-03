@@ -29,6 +29,10 @@ import googleAuthRoutes from './routes/googleAuth';
 import emailSuggestionsRoutes from './routes/emailSuggestions';
 import employersRoutes from './routes/employers';
 import workTrackerRoutes from './routes/workTracker';
+import usageRoutes from './routes/usage';
+import subscriptionRoutes from './routes/subscription';
+import adminRoutes from './routes/admin';
+import { handleStripeWebhook } from './controllers/webhookController';
 // Correct the import for the default export
 import protect from './middleware/authMiddleware'; // Import default export and alias it as 'protect'
 import { errorHandler } from './middleware/errorHandler';
@@ -68,12 +72,22 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions)); // Enable CORS with configuration
+
+// Stripe Webhook MUST stay before express.json() to get RAW body
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
+
 app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 // Cloudinary is now used for image storage, so local static file serving is no longer primary
 // but we keep the uploads directory for temporary processing if needed
 
+
+// Request Logger
+app.use((req, res, next) => {
+  console.log(`[HTTP] ${req.method} ${req.url}`);
+  next();
+});
 
 // --- Mount Routes ---
 // Public route (example)
@@ -104,6 +118,9 @@ app.use('/api/auth/google', googleAuthRoutes); // Google OAuth routes (callback 
 app.use('/api/email-suggestions', protect, emailSuggestionsRoutes); // Email suggestion routes (protected)
 app.use('/api/employers', employersRoutes); // Employer management (protected internally)
 app.use('/api/work-tracker', workTrackerRoutes); // Work time tracker (protected internally)
+app.use('/api/usage', usageRoutes); // Credit usage tracking (protected)
+app.use('/api/subscriptions', protect, subscriptionRoutes); // Subscription management (protected)
+app.use('/api/admin', adminRoutes); // Admin management (protected)
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

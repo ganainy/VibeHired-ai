@@ -5,9 +5,8 @@ import Profile from '../models/Profile';
 import { analyzeJobCompanyAndRelevance } from './jobAnalysisService';
 // Cover letter generation is now ON-DEMAND (not during batch processing)
 import { processBatchWithErrors, calculateBatchDelay } from '../utils/batchProcessor';
-import { getRateLimitDelay } from './providerService';
-import { ProviderRegistry } from '../domain/providers/ProviderRegistry';
-import { getProvider } from '../domain/providers/AIProvider';
+import { generateContent } from '../utils/aiService';
+import { GEMINI_FLASH } from '../constants/geminiModels';
 
 /**
  * Process a single job with provider-aware AI operations
@@ -151,14 +150,12 @@ export async function processJobsInParallel(
         throw new Error('User profile not found');
     }
 
-    // Calculate rate limit delay
-    const selectedProvider = getProvider(provider);
-    const strategy = ProviderRegistry.get(selectedProvider);
-    const rateLimitDelay = strategy ? strategy.getRateLimitDelay() : 4500;
+    // Calculate rate limit delay (hardcoded for Gemini)
+    const rateLimitDelay = 4500;
 
     console.log(`\n→ Processing ${jobs.length} jobs in parallel (batch size: ${batchSize})`);
-    console.log(`  Provider: ${selectedProvider}`);
-    console.log(`  Models: Analysis=${models.analysis || 'gemini-1.5-flash'}, Relevance=${models.relevance || 'gemini-1.5-flash'}, Generation=${models.generation || 'gemini-1.5-pro'}`);
+    console.log(`  Provider: Gemini (Flash)`);
+    console.log(`  Models: Analysis=${models.analysis || GEMINI_FLASH}, Relevance=${models.relevance || GEMINI_FLASH}, Generation=${models.generation || 'gemini-1.5-pro'}`);
     console.log(`  Rate limit delay: ${rateLimitDelay}ms between batches\n`);
 
     // Aggregate stats

@@ -105,11 +105,12 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
       {/* Section Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/40 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/40 border-b border-gray-200 dark:border-gray-700">
+        {/* Expand / collapse — takes all remaining space */}
         <button
           type="button"
           onClick={() => handleToggleOpen(!open)}
-          className="flex items-center gap-2 text-left group min-w-0"
+          className="flex items-center gap-2 text-left group min-w-0 flex-1"
         >
           <svg
             className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`}
@@ -127,52 +128,56 @@ const DynamicSection: React.FC<DynamicSectionProps> = ({
           )}
         </button>
 
-        {/* Improve button */}
-        {onImprove && (
-          <button
-            type="button"
-            onClick={() => setShowImproveInput((s) => !s)}
-            disabled={improving}
-            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg disabled:opacity-50 transition-colors flex-shrink-0 ml-2 text-ink-950" style={{ background: "var(--accent-bg)", color: "var(--accent)" }}
-            title="Improve this section with AI"
-          >
-            {improving ? (
-              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            ) : (
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            )}
-            {improving ? 'Improving…' : 'AI Improve'}
-          </button>
-        )}
+        {/* Right-side actions — AI Improve + Delete always grouped together */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Improve button */}
+          {onImprove && (
+            <button
+              type="button"
+              onClick={() => setShowImproveInput((s) => !s)}
+              disabled={improving}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg disabled:opacity-50 transition-colors text-ink-950"
+              style={{ background: "var(--accent-bg)", color: "var(--accent)" }}
+              title="Improve this section with AI"
+            >
+              {improving ? (
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              )}
+              {improving ? 'Improving…' : 'AI Improve'}
+            </button>
+          )}
 
-        {/* Delete section button */}
-        {onDelete && (
-          <button
-            type="button"
-            onClick={() => {
-              setConfirmModal({
-                show: true,
-                title: 'Abschnitt löschen',
-                message: `Möchten Sie den Abschnitt "${descriptor.label}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
-                danger: true,
-                onConfirm: () => {
-                  onDelete();
-                }
-              });
-            }}
-            className="ml-1.5 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
-            title="Delete this section"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 0 00-1-1h-4a1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        )}
+          {/* Delete section button */}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmModal({
+                  show: true,
+                  title: 'Abschnitt löschen',
+                  message: `Möchten Sie den Abschnitt "${descriptor.label}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
+                  danger: true,
+                  onConfirm: () => {
+                    onDelete();
+                  }
+                });
+              }}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              title="Delete this section"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 0 00-1-1h-4a1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* AI improve input */}

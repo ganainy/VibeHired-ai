@@ -2,6 +2,7 @@
 import express, { RequestHandler } from 'express';
 import * as autoJobController from '../controllers/autoJobController';
 import authMiddleware from '../middleware/authMiddleware';
+import { usageLimiter } from '../middleware/usageLimiter';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // Workflow management
-router.post('/trigger', autoJobController.triggerWorkflow as RequestHandler);
+router.post('/trigger', usageLimiter('autoJobsWorkflow'), autoJobController.triggerWorkflow as RequestHandler);
 router.get('/runs/:runId', autoJobController.getWorkflowStatus as RequestHandler);
 router.post('/runs/:runId/cancel', autoJobController.cancelWorkflow as RequestHandler);
 

@@ -12,12 +12,14 @@ import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 // import { downloadCvAsPdf } from '../services/pdfService'; // Removed as we use react-to-print now
 import { DEFAULT_CV_PROMPT, DEFAULT_COVER_LETTER_PROMPT } from '../constants/prompts';
 import { generateCoverLetter } from '../services/coverLetterApi';
+import { useAuth } from '../context/AuthContext';
 import { getMasterCv, previewCv, getCvBranches, CVDocument, getJobCv, createJobCv, createJobCvFromBase, uploadCvForJob, updateCv, deleteCv, getCvOriginalPdf, detachJobCv } from '../services/cvApi';
 import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
 import AtsInlinePanel from '../components/ats/AtsInlinePanel';
 import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
 import axios from 'axios';
 import ErrorAlert from '../components/common/ErrorAlert';
+import { parseApiError, parseApiErrorMessage } from '../utils/parseApiError';
 import SendToPhoneButton from '../components/jobs/SendToPhoneButton';
 import Spinner from '../components/common/Spinner';
 import SimpleLoader from '../components/common/SimpleLoader';
@@ -63,6 +65,7 @@ type JobDetailsFormData = {
 const ReviewFinalizePage: React.FC = () => {
     const { jobId, tab } = useParams<{ jobId: string; tab?: string }>();
     const navigate = useNavigate();
+    const { refreshUsage } = useAuth();
     const [jobApplication, setJobApplication] = useState<JobApplication | null>(null);
     const [cvData, setCvData] = useState<JsonResumeSchema>({ basics: {} });
     const [currentCvId, setCurrentCvId] = useState<string | null>(null);
@@ -90,6 +93,8 @@ const ReviewFinalizePage: React.FC = () => {
     const [coverLetterError, setCoverLetterError] = useState<string | null>(null);
     const [isGeneratingCv, setIsGeneratingCv] = useState<boolean>(false);
     const [generateCvError, setGenerateCvError] = useState<string | null>(null);
+    // Shared inline error for AI actions (improve section, ATS scan, apply suggestions)
+    const [aiActionError, setAiActionError] = useState<{ message: string; upgrade?: boolean } | null>(null);
     const [tailoringChanges, setTailoringChanges] = useState<any[] | null>(null); // New state for changes
 
     // New state for generation progress
@@ -769,6 +774,7 @@ const ReviewFinalizePage: React.FC = () => {
         }
 
         setIsLoadingRecommendation(true);
+        setAiActionError(null);
         try {
             if (jobApplication.baseCvId !== baseCvIdForJob) {
                 const updatedJob = await updateJob(currentJobId, { baseCvId: baseCvIdForJob });
@@ -788,13 +794,14 @@ const ReviewFinalizePage: React.FC = () => {
             }
         } catch (err: any) {
             console.error('[handleCalculateMatch] Failed to calculate recommendation:', err);
-            showToast(err?.message || 'Failed to calculate match', 'error');
+            const parsed = parseApiError(err);
+            setAiActionError(parsed);
             setRecommendation({
                 shouldApply: false,
                 score: null,
                 reason: '',
                 cached: false,
-                error: err?.message || 'Failed to calculate match'
+                error: parsed.message
             });
         } finally {
             setIsLoadingRecommendation(false);
@@ -806,13 +813,14 @@ const ReviewFinalizePage: React.FC = () => {
         if (!jobId) return;
 
         setIsRefreshingRecommendation(true);
+        setAiActionError(null);
         try {
             const result = await getJobRecommendation(jobId, true); // Force refresh
             setRecommendation(result);
             showToast('AI recommendation updated!', 'success');
         } catch (err: any) {
             console.error('Failed to refresh recommendation:', err);
-            showToast('Failed to update recommendation', 'error');
+            setAiActionError(parseApiError(err));
         } finally {
             setIsRefreshingRecommendation(false);
         }
@@ -892,11 +900,13 @@ const ReviewFinalizePage: React.FC = () => {
 
             // Show success message
             showToast(`${section.charAt(0).toUpperCase() + section.slice(1)} improved successfully!`, 'success');
+            try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
 
             return result;
         } catch (error: any) {
             console.error(`Error improving ${section}:`, error);
-            showToast(error.message || `Failed to improve ${section}`, 'error');
+            const parsed = parseApiError(error);
+            setAiActionError(parsed);
             throw error;
         } finally {
             setImprovingSections(prev => ({ ...prev, [section]: false }));
@@ -959,7 +969,7 @@ const ReviewFinalizePage: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Error starting ATS scan:', error);
-            showToast(error.message || 'Failed to start ATS scan.', 'error');
+            setAiActionError(parseApiError(error));
             setIsScanningAts(false);
             setAtsProgressMessage('');
         }
@@ -1020,9 +1030,10 @@ const ReviewFinalizePage: React.FC = () => {
             await updateJob(jobId!, { appliedAtsSuggestions: newApplied });
             const count = items.length;
             showToast(`CV updated — ${count} ATS improvement${count !== 1 ? 's' : ''} applied ✓`, 'success');
+            try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
         } catch (error: any) {
             console.error('Error applying ATS suggestions:', error);
-            showToast(error.message || 'Failed to apply ATS suggestions', 'error');
+            setAiActionError(parseApiError(error));
             throw error; // re-throw so AtsInlinePanel doesn't mark items as applied
         } finally {
             setIsApplyingAtsBatch(false);
@@ -1198,6 +1209,7 @@ const ReviewFinalizePage: React.FC = () => {
                     clearInterval(pollingIntervalId.current);
                     pollingIntervalId.current = null;
                 }
+                try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
             } else if (response.status === 'failed') {
                 setAnalyzeError(response.errorInfo || 'Analysis failed');
                 if (pollingIntervalId.current) {
@@ -1207,9 +1219,9 @@ const ReviewFinalizePage: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Error polling analysis results:', error);
-            setAnalyzeError(error.message || 'Failed to get analysis results');
+            setAnalyzeError(parseApiErrorMessage(error));
         }
-    }, []);
+    }, [refreshUsage]);
 
     const handleAnalyzeSection = async (section: string) => {
         if (!jobId || !cvData) return;
@@ -1240,7 +1252,7 @@ const ReviewFinalizePage: React.FC = () => {
 
         } catch (error: any) {
             console.error(`Error analyzing ${section}:`, error);
-            setAnalyzeError(error.message || `Failed to analyze ${section}.`);
+            setAnalyzeError(parseApiErrorMessage(error));
         } finally {
             setAnalyzingSections(prev => ({ ...prev, [section]: false }));
         }
@@ -1600,10 +1612,12 @@ const ReviewFinalizePage: React.FC = () => {
             // fetchJobData may restore stale cl from DB — keep it cleared
             setFinalPdfFiles(prev => ({ ...prev, cl: null }));
             showToast('Cover letter generated successfully', 'success');
+            // Refresh credits in the sidebar
+            try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
 
         } catch (error: any) {
             console.error('Error generating cover letter:', error);
-            setCoverLetterError(error.message || 'Failed to generate cover letter');
+            setCoverLetterError(parseApiErrorMessage(error));
         } finally {
             setIsGeneratingCoverLetter(false);
         }
@@ -1740,6 +1754,7 @@ const ReviewFinalizePage: React.FC = () => {
                     ? ` with ${response.changesCount} tailoring changes`
                     : '';
                 showToast(`CV generated successfully${changesMsg}`, 'success');
+                try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
             } else if (response.status === 'pending_input') {
                 setGenerateCvError('Generation requires additional input. Please check the console for details.');
             } else {
@@ -1747,7 +1762,7 @@ const ReviewFinalizePage: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Error generating specific CV:', error);
-            setGenerateCvError(error.message || 'Failed to generate job-specific CV.');
+            setGenerateCvError(parseApiErrorMessage(error));
         } finally {
             setIsGeneratingCv(false);
             setGenerationProgress(0);
@@ -2030,6 +2045,44 @@ const ReviewFinalizePage: React.FC = () => {
                 />
             )}
 
+            {/* Inline AI action error banner */}
+            {aiActionError && (
+                <div
+                    className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-lg w-full mx-4 rounded-xl px-4 py-3 flex items-start gap-3 shadow-xl"
+                    style={{
+                        backgroundColor: aiActionError.upgrade
+                            ? 'rgba(251,191,36,0.1)'
+                            : 'rgba(239,68,68,0.1)',
+                        border: `1px solid ${aiActionError.upgrade ? 'rgba(251,191,36,0.35)' : 'rgba(239,68,68,0.35)'}`,
+                    }}
+                >
+                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"
+                        style={{ color: aiActionError.upgrade ? '#f59e0b' : '#ef4444' }}>
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium"
+                            style={{ color: aiActionError.upgrade ? '#92400e' : '#7f1d1d' }}>
+                            {aiActionError.message}
+                        </p>
+                        {aiActionError.upgrade && (
+                            <a href="/subscriptions"
+                                className="text-xs font-semibold underline mt-0.5 inline-block"
+                                style={{ color: '#b45309' }}>
+                                View upgrade options →
+                            </a>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => setAiActionError(null)}
+                        className="text-xs flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+                        style={{ color: aiActionError.upgrade ? '#92400e' : '#7f1d1d' }}
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
+
 
 
             <div className="p-6 lg:p-8">
@@ -2080,7 +2133,7 @@ const ReviewFinalizePage: React.FC = () => {
                                 onClick={handleCalculateMatch}
                                 disabled={isLoadingRecommendation || !jobApplication?.jobDescriptionText}
                                 className="text-center cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                                title={!jobApplication?.jobDescriptionText ? "Add job description first" : "Click to calculate match"}
+                                title={!jobApplication?.jobDescriptionText ? "Add job description first" : "Click to calculate match (2 credits)"}
                             >
                                 <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
                                 {isLoadingRecommendation ? (
@@ -2092,8 +2145,11 @@ const ReviewFinalizePage: React.FC = () => {
                                         Retry
                                     </span>
                                 ) : (
-                                    <span className="badge badge-gold text-xs px-2 py-0.5 cursor-pointer">
-                                        Calculate
+                                    <span className="inline-flex items-center gap-1">
+                                        <span className="badge badge-gold text-xs px-2 py-0.5 cursor-pointer">
+                                            Calculate
+                                        </span>
+                                        <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500">2 cr</span>
                                     </span>
                                 )}
                             </button>
@@ -3317,6 +3373,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                             <>
                                                                 <span className="material-symbols-outlined text-white">auto_awesome</span>
                                                                 <span>Generate Cover Letter</span>
+                                                                <span className="text-[10px] font-bold ml-0.5 px-1.5 py-0.5 rounded opacity-70" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>3 cr</span>
                                                             </>
                                                         )}
                                                     </button>
@@ -3547,6 +3604,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                                             </svg>
                                                             Re-scan
+                                                            <span className="text-[9px] font-bold px-1 py-0.5 rounded ml-0.5 opacity-60" style={{ backgroundColor: 'rgba(0,0,0,0.1)' }}>2 cr</span>
                                                         </button>
                                                     )}
                                                     <span className="text-zinc-400 group-open:rotate-180 transition-transform duration-200">
@@ -4041,7 +4099,7 @@ const ReviewFinalizePage: React.FC = () => {
                                         onClick={handleRefreshRecommendation}
                                         disabled={isLoadingRecommendation || isRefreshingRecommendation || !jobApplication?.jobDescriptionText}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                        title={!jobApplication?.jobDescriptionText ? 'Job description required' : 'Refresh analysis'}
+                                        title={!jobApplication?.jobDescriptionText ? 'Job description required' : 'Refresh analysis (2 credits)'}
                                     >
                                         {isRefreshingRecommendation ? (
                                             <Spinner size="sm" />
@@ -4049,6 +4107,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             <span className="material-symbols-outlined text-sm">refresh</span>
                                         )}
                                         <span>Refresh</span>
+                                        <span className="text-[9px] font-bold opacity-60">2 cr</span>
                                     </button>
                                     {/* Close Button */}
                                     <button
@@ -4222,6 +4281,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             <span className="material-symbols-outlined text-sm">auto_awesome</span>
                                         )}
                                         <span>Generate Recommendation</span>
+                                        <span className="text-[10px] font-bold opacity-70" style={{ backgroundColor: 'rgba(0,0,0,0.15)', padding: '1px 5px', borderRadius: '4px' }}>2 cr</span>
                                     </button>
                                 </div>
                             )}

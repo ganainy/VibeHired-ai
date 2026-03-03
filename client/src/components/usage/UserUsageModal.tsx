@@ -1,0 +1,362 @@
+import React, { useState, useEffect } from 'react';
+import { getUserDetail, AdminUser, UserUsageDetail, grantUserCredits, updateUserRole, updateUserPlan, cancelUserSubscription, setUserBlocked } from '../../services/adminApi';
+import Spinner from '../common/Spinner';
+
+interface UserUsageModalProps {
+    userId: string;
+    onClose: () => void;
+    onUpdate: () => void;
+}
+
+const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpdate }) => {
+    const [data, setData] = useState<(AdminUser & { usage: UserUsageDetail }) | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [grantAmount, setGrantAmount] = useState(10);
+    const [grantReason, setGrantReason] = useState('Bonus credits');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [isBlocking, setIsBlocking] = useState(false);
+
+    useEffect(() => {
+        const fetchDetail = async () => {
+            try {
+                const detail = await getUserDetail(userId);
+                setData(detail);
+            } catch (err) {
+                console.error('Failed to load user detail:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchDetail();
+    }, [userId]);
+
+    const handleGrantCredits = async () => {
+        setIsSubmitting(true);
+        try {
+            await grantUserCredits(userId, grantAmount, grantReason);
+            const updated = await getUserDetail(userId);
+            setData(updated);
+            onUpdate();
+        } catch (err) {
+            alert('Failed to grant credits');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleRoleChange = async (newRole: string) => {
+        try {
+            await updateUserRole(userId, newRole);
+            const updated = await getUserDetail(userId);
+            setData(updated);
+            onUpdate();
+        } catch (err) {
+            alert('Failed to update role');
+        }
+    };
+
+    const handlePlanChange = async (newPlan: string) => {
+        try {
+            await updateUserPlan(userId, newPlan);
+            const updated = await getUserDetail(userId);
+            setData(updated);
+            onUpdate();
+        } catch (err) {
+            alert('Failed to update plan');
+        }
+    };
+
+    const handleCancelSubscription = async () => {
+        if (!window.confirm(`Cancel ${data?.email}'s subscription? They will be moved to the free plan immediately.`)) return;
+        setIsCancelling(true);
+        try {
+            await cancelUserSubscription(userId);
+            const updated = await getUserDetail(userId);
+            setData(updated);
+            onUpdate();
+        } catch (err) {
+            alert('Failed to cancel subscription');
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
+    const handleToggleBlock = async () => {
+        if (!data) return;
+        const action = data.isBlocked ? 'unblock' : 'block';
+        if (!window.confirm(`Are you sure you want to ${action} ${data.email}?`)) return;
+        setIsBlocking(true);
+        try {
+            await setUserBlocked(userId, !data.isBlocked);
+            const updated = await getUserDetail(userId);
+            setData(updated);
+            onUpdate();
+        } catch (err) {
+            alert(`Failed to ${action} user`);
+        } finally {
+            setIsBlocking(false);
+        }
+    };
+
+    if (!userId) return null;
+
+    const selectStyle: React.CSSProperties = {
+        width: '100%',
+        backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderRadius: '0.625rem',
+        color: 'var(--text-primary)',
+        fontSize: '0.875rem',
+        fontWeight: 600,
+        padding: '0.55rem 0.875rem',
+        outline: 'none',
+        cursor: 'pointer',
+        appearance: 'none',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 0.75rem center',
+        paddingRight: '2.25rem',
+    };
+
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div
+                className="rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+                style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+            >
+                {isLoading ? (
+                    <div className="p-20 text-center"><Spinner size="lg" /></div>
+                ) : data ? (
+                    <>
+                        {/* Header */}
+                        <div
+                            className="px-6 py-5 flex items-start justify-between gap-4"
+                            style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-base)' }}
+                        >
+                            <div className="min-w-0">
+                                <h2 className="text-base font-bold truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Fraunces, Georgia, serif' }}>
+                                    {data.username && <span className="mr-2">{data.username}</span>}
+                                    <span className="font-normal text-sm" style={{ color: 'var(--text-secondary)' }}>{data.email}</span>
+                                </h2>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    <p className="text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>ID: {data.id}</p>
+                                    {data.isBlocked && (
+                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>Blocked
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="shrink-0 p-1.5 rounded-lg transition-colors"
+                                style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                            >
+                                <CloseIcon />
+                            </button>
+                        </div>
+
+                        {/* Block / Unblock danger bar */}
+                        <div
+                            className="px-6 py-3 flex items-center justify-between gap-4"
+                            style={{ borderBottom: '1px solid var(--border)', backgroundColor: data.isBlocked ? 'rgba(220,38,38,0.06)' : 'transparent' }}
+                        >
+                            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                {data.isBlocked
+                                    ? 'This user is currently blocked and cannot log in.'
+                                    : 'Block this user to prevent them from logging in.'}
+                            </p>
+                            <button
+                                onClick={handleToggleBlock}
+                                disabled={isBlocking}
+                                className="shrink-0 px-4 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50"
+                                style={data.isBlocked
+                                    ? { backgroundColor: 'rgba(34,197,94,0.12)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.25)' }
+                                    : { backgroundColor: 'rgba(220,38,38,0.1)', color: '#dc2626', border: '1px solid rgba(220,38,38,0.25)' }
+                                }
+                            >
+                                {isBlocking ? '…' : data.isBlocked ? 'Unblock User' : 'Block User'}
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            {/* Plan / Role / Verified row */}
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Plan</p>
+                                    <div className="relative">
+                                        <select
+                                            value={data.plan}
+                                            onChange={(e) => handlePlanChange(e.target.value)}
+                                            style={selectStyle}
+                                        >
+                                            <option value="free">Free</option>
+                                            <option value="starter">Starter</option>
+                                            <option value="pro">Pro</option>
+                                            <option value="premium">Premium</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Role</p>
+                                    <div className="relative">
+                                        <select
+                                            value={data.role}
+                                            onChange={(e) => handleRoleChange(e.target.value)}
+                                            style={selectStyle}
+                                        >
+                                            <option value="user">User</option>
+                                            <option value="admin">Admin</option>
+                                            <option value="owner">Owner</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Email</p>
+                                    <div
+                                        className="rounded-[0.625rem] px-3 py-[0.55rem] text-sm font-semibold flex items-center gap-1.5"
+                                        style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                                    >
+                                        <span
+                                            className="w-1.5 h-1.5 rounded-full shrink-0"
+                                            style={{ backgroundColor: data.emailVerified ? 'var(--jade, #2dd4a0)' : 'var(--accent)' }}
+                                        />
+                                        <span style={{ color: data.emailVerified ? 'var(--jade, #2dd4a0)' : 'var(--accent)' }}>
+                                            {data.emailVerified ? 'Verified' : 'Unverified'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stripe Info */}
+                            {(data.stripeCustomerId || data.stripeSubscriptionId) && (
+                                <div
+                                    className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-xl"
+                                    style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                                >
+                                    <StripeIcon />
+                                    {data.stripeCustomerId && (
+                                        <a
+                                            href={`https://dashboard.stripe.com/customers/${data.stripeCustomerId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs font-mono hover:underline"
+                                            style={{ color: 'var(--accent)' }}
+                                        >
+                                            {data.stripeCustomerId}
+                                        </a>
+                                    )}
+                                    {data.stripeSubscriptionId && (
+                                        <button
+                                            onClick={handleCancelSubscription}
+                                            disabled={isCancelling}
+                                            className="ml-auto px-3 py-1.5 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                                            style={{ color: 'var(--rose, #f46464)', border: '1px solid rgba(244,100,100,0.25)', backgroundColor: 'transparent' }}
+                                        >
+                                            {isCancelling ? 'Cancelling…' : 'Cancel Subscription'}
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Credit Management */}
+                            <div className="rounded-xl p-5 space-y-4" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                                <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                    <CreditCardIcon /> Manage Credits
+                                </h3>
+                                <div className="flex items-end gap-3">
+                                    <div className="rounded-xl px-4 py-3 shrink-0" style={{ backgroundColor: 'var(--bg-base)', border: '1px solid var(--border)' }}>
+                                        <p className="text-[10px] uppercase font-black tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>Remaining</p>
+                                        <p className="text-2xl font-black" style={{ color: 'var(--accent)' }}>{data.usage.usage.remaining}</p>
+                                    </div>
+                                    <div className="flex-1 space-y-1.5">
+                                        <label className="text-[10px] uppercase font-black tracking-widest" style={{ color: 'var(--text-muted)' }}>Amount to grant</label>
+                                        <input
+                                            type="number"
+                                            value={grantAmount}
+                                            onChange={(e) => setGrantAmount(parseInt(e.target.value))}
+                                            className="w-full rounded-[0.625rem] px-3 py-[0.55rem] text-sm outline-none transition-all"
+                                            style={{
+                                                backgroundColor: 'var(--bg-base)',
+                                                border: '1px solid var(--border)',
+                                                color: 'var(--text-primary)',
+                                            }}
+                                            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                                            onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleGrantCredits}
+                                        disabled={isSubmitting}
+                                        className="px-5 py-[0.55rem] rounded-[0.625rem] text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 shrink-0"
+                                        style={{ backgroundColor: 'var(--accent)', color: '#0e0e17' }}
+                                    >
+                                        {isSubmitting ? 'Granting…' : 'Grant Credits'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Usage History */}
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                    <ActivityIcon /> Usage History
+                                </h3>
+                                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                                    <table className="w-full text-left text-xs">
+                                        <thead style={{ backgroundColor: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}>
+                                            <tr>
+                                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Action Type</th>
+                                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Consumed</th>
+                                                <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.usage.actions.map((action: any, idx: number) => (
+                                                <tr key={idx} style={{ borderTop: '1px solid var(--border)' }}>
+                                                    <td className="px-4 py-3 font-mono" style={{ color: 'var(--text-secondary)' }}>{action.type}</td>
+                                                    <td className="px-4 py-3 font-bold" style={{ color: 'var(--text-primary)' }}>{action.consumed}</td>
+                                                    <td className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>{new Date(action.timestamp).toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    {data.usage.actions.length === 0 && (
+                                        <p className="text-center py-10 text-sm italic" style={{ color: 'var(--text-muted)' }}>No usage history found.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="p-20 text-center" style={{ color: 'var(--text-muted)' }}>User not found.</div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// --- Icons ---
+const CloseIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+);
+const CreditCardIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+);
+const ActivityIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+);
+const StripeIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="28" height="28" rx="6" fill="#635BFF"/>
+        <path d="M13.0 10.5c0-.9.7-1.2 1.8-1.2 1.6 0 3.6.5 5.2 1.4V6.4C18.4 5.5 16.7 5 14.8 5 10.5 5 7.5 7.2 7.5 10.8c0 5.6 7.7 4.7 7.7 7.1 0 1-.9 1.4-2.1 1.4-1.8 0-4.1-.7-5.9-1.8v4.3C8.9 22.6 10.8 23 12.7 23c4.4 0 7.5-2.1 7.5-5.8C20.2 11.5 13.0 12.6 13.0 10.5z" fill="white"/>
+    </svg>
+);
+
+export default UserUsageModal;

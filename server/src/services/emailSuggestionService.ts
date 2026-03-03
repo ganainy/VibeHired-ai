@@ -164,17 +164,8 @@ export async function pollEmailsForUser(userId: string, since?: Date, category?:
     const messages = await fetchNewMessages(userId, lookback);
     if (messages.length === 0) return 0;
 
-    // Check if user has an AI provider configured (non-fatal if not)
-    let aiAvailable = true;
-    let inboxProvider: string | undefined;
-    try {
-        const profile = await Profile.findOne({ userId });
-        if (!profile?.aiProviderSettings?.defaultProvider) aiAvailable = false;
-        // inboxProvider overrides defaultProvider for email classification only
-        inboxProvider = profile?.aiProviderSettings?.inboxProvider;
-    } catch {
-        aiAvailable = false;
-    }
+    // AI is always available as long as GEMINI_API_KEY is configured on the server
+    const aiAvailable = !!process.env.GEMINI_API_KEY;
 
     let created = 0;
 
@@ -201,7 +192,7 @@ export async function pollEmailsForUser(userId: string, since?: Date, category?:
                     sanitizeEmailBody(msg.body),
                     senderDomain(msg.senderEmail),
                 );
-                classification = await generateStructuredResponse<EmailClassification>(userId, prompt, undefined, inboxProvider);
+                classification = await generateStructuredResponse<EmailClassification>(userId, prompt);
             } catch (aiErr) {
                 console.error(`[EmailSuggestionService] AI classification failed for message ${msg.id}:`, aiErr);
                 // Fall back to simple keyword heuristic

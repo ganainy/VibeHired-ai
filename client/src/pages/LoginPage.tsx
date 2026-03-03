@@ -3,7 +3,7 @@ import React, { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { getGoogleLoginUrl } from '../services/authApi';
+import { getGoogleLoginUrl, resendVerificationEmail } from '../services/authApi';
 import Spinner from '../components/common/Spinner';
 
 
@@ -44,6 +44,10 @@ const LoginPage: React.FC = () => {
   const [touched, setTouched] = useState({ email: false, password: false });
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [showResendOption, setShowResendOption] = useState(false);
 
   const { login, error, isLoading, isAuthenticated } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -58,6 +62,16 @@ const LoginPage: React.FC = () => {
     }
   }, [location.search]);
 
+  // Clear verification sent when error changes
+  useEffect(() => {
+    if (error) {
+      setVerificationSent(false);
+      if (error.includes('verify your email')) {
+        setShowResendOption(true);
+      }
+    }
+  }, [error]);
+
   const handleGoogleLogin = async () => {
     setGoogleError(null);
     setGoogleLoading(true);
@@ -67,6 +81,29 @@ const LoginPage: React.FC = () => {
     } catch {
       setGoogleError('Could not connect to Google. Please try again.');
       setGoogleLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (resendCooldown > 0) return;
+    setResendingVerification(true);
+    try {
+      await resendVerificationEmail();
+      setVerificationSent(true);
+      setResendCooldown(60); // 60 second cooldown
+      const timer = setInterval(() => {
+        setResendCooldown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch {
+      // Error is already handled
+    } finally {
+      setResendingVerification(false);
     }
   };
 
@@ -266,7 +303,7 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Error alert */}
-        {error && (
+        {(error || showResendOption) && (
           <div
             className="flex items-start gap-2.5 rounded-lg p-3.5 mb-6 text-sm"
             style={{
@@ -278,7 +315,25 @@ const LoginPage: React.FC = () => {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5">
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span>{error}</span>
+            <div className="flex-1">
+              <span>{error || 'Please verify your email before logging in. Check your inbox for the verification link.'}</span>
+              {(showResendOption) && (
+                <div className="mt-2">
+                  {verificationSent ? (
+                    <span className="text-green-500">✓ Verification email sent! Check your inbox.</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={resendingVerification || resendCooldown > 0}
+                      className="text-xs underline hover:no-underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {resendingVerification ? 'Sending...' : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend verification email'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

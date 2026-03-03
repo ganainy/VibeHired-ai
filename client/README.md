@@ -2,6 +2,9 @@
 
 The React + TypeScript + Vite single-page application for [VibeHired](../README.md).
 
+> **License:** MIT + Commons Clause — see [LICENSE](../LICENSE) for details.
+> Free for personal/non-commercial use. Commercial hosting or resale requires written permission from the author.
+
 ## Tech Stack
 
 | Layer | Choice |

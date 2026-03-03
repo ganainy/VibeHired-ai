@@ -1,6 +1,9 @@
 # VibeHired
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-Visit_Now-blue?style=for-the-badge)](https://vibehired-ai.netlify.app)
+[![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT%20%2B%20Commons%20Clause-yellow?style=for-the-badge)](./LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
 
 VibeHired is an AI-powered job application assistant that automates and enhances your job search process. The platform uses multi-provider AI (Google Gemini, OpenRouter, Ollama) to analyze CVs, generate personalized cover letters, score ATS compatibility, extract job requirements, and provide real-time application assistance—all while you maintain full control over your data and API usage. Transform the tedious job application process into an efficient, intelligent workflow.
 
@@ -201,6 +204,31 @@ After starting the application:
 ## Deployment
 
 📖 **See [DEPLOYMENT.md](./DEPLOYMENT.md) for the complete deployment guide with automatic deployment setup for Netlify and Heroku.**
+
+## Contributing
+
+Contributions are welcome! Here is how to get involved:
+
+1. **Fork** the repository and create your branch from `main`.
+2. Follow the [Setup & Running](#setup--running-development) guide to get a local environment working.
+3. Make your changes — keep PRs focused on a single concern.
+4. Open a Pull Request with a clear description of the problem and solution.
+
+By submitting a PR you agree that your contribution will be licensed under the same [MIT + Commons Clause](./LICENSE) terms as the rest of the project.
+
+For bug reports and feature requests please open a GitHub Issue.
+
+## License
+
+This project is licensed under the **MIT License with the Commons Clause condition**.
+See the [LICENSE](./LICENSE) file for the full legal text.
+
+**In short:**
+- ✅ Free to read, fork, modify, and run for personal/non-commercial use.
+- ✅ Contributions via pull requests are welcome.
+- ❌ You may **not** host or sell VibeHired (or a substantially similar product) as a commercial service without written permission from the copyright holder.
+
+The official hosted service at [vibehired-ai.netlify.app](https://vibehired-ai.netlify.app) is operated and monetised exclusively by the project author.
 
 ## App Showcase
 

@@ -166,6 +166,7 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                     Run ATS Scan
+                    <span className="text-[10px] font-bold ml-0.5 px-1.5 py-0.5 rounded opacity-70" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>2 cr</span>
                 </button>
             </div>
         );
@@ -248,11 +249,13 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                             <button
                                 onClick={onRescan ?? onScan}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 transition-all"
+                                title="Re-scan ATS (2 credits)"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
                                 Re-scan
+                                <span className="text-[9px] font-bold opacity-60">2 cr</span>
                             </button>
                             {onDelete && (
                                 <button onClick={onDelete} className="text-[11px] text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors">
@@ -321,6 +324,7 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
                                     Apply Selected{someSelected ? ` (${selectedCount})` : ''}
+                                    <span className="text-[9px] font-bold opacity-70" style={{ backgroundColor: 'rgba(0,0,0,0.15)', padding: '1px 4px', borderRadius: '3px' }}>3 cr</span>
                                 </>
                             }
                         </button>

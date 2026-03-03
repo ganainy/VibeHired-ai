@@ -1,8 +1,6 @@
 // server/src/providers/enums.ts
 export enum AIProvider {
   GEMINI = 'gemini',
-  OPENROUTER = 'openrouter',
-  OLLAMA = 'ollama',
 }
 
 export class AIProviderHelper {
@@ -12,9 +10,7 @@ export class AIProviderHelper {
   static fromString(value: string): AIProvider {
     const normalized = value.toLowerCase();
     if (normalized === 'gemini') return AIProvider.GEMINI;
-    if (normalized === 'openrouter') return AIProvider.OPENROUTER;
-    if (normalized === 'ollama') return AIProvider.OLLAMA;
-    
+
     const validProviders = Object.values(AIProvider).join(', ');
     throw new Error(
       `Invalid provider: ${value}. Valid providers are: ${validProviders}`

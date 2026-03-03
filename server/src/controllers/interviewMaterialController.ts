@@ -11,10 +11,8 @@ import {
     CreateMaterialDto,
     UpdateMaterialDto,
 } from '../services/interviewMaterialService';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GEMINI_FLASH } from '../constants/geminiModels';
 import Profile from '../models/Profile';
-import { decrypt } from '../utils/encryption';
+import { generateContent } from '../utils/aiService';
 
 /**
  * GET /api/interview-materials?jobId=:id
@@ -125,26 +123,6 @@ export const generateTitle = async (req: ValidatedRequest, res: Response) => {
         return;
     }
 
-    // Get user's Gemini API key
-    const profile = await Profile.findOne({ userId });
-    const encryptedKey =
-        (profile as any)?.aiProviderSettings?.providers?.gemini?.accessToken ??
-        (profile as any)?.integrations?.gemini?.accessToken;
-    let apiKey: string | null | undefined = null;
-    if (encryptedKey) {
-        apiKey = decrypt(encryptedKey);
-    }
-    if (!apiKey) {
-        apiKey = process.env.GEMINI_API_KEY;
-    }
-    if (!apiKey) {
-        res.status(500).json({ message: 'AI service not configured' });
-        return;
-    }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: GEMINI_FLASH });
-
     // Build context based on material type
     let context = '';
     if (type === 'file') {
@@ -165,8 +143,8 @@ ${context}
 Return ONLY the title as a plain string, no quotes, no markdown formatting.`;
 
     try {
-        const result = await model.generateContent(systemPrompt);
-        const title = result.response.text().trim();
+        const result = await generateContent(userId, systemPrompt);
+        const title = result.text.trim();
         res.json({ title });
     } catch (e: any) {
         res.status(500).json({ message: `Failed to generate title: ${e.message}` });

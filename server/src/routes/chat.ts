@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import { postChatMessage, getChatHistoryHandler } from '../controllers/chatController';
 import authMiddleware from '../middleware/authMiddleware';
+import { usageLimiter } from '../middleware/usageLimiter';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validateRequest } from '../middleware/validateRequest';
 import { chatMessageBodySchema, chatParamsSchema } from '../validations/chatSchemas';
@@ -17,6 +18,7 @@ router.post(
         params: chatParamsSchema,
         body: chatMessageBodySchema
     }),
+    usageLimiter('chatMessage'),
     asyncHandler(postChatMessage)
 );
 

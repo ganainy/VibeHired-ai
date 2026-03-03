@@ -9,61 +9,11 @@ const getAuthToken = (): string | null => {
 };
 
 export interface ApiKeys {
-  gemini: {
-    accessToken: string | null;
-    enabled: boolean;
-  };
-  apify: {
-    accessToken: string | null;
-    enabled: boolean;
-  };
-  aiProviders?: {
-    defaultProvider?: 'gemini' | 'openrouter' | 'ollama';
-    defaultModel?: string;
-    providers: {
-      gemini?: {
-        accessToken: string | null;
-        enabled: boolean;
-      };
-      openrouter?: {
-        accessToken: string | null;
-        enabled: boolean;
-      };
-      ollama?: {
-        baseUrl: string;
-        enabled: boolean;
-      };
-    };
-  };
+  // Add other services here as needed
 }
 
 export interface UpdateApiKeysRequest {
-  gemini?: {
-    accessToken: string | null;
-    enabled?: boolean;
-  };
-  apify?: {
-    accessToken: string | null;
-    enabled?: boolean;
-  };
-  aiProviders?: {
-    defaultProvider?: 'gemini' | 'openrouter' | 'ollama';
-    defaultModel?: string;
-    providers?: {
-      gemini?: {
-        accessToken: string | null;
-        enabled?: boolean;
-      };
-      openrouter?: {
-        accessToken: string | null;
-        enabled?: boolean;
-      };
-      ollama?: {
-        baseUrl: string | null;
-        enabled?: boolean;
-      };
-    };
-  };
+  // Add other services here as needed
 }
 
 /**
@@ -114,7 +64,7 @@ export const updateApiKeys = async (keys: UpdateApiKeysRequest): Promise<ApiKeys
 /**
  * Delete a specific API key
  */
-export const deleteApiKey = async (service: 'gemini' | 'apify' | 'openrouter' | 'ollama'): Promise<void> => {
+export const deleteApiKey = async (service: string): Promise<void> => {
   const token = getAuthToken();
   if (!token) {
     throw new Error('No authentication token found.');
@@ -132,27 +82,6 @@ export const deleteApiKey = async (service: 'gemini' | 'apify' | 'openrouter' | 
   }
 };
 
-/**
- * Get available models for a provider
- */
-export const getProviderModels = async (provider: 'gemini' | 'openrouter' | 'ollama'): Promise<string[]> => {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error('No authentication token found.');
-  }
-
-  try {
-    const response = await axios.get<{ models: string[] }>(`${API_BASE_URL}/settings/models/${provider}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    return response.data.models;
-  } catch (error: any) {
-    console.error('Error fetching provider models:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to fetch provider models');
-  }
-};
 
 export interface CustomPrompts {
   cvPrompt: string | null;

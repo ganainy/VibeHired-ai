@@ -1,0 +1,208 @@
+import React, { useState, useEffect } from 'react';
+import { getAdminStats, AdminStats } from '../services/adminApi';
+import Spinner from '../components/common/Spinner';
+import Toast from '../components/common/Toast';
+
+const AdminDashboardPage: React.FC = () => {
+    const [stats, setStats] = useState<AdminStats | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const data = await getAdminStats();
+                setStats(data);
+            } catch (err: any) {
+                setToast({ message: err.message || 'Failed to load admin stats', type: 'error' });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Spinner size="lg" />
+            </div>
+        );
+    }
+
+    if (!stats) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-zinc-500">Failed to load statistics.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-8">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-display">Admin Dashboard</h1>
+                <p className="text-zinc-500 mt-1">System-wide overview and performance metrics.</p>
+            </div>
+
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard
+                    label="Total Users"
+                    value={stats.totalUsers}
+                    icon={<UsersIcon />}
+                    color="blue"
+                />
+                <StatCard
+                    label="Monthly Revenue"
+                    value={`$${stats.mrr.toFixed(2)}`}
+                    icon={<DollarIcon />}
+                    color="emerald"
+                />
+                <StatCard
+                    label="Active Users (30d)"
+                    value={stats.activeUsers}
+                    icon={<ActivityIcon />}
+                    color="gold"
+                />
+                <StatCard
+                    label="Total Revenue"
+                    value={`$${stats.totalRevenue.toFixed(2)}`}
+                    icon={<TrendingUpIcon />}
+                    color="purple"
+                />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Tier Distribution */}
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                        <PieChartIcon /> User Tiers
+                    </h3>
+                    <div className="space-y-4">
+                        {Object.entries(stats.tierDistribution).map(([tier, count]) => (
+                            <div key={tier} className="space-y-1">
+                                <div className="flex justify-between text-sm">
+                                    <span className="capitalize font-medium">{tier}</span>
+                                    <span className="text-zinc-500">{count} users ({((count / stats.totalUsers) * 100).toFixed(1)}%)</span>
+                                </div>
+                                <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full ${tier === 'free' ? 'bg-zinc-400' :
+                                                tier === 'starter' ? 'bg-blue-500' :
+                                                    tier === 'pro' ? 'bg-gold-500' : 'bg-emerald-500'
+                                            }`}
+                                        style={{ width: `${(count / stats.totalUsers) * 100}%` }}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Recent Payments */}
+                <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm overflow-hidden">
+                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                        <ClockIcon /> Recent Payments
+                    </h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="text-zinc-500 text-xs uppercase tracking-wider border-b border-zinc-100 dark:border-zinc-800">
+                                    <th className="pb-3 font-semibold">User</th>
+                                    <th className="pb-3 font-semibold">Amount</th>
+                                    <th className="pb-3 font-semibold">Status</th>
+                                    <th className="pb-3 font-semibold">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
+                                {stats.recentPayments.map((payment) => (
+                                    <tr key={payment.id} className="text-sm">
+                                        <td className="py-4">
+                                            <span className="font-medium">{payment.customerEmail}</span>
+                                        </td>
+                                        <td className="py-4">
+                                            {payment.currency.toUpperCase()} {(payment.amount / 100).toFixed(2)}
+                                        </td>
+                                        <td className="py-4">
+                                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${payment.status === 'succeeded' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' : 'bg-zinc-100 text-zinc-600'
+                                                }`}>
+                                                {payment.status}
+                                            </span>
+                                        </td>
+                                        <td className="py-4 text-zinc-500">
+                                            {new Date(payment.createdAt).toLocaleDateString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {stats.recentPayments.length === 0 && (
+                            <p className="text-center py-8 text-zinc-500 italic">No recent payments recorded.</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        </div>
+    );
+};
+
+const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode; color: string }> = ({ label, value, icon, color }) => {
+    const colors: Record<string, string> = {
+        blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+        emerald: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+        gold: 'bg-gold-100 text-gold-600 dark:bg-gold-900/10 dark:text-gold-500',
+        purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+    };
+
+    return (
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-xl ${colors[color]}`}>
+                    {icon}
+                </div>
+                <div>
+                    <p className="text-zinc-500 text-sm font-medium">{label}</p>
+                    <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 leading-none mt-1">{value}</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Icons ---
+const UsersIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+);
+const DollarIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+);
+const ActivityIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+);
+const TrendingUpIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+    </svg>
+);
+const PieChartIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" />
+    </svg>
+);
+const ClockIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+    </svg>
+);
+
+export default AdminDashboardPage;

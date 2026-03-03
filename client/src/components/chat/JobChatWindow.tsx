@@ -206,14 +206,18 @@ const JobChatWindow: React.FC<JobChatWindowProps> = ({
                     <button
                         type="submit"
                         disabled={!inputText.trim() || isLoading}
-                        className="btn-primary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+                        className="btn-primary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 justify-center flex-shrink-0 px-3"
+                        title="Send message (1 credit)"
                     >
                         {isLoading ? (
                             <Spinner size="sm" />
                         ) : (
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                            </svg>
+                            <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                                <span className="text-[10px] font-bold opacity-70">1 cr</span>
+                            </>
                         )}
                     </button>
                 </form>

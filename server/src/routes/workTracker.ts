@@ -5,6 +5,7 @@ import multer from 'multer';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { google } from 'googleapis';
 import authMiddleware from '../middleware/authMiddleware';
+import { usageLimiter } from '../middleware/usageLimiter';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ValidationError, NotFoundError } from '../utils/errors/AppError';
 import WorkEntry, { computeHours } from '../models/WorkEntry';
@@ -37,18 +38,10 @@ const scheduleUpload = multer({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Resolve the user's Gemini API key (profile → env fallback). */
-async function getGeminiKey(userId: string): Promise<string> {
-  const profile = await Profile.findOne({ userId });
-  const encryptedKey =
-    (profile as any)?.aiProviderSettings?.providers?.gemini?.accessToken ??
-    (profile as any)?.integrations?.gemini?.accessToken;
-  if (encryptedKey) {
-    const key = decrypt(encryptedKey);
-    if (key) return key;
-  }
+/** Resolve the user's Gemini API key (master key only). */
+async function getGeminiKey(_userId: string): Promise<string> {
   const envKey = process.env.GEMINI_API_KEY;
-  if (!envKey) throw new Error('Gemini API key not configured. Please add it in Settings → AI.');
+  if (!envKey) throw new Error('GEMINI_API_KEY not configured on server');
   return envKey;
 }
 
@@ -642,6 +635,7 @@ router.delete('/:id/remind', asyncHandler(async (req: Request, res: Response) =>
 router.post(
   '/import-schedule/parse',
   scheduleUpload.single('file'),
+  usageLimiter('jobExtraction'),
   asyncHandler(async (req: Request, res: Response) => {
     const userId = String(req.user!._id);
     const { text, defaultStartTime = '09:00', defaultEndTime = '17:00' } = req.body;
@@ -771,7 +765,7 @@ router.post('/import-schedule/confirm', asyncHandler(async (req: Request, res: R
  * POST /api/work-tracker/parse-magic-prompt
  * Accepts a spoken or typed text prompt and returns a structured work entry object.
  */
-router.post('/parse-magic-prompt', asyncHandler(async (req: Request, res: Response) => {
+router.post('/parse-magic-prompt', usageLimiter('jobExtraction'), asyncHandler(async (req: Request, res: Response) => {
   const userId = String(req.user!._id);
   const { text, today, employers, appointmentTypes } = req.body;
 

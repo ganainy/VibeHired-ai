@@ -9,6 +9,7 @@ import mongoose from 'mongoose'; // Import mongoose for ObjectId type
 import { JsonResumeSchema } from '../types/jsonresume'; // Import if needed for validation
 import { validateRequest, ValidatedRequest } from '../middleware/validateRequest';
 import { getJobRecommendation } from '../services/jobRecommendationService';
+import { usageLimiter } from '../middleware/usageLimiter';
 import {
   createJobBodySchema,
   updateJobBodySchema,
@@ -33,45 +34,45 @@ const router: Router = express.Router();
  * This ensures each job always has its own isolated CV document in the CV collection.
  */
 async function autoCreateJobCvCopy(
-    userId: string,
-    jobId: string,
-    baseCvId: string
+  userId: string,
+  jobId: string,
+  baseCvId: string
 ): Promise<void> {
-    if (!mongoose.Types.ObjectId.isValid(baseCvId)) return;
+  if (!mongoose.Types.ObjectId.isValid(baseCvId)) return;
 
-    // Load source CV (including original binary)
-    const sourceCv = await CV.findOne({ _id: baseCvId, userId }).select('+originalPdf');
-    if (!sourceCv) {
-        // Fall back to most recent base CV if the specified base is not found
-        const fallbackCv = await CV.findOne({ userId, jobApplicationId: null }).sort({ createdAt: -1 }).select('+originalPdf');
-        if (!fallbackCv) return;
-        await CV.create({
-            userId,
-            isMasterCv: false,
-            isPrimary: false,
-            displayName: `Job CV (auto-copy)`,
-            jobApplicationId: new mongoose.Types.ObjectId(jobId),
-            cvJson: JSON.parse(JSON.stringify(fallbackCv.cvJson)),
-            originalPdf: (fallbackCv as any).originalPdf ? Buffer.from((fallbackCv as any).originalPdf) : null,
-            filename: fallbackCv.filename,
-            templateId: fallbackCv.templateId || null,
-        });
-        return;
-    }
-
+  // Load source CV (including original binary)
+  const sourceCv = await CV.findOne({ _id: baseCvId, userId }).select('+originalPdf');
+  if (!sourceCv) {
+    // Fall back to most recent base CV if the specified base is not found
+    const fallbackCv = await CV.findOne({ userId, jobApplicationId: null }).sort({ createdAt: -1 }).select('+originalPdf');
+    if (!fallbackCv) return;
     await CV.create({
-        userId,
-        isMasterCv: false,
-        isPrimary: false,
-        displayName: `Job CV (copy of ${sourceCv.displayName})`,
-        jobApplicationId: new mongoose.Types.ObjectId(jobId),
-        // Deep-copy JSON so edits to the base CV won't affect this copy
-        cvJson: JSON.parse(JSON.stringify(sourceCv.cvJson)),
-        // Deep-copy binary so the file is fully independent
-        originalPdf: (sourceCv as any).originalPdf ? Buffer.from((sourceCv as any).originalPdf) : null,
-        filename: sourceCv.filename,
-        templateId: sourceCv.templateId || null,
+      userId,
+      isMasterCv: false,
+      isPrimary: false,
+      displayName: `Job CV (auto-copy)`,
+      jobApplicationId: new mongoose.Types.ObjectId(jobId),
+      cvJson: JSON.parse(JSON.stringify(fallbackCv.cvJson)),
+      originalPdf: (fallbackCv as any).originalPdf ? Buffer.from((fallbackCv as any).originalPdf) : null,
+      filename: fallbackCv.filename,
+      templateId: fallbackCv.templateId || null,
     });
+    return;
+  }
+
+  await CV.create({
+    userId,
+    isMasterCv: false,
+    isPrimary: false,
+    displayName: `Job CV (copy of ${sourceCv.displayName})`,
+    jobApplicationId: new mongoose.Types.ObjectId(jobId),
+    // Deep-copy JSON so edits to the base CV won't affect this copy
+    cvJson: JSON.parse(JSON.stringify(sourceCv.cvJson)),
+    // Deep-copy binary so the file is fully independent
+    originalPdf: (sourceCv as any).originalPdf ? Buffer.from((sourceCv as any).originalPdf) : null,
+    filename: sourceCv.filename,
+    templateId: sourceCv.templateId || null,
+  });
 }
 
 // --- Apply authMiddleware to all routes defined AFTER this line ---
@@ -223,7 +224,7 @@ const regenerateAllRecommendationsHandler: RequestHandler = async (req, res) => 
     });
   }
 };
-router.post('/recommendations/regenerate', regenerateAllRecommendationsHandler);
+router.post('/recommendations/regenerate', usageLimiter('analysis'), regenerateAllRecommendationsHandler);
 
 // GET /api/jobs/:id - Retrieve a single job application (ensure it belongs to user)
 const getJobByIdHandler: RequestHandler = async (req: ValidatedRequest, res) => {
@@ -401,7 +402,7 @@ const scrapeJobHandler: RequestHandler = async (req: ValidatedRequest, res) => {
     });
   }
 };
-router.patch('/:id/scrape', validateRequest({ params: objectIdParamSchema, body: scrapeJobBodySchema }), scrapeJobHandler);
+router.patch('/:id/scrape', usageLimiter('jobExtraction'), validateRequest({ params: objectIdParamSchema, body: scrapeJobBodySchema }), scrapeJobHandler);
 
 
 // ---  Extract Job Data from Text for Existing Job Endpoint ---
@@ -503,7 +504,7 @@ const extractFromTextHandler: RequestHandler = async (req: ValidatedRequest, res
     });
   }
 };
-router.patch('/:id/extract-from-text', validateRequest({ params: objectIdParamSchema, body: createJobFromTextBodySchema }), extractFromTextHandler);
+router.patch('/:id/extract-from-text', usageLimiter('jobExtraction'), validateRequest({ params: objectIdParamSchema, body: createJobFromTextBodySchema }), extractFromTextHandler);
 
 
 // POST /api/jobs/create-from-url
@@ -582,7 +583,7 @@ const createJobFromUrlHandler: RequestHandler = async (req: ValidatedRequest, re
     });
   }
 };
-router.post('/create-from-url', validateRequest({ body: createJobFromUrlBodySchema }), createJobFromUrlHandler); // Add the new route
+router.post('/create-from-url', usageLimiter('jobExtraction'), validateRequest({ body: createJobFromUrlBodySchema }), createJobFromUrlHandler); // Add the new route
 
 
 // ---  Create Job From Text Endpoint ---
@@ -619,7 +620,7 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
       };
 
       const extractedCompany = extractedData.companyName.trim();
-      const extractedTitle   = extractedData.jobTitle.trim();
+      const extractedTitle = extractedData.jobTitle.trim();
 
       // Escape for MongoDB regex (broad company-name fetch, refined in JS)
       const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -720,7 +721,7 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
     });
   }
 };
-router.post('/create-from-text', validateRequest({ body: createJobFromTextBodySchema }), createJobFromTextHandler);
+router.post('/create-from-text', usageLimiter('jobExtraction'), validateRequest({ body: createJobFromTextBodySchema }), createJobFromTextHandler);
 
 
 // --- Check for Duplicate Jobs ---

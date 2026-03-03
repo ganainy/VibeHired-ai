@@ -1,7 +1,6 @@
 // server/src/domain/adapters/AdapterFactory.ts
 import { ModelAdapter, AdapterConfig } from './ModelAdapter';
 import { GeminiAdapter } from './GeminiAdapter';
-import { OpenRouterAdapter } from './OpenRouterAdapter';
 import { AIProvider } from '../providers/AIProvider';
 import { GEMINI_FLASH } from '../../constants/geminiModels';
 
@@ -21,13 +20,6 @@ export class AdapterFactory {
         switch (provider) {
             case AIProvider.GEMINI:
                 return new GeminiAdapter(apiKey, modelName, temperature, maxTokens);
-
-            case AIProvider.OPENROUTER:
-                return new OpenRouterAdapter(apiKey, modelName, temperature, maxTokens);
-
-            case AIProvider.OLLAMA:
-                // TODO: Implement OllamaAdapter when needed
-                throw new Error('Ollama adapter not yet implemented');
 
             default:
                 throw new Error(`Unsupported provider: ${provider}`);

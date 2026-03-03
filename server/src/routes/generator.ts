@@ -12,6 +12,7 @@ import mongoose from 'mongoose';
 import CV from '../models/CV'; // Import Unified CV Model
 import { generateCvPdfFromJsonResume, generateCoverLetterPdf } from '../utils/pdfGenerator'; // Import PDF generators
 import { validateRequest, ValidatedRequest } from '../middleware/validateRequest';
+import { usageLimiter } from '../middleware/usageLimiter';
 import { generateDocumentsBodySchema, improveSectionBodySchema, applyAtsSuggestionBodySchema } from '../validations/generatorSchemas';
 import { jobIdParamSchema, filenameParamSchema } from '../validations/commonSchemas';
 import { improveCvSection, applyAtsSuggestion } from '../controllers/generatorController';
@@ -690,10 +691,10 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             // Create new Job CV if missing
             // Get job info for display name
             const job = await JobApplication.findById(jobId).select('jobTitle companyName');
-            const jobDisplayName = job 
+            const jobDisplayName = job
                 ? `Tailored CV - ${job.jobTitle} at ${job.companyName}`
                 : 'Tailored CV';
-            
+
             await CV.create({
                 userId: userId,
                 jobApplicationId: jobId,
@@ -741,12 +742,12 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
 };
 
 // === ROUTE DEFINITIONS (Order Matters!) ===
-router.post('/apply-ats-suggestion', validateRequest({ body: applyAtsSuggestionBodySchema }), asyncHandler(applyAtsSuggestion)); // Apply ATS suggestion to CV
-router.post('/improve-section', validateRequest({ body: improveSectionBodySchema }), asyncHandler(improveCvSection)); // Improve CV section
+router.post('/apply-ats-suggestion', usageLimiter('cvGeneration'), validateRequest({ body: applyAtsSuggestionBodySchema }), asyncHandler(applyAtsSuggestion)); // Apply ATS suggestion to CV
+router.post('/improve-section', usageLimiter('cvGeneration'), validateRequest({ body: improveSectionBodySchema }), asyncHandler(improveCvSection)); // Improve CV section
 router.post('/:jobId/render-pdf', validateRequest({ params: jobIdParamSchema }), renderFinalPdfsHandler); // Render both PDFs
 router.post('/:jobId/render-cv-pdf', validateRequest({ params: jobIdParamSchema }), renderCvPdfHandler); // Render CV PDF only
 router.post('/:jobId/render-cover-letter-pdf', validateRequest({ params: jobIdParamSchema }), renderCoverLetterPdfHandler); // Render Cover Letter PDF only
-router.post('/:jobId/generate-cv', validateRequest({ params: jobIdParamSchema, body: generateDocumentsBodySchema }), generateCvOnlyHandler); // Generate CV only
+router.post('/:jobId/generate-cv', usageLimiter('cvGeneration'), validateRequest({ params: jobIdParamSchema, body: generateDocumentsBodySchema }), generateCvOnlyHandler); // Generate CV only
 router.get('/download/:filename', validateRequest({ params: filenameParamSchema }), downloadFileHandler); // Download generated files
 
 export default router;

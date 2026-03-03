@@ -165,8 +165,7 @@ async function executeWorkflow(runId: string, userId: string, isManual: boolean)
 
         // AI provider will be retrieved by aiService when needed
 
-        const apifyTokenEncrypted = profile.integrations?.apify?.accessToken;
-        const apifyToken = apifyTokenEncrypted ? (decrypt(apifyTokenEncrypted) ?? undefined) : undefined;
+        const apifyToken = process.env.APIFY_API_KEY;
 
         // Get auto-job settings
         const autoJobSettings = (profile as any).autoJobSettings;
@@ -180,7 +179,7 @@ async function executeWorkflow(runId: string, userId: string, isManual: boolean)
         }
 
         if (!apifyToken) {
-            throw new Error('Apify API token is not configured');
+            throw new Error('Apify API token is not configured on the server');
         }
 
         const maxJobs = autoJobSettings.maxJobs || 100;
@@ -281,11 +280,10 @@ async function executeWorkflow(runId: string, userId: string, isManual: boolean)
         // Step 5: Process Jobs in Parallel
         await updateProgress('Process Jobs', 'running', 4, `Processing ${newJobs.length} jobs...`);
 
-        // Get provider settings from profile (from aiProviderSettings, not autoJobSettings)
-        const aiProviderSettings = (profile as any).aiProviderSettings;
-        const provider = aiProviderSettings?.provider || aiProviderSettings?.defaultProvider || 'gemini';
-        const batchSize = aiProviderSettings?.batchSize || 5;
-        const models = aiProviderSettings?.models || {
+        // Gemini defaults are now used exclusively
+        const provider = 'gemini';
+        const batchSize = 5;
+        const models = {
             analysis: GEMINI_FLASH,
             relevance: GEMINI_FLASH,
             generation: GEMINI_PRO

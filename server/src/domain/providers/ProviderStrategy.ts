@@ -41,7 +41,7 @@ export interface DependencyCheck {
 
 /**
  * Abstract base class for AI provider strategies
- * Each provider (Gemini, OpenRouter, Ollama) implements this interface
+ * Each provider (Gemini) implements this interface
  */
 export abstract class ProviderStrategy {
     /**

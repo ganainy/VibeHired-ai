@@ -220,6 +220,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                     >
                         <span className="material-symbols-outlined text-base">play_arrow</span>
                         {labels.startBtn}
+                        <span className="text-[10px] font-bold ml-0.5 px-1.5 py-0.5 rounded opacity-70" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>3 cr</span>
                     </button>
                 </div>
             )}
@@ -444,6 +445,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                         >
                             <span className="material-symbols-outlined text-base">replay</span>
                             {labels.retake}
+                            <span className="text-[10px] font-bold ml-0.5 px-1.5 py-0.5 rounded opacity-70" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>3 cr</span>
                         </button>
                     </div>
 

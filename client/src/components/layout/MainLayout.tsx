@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import CreditLimitModal from '../usage/CreditLimitModal';
 import { listPendingSuggestions } from '../../services/emailSuggestionsApi';
 import { useAuth } from '../../context/AuthContext';
 
@@ -9,7 +10,7 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-    const { user } = useAuth();
+    const { user, showCreditLimitModal, setShowCreditLimitModal } = useAuth();
     const [pendingCount, setPendingCount] = useState(0);
 
     const refreshCount = useCallback(async () => {
@@ -52,6 +53,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     </div>
                 </main>
             </div>
+
+            {/* Global Modals */}
+            <CreditLimitModal
+                isOpen={showCreditLimitModal}
+                onClose={() => setShowCreditLimitModal(false)}
+            />
         </div>
     );
 };

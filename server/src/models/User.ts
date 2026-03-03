@@ -18,10 +18,18 @@ export interface IUser extends Document {
   cvFilename?: string; // Original filename of the uploaded CV
   passwordResetToken?: string;   // SHA-256 hash of the raw reset token
   passwordResetExpires?: Date;    // Expiry date of the reset token
-  createdAt?: Date; // Added by Mongoose timestamps
-  updatedAt?: Date; // Added by Mongoose timestamps
-  // Add other fields like name later if needed
-  comparePassword(candidatePassword: string): Promise<boolean>; // Method to compare passwords
+  role: 'user' | 'admin' | 'owner';
+  emailVerified: boolean;
+  emailVerificationToken?: string | null;
+  emailVerificationExpires?: Date | null;
+  plan: 'free' | 'starter' | 'pro' | 'premium';
+  isBlocked: boolean;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  planExpiresAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 const UserSchema: Schema = new Schema(
@@ -76,6 +84,41 @@ const UserSchema: Schema = new Schema(
     cvFilename: {
       type: String,
       required: false
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin', 'owner'],
+      default: 'user'
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false
+    },
+    emailVerificationToken: {
+      type: String
+    },
+    emailVerificationExpires: {
+      type: Date
+    },
+    plan: {
+      type: String,
+      enum: ['free', 'starter', 'pro', 'premium'],
+      default: 'free'
+    },
+    isBlocked: {
+      type: Boolean,
+      default: false
+    },
+    stripeCustomerId: {
+      type: String,
+      sparse: true
+    },
+    stripeSubscriptionId: {
+      type: String,
+      sparse: true
+    },
+    planExpiresAt: {
+      type: Date
     },
   },
   {

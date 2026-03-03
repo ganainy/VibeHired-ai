@@ -85,17 +85,10 @@ export class GeminiProvider extends ProviderStrategy {
     return { valid: true };
   }
 
-  async getApiKey(userId: string): Promise<string | null> {
+  async getApiKey(_userId: string): Promise<string | null> {
     try {
-      const profile = await Profile.findOne({ userId });
-
-      // First check new location
-      const newKey = profile?.aiProviderSettings?.providers?.gemini?.accessToken;
-      if (newKey) {
-        return isEncrypted(newKey) ? decrypt(newKey) : newKey;
-      }
-
-      return null;
+      // Use master key from environment variables
+      return process.env.GEMINI_API_KEY || null;
     } catch (error) {
       console.error('Error getting Gemini API key:', error);
       return null;

@@ -1,6 +1,7 @@
 // client/src/context/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { loginUser, registerUser } from '../services/authApi';
+import { loginUser, registerUser, getCurrentUserProfile, RegisterResponse } from '../services/authApi';
+import { getUsage } from '../services/usageApi';
 import axios from 'axios'; // Import axios to set default header
 
 // Define the shape of the user object
@@ -9,7 +10,11 @@ interface User {
   email: string;
   username?: string;
   cvJson?: any;
-  preferredTheme?: string; // Add this line
+  preferredTheme?: string;
+  role?: 'user' | 'admin' | 'owner';
+  plan?: 'free' | 'starter' | 'pro' | 'premium';
+  emailVerified?: boolean;
+  credits?: number;
 }
 
 // Define the shape of the context value
@@ -20,9 +25,13 @@ interface AuthContextType {
   isLoading: boolean; // Track initial auth state loading
   error: string | null; // Store login/register errors
   login: (credentials: { email: string, password: string }) => Promise<void>;
-  register: (credentials: { email: string, username: string, password: string }) => Promise<void>;
+  register: (credentials: { email: string, username: string, password: string }) => Promise<RegisterResponse | null>;
   logout: () => void;
   loginWithToken: (token: string) => void;
+  refreshUsage: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  showCreditLimitModal: boolean;
+  setShowCreditLimitModal: (show: boolean) => void;
 }
 
 // Create the context with a default undefined value initially
@@ -39,6 +48,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading initially
   const [error, setError] = useState<string | null>(null);
+  const [showCreditLimitModal, setShowCreditLimitModal] = useState(false);
 
   // Logout function
   const logout = React.useCallback(() => {
@@ -48,6 +58,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('authUser');
     // Remove Axios default Authorization header
     delete axios.defaults.headers.common['Authorization'];
+  }, []);
+
+  const refreshUsage = React.useCallback(async () => {
+    try {
+      const usageData = await getUsage();
+      setUser(prev => prev ? { ...prev, credits: usageData.usage.remaining } : null);
+    } catch (err) {
+      console.error("Failed to refresh usage:", err);
+    }
+  }, []);
+
+  const refreshProfile = React.useCallback(async () => {
+    try {
+      const [profile, usageData] = await Promise.all([getCurrentUserProfile(), getUsage()]);
+      setUser(prev => prev ? {
+        ...prev,
+        plan: profile.plan,
+        role: profile.role,
+        emailVerified: profile.emailVerified,
+        credits: usageData.usage.remaining,
+      } : null);
+    } catch (err) {
+      console.error("Failed to refresh profile:", err);
+    }
   }, []);
 
   // Effect to check for existing token in localStorage on initial load
@@ -69,6 +103,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           logout(); // Use logout to clean up
         }
       }
+
+      // If we have a user, fetch their latest profile and usage
+      if (storedToken && storedUser) {
+        try {
+          const profile = await getCurrentUserProfile();
+          const usageData = await getUsage();
+
+          // Check if email is verified
+          if (!profile.emailVerified) {
+            console.warn('Email not verified. Logging out...');
+            logout();
+            setIsLoading(false);
+            return;
+          }
+
+          const updatedUser = {
+            ...profile,
+            emailVerified: profile.emailVerified,
+            credits: usageData.usage.remaining
+          };
+          setUser(updatedUser);
+          localStorage.setItem('authUser', JSON.stringify(updatedUser));
+        } catch (err) {
+          console.error("Failed to sync profile/usage on init:", err);
+        }
+      }
       setIsLoading(false); // Finished loading initial state
     };
 
@@ -83,6 +143,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (error.response && error.response.status === 401) {
           console.warn('Received 401 Unauthorized. Logging out...');
           logout();
+        } else if (error.response && error.response.status === 403 && error.response.data?.message?.includes('credits')) {
+          console.warn('Insufficient credits detected.');
+          setShowCreditLimitModal(true);
         }
         return Promise.reject(error);
       }
@@ -99,6 +162,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       const response = await loginUser(credentials);
+
+      // Check if email is verified
+      if (!response.user.emailVerified) {
+        setError('Please verify your email before logging in. Check your inbox for the verification link.');
+        setIsLoading(false);
+        return;
+      }
+
       setUser(response.user);
       setToken(response.token);
       // Store token and user info in localStorage
@@ -106,6 +177,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('authUser', JSON.stringify(response.user));
       // Set Axios default Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
+
+      // Fetch usage info immediately after login
+      try {
+        const usageData = await getUsage();
+        const updatedUser = { ...response.user, credits: usageData.usage.remaining };
+        setUser(updatedUser);
+        localStorage.setItem('authUser', JSON.stringify(updatedUser));
+      } catch (err) {
+        console.warn("Failed to fetch usage after login", err);
+      }
+
       setIsLoading(false);
     } catch (err: any) {
       console.error("Login failed:", err);
@@ -132,18 +214,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // Register function (doesn't log in automatically)
-  const register = React.useCallback(async (credentials: { email: string, username: string, password: string }) => {
+  const register = React.useCallback(async (credentials: { email: string, username: string, password: string }): Promise<RegisterResponse | null> => {
     setError(null);
     setIsLoading(true); // Use isLoading maybe? Or a separate registerLoading state
     try {
-      await registerUser(credentials);
+      const data = await registerUser(credentials);
       // Optionally set a success message state here instead of error
       setIsLoading(false);
-      // Maybe redirect to login or show success message
+      return data;
     } catch (err: any) {
       console.error("Registration failed:", err);
       setError(err.message || 'Registration failed.');
       setIsLoading(false);
+      return null;
     }
   }, []);
 
@@ -158,6 +241,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     loginWithToken,
+    refreshUsage,
+    refreshProfile,
+    showCreditLimitModal,
+    setShowCreditLimitModal,
   };
 
   return (

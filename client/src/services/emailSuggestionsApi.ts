@@ -118,12 +118,6 @@ export interface EmailSuggestionPreferences {
     autoPollApplications: boolean;
     /** Whether the server should automatically scan job offer/lead emails on the cron schedule. */
     autoPollJobLeads: boolean;
-    /** Global default AI provider configured for this user's account. */
-    defaultProvider?: string | null;
-    /** Provider override used exclusively for inbox email classification.
-     *  When set, overrides defaultProvider for this feature only.
-     *  Null / empty means "follow defaultProvider". */
-    inboxProvider?: string | null;
 }
 
 export const getPreferences = async (): Promise<EmailSuggestionPreferences> => {
@@ -134,7 +128,7 @@ export const getPreferences = async (): Promise<EmailSuggestionPreferences> => {
 };
 
 /** Update email suggestion preferences for the current user. */
-export const updatePreferences = async (preferences: Partial<Pick<EmailSuggestionPreferences, 'lookbackDays' | 'inboxProvider' | 'autoPollApplications' | 'autoPollJobLeads'>>): Promise<EmailSuggestionPreferences> => {
+export const updatePreferences = async (preferences: Partial<EmailSuggestionPreferences>): Promise<EmailSuggestionPreferences> => {
     const { data } = await axios.put<EmailSuggestionPreferences>(
         `${API_BASE_URL}/email-suggestions/preferences`,
         preferences

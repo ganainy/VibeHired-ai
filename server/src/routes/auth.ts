@@ -9,7 +9,9 @@ import { registerBodySchema, loginBodySchema, forgotPasswordBodySchema, resetPas
 import { ValidatedRequest } from '../middleware/validateRequest';
 import authMiddleware from '../middleware/authMiddleware';
 import { env } from '../config/env';
-import { sendPasswordResetEmail } from '../utils/emailService';
+import { sendPasswordResetEmail, sendVerificationEmail } from '../utils/emailService';
+import * as MailChecker from 'mailchecker';
+import { authRateLimiter, passwordResetLimiter, emailVerificationLimiter } from '../middleware/rateLimiter';
 
 const router: Router = express.Router();
 
@@ -35,7 +37,7 @@ const JWT_EXPIRY: string = process.env.JWT_EXPIRY || '1d'; // Default to 1 day e
 
 // --- Registration Route ---
 // POST /api/auth/register
-router.post('/register', validateRequest({ body: registerBodySchema }), async (req: ValidatedRequest, res: Response) => {
+router.post('/register', authRateLimiter, validateRequest({ body: registerBodySchema }), async (req: ValidatedRequest, res: Response) => {
     const { email, password, username } = req.validated!.body!;
 
     try {
@@ -53,21 +55,61 @@ router.post('/register', validateRequest({ body: registerBodySchema }), async (r
             return;
         }
 
-        // Create new user instance - Assign plain password to passwordHash temporarily
-        // The pre-save hook in the model will hash it before saving
+        // Check for disposable/temporary email domains using MailChecker
+        // Also check parent domains to catch subdomains (e.g. sub.mailinator.com)
+        const emailDomain = email.split('@')[1].toLowerCase();
+        const domainParts = emailDomain.split('.');
+        let isDisposable = !MailChecker.isValid(email);
+        if (!isDisposable) {
+            for (let i = 1; i < domainParts.length - 1; i++) {
+                const parentDomain = domainParts.slice(i).join('.');
+                if (!MailChecker.isValid(`check@${parentDomain}`)) {
+                    isDisposable = true;
+                    break;
+                }
+            }
+        }
+        if (isDisposable) {
+            res.status(400).json({ message: 'Registration with temporary or disposable email addresses is not allowed. Please use a permanent email.' });
+            return;
+        }
+
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const hashedVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
+        // Create new user instance
         const newUser = new User({
             email,
             username,
-            passwordHash: password, // Assign plain password here, hook will hash it
+            passwordHash: password,
+            emailVerificationToken: hashedVerificationToken,
+            emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+            emailVerified: false,
         });
 
         // Save the user (triggers pre-save hook)
         await newUser.save();
 
-        // Don't usually log user in immediately after register, make them log in separately
+        // Send verification email
+        const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+        const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
+
+        let emailSendFailed = false;
+        try {
+            await sendVerificationEmail(email, verificationUrl);
+        } catch (emailErr) {
+            console.error('Failed to send verification email during register:', emailErr);
+            emailSendFailed = true;
+        }
+
         res.status(201).json({
-            message: 'User registered successfully. Please log in.',
-            requiresApiKeys: true
+            message: emailSendFailed
+                ? 'Account created, but we could not send the verification email. Please use the resend option on the sign-in page.'
+                : 'Account created! Please check your email to verify your account.',
+            requiresVerification: true,
+            emailSendFailed,
+            registeredEmail: email,
         });
 
     } catch (error) {
@@ -84,7 +126,7 @@ router.post('/register', validateRequest({ body: registerBodySchema }), async (r
 
 // --- Login Route ---
 // POST /api/auth/login
-router.post('/login', validateRequest({ body: loginBodySchema }), async (req: ValidatedRequest, res: Response) => {
+router.post('/login', authRateLimiter, validateRequest({ body: loginBodySchema }), async (req: ValidatedRequest, res: Response) => {
     const { email, password } = req.validated!.body!;
 
     try {
@@ -99,6 +141,12 @@ router.post('/login', validateRequest({ body: loginBodySchema }), async (req: Va
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             res.status(401).json({ message: 'Invalid credentials.' }); // Use generic message
+            return;
+        }
+
+        // Check if user is blocked
+        if ((user as any).isBlocked) {
+            res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
             return;
         }
 
@@ -121,7 +169,11 @@ router.post('/login', validateRequest({ body: loginBodySchema }), async (req: Va
             token: token,
             user: { // Send back some user info (excluding password hash!)
                 id: user._id,
-                email: user.email
+                email: user.email,
+                username: user.username,
+                role: user.role,
+                plan: user.plan,
+                emailVerified: user.emailVerified
             }
         });
 
@@ -146,6 +198,9 @@ router.get('/me', authMiddleware as RequestHandler, async (req: Request, res: Re
             id: req.user._id,
             email: req.user.email,
             username: req.user.username,
+            role: req.user.role,
+            plan: req.user.plan,
+            emailVerified: req.user.emailVerified,
             createdAt: req.user.createdAt,
             updatedAt: req.user.updatedAt,
         });
@@ -161,7 +216,7 @@ router.get('/me', authMiddleware as RequestHandler, async (req: Request, res: Re
 
 // --- Forgot Password Route ---
 // POST /api/auth/forgot-password
-router.post('/forgot-password', validateRequest({ body: forgotPasswordBodySchema }), async (req: ValidatedRequest, res: Response) => {
+router.post('/forgot-password', passwordResetLimiter, validateRequest({ body: forgotPasswordBodySchema }), async (req: ValidatedRequest, res: Response) => {
     const { email } = req.validated!.body!;
 
     try {
@@ -231,6 +286,85 @@ router.post('/reset-password', validateRequest({ body: resetPasswordBodySchema }
         res.status(200).json({ message: 'Password reset successfully. You can now log in.' });
     } catch (error) {
         console.error('Reset password error:', error);
+        res.status(500).json({ message: 'Server error.' });
+    }
+});
+
+
+// --- Verify Email Route ---
+// POST /api/auth/verify-email
+router.post('/verify-email', async (req: Request, res: Response) => {
+    const { token: rawToken } = req.body;
+
+    if (!rawToken) {
+        res.status(400).json({ message: 'Token is required.' });
+        return;
+    }
+
+    try {
+        const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+        const user = await User.findOne({
+            emailVerificationToken: hashedToken,
+            emailVerificationExpires: { $gt: new Date() },
+        });
+
+        if (!user) {
+            res.status(400).json({ message: 'Verification token is invalid or has expired.' });
+            return;
+        }
+
+        user.emailVerified = true;
+        user.emailVerificationToken = undefined;
+        user.emailVerificationExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: 'Email verified successfully! You can now use all AI features.' });
+    } catch (error) {
+        console.error('Email verification error:', error);
+        res.status(500).json({ message: 'Server error.' });
+    }
+});
+
+
+// --- Resend Verification Email ---
+// POST /api/auth/resend-verification
+// Public endpoint — accepts email in body, rate-limited by IP.
+// Uses a uniform response to prevent email enumeration.
+router.post('/resend-verification', emailVerificationLimiter, async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    if (!email || typeof email !== 'string') {
+        res.status(400).json({ message: 'Email address is required.' });
+        return;
+    }
+
+    const neutralResponse = { message: 'If that account exists and is unverified, a new verification link has been sent.' };
+
+    try {
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+        // Always return neutral response to prevent enumeration
+        if (!user || user.emailVerified) {
+            res.status(200).json(neutralResponse);
+            return;
+        }
+
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const hashedVerificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
+        user.emailVerificationToken = hashedVerificationToken;
+        user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        await user.save();
+
+        const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+        const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
+
+        await sendVerificationEmail(user.email, verificationUrl);
+
+        res.status(200).json(neutralResponse);
+    } catch (error) {
+        console.error('Resend verification error:', error);
         res.status(500).json({ message: 'Server error.' });
     }
 });

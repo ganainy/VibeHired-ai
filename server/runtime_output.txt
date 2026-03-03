@@ -1,0 +1,18 @@
+npm warn config ignoring workspace config at E:\VS-projects\job-app-assistant\server/.npmrc
+Loaded .env from: E:\VS-projects\job-app-assistant\server\.env
+[Cloudinary] Configured successfully
+STRIPE_SECRET_KEY is not defined. Stripe integration will not work.
+E:\VS-projects\job-app-assistant\node_modules\stripe\cjs\stripe.core.js:158
+                throw new Error('Neither apiKey nor config.authenticator provided');
+                      ^
+Error: Neither apiKey nor config.authenticator provided
+    at Stripe._setAuthenticator (E:\VS-projects\job-app-assistant\node_modules\stripe\cjs\stripe.core.js:158:23)
+    at new Stripe (E:\VS-projects\job-app-assistant\node_modules\stripe\cjs\stripe.core.js:96:14)
+    at Object.<anonymous> (E:\VS-projects\job-app-assistant\server\src\services\stripeService.ts:10:23)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14)
+    at Module.m._compile (E:\VS-projects\job-app-assistant\node_modules\ts-node\src\index.ts:1618:23)
+    at node:internal/modules/cjs/loader:1893:10
+    at Object.require.extensions.<computed> [as .ts] (E:\VS-projects\job-app-assistant\node_modules\ts-node\src\index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1480:32)
+    at Module._load (node:internal/modules/cjs/loader:1299:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)

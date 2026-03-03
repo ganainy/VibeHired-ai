@@ -11,11 +11,15 @@ interface AuthResponse {
     user: {
         id: string;
         email: string;
+        emailVerified: boolean;
     };
 }
 
-interface RegisterResponse {
+export interface RegisterResponse {
     message: string;
+    requiresVerification?: boolean;
+    emailSendFailed?: boolean;
+    registeredEmail?: string;
     requiresApiKeys?: boolean;
 }
 
@@ -23,6 +27,9 @@ export interface UserProfile {
     id: string;
     email: string;
     username?: string;
+    role?: string;
+    plan?: string;
+    emailVerified?: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -35,7 +42,7 @@ interface ApiError {
 
 // --- API Functions ---
 
-export const registerUser = async (credentials: {email: string, username: string, password: string}): Promise<RegisterResponse> => {
+export const registerUser = async (credentials: { email: string, username: string, password: string }): Promise<RegisterResponse> => {
     try {
         // Note: Axios automatically throws for non-2xx status codes
         const response = await axios.post<RegisterResponse>(`${API_BASE_URL}/register`, credentials);
@@ -50,16 +57,16 @@ export const registerUser = async (credentials: {email: string, username: string
     }
 };
 
-export const loginUser = async (credentials: {email: string, password: string}): Promise<AuthResponse> => {
+export const loginUser = async (credentials: { email: string, password: string }): Promise<AuthResponse> => {
     try {
         const response = await axios.post<AuthResponse>(`${API_BASE_URL}/login`, credentials);
         return response.data;
     } catch (error) {
         console.error("Login API error:", error);
         if (axios.isAxiosError(error) && error.response) {
-             throw error.response.data as ApiError;
+            throw error.response.data as ApiError;
         }
-         throw { message: 'An unknown login error occurred.' } as ApiError;
+        throw { message: 'An unknown login error occurred.' } as ApiError;
     }
 };
 
@@ -108,6 +115,26 @@ export const getGoogleLoginUrl = async (): Promise<string> => {
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) throw error.response.data as ApiError;
         throw { message: 'Could not get Google login URL.' } as ApiError;
+    }
+};
+
+export const resendVerificationEmail = async (email: string): Promise<{ message: string }> => {
+    try {
+        const response = await axios.post<{ message: string }>(`${API_BASE_URL}/resend-verification`, { email });
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) throw error.response.data as ApiError;
+        throw { message: 'Could not resend verification email.' } as ApiError;
+    }
+};
+
+export const verifyEmailToken = async (token: string): Promise<{ message: string }> => {
+    try {
+        const response = await axios.post<{ message: string }>(`${API_BASE_URL}/verify-email`, { token });
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) throw error.response.data as ApiError;
+        throw { message: 'Email verification failed.' } as ApiError;
     }
 };
 // export const updateUsername = async (username: string): Promise<{ message: string; username: string }> => {

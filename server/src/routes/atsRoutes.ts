@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import { scanAts, scanAtsForAnalysis, getAtsScores, getAtsForJob, getLatestAts, deleteAts } from '../controllers/atsController';
 import authMiddleware from '../middleware/authMiddleware';
+import { usageLimiter } from '../middleware/usageLimiter';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validateRequest } from '../middleware/validateRequest';
 import { atsScanBodySchema, atsScanParamsSchema, atsScoresParamsSchema } from '../validations/atsSchemas';
@@ -12,8 +13,8 @@ const router: Router = express.Router();
 router.use(authMiddleware);
 
 // ATS routes
-router.post('/scan', validateRequest({ body: atsScanBodySchema }), asyncHandler(scanAts));
-router.post('/scan/:analysisId', validateRequest({ params: atsScanParamsSchema, body: atsScanBodySchema }), asyncHandler(scanAtsForAnalysis));
+router.post('/scan', usageLimiter('atsScoring'), validateRequest({ body: atsScanBodySchema }), asyncHandler(scanAts));
+router.post('/scan/:analysisId', usageLimiter('atsScoring'), validateRequest({ params: atsScanParamsSchema, body: atsScanBodySchema }), asyncHandler(scanAtsForAnalysis));
 router.get('/scores/:analysisId', validateRequest({ params: atsScoresParamsSchema }), asyncHandler(getAtsScores));
 router.get('/job/:jobApplicationId', validateRequest({ params: jobApplicationIdParamSchema }), asyncHandler(getAtsForJob));
 router.get('/latest', asyncHandler(getLatestAts));

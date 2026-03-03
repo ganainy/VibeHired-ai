@@ -26,7 +26,7 @@ import CoverLetter from '../models/CoverLetter';
 import JobApplication from '../models/JobApplication';
 import { asyncHandler } from '../utils/asyncHandler';
 import { NotFoundError, ValidationError } from '../utils/errors/AppError';
-import { getProviderStrategy, generateContentWithFile } from '../utils/aiService';
+import { generateContentWithFile } from '../utils/aiService';
 import fs from 'fs';
 import path from 'path';
 
@@ -58,12 +58,6 @@ async function extractTextFromClFile(
     file: Express.Multer.File,
     userId: string
 ): Promise<string> {
-    const providerStrategy = await getProviderStrategy(userId);
-    if (providerStrategy.getName().toLowerCase() !== 'gemini') {
-        throw new ValidationError(
-            'File upload extraction requires Gemini. Please switch your AI provider to Gemini in Settings.'
-        );
-    }
 
     const tempDir = path.join(process.cwd(), 'temp_uploads');
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
@@ -266,19 +260,19 @@ router.get('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
     res.json({
         coverLetter: cl
             ? {
-                  _id: cl._id,
-                  displayName: cl.displayName,
-                  language: cl.language,
-                  coverLetterText: cl.coverLetterText,
-                  filename: cl.filename,
-                  fileMimeType: cl.fileMimeType,
-                  hasFile: !!cl.filename,
-                  emailSubject: cl.emailSubject,
-                  emailBody: cl.emailBody,
-                  emailRecipient: cl.emailRecipient,
-                  createdAt: cl.createdAt,
-                  updatedAt: cl.updatedAt,
-              }
+                _id: cl._id,
+                displayName: cl.displayName,
+                language: cl.language,
+                coverLetterText: cl.coverLetterText,
+                filename: cl.filename,
+                fileMimeType: cl.fileMimeType,
+                hasFile: !!cl.filename,
+                emailSubject: cl.emailSubject,
+                emailBody: cl.emailBody,
+                emailRecipient: cl.emailRecipient,
+                createdAt: cl.createdAt,
+                updatedAt: cl.updatedAt,
+            }
             : null,
         message: cl ? undefined : 'No dedicated cover letter document for this job.',
     });

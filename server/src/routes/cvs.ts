@@ -9,10 +9,11 @@ import express, { Router, Request, Response, RequestHandler } from 'express';
 import multer from 'multer';
 import mongoose from 'mongoose';
 import authMiddleware from '../middleware/authMiddleware';
+import { usageLimiter } from '../middleware/usageLimiter';
 import CV, { ICV } from '../models/CV';
 import User from '../models/User';
 import JobApplication from '../models/JobApplication';
-import { generateContentWithFile, getProviderStrategy } from '../utils/aiService';
+import { generateContentWithFile } from '../utils/aiService';
 import { generateDescriptorFromJson, improveDynamicSectionWithAi } from '../services/generatorService';
 import { GoogleGenerativeAIError } from '@google/generative-ai';
 import { NotFoundError, ValidationError } from '../utils/errors/AppError';
@@ -88,83 +89,76 @@ async function parseUploadedCv(reqFile: Express.Multer.File, userId: string): Pr
 
     try {
         const prompt = `
-You are a precise CV/resume data extractor. Analyze the attached CV file (${reqFile.originalname}) and extract ALL information into a strictly valid JSON Resume Schema object.
+You are a CV data extraction tool. Your ONLY job is to read the attached CV file (${reqFile.originalname}) and faithfully transcribe its content into a JSON Resume Schema object.
 
-=== CRITICAL FIELD-BY-FIELD RULES ===
+=== PRIME DIRECTIVE — READ THIS FIRST ===
+COPY EVERYTHING VERBATIM. Every piece of text you write into the JSON must be copied WORD-FOR-WORD from the CV.
+- DO NOT paraphrase, reword, improve, or summarize any text.
+- DO NOT add any content that is not explicitly written in the CV (no inferred skills, no guessed URLs, no assumed categories).
+- DO NOT delete or omit any information that appears in the CV.
+- DO NOT reorganize, reorder, or restructure content differently from how it appears in the CV.
+- Your role is a TRANSCRIBER, not an editor or writer.
+
+=== SCHEMA MAPPING — HOW TO PLACE CONTENT INTO FIELDS ===
 
 **basics.name**
-- Extract the candidate's full name EXACTLY as it appears, preserving proper word spacing.
-- If the name appears as a concatenated string (e.g. "JohnDoe" due to PDF rendering), reconstruct the correct spacing by inserting a space at the camelCase boundary (e.g. "John Doe").
-- NEVER output the name without a space between first and last name.
+- The candidate's full name, copied exactly as it appears (including any spacing/capitalisation as written).
+- If the PDF has run "JohnDoe" together due to rendering, insert a space at the obvious word boundary — but do NOT change the spelling.
+
+**basics.label / basics.email / basics.phone / basics.url**
+- Copy exactly as written in the CV.
 
 **basics.summary**
-- Extract ONLY the body/paragraph text of the professional summary or profile section.
-- NEVER include the section heading (e.g. "Professional Summary", "Berufsprofil", "Über mich") as part of the value.
-- The value must be plain prose text only.
+- Copy the full text of the professional summary / profile section verbatim.
+- Exclude only the section heading (e.g. "Professional Summary", "Berufsprofil") — that is a label, not content.
 
 **basics.location**
-- Map city → "city", state/region → "region", country → "countryCode" (ISO 2-letter code, e.g. "DE", "EG").
+- Copy address text as written. Map: city → "city", region/state → "region", country → "countryCode".
+- If the country is written as a full name (e.g. "Germany") write it as-is into "countryCode"; do NOT silently convert to an ISO code.
 
-**work[].name / work[].position**
-- "name" = the employer/company name only.
-- "position" = the job title only.
-- "highlights" = array of individual bullet point strings (each bullet is one separate array element, NOT a single concatenated paragraph).
-- "startDate" / "endDate" = YYYY-MM or YYYY. Use "Present" for current roles.
+**work[]**
+- "name" = employer name, copied verbatim.
+- "position" = job title, copied verbatim.
+- "startDate" / "endDate" = dates as written in the CV (YYYY-MM or YYYY format preferred; if the CV writes "Jan 2020" convert to "2020-01"; if it writes just "2020" use "2020"). Use "Present" for current roles.
+- "summary" = any introductory description of the role, copied verbatim.
+- "highlights" = each bullet point copied verbatim as its own array element. Do NOT merge or split bullets.
 
-**education[].studyType / education[].area / education[].institution**
-- "studyType" = the degree type (e.g. "Bachelor of Science", "Master of Science", "Ausbildung").
-- "area" = the field of study (e.g. "Computer Science", "Internet Security").
-- "institution" = the university or school name only.
+**education[]**
+- "studyType" = degree type copied verbatim (e.g. "Bachelor of Science", "Ausbildung").
+- "area" = field of study copied verbatim.
+- "institution" = institution name copied verbatim.
+- "startDate" / "endDate" = as written. "score" = GPA/grade as written.
+- "courses" = list of courses copied verbatim if present.
 
 **skills[]**
-- Group skills into meaningful categories. Each element MUST be an object: { "name": "<Category>", "keywords": ["skill1", "skill2", ...] }
-- "keywords" MUST be an array of individual short skill/technology names — NEVER a single long paragraph string.
-- Each keyword is ONE skill (e.g. "Windows 10/11", "Active Directory", "TCP/IP") — not a sentence.
-- Example of CORRECT skills entry:
-  { "name": "Networking", "keywords": ["TCP/IP", "DNS", "DHCP", "HTTP/HTTPS", "WLAN"] }
-- Example of INCORRECT skills entry (DO NOT do this):
-  { "name": "Skills", "keywords": ["Kenntnisse in TCP/IP, DNS, DHCP, HTTP/HTTPS sowie grundlegender Netzwerkdiagnose"] }
-- If the CV lists skills as a long paragraph, split each individual skill/term into its own keyword string.
-- **DEDUPLICATION**: If the CV has both a compact skills list (e.g. a tag cloud or comma-separated bar) AND a detailed skills section with bullet-point descriptions, extract skills ONLY ONCE. Prefer the detailed version. Do NOT create two separate skill groups containing the same technologies.
-
-**projects[] vs skills[] — CRITICAL DISTINCTION**
-- A "Project" is a named block of work the candidate has done, described with bullet points explaining WHAT they did (actions, outcomes, responsibilities). These go into projects[].
-- A "Skill" is a technology name, tool, or competency area. These go into skills[].
-- If the CV has a section with titled blocks (e.g. "Technische Fehleranalyse & 1st-Level-Support", "Windows-Administration") each containing descriptive bullet points about what was done — those are PROJECTS, not skills. Extract them into projects[].
-- Do NOT convert project titles into skill category names.
-- Example: A block titled "Microsoft 365 & Benutzerverwaltung" with bullets like "Kenntnisse in Microsoft 365 (Outlook, Teams...)" is a PROJECT entry demonstrating that skill area — add it to projects[], and separately add "Microsoft 365", "Outlook", "Teams" etc. as keywords in skills[].
+- Use EXACTLY the skill groupings/categories as they appear in the CV. Do NOT invent new category names or collapse/merge categories.
+- Each element: { "name": "<category name from CV>", "keywords": ["<skill1>", "<skill2>", ...] }
+- Copy each skill/keyword verbatim from the CV. Do NOT split sentences into individual words; do NOT merge individual items into a paragraph.
+- If the CV has no categories and just lists skills, use a single entry with "name" copied from the CV's section heading and "keywords" as the individual items.
 
 **projects[]**
-- "name" = project title only.
-- "description" = brief one-line description (plain text, no heading labels).
-- "highlights" = array of individual bullet strings describing what was done.
-- "url" = GitHub or live URL if present — ONLY if the URL contains a real path beyond the domain (e.g. "https://github.com/username/repo" is valid, "https://github.com/" is NOT). Omit the field entirely if no real URL is present.
+- Only include entries that are explicitly labelled as projects in the CV.
+- "name" = project name verbatim. "description" = description verbatim. "highlights" = bullet points verbatim. "url" = URL exactly as written (only if explicitly present in the CV).
 
 **languages[]**
-- EACH language entry MUST have exactly two separate fields:
-  - "language": the language name ONLY (e.g. "Deutsch", "English", "Arabic", "Arabisch") — NO proficiency level here
-  - "fluency": the proficiency level ONLY (e.g. "C1", "B2", "Native", "Fluent", "Conversational", "Basic") — NO language name here
-- NEVER merge language name and proficiency into a single string (e.g. "DeutschC1" or "ArabischNative" are WRONG).
-- Example of CORRECT entry: { "language": "Deutsch", "fluency": "C1" }
-- Example of INCORRECT entry: { "language": "DeutschC1", "fluency": "" }
+- Each entry: { "language": "<language name>", "fluency": "<proficiency level>" }
+- Copy language names and proficiency levels verbatim from the CV.
+- If the CV writes "Deutsch C1" as one string, split into language = "Deutsch", fluency = "C1".
 
-**basics.profiles & basics.url**
-- Extract common social/professional profiles like LinkedIn, GitHub, and Portfolio.
-- **IMPORTANT**: Extract the FULL URL for each profile.
-- **NEVER GUESS HANDLES**: DO NOT construct URLs based on the candidate's name. Only extract a profile if a specific username or link is explicitly written next to the icon/label.
-- If the CV contains a specific handle (e.g. "@amrelg") next to an icon, construct the full URL (e.g. "github.com/amrelg").
-- **STRICT NO PLACEHOLDERS**: NEVER extract generic URLs like "https://linkedin.com/", "https://github.com/", or URLs that obviously lack a unique handle.
-- If no specific profile info is present, omit the field entirely.
-- Map LinkedIn to "network": "LinkedIn", GitHub to "network": "GitHub", and Portfolio sites to "network": "Portfolio" or "Website".
+**certificates[] / awards[] / publications[] / volunteer[] / interests[] / references[]**
+- Include any such sections that appear in the CV, copying all text verbatim into the appropriate schema fields.
 
-**General rules**
-- Parse the ENTIRE document — do not skip any section.
-- NEVER include section heading labels (e.g. "Skills & Technologies", "Berufserfahrung") as field values.
-- NEVER use generic placeholders for any field. If the information isn't in the CV, leave the field out.
-- Format all dates as YYYY-MM or YYYY. Use "Present" for ongoing. Omit date fields that are not found.
-- If an entire section is absent from the CV, omit that top-level key entirely.
-- If a specific field is not found, omit it (do not set to null or empty string unless required).
-- **DO NOT include any JavaScript/JSON comments (// or /* */) anywhere in the output.**
+**basics.profiles**
+- Only include profiles/links that are explicitly written in the CV (e.g. "linkedin.com/in/username", "github.com/handle").
+- DO NOT construct or guess any URL. If a social icon appears with no URL or handle, omit it.
+- Copy the URL exactly as written. Map to "network": "LinkedIn" / "GitHub" / "Portfolio" / etc.
+
+=== STRICT RULES ===
+- Parse the ENTIRE document. Do not skip any section.
+- Omit a field only if the information is genuinely absent from the CV — never set a field to null or "" for missing data, just omit the key.
+- If an entire section is absent, omit that top-level key entirely.
+- NEVER add section headings as field values (e.g. do not put "Work Experience" as a field value).
+- DO NOT include any JavaScript/JSON comments (// or /* */).
 
 === OUTPUT FORMAT ===
 Return ONLY a single valid JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`).
@@ -182,7 +176,7 @@ No text, explanation, or commentary before or after the JSON block.
         console.log('Received CV parsing response from AI.');
         console.log('--- AI RAW RESPONSE ---');
         console.log(responseText);
-        
+
         const cvJsonResume = parseJsonResponseToSchema(responseText);
 
         if (!cvJsonResume) {
@@ -478,6 +472,7 @@ router.get('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
  */
 router.post(
     '/upload',
+    usageLimiter('cvParsing'),
     upload.single('cvFile'),
     asyncHandler(async (req: Request, res: Response) => {
         const userId = req.user!._id;
@@ -487,12 +482,7 @@ router.post(
         }
 
         // Guard: PDF/file parsing requires Gemini — other providers don't support file input
-        const providerStrategy = await getProviderStrategy(String(userId));
-        if (providerStrategy.getName().toLowerCase() !== 'gemini') {
-            throw new ValidationError(
-                'PDF upload requires Gemini. Please switch your AI provider to Gemini in Settings.'
-            );
-        }
+        // (Simplified since Gemini is the only provider now)
 
         console.log(`Processing CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
@@ -611,6 +601,7 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
  */
 router.post(
     '/upload-branch',
+    usageLimiter('cvParsing'),
     upload.single('cvFile'),
     asyncHandler(async (req: Request, res: Response) => {
         const userId = req.user!._id;
@@ -625,12 +616,7 @@ router.post(
         }
 
         // Guard: PDF/file parsing requires Gemini — other providers don't support file input
-        const branchProviderStrategy = await getProviderStrategy(String(userId));
-        if (branchProviderStrategy.getName().toLowerCase() !== 'gemini') {
-            throw new ValidationError(
-                'PDF upload requires Gemini. Please switch your AI provider to Gemini in Settings.'
-            );
-        }
+        // (Simplified since Gemini is the only provider now)
 
         console.log(`Processing branch CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
@@ -1020,7 +1006,7 @@ router.get('/:id/original-pdf', asyncHandler(async (req: Request, res: Response)
  * Re-generate the AI descriptor and data from the stored cvJson.
  * Useful for legacy CVs or when the user wants to re-analyse structure.
  */
-router.post('/:id/restructure', asyncHandler(async (req: Request, res: Response) => {
+router.post('/:id/restructure', usageLimiter('cvParsing'), asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id as string;
     const cvId = req.params.id;
 
@@ -1048,7 +1034,7 @@ router.post('/:id/restructure', asyncHandler(async (req: Request, res: Response)
  * Improve a specific section of a dynamic CV using AI.
  * Body: { descriptor: CvSectionDescriptor, sectionData: any, customInstructions?: string }
  */
-router.post('/:id/improve-section-dynamic', asyncHandler(async (req: Request, res: Response) => {
+router.post('/:id/improve-section-dynamic', usageLimiter('analysis'), asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id as string;
     const cvId = req.params.id;
 

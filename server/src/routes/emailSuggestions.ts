@@ -23,6 +23,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { pollEmailsForUser } from '../services/emailSuggestionService';
 import { hasGmailScope } from '../services/gmailService';
 import { createCalendarEvent, isGoogleConnected } from '../services/googleCalendarService';
+import { usageLimiter } from '../middleware/usageLimiter';
 
 const router: Router = express.Router();
 
@@ -81,8 +82,6 @@ router.get(
             lookbackDays: profile.settings?.emailSuggestions?.lookbackDays ?? 14,
             autoPollApplications: profile.settings?.emailSuggestions?.autoPollApplications ?? true,
             autoPollJobLeads: profile.settings?.emailSuggestions?.autoPollJobLeads ?? true,
-            defaultProvider: profile.aiProviderSettings?.defaultProvider ?? null,
-            inboxProvider: profile.aiProviderSettings?.inboxProvider ?? null,
         });
     })
 );
@@ -95,23 +94,7 @@ router.put(
     '/preferences',
     asyncHandler(async (req: Request, res: Response) => {
         const userId = String(req.user!._id);
-        const { lookbackDays, inboxProvider, autoPollApplications, autoPollJobLeads } = req.body;
-
-        // Validate lookbackDays
-        if (lookbackDays !== undefined) {
-            const days = Number(lookbackDays);
-            if (isNaN(days) || days < 1 || days > 30) {
-                res.status(400).json({ message: 'lookbackDays must be a number between 1 and 30.' });
-                return;
-            }
-        }
-
-        // Validate inboxProvider
-        const validProviders = ['gemini', 'openrouter', 'ollama', null, ''];
-        if (inboxProvider !== undefined && !validProviders.includes(inboxProvider)) {
-            res.status(400).json({ message: 'inboxProvider must be one of: gemini, openrouter, ollama, or null.' });
-            return;
-        }
+        const { lookbackDays, autoPollApplications, autoPollJobLeads } = req.body;
 
         // Find or create profile
         let profile = await Profile.findOne({ userId });
@@ -140,11 +123,6 @@ router.put(
             profile.settings.emailSuggestions.autoPollJobLeads = Boolean(autoPollJobLeads);
         }
 
-        // Update inboxProvider override (empty string or null clears the override)
-        if (inboxProvider !== undefined) {
-            if (!profile.aiProviderSettings) profile.aiProviderSettings = {};
-            profile.aiProviderSettings.inboxProvider = inboxProvider || undefined;
-        }
 
         await profile.save();
 
@@ -152,8 +130,6 @@ router.put(
             lookbackDays: profile.settings.emailSuggestions.lookbackDays,
             autoPollApplications: profile.settings.emailSuggestions.autoPollApplications ?? true,
             autoPollJobLeads: profile.settings.emailSuggestions.autoPollJobLeads ?? true,
-            defaultProvider: profile.aiProviderSettings?.defaultProvider ?? null,
-            inboxProvider: profile.aiProviderSettings?.inboxProvider ?? null,
         });
     })
 );
@@ -261,6 +237,7 @@ router.put(
 // ─────────────────────────────────────────────────────────────────────────────
 router.post(
     '/poll',
+    usageLimiter('emailScan'),
     asyncHandler(async (req: Request, res: Response) => {
         const userId = String(req.user!._id);
 

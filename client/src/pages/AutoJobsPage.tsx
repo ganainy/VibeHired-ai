@@ -24,6 +24,7 @@ import SimpleLoader from '../components/common/SimpleLoader';
 import ConfirmModal from '../components/common/ConfirmModal';
 import JobRecommendationBadge from '../components/jobs/JobRecommendationBadge';
 import { formatDate } from '../utils/dateUtils';
+import { parseApiErrorMessage } from '../utils/parseApiError';
 import { getJobRecommendation } from '../services/jobRecommendationApi';
 import { parseMultipleUrls } from '../lib/utils';
 
@@ -388,7 +389,7 @@ const AutoJobsPage: React.FC = () => {
             // The button will remain disabled based on workflowProgress status
         } catch (err: any) {
             setIsTriggering(false);
-            showToast(err.response?.data?.message || 'Failed to trigger workflow', 'error');
+            showToast(parseApiErrorMessage(err), 'error');
         }
     };
 
@@ -678,6 +679,7 @@ const AutoJobsPage: React.FC = () => {
                             onClick={handleTrigger}
                             disabled={isWorkflowRunning || isTriggering}
                             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
+                            title="Run auto-jobs workflow (0.1 credits per job found)"
                         >
                             {(isWorkflowRunning || isTriggering) ? (
                                 <>
@@ -688,7 +690,7 @@ const AutoJobsPage: React.FC = () => {
                                     <span>{isTriggering ? 'Starting...' : 'Running...'}</span>
                                 </>
                             ) : (
-                                <>🚀 Run Now</>
+                                <>🚀 Run Now <span className="text-[10px] font-bold opacity-70" style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '1px 5px', borderRadius: '4px' }}>0.1 cr/job</span></>
                             )}
                         </button>
                     </div>
@@ -705,14 +707,14 @@ const AutoJobsPage: React.FC = () => {
                             </div>
                             <div className="flex-1">
                                 <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                    Paid API Keys Required
+                                    Credits & API Access
                                 </h3>
                                 <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                                    Auto Jobs makes multiple AI and Apify API calls. Ensure you have:
+                                    Auto Jobs uses AI and automated discovery to find relevant roles.
                                 </p>
                                 <ul className="mt-2 text-sm text-amber-700 dark:text-amber-300 list-disc list-inside space-y-1">
-                                    <li><strong>Apify credits</strong> for job scraping (~$8 per 1,000 jobs)</li>
-                                    <li><strong>Paid Gemini/OpenAI API key</strong> with sufficient quota</li>
+                                    <li><strong>App Credits</strong> are consumed per job retrieved (0.1 credits/job)</li>
+                                    <li><strong>Paid Gemini/OpenAI API key</strong> is required in Settings for career analysis</li>
                                 </ul>
                             </div>
                             <button
@@ -912,6 +914,9 @@ const AutoJobsPage: React.FC = () => {
                             />
                             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                                 Maximum number of jobs to process per run (20-1000, default: 100)
+                            </p>
+                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                                💰 Cost: {(settings.maxJobs || 100) * 0.1} credit ({(settings.maxJobs || 100) * 0.1} coins) per run • <Link to="/subscriptions" className="underline hover:text-amber-700">View plans</Link>
                             </p>
                         </div>
 

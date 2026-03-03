@@ -57,7 +57,9 @@ import {
   SubLocation,
 } from '../services/employerApi';
 import Spinner from '../components/common/Spinner';
+import { parseApiErrorMessage } from '../utils/parseApiError';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useAuth } from '../context/AuthContext';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -293,6 +295,7 @@ interface ScheduleImportModalProps {
 }
 
 const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, onClose, onDone }) => {
+  const { refreshUsage } = useAuth();
   const [step, setStep] = useState<ImportStep>('upload');
   const [employerId, setEmployerId] = useState(employers[0]?._id ?? '');
   const [subLocationId, setSubLocationId] = useState('');
@@ -348,6 +351,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
       fd.append('defaultStartTime', defaultStart);
       fd.append('defaultEndTime', defaultEnd);
       const result = await parseSchedule(fd);
+      try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
       if (result.count === 0) {
         setImportError('No entries found. Try pasting the text directly, or check the file content.');
         return;
@@ -365,7 +369,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
       );
       setStep('review');
     } catch (err: any) {
-      setImportError(err?.response?.data?.message ?? err?.message ?? 'AI parsing failed. Please try again.');
+      setImportError(parseApiErrorMessage(err));
     } finally {
       setParsing(false);
     }
@@ -656,7 +660,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
             >
               {parsing
                 ? <><div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: 'currentColor', borderTopColor: 'transparent' }} />Extracting…</>
-                : <><Sparkles size={15} />Extract with AI</>}
+                : <><Sparkles size={15} />Extract with AI<span className="text-[10px] font-bold ml-0.5 px-1.5 py-0.5 rounded opacity-70" style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>1 cr</span></>}
             </button>
           )}
 
@@ -1981,10 +1985,11 @@ const WorkTrackerPage: React.FC = () => {
                     color: isListening ? 'var(--rose)' : isMagicParsing ? 'var(--amber)' : 'var(--text-primary)',
                     border: '1px solid var(--border)'
                   }}
-                  title={isListening ? 'Click to stop listening' : 'Use voice to add entry'}
+                  title={isListening ? 'Click to stop listening' : 'Use voice to add entry (1 credit)'}
                 >
                   {isMagicParsing ? <span className="animate-spin"><Clock size={15} /></span> : <Mic size={15} className={isListening ? 'animate-pulse' : ''} />}
                   <span className="hidden sm:inline">{isListening ? 'Stop' : isMagicParsing ? 'Parsing…' : 'AI Voice Add'}</span>
+                  {!isListening && !isMagicParsing && <span className="text-[10px] font-bold opacity-60">1 cr</span>}
                 </button>
                 <button
                   onClick={() => setShowImportModal(true)}

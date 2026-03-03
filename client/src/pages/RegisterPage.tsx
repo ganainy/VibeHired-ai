@@ -1,9 +1,9 @@
 // client/src/pages/RegisterPage.tsx
-import React, { useState, FormEvent, useEffect } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { getGoogleLoginUrl } from '../services/authApi';
+import { getGoogleLoginUrl, resendVerificationEmail } from '../services/authApi';
 import Spinner from '../components/common/Spinner';
 
 
@@ -68,6 +68,9 @@ const RegisterPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string>('');
+  const [emailSendFailed, setEmailSendFailed] = useState(false);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
   const [emailError, setEmailError] = useState<string | null>(null);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -76,7 +79,6 @@ const RegisterPage: React.FC = () => {
 
   const { register, error: authError, isLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
 
@@ -106,13 +108,6 @@ const RegisterPage: React.FC = () => {
   const validatePassword = (v: string): string | null =>
     v.length < 8 ? 'At least 8 characters required' : null;
 
-  useEffect(() => {
-    if (registrationSuccess) {
-      const t = setTimeout(() => navigate('/settings', { state: { fromRegistration: true } }), 1500);
-      return () => clearTimeout(t);
-    }
-  }, [registrationSuccess, navigate]);
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setTouched({ email: true, username: true, password: true, confirmPassword: true });
@@ -126,8 +121,12 @@ const RegisterPage: React.FC = () => {
     if (password !== confirmPassword) { setConfirmPasswordError('Passwords do not match'); return; }
 
     setEmailError(null); setUsernameError(null); setPasswordError(null); setConfirmPasswordError(null);
-    await register({ email, username, password });
-    if (!authError && !isLoading) setRegistrationSuccess(true);
+    const result = await register({ email, username, password });
+    if (result?.requiresVerification) {
+      setRegisteredEmail(email);
+      setEmailSendFailed(result.emailSendFailed ?? false);
+      setRegistrationSuccess(true);
+    }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -153,6 +152,82 @@ const RegisterPage: React.FC = () => {
 
   const FieldError = ({ msg }: { msg: string | null | undefined }) =>
     msg ? <p className="mt-1.5 text-xs" style={{ color: 'var(--rose, #f46464)' }}>{msg}</p> : null;
+
+  // Early return: show check-email screen after successful registration
+  if (registrationSuccess) {
+    const handleResend = async () => {
+      if (!registeredEmail) return;
+      setResendStatus('loading');
+      try {
+        await resendVerificationEmail(registeredEmail);
+        setResendStatus('sent');
+      } catch {
+        setResendStatus('error');
+      }
+    };
+
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: 'var(--bg-base)' }}>
+        <div className="absolute top-5 right-5">
+          <button onClick={toggleTheme} className="p-2 rounded-lg transition-colors" style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }} aria-label="Toggle theme">
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </button>
+        </div>
+        <div className="w-full max-w-[420px] rounded-2xl p-8 text-center" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
+            style={{ backgroundColor: 'rgba(232,184,68,0.1)', border: '1px solid rgba(232,184,68,0.25)' }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-semibold mb-2" style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}>
+            {emailSendFailed ? 'Email delivery issue' : 'Check your inbox'}
+          </h1>
+          {emailSendFailed ? (
+            <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+              Your account was created, but we couldn't send the verification email. Click below to try again.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>We sent a verification link to</p>
+              <p className="text-sm font-semibold mb-3 break-all" style={{ color: 'var(--text-primary)' }}>{registeredEmail}</p>
+              <p className="text-xs mb-6" style={{ color: 'var(--text-muted)' }}>
+                The link expires in 24 hours. Check your spam folder if you don't see it.
+              </p>
+            </>
+          )}
+          {resendStatus === 'sent' && (
+            <div className="rounded-lg p-3 text-sm mb-4" style={{ backgroundColor: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.25)', color: 'var(--jade, #2dd4a0)' }}>
+              New verification email sent — check your inbox!
+            </div>
+          )}
+          {resendStatus === 'error' && (
+            <div className="rounded-lg p-3 text-sm mb-4" style={{ backgroundColor: 'rgba(244,100,100,0.08)', border: '1px solid rgba(244,100,100,0.2)', color: 'var(--rose, #f46464)' }}>
+              Could not resend. Please try again later.
+            </div>
+          )}
+          <button
+            onClick={handleResend}
+            disabled={resendStatus === 'loading' || resendStatus === 'sent'}
+            className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all mb-4"
+            style={{
+              backgroundColor: emailSendFailed ? 'var(--accent)' : 'var(--bg-elevated)',
+              color: emailSendFailed ? '#0e0e17' : 'var(--text-secondary)',
+              border: '1px solid var(--border)',
+              opacity: resendStatus === 'loading' || resendStatus === 'sent' ? 0.6 : 1,
+              cursor: resendStatus === 'loading' || resendStatus === 'sent' ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {resendStatus === 'loading' ? 'Sending…' : resendStatus === 'sent' ? '✓ Sent' : 'Resend verification email'}
+          </button>
+          <Link to="/login" className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
+            Go to Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -257,16 +332,6 @@ const RegisterPage: React.FC = () => {
           </h2>
           <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>Join VibeHired and start your journey</p>
         </div>
-
-        {/* Success state */}
-        {registrationSuccess && (
-          <div className="mb-6 flex items-center gap-3 rounded-lg p-4 text-sm" style={{ backgroundColor: 'var(--jade-bg, rgba(45,212,160,0.08))', border: '1px solid rgba(45,212,160,0.25)', color: 'var(--jade, #2dd4a0)' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-            <span>Account created! Redirecting to setup…</span>
-          </div>
-        )}
 
         {/* Error alert */}
         {(authError || localError) && !registrationSuccess && (
