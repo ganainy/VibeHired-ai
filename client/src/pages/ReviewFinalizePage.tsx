@@ -2186,7 +2186,7 @@ const ReviewFinalizePage: React.FC = () => {
                         )}
 
                         {/* Mark as Applied Button */}
-                        {jobApplication.status !== 'Applied' && (
+                        {jobApplication.status === 'Not Applied' && (
                             <button
                                 onClick={handleMarkAsApplied}
                                 className="px-4 py-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 rounded-lg shadow-sm transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 self-stretch"

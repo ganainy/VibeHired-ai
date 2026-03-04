@@ -13,6 +13,11 @@ function formatBytes(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatDate(dateStr: string): string {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 
 function iconForType(type: MaterialType): string {
     switch (type) {
@@ -131,6 +136,11 @@ const GlobalMaterialCard: React.FC<{
                                     {material.url}
                                 </span>
                             )}
+                            {material.createdAt && (
+                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                    {formatDate(material.createdAt)}
+                                </span>
+                            )}
                             {/* Job chip (shown in flat view) */}
                             {showJobChip && jobRef && jobId && (
                                 <Link
@@ -174,8 +184,8 @@ const GlobalMaterialCard: React.FC<{
                                 star
                             </span>
                         </button>
-                        {/* Other actions — shown on hover */}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Other actions */}
+                        <div className="flex items-center gap-1">
                             {material.cloudinaryUrl && (
                                 <a
                                     href={material.cloudinaryUrl}
@@ -707,7 +717,7 @@ const InterviewMaterialsPage: React.FC = () => {
                     Favourites
                 </button>
 
-                {/* View toggle */}}
+                {/* View toggle */}
                 <div className="flex items-center rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
                     <button
                         onClick={() => setViewMode('grouped')}

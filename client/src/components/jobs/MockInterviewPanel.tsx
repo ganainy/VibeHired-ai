@@ -127,7 +127,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
     const [answer, setAnswer] = useState('');
     const [currentEvaluation, setCurrentEvaluation] = useState<EvaluationResult | null>(null);
     const [results, setResults] = useState<QuestionResult[]>([]);
-    const [isCopied, setIsCopied] = useState(false);
+    const [copiedKey, setCopiedKey] = useState<'first' | 'second' | null>(null);
 
     const currentQuestion = questions[currentIndex] ?? '';
     const totalQuestions = questions.length;
@@ -139,12 +139,11 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
         }
     }, [stt.transcript]);
 
-    const buildExternalPrompt = useCallback((): string => {
+    // Shared context block used by both prompts
+    const buildContextBlock = useCallback((): string[] => {
         const lang = jobApplication.language !== 'de' ? 'English' : 'German';
         const lines: string[] = [];
 
-        lines.push('You are an expert interviewer running a live mock interview session with me.');
-        lines.push('');
         lines.push('=== JOB DETAILS ===');
         lines.push(`Job Title: ${jobApplication.jobTitle}`);
         lines.push(`Company: ${jobApplication.companyName}`);
@@ -174,42 +173,85 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
             lines.push(coverLetterText.trim().slice(0, 3000));
         }
 
+        return lines;
+    }, [jobApplication, cvData, coverLetterText]);
+
+    /** First interview — general / cultural-fit / behavioural round */
+    const buildFirstInterviewPrompt = useCallback((): string => {
+        const lang = jobApplication.language !== 'de' ? 'English' : 'German';
+        const lines: string[] = [];
+
+        lines.push('You are an experienced HR interviewer conducting a FIRST-ROUND interview with me.');
+        lines.push('');
+        lines.push(...buildContextBlock());
         lines.push('');
         lines.push('=== INSTRUCTIONS ===');
-        lines.push('Conduct a full mock interview with me following these rules:');
+        lines.push('Conduct a first-round interview focused on general fit, motivation and soft skills. Follow these rules:');
         lines.push('');
-        lines.push('1. Generate exactly 7 tailored interview questions covering a mix of:');
-        lines.push('   - Behavioral questions (e.g. "Tell me about a time when…")' );
-        lines.push('   - Technical / role-specific questions based on the requirements above');
-        lines.push('   - Situational / motivational questions');
+        lines.push('1. Generate exactly 8 tailored questions covering:');
+        lines.push('   - Self-introduction / background (1 question)');
+        lines.push('   - Motivation & company fit — "Why this role / company?" (2 questions)');
+        lines.push('   - Behavioural — "Tell me about a time when…" using the STAR method (3 questions)');
+        lines.push('   - Teamwork, communication, and working style (2 questions)');
         lines.push('');
         lines.push('2. Ask ONE question at a time. Wait for my answer before continuing.');
         lines.push('');
-        lines.push('3. After each of my answers, respond with structured feedback using these exact headings:');
+        lines.push('3. After each of my answers give structured feedback with these exact headings:');
         lines.push('   Score: [0-10]  (0-3 = Poor | 4-6 = Acceptable | 7-8 = Good | 9-10 = Excellent)');
-        lines.push('   Strengths: [1-3 bullet points]');
-        lines.push('   Areas to Improve: [1-2 bullet points]');
+        lines.push('   Strengths: [1-3 bullet points — what was good about my answer]');
+        lines.push('   Areas to Improve: [1-2 bullet points — what to sharpen]');
         lines.push('   Model Answer: [a concise ideal answer in 3-5 sentences]');
         lines.push('');
-        lines.push('4. After all 7 questions, calculate my overall average score and give a short performance summary.');
+        lines.push('4. After all 8 questions, calculate my average score and give a short first-round performance summary including a hiring recommendation.');
         lines.push('');
-        lines.push(`5. All questions and all feedback MUST be written entirely in ${lang} — no other language.`);
+        lines.push(`5. All questions and feedback MUST be written entirely in ${lang}.`);
         lines.push('');
         lines.push('Start now by presenting Question 1.');
 
         return lines.join('\n');
-    }, [jobApplication, coverLetterText]);
+    }, [jobApplication, buildContextBlock]);
 
-    const handleCopyPrompt = useCallback(async () => {
-        const prompt = buildExternalPrompt();
+    /** Second interview — technical / deep-dive round */
+    const buildSecondInterviewPrompt = useCallback((): string => {
+        const lang = jobApplication.language !== 'de' ? 'English' : 'German';
+        const lines: string[] = [];
+
+        lines.push('You are a senior technical interviewer conducting a SECOND-ROUND deep-dive interview with me.');
+        lines.push('');
+        lines.push(...buildContextBlock());
+        lines.push('');
+        lines.push('=== INSTRUCTIONS ===');
+        lines.push('Conduct a second-round interview focused on technical depth and problem-solving ability. Follow these rules:');
+        lines.push('');
+        lines.push('1. Generate exactly 8 technically rigorous questions covering:');
+        lines.push('   - Core technical / domain knowledge specific to the role requirements (3 questions)');
+        lines.push('   - System design, architecture or process thinking relevant to the role (2 questions)');
+        lines.push('   - Past technical project deep-dive — specific accomplishments from my CV (2 questions)');
+        lines.push('   - Problem-solving scenario — a realistic challenge they would face on the job (1 question)');
+        lines.push('');
+        lines.push('2. Ask ONE question at a time. Wait for my answer before continuing.');
+        lines.push('');
+        lines.push('3. After each answer give structured feedback with these exact headings:');
+        lines.push('   Score: [0-10]  (0-3 = Poor | 4-6 = Acceptable | 7-8 = Good | 9-10 = Excellent)');
+        lines.push('   Strengths: [1-3 bullet points — technical accuracy, depth, clarity]');
+        lines.push('   Areas to Improve: [1-2 bullet points — gaps, missing detail, better approaches]');
+        lines.push('   Model Answer: [a concise expert answer in 3-6 sentences with concrete details]');
+        lines.push('');
+        lines.push('4. After all 8 questions, calculate my average score and give a technical evaluation summary with a hire / no-hire recommendation.');
+        lines.push('');
+        lines.push(`5. All questions and feedback MUST be written entirely in ${lang}.`);
+        lines.push('');
+        lines.push('Start now by presenting Question 1.');
+
+        return lines.join('\n');
+    }, [jobApplication, buildContextBlock]);
+
+    const copyToClipboard = useCallback(async (text: string, key: 'first' | 'second') => {
         try {
-            await navigator.clipboard.writeText(prompt);
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), 2500);
+            await navigator.clipboard.writeText(text);
         } catch {
-            // fallback for browsers without clipboard API
             const ta = document.createElement('textarea');
-            ta.value = prompt;
+            ta.value = text;
             ta.style.position = 'fixed';
             ta.style.opacity = '0';
             document.body.appendChild(ta);
@@ -217,10 +259,10 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
             ta.select();
             document.execCommand('copy');
             document.body.removeChild(ta);
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), 2500);
         }
-    }, [buildExternalPrompt]);
+        setCopiedKey(key);
+        setTimeout(() => setCopiedKey(null), 2500);
+    }, []);
 
     const startInterview = useCallback(async () => {
         setError(null);
@@ -325,10 +367,13 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
         micStart: isEnglish ? 'Speak your answer' : 'Antwort sprechen',
         micStop: isEnglish ? 'Stop recording' : 'Aufnahme stoppen',
         listening: isEnglish ? 'Listening…' : 'Aufnehme…',
-        copyPrompt: isEnglish ? 'Copy Prompt for External AI' : 'Prompt für externe KI kopieren',
         copyPromptTip: isEnglish
-            ? 'Paste this into ChatGPT, Claude, or any AI to run the interview there.'
-            : 'Füge dies in ChatGPT, Claude oder eine andere KI ein, um das Interview dort durchzuführen.',
+            ? 'Copy a ready-made prompt and paste it into ChatGPT, Claude, or any AI.'
+            : 'Kopiiere einen fertigen Prompt und füge ihn in ChatGPT, Claude oder eine andere KI ein.',
+        firstInterviewLabel: isEnglish ? '1st Interview' : '1. Interview',
+        firstInterviewDesc: isEnglish ? 'General · Behavioural · Culture fit' : 'Allgemein · Verhalten · Kulturfit',
+        secondInterviewLabel: isEnglish ? '2nd Interview' : '2. Interview',
+        secondInterviewDesc: isEnglish ? 'Technical · Deep-dive · Problem-solving' : 'Technisch · Vertiefung · Problemlösung',
         copied: isEnglish ? 'Copied!' : 'Kopiert!',
     };
 
@@ -393,25 +438,58 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                             <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>3 cr</span>
                         </button>
 
-                        {/* ── Copy prompt for external AI ── */}
-                        <div className="w-full border-t border-zinc-100 dark:border-slate-800 pt-4 mt-1 space-y-2">
+                        {/* ── Copy prompts for external AI ── */}
+                        <div className="w-full border-t border-zinc-100 dark:border-slate-800 pt-4 mt-1 space-y-3">
                             <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
                                 {labels.copyPromptTip}
                             </p>
-                            <div className="flex justify-center">
+                            <div className="grid grid-cols-2 gap-2.5">
+                                {/* First interview prompt */}
                                 <button
-                                    onClick={handleCopyPrompt}
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-150"
+                                    onClick={() => copyToClipboard(buildFirstInterviewPrompt(), 'first')}
+                                    className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl text-sm font-medium border transition-all duration-150"
                                     style={{
-                                        borderColor: isCopied ? 'var(--accent)' : 'var(--border)',
-                                        color: isCopied ? 'var(--accent)' : 'var(--text-muted)',
-                                        background: isCopied ? 'var(--accent-bg)' : 'transparent',
+                                        borderColor: copiedKey === 'first' ? 'var(--accent)' : 'var(--border)',
+                                        color: copiedKey === 'first' ? 'var(--accent)' : 'var(--text-secondary)',
+                                        background: copiedKey === 'first' ? 'var(--accent-bg)' : 'var(--bg-elevated)',
                                     }}
                                 >
-                                    <span className="material-symbols-outlined text-base">
-                                        {isCopied ? 'check_circle' : 'content_copy'}
+                                    <span
+                                        className="material-symbols-outlined text-xl"
+                                        style={{ color: copiedKey === 'first' ? 'var(--accent)' : 'var(--jade)' }}
+                                    >
+                                        {copiedKey === 'first' ? 'check_circle' : 'waving_hand'}
                                     </span>
-                                    {isCopied ? labels.copied : labels.copyPrompt}
+                                    <span className="font-semibold text-xs">
+                                        {copiedKey === 'first' ? labels.copied : labels.firstInterviewLabel}
+                                    </span>
+                                    <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--text-muted)' }}>
+                                        {labels.firstInterviewDesc}
+                                    </span>
+                                </button>
+
+                                {/* Second interview prompt */}
+                                <button
+                                    onClick={() => copyToClipboard(buildSecondInterviewPrompt(), 'second')}
+                                    className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl text-sm font-medium border transition-all duration-150"
+                                    style={{
+                                        borderColor: copiedKey === 'second' ? 'var(--accent)' : 'var(--border)',
+                                        color: copiedKey === 'second' ? 'var(--accent)' : 'var(--text-secondary)',
+                                        background: copiedKey === 'second' ? 'var(--accent-bg)' : 'var(--bg-elevated)',
+                                    }}
+                                >
+                                    <span
+                                        className="material-symbols-outlined text-xl"
+                                        style={{ color: copiedKey === 'second' ? 'var(--accent)' : 'var(--rose)' }}
+                                    >
+                                        {copiedKey === 'second' ? 'check_circle' : 'terminal'}
+                                    </span>
+                                    <span className="font-semibold text-xs">
+                                        {copiedKey === 'second' ? labels.copied : labels.secondInterviewLabel}
+                                    </span>
+                                    <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--text-muted)' }}>
+                                        {labels.secondInterviewDesc}
+                                    </span>
                                 </button>
                             </div>
                         </div>

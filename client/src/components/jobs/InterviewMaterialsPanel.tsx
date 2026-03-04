@@ -166,7 +166,7 @@ const MaterialCard: React.FC<{
                             <button
                                 onClick={() => setConfirmDelete(true)}
                                 title="Delete"
-                                className="p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100 hover:text-red-500"
+                                className="p-1.5 rounded-lg transition-all hover:text-red-500"
                                 style={{ color: 'var(--text-muted)' }}
                             >
                                 <span className="material-symbols-outlined text-base">delete</span>
