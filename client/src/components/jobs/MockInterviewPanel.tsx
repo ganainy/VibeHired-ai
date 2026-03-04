@@ -3,6 +3,7 @@ import { JobApplication } from '../../services/jobApi';
 import { generateInterviewQuestions, evaluateAnswer, EvaluationResult } from '../../services/interviewApi';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
 
 // Map app language codes to BCP-47 speech API codes
 function toSpeechLang(lang?: string): string {
@@ -21,6 +22,84 @@ interface QuestionResult {
 interface Props {
     jobApplication: JobApplication;
     jobId: string;
+    cvData?: JsonResumeSchema | null;
+}
+
+// ── CV → readable text ────────────────────────────────────────────────────────
+function cvToText(cv: JsonResumeSchema): string {
+    const lines: string[] = [];
+
+    const b = cv.basics;
+    if (b) {
+        if (b.name) lines.push(`Name: ${b.name}`);
+        if (b.label) lines.push(`Title: ${b.label}`);
+        if (b.email) lines.push(`Email: ${b.email}`);
+        if (b.summary) { lines.push(''); lines.push(`Summary: ${b.summary}`); }
+    }
+
+    if (cv.work?.length) {
+        lines.push('');
+        lines.push('WORK EXPERIENCE');
+        for (const w of cv.work) {
+            const company = w.name || w.company || '';
+            const role = w.position || w.jobTitle || '';
+            const start = w.startDate || '';
+            const end = w.endDate || 'Present';
+            lines.push(`- ${role}${company ? ` at ${company}` : ''}${start ? ` (${start} – ${end})` : ''}`);
+            if (w.summary) lines.push(`  ${w.summary}`);
+            if (w.highlights?.length) w.highlights.forEach(h => lines.push(`  • ${h}`));
+            else if (w.description) lines.push(`  ${w.description}`);
+        }
+    }
+
+    if (cv.education?.length) {
+        lines.push('');
+        lines.push('EDUCATION');
+        for (const e of cv.education) {
+            const degree = e.studyType || e.degree || '';
+            const area = e.area || '';
+            const inst = e.institution || '';
+            const start = e.startDate || '';
+            const end = e.endDate || '';
+            lines.push(`- ${[degree, area].filter(Boolean).join(' in ')}${inst ? ` at ${inst}` : ''}${start ? ` (${start}${end ? ` – ${end}` : ''})` : ''}`);
+        }
+    }
+
+    if (cv.skills?.length) {
+        lines.push('');
+        lines.push('SKILLS');
+        for (const s of cv.skills) {
+            const kw = s.keywords?.join(', ') || '';
+            lines.push(`- ${s.name || ''}${kw ? `: ${kw}` : ''}`);
+        }
+    }
+
+    if (cv.languages?.length) {
+        lines.push('');
+        lines.push('LANGUAGES');
+        for (const l of cv.languages) {
+            lines.push(`- ${l.language || ''}${l.fluency ? ` (${l.fluency})` : ''}`);
+        }
+    }
+
+    if (cv.projects?.length) {
+        lines.push('');
+        lines.push('PROJECTS');
+        for (const p of cv.projects) {
+            lines.push(`- ${p.name || ''}${p.description ? `: ${p.description}` : ''}`);
+            if (p.highlights?.length) p.highlights.forEach(h => lines.push(`  • ${h}`));
+        }
+    }
+
+    if (cv.certificates?.length) {
+        lines.push('');
+        lines.push('CERTIFICATES');
+        for (const c of cv.certificates) {
+            lines.push(`- ${c.name || ''}${c.issuer ? ` (${c.issuer})` : ''}${c.date ? `, ${c.date}` : ''}`);
+        }
+    }
+
+    return lines.join('\n');
 }
 
 const ScoreBadge: React.FC<{ score: number }> = ({ score }) => {
@@ -35,7 +114,7 @@ const ScoreBadge: React.FC<{ score: number }> = ({ score }) => {
     );
 };
 
-const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
+const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData }) => {
     const speechLang = toSpeechLang(jobApplication.language);
     const tts = useSpeechSynthesis();
     const stt = useSpeechRecognition();
@@ -47,6 +126,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
     const [answer, setAnswer] = useState('');
     const [currentEvaluation, setCurrentEvaluation] = useState<EvaluationResult | null>(null);
     const [results, setResults] = useState<QuestionResult[]>([]);
+    const [isCopied, setIsCopied] = useState(false);
 
     const currentQuestion = questions[currentIndex] ?? '';
     const totalQuestions = questions.length;
@@ -57,6 +137,83 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
             setAnswer(stt.transcript);
         }
     }, [stt.transcript]);
+
+    const buildExternalPrompt = useCallback((): string => {
+        const lang = jobApplication.language !== 'de' ? 'English' : 'German';
+        const lines: string[] = [];
+
+        lines.push('You are an expert interviewer running a live mock interview session with me.');
+        lines.push('');
+        lines.push('=== JOB DETAILS ===');
+        lines.push(`Job Title: ${jobApplication.jobTitle}`);
+        lines.push(`Company: ${jobApplication.companyName}`);
+        lines.push(`Language: ${lang}`);
+
+        if (jobApplication.jobDescriptionText) {
+            lines.push('');
+            lines.push('=== JOB DESCRIPTION ===');
+            lines.push(jobApplication.jobDescriptionText.slice(0, 4000));
+        }
+
+        if (jobApplication.jobPrerequisites) {
+            lines.push('');
+            lines.push('=== KEY REQUIREMENTS ===');
+            lines.push(jobApplication.jobPrerequisites.slice(0, 1500));
+        }
+
+        if (cvData && (cvData.basics?.name || cvData.work?.length || cvData.skills?.length)) {
+            lines.push('');
+            lines.push('=== MY CV ===');
+            lines.push(cvToText(cvData));
+        }
+
+        lines.push('');
+        lines.push('=== INSTRUCTIONS ===');
+        lines.push('Conduct a full mock interview with me following these rules:');
+        lines.push('');
+        lines.push('1. Generate exactly 7 tailored interview questions covering a mix of:');
+        lines.push('   - Behavioral questions (e.g. "Tell me about a time when…")' );
+        lines.push('   - Technical / role-specific questions based on the requirements above');
+        lines.push('   - Situational / motivational questions');
+        lines.push('');
+        lines.push('2. Ask ONE question at a time. Wait for my answer before continuing.');
+        lines.push('');
+        lines.push('3. After each of my answers, respond with structured feedback using these exact headings:');
+        lines.push('   Score: [0-10]  (0-3 = Poor | 4-6 = Acceptable | 7-8 = Good | 9-10 = Excellent)');
+        lines.push('   Strengths: [1-3 bullet points]');
+        lines.push('   Areas to Improve: [1-2 bullet points]');
+        lines.push('   Model Answer: [a concise ideal answer in 3-5 sentences]');
+        lines.push('');
+        lines.push('4. After all 7 questions, calculate my overall average score and give a short performance summary.');
+        lines.push('');
+        lines.push(`5. All questions and all feedback MUST be written entirely in ${lang} — no other language.`);
+        lines.push('');
+        lines.push('Start now by presenting Question 1.');
+
+        return lines.join('\n');
+    }, [jobApplication]);
+
+    const handleCopyPrompt = useCallback(async () => {
+        const prompt = buildExternalPrompt();
+        try {
+            await navigator.clipboard.writeText(prompt);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2500);
+        } catch {
+            // fallback for browsers without clipboard API
+            const ta = document.createElement('textarea');
+            ta.value = prompt;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2500);
+        }
+    }, [buildExternalPrompt]);
 
     const startInterview = useCallback(async () => {
         setError(null);
@@ -161,6 +318,11 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
         micStart: isEnglish ? 'Speak your answer' : 'Antwort sprechen',
         micStop: isEnglish ? 'Stop recording' : 'Aufnahme stoppen',
         listening: isEnglish ? 'Listening…' : 'Aufnehme…',
+        copyPrompt: isEnglish ? 'Copy Prompt for External AI' : 'Prompt für externe KI kopieren',
+        copyPromptTip: isEnglish
+            ? 'Paste this into ChatGPT, Claude, or any AI to run the interview there.'
+            : 'Füge dies in ChatGPT, Claude oder eine andere KI ein, um das Interview dort durchzuführen.',
+        copied: isEnglish ? 'Copied!' : 'Kopiert!',
     };
 
     return (
@@ -214,14 +376,39 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId }) => {
                             </p>
                         )}
                     </div>
-                    <button
-                        onClick={startInterview}
-                        className="btn-primary font-semibold rounded-xl shadow-md hover:shadow-lg"
-                    >
-                        <span className="material-symbols-outlined text-base">play_arrow</span>
-                        {labels.startBtn}
-                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>3 cr</span>
-                    </button>
+                    <div className="flex flex-col items-center gap-3">
+                        <button
+                            onClick={startInterview}
+                            className="btn-primary font-semibold rounded-xl shadow-md hover:shadow-lg"
+                        >
+                            <span className="material-symbols-outlined text-base">play_arrow</span>
+                            {labels.startBtn}
+                            <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>3 cr</span>
+                        </button>
+
+                        {/* ── Copy prompt for external AI ── */}
+                        <div className="w-full border-t border-zinc-100 dark:border-slate-800 pt-4 mt-1 space-y-2">
+                            <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+                                {labels.copyPromptTip}
+                            </p>
+                            <div className="flex justify-center">
+                                <button
+                                    onClick={handleCopyPrompt}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-150"
+                                    style={{
+                                        borderColor: isCopied ? 'var(--accent)' : 'var(--border)',
+                                        color: isCopied ? 'var(--accent)' : 'var(--text-muted)',
+                                        background: isCopied ? 'var(--accent-bg)' : 'transparent',
+                                    }}
+                                >
+                                    <span className="material-symbols-outlined text-base">
+                                        {isCopied ? 'check_circle' : 'content_copy'}
+                                    </span>
+                                    {isCopied ? labels.copied : labels.copyPrompt}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

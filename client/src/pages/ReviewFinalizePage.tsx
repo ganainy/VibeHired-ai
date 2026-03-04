@@ -3933,7 +3933,7 @@ const ReviewFinalizePage: React.FC = () => {
 
                     {/* Tab 5: Mock Interview */}
                     {activeTab === 'mock-interview' && jobApplication && (
-                        <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} />
+                        <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} />
                     )}
 
                     {/* Tab 6: Reminders */}
