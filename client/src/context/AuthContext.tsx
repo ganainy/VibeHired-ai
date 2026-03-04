@@ -14,6 +14,7 @@ interface User {
   role?: 'user' | 'admin' | 'owner';
   plan?: 'free' | 'starter' | 'pro' | 'premium';
   emailVerified?: boolean;
+  onboardingComplete?: boolean;
   credits?: number;
 }
 
@@ -77,6 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         plan: profile.plan,
         role: profile.role,
         emailVerified: profile.emailVerified,
+        onboardingComplete: profile.onboardingComplete,
         credits: usageData.usage.remaining,
       } : null);
     } catch (err) {
@@ -121,6 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const updatedUser = {
             ...profile,
             emailVerified: profile.emailVerified,
+            onboardingComplete: profile.onboardingComplete,
             credits: usageData.usage.remaining
           };
           setUser(updatedUser);

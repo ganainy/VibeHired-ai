@@ -27,6 +27,7 @@ export interface IUser extends Document {
   stripeCustomerId?: string | null;
   stripeSubscriptionId?: string | null;
   planExpiresAt?: Date | null;
+  onboardingComplete: boolean;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -119,6 +120,10 @@ const UserSchema: Schema = new Schema(
     },
     planExpiresAt: {
       type: Date
+    },
+    onboardingComplete: {
+      type: Boolean,
+      default: false,
     },
   },
   {

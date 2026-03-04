@@ -70,8 +70,9 @@ const GlobalMaterialCard: React.FC<{
     onRemoveGlobal: (id: string) => void;
     onDelete: (id: string) => void;
     onPreview: (m: InterviewMaterial) => void;
+    onToggleFavorite: (id: string) => void;
     isUpdating: boolean;
-}> = ({ material, showJobChip = false, isAssignedToJob = false, onRemoveGlobal, onDelete, onPreview, isUpdating }) => {
+}> = ({ material, showJobChip = false, isAssignedToJob = false, onRemoveGlobal, onDelete, onPreview, onToggleFavorite, isUpdating }) => {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const isLink = material.type === 'link';
     const clickable = canPreviewInline(material.type) || isLink;
@@ -153,58 +154,79 @@ const GlobalMaterialCard: React.FC<{
 
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                        {material.cloudinaryUrl && (
-                            <a
-                                href={material.cloudinaryUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="Open / download"
-                                className="p-1.5 rounded-lg transition-colors"
-                                style={{ color: 'var(--text-muted)' }}
+                    {/* Right: favourite star + hover actions */}
+                    <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {/* Favourite star — always visible */}
+                        <button
+                            onClick={() => onToggleFavorite(material._id)}
+                            disabled={isUpdating}
+                            title={material.isFavorite ? 'Remove from favourites' : 'Add to favourites'}
+                            className="p-1.5 rounded-lg transition-all disabled:opacity-50"
+                            style={{
+                                color: material.isFavorite ? 'var(--accent)' : 'var(--text-muted)',
+                                opacity: material.isFavorite ? 1 : 0.35,
+                            }}
+                        >
+                            <span
+                                className="material-symbols-outlined text-base"
+                                style={material.isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
                             >
-                                <span className="material-symbols-outlined text-base">open_in_new</span>
-                            </a>
-                        )}
-                        {isAssignedToJob && (
-                            <Link
-                                to={`/jobs/${jobId}/review/materials`}
-                                title="Go to job"
-                                className="p-1.5 rounded-lg transition-colors"
-                                style={{ color: 'var(--text-muted)' }}
-                            >
-                                <span className="material-symbols-outlined text-base">arrow_outward</span>
-                            </Link>
-                        )}
-                        {confirmDelete ? (
-                            <div className="flex items-center gap-1">
+                                star
+                            </span>
+                        </button>
+                        {/* Other actions — shown on hover */}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {material.cloudinaryUrl && (
+                                <a
+                                    href={material.cloudinaryUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Open / download"
+                                    className="p-1.5 rounded-lg transition-colors"
+                                    style={{ color: 'var(--text-muted)' }}
+                                >
+                                    <span className="material-symbols-outlined text-base">open_in_new</span>
+                                </a>
+                            )}
+                            {isAssignedToJob && (
+                                <Link
+                                    to={`/jobs/${jobId}/review/materials`}
+                                    title="Go to job"
+                                    className="p-1.5 rounded-lg transition-colors"
+                                    style={{ color: 'var(--text-muted)' }}
+                                >
+                                    <span className="material-symbols-outlined text-base">arrow_outward</span>
+                                </Link>
+                            )}
+                            {confirmDelete ? (
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => onDelete(material._id)}
+                                        disabled={isUpdating}
+                                        className="text-xs px-2 py-1 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                                    >
+                                        Delete
+                                    </button>
+                                    <button
+                                        onClick={() => setConfirmDelete(false)}
+                                        className="text-xs px-2 py-1 rounded-md transition-colors"
+                                        style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            ) : (
                                 <button
-                                    onClick={() => onDelete(material._id)}
+                                    onClick={() => setConfirmDelete(true)}
+                                    title="Delete"
                                     disabled={isUpdating}
-                                    className="text-xs px-2 py-1 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                                    className="p-1.5 rounded-lg transition-colors hover:text-red-500 disabled:opacity-50"
+                                    style={{ color: 'var(--text-muted)' }}
                                 >
-                                    Delete
+                                    <span className="material-symbols-outlined text-base">delete</span>
                                 </button>
-                                <button
-                                    onClick={() => setConfirmDelete(false)}
-                                    className="text-xs px-2 py-1 rounded-md transition-colors"
-                                    style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => setConfirmDelete(true)}
-                                title="Delete"
-                                disabled={isUpdating}
-                                className="p-1.5 rounded-lg transition-colors hover:text-red-500 disabled:opacity-50"
-                                style={{ color: 'var(--text-muted)' }}
-                            >
-                                <span className="material-symbols-outlined text-base">delete</span>
-                            </button>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -259,8 +281,9 @@ const GroupedView: React.FC<{
     onRemoveGlobal: (id: string) => void;
     onDelete: (id: string) => void;
     onPreview: (m: InterviewMaterial) => void;
+    onToggleFavorite: (id: string) => void;
     updatingIds: Set<string>;
-}> = ({ groups, onRemoveGlobal, onDelete, onPreview, updatingIds }) => {
+}> = ({ groups, onRemoveGlobal, onDelete, onPreview, onToggleFavorite, updatingIds }) => {
     const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
         const saved = loadOpenGroups();
         // Keep only groups that still exist
@@ -344,6 +367,7 @@ const GroupedView: React.FC<{
                                     onRemoveGlobal={onRemoveGlobal}
                                     onDelete={onDelete}
                                     onPreview={onPreview}
+                                    onToggleFavorite={onToggleFavorite}
                                     isUpdating={updatingIds.has(m._id)}
                                 />
                             ))}
@@ -365,6 +389,7 @@ const InterviewMaterialsPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<ViewMode>('grouped');
     const [search, setSearch] = useState('');
+    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
     const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
     const [previewMaterial, setPreviewMaterial] = useState<InterviewMaterial | null>(null);
     const [addMode, setAddMode] = useState<AddMode>('idle');
@@ -401,9 +426,11 @@ const InterviewMaterialsPage: React.FC = () => {
     // ── Filter ──────────────────────────────────────────────────────────────
 
     const filtered = useMemo(() => {
-        if (!search.trim()) return materials;
+        let result = materials;
+        if (showFavoritesOnly) result = result.filter(m => m.isFavorite);
+        if (!search.trim()) return result;
         const q = search.toLowerCase();
-        return materials.filter(m => {
+        return result.filter(m => {
             const jobRef = getJobRef(m);
             return (
                 m.title.toLowerCase().includes(q) ||
@@ -413,7 +440,7 @@ const InterviewMaterialsPage: React.FC = () => {
                 m.url?.toLowerCase().includes(q)
             );
         });
-    }, [materials, search]);
+    }, [materials, search, showFavoritesOnly]);
 
     // ── Build groups ─────────────────────────────────────────────────────────
 
@@ -470,6 +497,24 @@ const InterviewMaterialsPage: React.FC = () => {
             setMaterials(prev => prev.filter(m => m._id !== materialId));
         } catch (e: any) {
             setError(e.message ?? 'Failed to delete material');
+        } finally {
+            setUpdating(materialId, false);
+        }
+    };
+
+    const handleToggleFavorite = async (materialId: string) => {
+        const material = materials.find(m => m._id === materialId);
+        if (!material) return;
+        const newValue = !material.isFavorite;
+        // Optimistic update
+        setMaterials(prev => prev.map(m => m._id === materialId ? { ...m, isFavorite: newValue } : m));
+        setUpdating(materialId, true);
+        try {
+            await updateMaterial(materialId, { isFavorite: newValue });
+        } catch (e: any) {
+            // Revert on failure
+            setMaterials(prev => prev.map(m => m._id === materialId ? { ...m, isFavorite: !newValue } : m));
+            setError(e.message ?? 'Failed to update favourite');
         } finally {
             setUpdating(materialId, false);
         }
@@ -643,7 +688,26 @@ const InterviewMaterialsPage: React.FC = () => {
                     />
                 </div>
 
-                {/* View toggle */}
+                {/* Favourites filter */}
+                <button
+                    onClick={() => setShowFavoritesOnly(v => !v)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors"
+                    style={{
+                        borderColor: showFavoritesOnly ? 'var(--accent)' : 'var(--border)',
+                        backgroundColor: showFavoritesOnly ? 'var(--accent-bg)' : 'var(--bg-elevated)',
+                        color: showFavoritesOnly ? 'var(--accent)' : 'var(--text-secondary)',
+                    }}
+                >
+                    <span
+                        className="material-symbols-outlined text-sm"
+                        style={showFavoritesOnly ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                    >
+                        star
+                    </span>
+                    Favourites
+                </button>
+
+                {/* View toggle */}}
                 <div className="flex items-center rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
                     <button
                         onClick={() => setViewMode('grouped')}
@@ -1016,6 +1080,7 @@ const InterviewMaterialsPage: React.FC = () => {
                     onRemoveGlobal={handleRemoveGlobal}
                     onDelete={handleDelete}
                     onPreview={setPreviewMaterial}
+                    onToggleFavorite={handleToggleFavorite}
                     updatingIds={updatingIds}
                 />
             ) : (
@@ -1029,6 +1094,7 @@ const InterviewMaterialsPage: React.FC = () => {
                             onRemoveGlobal={handleRemoveGlobal}
                             onDelete={handleDelete}
                             onPreview={setPreviewMaterial}
+                            onToggleFavorite={handleToggleFavorite}
                             isUpdating={updatingIds.has(m._id)}
                         />
                     ))}

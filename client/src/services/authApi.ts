@@ -30,6 +30,7 @@ export interface UserProfile {
     role?: string;
     plan?: string;
     emailVerified?: boolean;
+    onboardingComplete?: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -103,6 +104,15 @@ export const resetPassword = async (token: string, password: string): Promise<{ 
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) throw error.response.data as ApiError;
         throw { message: 'An error occurred. Please try again.' } as ApiError;
+    }
+};
+
+export const completeOnboarding = async (): Promise<void> => {
+    try {
+        await axios.post(`${API_BASE_URL}/complete-onboarding`);
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response) throw error.response.data as ApiError;
+        throw { message: 'An error occurred completing onboarding.' } as ApiError;
     }
 };
 

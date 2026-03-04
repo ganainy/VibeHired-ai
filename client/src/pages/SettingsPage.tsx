@@ -164,7 +164,7 @@ const SettingsPage: React.FC = () => {
   const handleResendVerification = async () => {
     setIsResendingVerification(true);
     try {
-      const res = await resendVerificationEmail();
+      const res = await resendVerificationEmail(user!.email);
       setToast({ message: res.message, type: 'success' });
     } catch (err: any) {
       setToast({ message: err.message || 'Failed to resend verification email.', type: 'error' });

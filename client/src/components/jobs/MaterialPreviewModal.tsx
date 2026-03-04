@@ -1,6 +1,7 @@
 // client/src/components/jobs/MaterialPreviewModal.tsx
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { InterviewMaterial, MaterialType } from '../../types/interviewMaterial';
 
 // ── URL utilities ─────────────────────────────────────────────────────────────
@@ -169,6 +170,7 @@ const MaterialPreviewModal: React.FC<Props> = ({ material, onClose }) => {
                         <div className="overflow-y-auto p-5 max-h-[70vh]">
                             {material.type === 'markdown' ? (
                                 <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
                                     components={{
                                         h1: ({ children }) => <h1 className="text-xl font-bold mt-5 mb-3 pb-1 border-b" style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}>{children}</h1>,
                                         h2: ({ children }) => <h2 className="text-lg font-bold mt-4 mb-2" style={{ color: 'var(--text-primary)' }}>{children}</h2>,
@@ -188,6 +190,16 @@ const MaterialPreviewModal: React.FC<Props> = ({ material, onClose }) => {
                                         em: ({ children }) => <em className="italic">{children}</em>,
                                         a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80" style={{ color: 'var(--accent)' }}>{children}</a>,
                                         hr: () => <hr className="my-4" style={{ borderColor: 'var(--border)' }} />,
+                                        table: ({ children }) => (
+                                            <div className="overflow-x-auto mb-4">
+                                                <table className="w-full text-sm border-collapse" style={{ borderColor: 'var(--border)' }}>{children}</table>
+                                            </div>
+                                        ),
+                                        thead: ({ children }) => <thead style={{ backgroundColor: 'var(--bg-elevated)' }}>{children}</thead>,
+                                        tbody: ({ children }) => <tbody>{children}</tbody>,
+                                        tr: ({ children }) => <tr className="border-b" style={{ borderColor: 'var(--border)' }}>{children}</tr>,
+                                        th: ({ children }) => <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wide border-r last:border-r-0" style={{ color: 'var(--text-secondary)', borderColor: 'var(--border)' }}>{children}</th>,
+                                        td: ({ children }) => <td className="px-3 py-2 border-r last:border-r-0" style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}>{children}</td>,
                                     }}
                                 >
                                     {material.content ?? '*(empty)*'}

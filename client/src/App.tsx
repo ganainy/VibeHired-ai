@@ -28,6 +28,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
+import OnboardingPage from './pages/OnboardingPage';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -36,11 +37,29 @@ function App() {
 
   // Check if current route is a public portfolio route
   const isPortfolioRoute = location.pathname.startsWith('/portfolio/');
+  const isOnboardingRoute = location.pathname === '/onboarding';
 
   if (isPortfolioRoute) {
     return (
       <Routes>
         <Route path="/portfolio/:username" element={<PortfolioPage />} />
+      </Routes>
+    );
+  }
+
+  // Onboarding page renders outside MainLayout (full-screen wizard)
+  if (isOnboardingRoute) {
+    return (
+      <Routes>
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute skipOnboardingCheck>
+              <OnboardingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
   }
@@ -90,7 +109,24 @@ function App() {
         <Route path="/auth/google" element={<GoogleAuthCallbackPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/manage-cv" element={<ProtectedRoute><CVManagementPage /></ProtectedRoute>} />
-        <Route path="/auto-jobs" element={<ProtectedRoute><AutoJobsPage /></ProtectedRoute>} />
+        {/* Auto Jobs is temporarily disabled — page preserved for future work */}
+        <Route
+          path="/auto-jobs"
+          element={
+            <ProtectedRoute>
+              <div
+                className="flex flex-col items-center justify-center h-full gap-4 text-center py-20"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                <p className="font-mono text-4xl font-bold" style={{ color: 'var(--border-bright)' }}>🚧</p>
+                <p className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Auto Jobs — Coming Soon</p>
+                <p className="text-sm max-w-xs" style={{ color: 'var(--text-secondary)' }}>
+                  This feature is under active development and will be available shortly.
+                </p>
+              </div>
+            </ProtectedRoute>
+          }
+        />
         <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
         <Route path="/portfolio-setup" element={<ProtectedRoute><PortfolioSetupPage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
@@ -114,6 +150,7 @@ function App() {
         <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute><AdminUsersPage /></ProtectedRoute>} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/onboarding" element={<Navigate to="/dashboard" replace />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route
           path="*"

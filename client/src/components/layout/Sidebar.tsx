@@ -149,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
         { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
         { path: '/manage-cv', label: 'Manage CV', icon: WorkIcon },
         { path: '/email-suggestions', label: 'Inbox', icon: InboxIcon, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
-        { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon },
+        { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon, disabled: true },
         { path: '/interview-materials', label: 'Prep Library', icon: PrepLibraryIcon },
         { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
         { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
@@ -204,6 +204,38 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                 <div className={`space-y-0.5 ${isCollapsed ? 'px-2.5' : 'px-3'}`}>
                     {navItems.map((item) => {
                         const isActive = isActiveRoute(item.path);
+                        const isDisabled = !!(item as any).disabled;
+
+                        if (isDisabled) {
+                            return (
+                                <div
+                                    key={item.path}
+                                    title={isCollapsed ? `${item.label} (coming soon)` : undefined}
+                                    className="flex items-center rounded-lg relative cursor-not-allowed select-none"
+                                    style={{
+                                        padding: isCollapsed ? '10px' : '9px 12px',
+                                        justifyContent: isCollapsed ? 'center' : 'flex-start',
+                                        gap: isCollapsed ? '0' : '10px',
+                                        opacity: 0.45,
+                                        color: 'var(--text-muted)',
+                                    }}
+                                >
+                                    <item.icon />
+                                    {!isCollapsed && (
+                                        <>
+                                            <span className="text-[0.875rem] font-medium tracking-[-0.01em]">{item.label}</span>
+                                            <span
+                                                className="ml-auto text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded"
+                                                style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)' }}
+                                            >
+                                                Soon
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        }
+
                         return (
                             <Link
                                 key={item.path}

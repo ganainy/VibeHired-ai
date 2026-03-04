@@ -29,6 +29,7 @@ export interface InterviewMaterial {
     url?: string;
 
     isGlobal: boolean;
+    isFavorite?: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -49,4 +50,5 @@ export interface UpdateMaterialPayload {
     content?: string;
     url?: string;
     isGlobal?: boolean;
+    isFavorite?: boolean;
 }

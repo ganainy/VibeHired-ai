@@ -201,6 +201,7 @@ router.get('/me', authMiddleware as RequestHandler, async (req: Request, res: Re
             role: req.user.role,
             plan: req.user.plan,
             emailVerified: req.user.emailVerified,
+            onboardingComplete: req.user.onboardingComplete,
             createdAt: req.user.createdAt,
             updatedAt: req.user.updatedAt,
         });
@@ -212,6 +213,24 @@ router.get('/me', authMiddleware as RequestHandler, async (req: Request, res: Re
 
 // Username updates are no longer allowed after registration
 // The PUT /api/auth/username endpoint has been removed
+
+
+// --- Complete Onboarding Route ---
+// POST /api/auth/complete-onboarding
+router.post('/complete-onboarding', authMiddleware as RequestHandler, async (req: Request, res: Response) => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'User not authenticated.' });
+            return;
+        }
+        req.user.onboardingComplete = true;
+        await req.user.save({ validateBeforeSave: false });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Complete Onboarding Error:', error);
+        res.status(500).json({ message: 'Server error completing onboarding.' });
+    }
+});
 
 
 // --- Forgot Password Route ---

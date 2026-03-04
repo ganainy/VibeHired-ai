@@ -27,6 +27,9 @@ export interface IInterviewMaterial extends Document {
     /** When true the item appears on the global Prep Library page */
     isGlobal: boolean;
 
+    /** User has starred/favourited this material for quick access */
+    isFavorite: boolean;
+
     createdAt: Date;
     updatedAt: Date;
 }
@@ -53,6 +56,7 @@ const InterviewMaterialSchema = new Schema<IInterviewMaterial>(
         url: { type: String },
 
         isGlobal: { type: Boolean, default: false },
+        isFavorite: { type: Boolean, default: false },
     },
     { timestamps: true }
 );

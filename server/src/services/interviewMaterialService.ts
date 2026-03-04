@@ -74,6 +74,7 @@ export interface UpdateMaterialDto {
     content?: string;
     url?: string;
     isGlobal?: boolean;
+    isFavorite?: boolean;
 }
 
 // ── Service functions ─────────────────────────────────────────────────────────
@@ -175,6 +176,7 @@ export async function updateMaterial(
     if (dto.content !== undefined) material.content = dto.content;
     if (dto.url !== undefined) material.url = dto.url;
     if (dto.isGlobal !== undefined) material.isGlobal = dto.isGlobal;
+    if (dto.isFavorite !== undefined) material.isFavorite = dto.isFavorite;
 
     return material.save();
 }

@@ -137,7 +137,7 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
         { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
         { path: '/manage-cv', label: 'Manage CV', icon: WorkIcon },
         { path: '/email-suggestions', label: 'Inbox', icon: InboxIconMobile, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
-        { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon },
+        { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon, disabled: true },
         { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
         { path: '/portfolio-setup', label: 'Portfolio', icon: PortfolioIcon },
         { path: '/settings', label: 'Settings', icon: SettingsIcon },
@@ -226,6 +226,27 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
                         <nav className="flex-1 px-3 py-4 space-y-1">
                             {navItems.map((item, i) => {
                                 const isActive = isActiveRoute(item.path);
+                                const isDisabled = !!(item as any).disabled;
+
+                                if (isDisabled) {
+                                    return (
+                                        <div
+                                            key={item.path}
+                                            className="flex items-center gap-3.5 px-4 py-3.5 rounded-lg text-[0.9375rem] font-medium cursor-not-allowed select-none"
+                                            style={{ opacity: 0.45, color: 'var(--text-muted)' }}
+                                        >
+                                            <item.icon />
+                                            {item.label}
+                                            <span
+                                                className="ml-auto text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded"
+                                                style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)' }}
+                                            >
+                                                Soon
+                                            </span>
+                                        </div>
+                                    );
+                                }
+
                                 return (
                                     <Link
                                         key={item.path}
