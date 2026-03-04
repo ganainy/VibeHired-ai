@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { ValidatedRequest } from '../middleware/validateRequest';
 import { AuthorizationError } from '../utils/errors/AppError';
-import { generateQuestions, evaluateAnswer } from '../services/interviewService';
+import { generateQuestions, evaluateAnswer, generateAnswer } from '../services/interviewService';
 
 /**
  * POST /api/interview/:jobId/questions
@@ -37,4 +37,23 @@ export const evaluateInterviewAnswer = async (req: ValidatedRequest, res: Respon
 
     const evaluation = await evaluateAnswer(userId, jobId, question.trim(), answer.trim());
     res.json(evaluation);
+};
+
+/**
+ * POST /api/interview/:jobId/answer-question
+ * Generate a live interview answer for the AI Interview Buddy.
+ */
+export const answerInterviewQuestion = async (req: ValidatedRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new AuthorizationError('User not authenticated');
+
+    const { jobId } = req.params;
+    const { question } = req.body as { question: string };
+
+    if (!question || typeof question !== 'string' || !question.trim()) {
+        throw new Error('question is required');
+    }
+
+    const result = await generateAnswer(userId, jobId, question.trim());
+    res.json(result);
 };

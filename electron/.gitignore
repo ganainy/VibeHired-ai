@@ -1,0 +1,7 @@
+node_modules/
+dist/
+release/
+temp_pdfs/
+temp_uploads/
+*.log
+.env

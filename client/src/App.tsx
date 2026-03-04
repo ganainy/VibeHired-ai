@@ -29,6 +29,8 @@ import AdminUsersPage from './pages/AdminUsersPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import OnboardingPage from './pages/OnboardingPage';
+import InterviewBuddyPage from './pages/InterviewBuddyPage';
+import AdminRoute from './components/auth/AdminRoute';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -149,6 +151,7 @@ function App() {
         />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute><AdminUsersPage /></ProtectedRoute>} />
+        <Route path="/interview-buddy" element={<ProtectedRoute><AdminRoute><InterviewBuddyPage /></AdminRoute></ProtectedRoute>} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/onboarding" element={<Navigate to="/dashboard" replace />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

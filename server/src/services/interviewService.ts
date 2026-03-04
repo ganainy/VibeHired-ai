@@ -143,3 +143,67 @@ All text values (strengths, improvements, modelAnswer) must be in ${languageName
     }
     return result;
 }
+
+interface AnswerResponse {
+    opener: string;
+    keyPoints: string[];
+    closing: string;
+}
+
+/**
+ * Generate a concise, ready-to-speak answer for an interview question.
+ * The answer is structured (opener + key points + closing) so the candidate
+ * can read it naturally during a live interview.
+ */
+export async function generateAnswer(
+    userId: string,
+    jobId: string,
+    question: string
+): Promise<AnswerResponse> {
+    const job = await getOwnedJob(jobId, userId);
+
+    const languageName = getLanguageName(job.language);
+    const jobContext = [
+        `Job Title: ${job.jobTitle}`,
+        `Company: ${job.companyName}`,
+        job.jobDescriptionText
+            ? `Job Description (excerpt):\n${job.jobDescriptionText.slice(0, 3000)}`
+            : '',
+        job.jobPrerequisites
+            ? `Key Requirements:\n${job.jobPrerequisites.slice(0, 1500)}`
+            : '',
+    ]
+        .filter(Boolean)
+        .join('\n\n');
+
+    const prompt = `You are an expert interview coach helping a candidate answer a live interview question.
+The candidate will READ your answer aloud to the interviewer, so it must sound natural and confident.
+
+Job Context:
+${jobContext}
+
+Interview Question:
+"${question}"
+
+Generate a structured answer in ${languageName} that the candidate can read naturally and confidently.
+
+Rules:
+1. The "opener" should be one sentence that directly addresses the question — conversational, not robotic.
+2. "keyPoints" should be 2–3 short bullet points using a STAR-style approach (Situation/Task, Action, Result). Keep each point to 1–2 sentences max. No bullet characters — just the text.
+3. The "closing" should be one sentence that ties back to the role/company or expresses enthusiasm.
+4. ALL text must be in ${languageName} — no other language.
+5. Keep the total answer concise — it should take about 60–90 seconds to say aloud.
+
+Respond with a JSON object matching this exact schema:
+{
+  "opener": "<one opening sentence>",
+  "keyPoints": ["<point 1>", "<point 2>", "<point 3 optional>"],
+  "closing": "<one closing sentence>"
+}`;
+
+    const result = await generateStructuredResponse<AnswerResponse>(userId, prompt);
+    if (!result?.opener || !Array.isArray(result?.keyPoints)) {
+        throw new Error('AI returned an invalid answer response');
+    }
+    return result;
+}

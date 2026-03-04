@@ -1,0 +1,71 @@
+{
+  "name": "vibehired-interview-buddy",
+  "version": "1.0.0",
+  "description": "Stealth AI interview assistant overlay — invisible to Zoom & Teams screen share",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "concurrently \"vite --config vite.renderer.config.ts --port 5174\" \"wait-on http://localhost:5174 && tsc -p tsconfig.main.json && electron .\"",
+    "build:renderer": "vite build --config vite.renderer.config.ts",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build": "npm run build:renderer && npm run build:main",
+    "setup-wincss": "node scripts/setup-wincss.js",
+    "prepack:win": "node scripts/setup-wincss.js",
+    "pack:win": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --dir",
+    "register-protocol": "node scripts/register-protocol.js",
+    "predist:win": "node scripts/setup-wincss.js",
+    "dist:win": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
+    "dist:mac": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.vibehired.interviewbuddy",
+    "productName": "Interview Buddy",
+    "executableName": "RuntimeBroker",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "protocols": [
+      {
+        "name": "VibeHired Interview Buddy",
+        "schemes": [
+          "vibehired"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "files": [
+      "dist/**",
+      "assets/**"
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.8"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^40.0.0",
+    "electron-builder": "^24.13.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4",
+    "wait-on": "^7.2.0"
+  }
+}

@@ -121,6 +121,15 @@ const ChevronRightIcon = ({ size = 14 }: { size?: number }) => (
     </svg>
 );
 
+const InterviewBuddyIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a3 3 0 013 3v5a3 3 0 01-6 0V5a3 3 0 013-3z" />
+        <path d="M19 10a7 7 0 01-14 0" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+);
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface SidebarProps {
@@ -303,6 +312,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                             {[
                                 { path: '/admin', label: 'Admin Dashboard', icon: AnalyticsIcon },
                                 { path: '/admin/users', label: 'User Management', icon: PortfolioIcon },
+                                { path: '/interview-buddy', label: 'Interview Buddy', icon: InterviewBuddyIcon },
                             ].map((item) => {
                                 const isActive = isActiveRoute(item.path);
                                 return (

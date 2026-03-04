@@ -1,0 +1,62 @@
+/* ── CSS variables matching VibeHired Obsidian Intelligence ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-base:      #0e0e17;
+  --bg-surface:   #15151f;
+  --bg-elevated:  #1c1c2a;
+  --bg-raised:    #222233;
+
+  --border-bright: #363655;
+  --border:        #2a2a3d;
+  --border-subtle: #1e1e2c;
+
+  --text-primary:   #eeeef8;
+  --text-secondary: #9090b0;
+  --text-muted:     #505070;
+
+  --accent:       #e8b844;
+  --accent-hover: #f5cc58;
+  --accent-dim:   #c89a2a;
+  --accent-bg:    rgba(232,184,68,0.08);
+
+  --jade:     #2dd4a0;
+  --jade-bg:  rgba(45,212,160,0.08);
+  --rose:     #f46464;
+  --rose-bg:  rgba(244,100,100,0.08);
+  --ember:    #f07e38;
+  --ember-bg: rgba(240,126,56,0.08);
+}
+
+html, body {
+  background: transparent;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  overflow: hidden;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Draggable title-bar region */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Scrollable answer area */
+.answer-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-bright) transparent;
+}
+.answer-scroll::-webkit-scrollbar { width: 4px; }
+.answer-scroll::-webkit-scrollbar-track { background: transparent; }
+.answer-scroll::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }

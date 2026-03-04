@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import authMiddleware from '../middleware/authMiddleware';
 import { usageLimiter } from '../middleware/usageLimiter';
 import { asyncHandler } from '../utils/asyncHandler';
-import { generateInterviewQuestions, evaluateInterviewAnswer } from '../controllers/interviewController';
+import { generateInterviewQuestions, evaluateInterviewAnswer, answerInterviewQuestion } from '../controllers/interviewController';
 
 const router: Router = express.Router();
 
