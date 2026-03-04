@@ -38,7 +38,8 @@ export const CREDIT_WEIGHTS = {
     cvParsing: 2,
     analysis: 2,
     interview: 3,
-    autoJobsWorkflow: 0.1, // Cost per job retrieved (e.g., 100 jobs = 10 credits)
+    autoJobsWorkflow: 0.25, // Cost per job retrieved (e.g., 100 jobs = 25 credits + base fee)
+    autoJobsBaseFee: 3, // Base fee for job list retrieval and server overhead
 } as const;
 
 export type CreditActionType = keyof typeof CREDIT_WEIGHTS;

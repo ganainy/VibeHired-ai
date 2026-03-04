@@ -12,7 +12,7 @@ import Profile from '../models/Profile';
 import { decrypt, encrypt } from '../utils/encryption';
 import { env } from '../config/env';
 
-const PROCESSED_LABEL_NAME = 'job-tracker-processed';
+const PROCESSED_LABEL_NAME = 'vibe-hired-processed';
 
 export interface GmailMessage {
     id: string;
@@ -88,7 +88,7 @@ export async function hasGmailScope(userId: string): Promise<boolean> {
     }
 }
 
-/** Get or create the "job-tracker-processed" label, returning its ID. */
+/** Get or create the "vibe-hired-processed" label, returning its ID. */
 async function getOrCreateProcessedLabel(gmail: gmail_v1.Gmail): Promise<string> {
     const list = await gmail.users.labels.list({ userId: 'me' });
     const existing = list.data.labels?.find((l) => l.name === PROCESSED_LABEL_NAME);
@@ -124,32 +124,45 @@ function extractBody(payload: gmail_v1.Schema$MessagePart): string {
     return payload.body?.data ? decodeBase64(payload.body.data) : '';
 }
 
-/** Fetch new (unprocessed) messages since `since` date. Marks them processed. */
-export async function fetchNewMessages(userId: string, since: Date): Promise<GmailMessage[]> {
+/** Fetch the most recent `limit` unprocessed messages. Marks them processed. */
+export async function fetchNewMessages(userId: string, limit: number): Promise<GmailMessage[]> {
+    const t0 = Date.now();
+    console.log(`[GmailService] fetchNewMessages start — limit=${limit}`);
+
     const auth = await getOAuth2Client(userId);
     const gmail = google.gmail({ version: 'v1', auth });
 
-    // Build query: unread, received after timestamp, NOT already labelled
-    const sinceUnix = Math.floor(since.getTime() / 1000);
-    const q = `is:unread after:${sinceUnix} -label:${PROCESSED_LABEL_NAME}`;
+    // Query: unread, NOT already labelled (no time constraint — dedup is handled by the label)
+    const q = `is:unread -label:${PROCESSED_LABEL_NAME}`;
 
+    const tList = Date.now();
     const listResp = await gmail.users.messages.list({
         userId: 'me',
         q,
-        maxResults: 50,
+        maxResults: limit,
     });
+    console.log(`[GmailService] messages.list took ${Date.now() - tList}ms`);
 
     const messageIds = listResp.data.messages?.map((m) => m.id!) ?? [];
+    console.log(`[GmailService] ${messageIds.length} unprocessed message(s) found`);
     if (messageIds.length === 0) return [];
 
+    const tLabel = Date.now();
     const processedLabelId = await getOrCreateProcessedLabel(gmail);
+    console.log(`[GmailService] getOrCreateProcessedLabel took ${Date.now() - tLabel}ms`);
+
     const results: GmailMessage[] = [];
 
-    for (const id of messageIds) {
+    for (let i = 0; i < messageIds.length; i++) {
+        const id = messageIds[i];
+        const tMsg = Date.now();
         try {
             const msg = await gmail.users.messages.get({ userId: 'me', id, format: 'full' });
             const payload = msg.data.payload;
-            if (!payload) continue;
+            if (!payload) {
+                console.warn(`[GmailService] [${i + 1}/${messageIds.length}] message ${id} has no payload, skipping`);
+                continue;
+            }
 
             const headers = payload.headers ?? [];
             const getHeader = (name: string) =>
@@ -166,23 +179,29 @@ export async function fetchNewMessages(userId: string, since: Date): Promise<Gma
 
             const body = extractBody(payload);
             const internalDate = msg.data.internalDate ? new Date(Number(msg.data.internalDate)) : new Date();
+            const fetchMs = Date.now() - tMsg;
+
+            console.log(`[GmailService] [${i + 1}/${messageIds.length}] fetched in ${fetchMs}ms — "${subject.slice(0, 60)}" from ${senderEmail}`);
 
             results.push({ id, subject, snippet, body, senderName, senderEmail, receivedAt: internalDate });
 
             // Mark as processed (non-fatal if this fails)
+            const tMod = Date.now();
             try {
                 await gmail.users.messages.modify({
                     userId: 'me',
                     id,
                     requestBody: { addLabelIds: [processedLabelId] },
                 });
+                console.log(`[GmailService] [${i + 1}/${messageIds.length}] labelled in ${Date.now() - tMod}ms`);
             } catch (labelErr) {
                 console.warn(`[GmailService] Could not label message ${id}:`, labelErr);
             }
         } catch (msgErr) {
-            console.error(`[GmailService] Error fetching message ${id}:`, msgErr);
+            console.error(`[GmailService] [${i + 1}/${messageIds.length}] Error fetching message ${id} (${Date.now() - tMsg}ms):`, msgErr);
         }
     }
 
+    console.log(`[GmailService] fetchNewMessages done — ${results.length}/${messageIds.length} messages fetched in ${Date.now() - t0}ms total`);
     return results;
 }

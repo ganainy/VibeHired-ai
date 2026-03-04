@@ -395,7 +395,7 @@ const SettingsPage: React.FC = () => {
                 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.emailScan || 0}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Auto Jobs <span className="text-zinc-400">· 0.1 cr/job</span></span>
+                <span className="text-zinc-500">Auto Jobs <span className="text-zinc-400">· 3 base + 0.25 cr/job</span></span>
                 <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.autoJobsWorkflow || 0}</span>
               </div>
               <div className="pt-3 border-t border-zinc-100 dark:border-zinc-700 flex justify-between text-xs">

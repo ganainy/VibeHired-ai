@@ -49,8 +49,10 @@ export function usageLimiter(actionType: CreditActionType): RequestHandler {
             if (actionType === 'autoJobsWorkflow') {
                 const profile = await Profile.findOne({ userId });
                 const maxJobs = profile?.autoJobSettings?.maxJobs || 100;
-                customWeight = maxJobs * (CREDIT_WEIGHTS.autoJobsWorkflow as number);
-                console.log(`[UsageLimiter] Dynamic weight for autoJobsWorkflow: ${customWeight} (Jobs: ${maxJobs})`);
+                const baseFee = CREDIT_WEIGHTS.autoJobsBaseFee as number;
+                const perJobCost = CREDIT_WEIGHTS.autoJobsWorkflow as number;
+                customWeight = baseFee + (maxJobs * perJobCost);
+                console.log(`[UsageLimiter] Dynamic weight for autoJobsWorkflow: ${customWeight} (Base: ${baseFee}, Jobs: ${maxJobs} @ ${perJobCost} each)`);
             }
 
             // Step 4: Check credit balance

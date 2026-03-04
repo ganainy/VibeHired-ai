@@ -16,10 +16,11 @@ const PLANS = [
         period: 'one-time',
         description: 'Try the platform at no cost',
         features: [
-            '20 Credits (one-time)',
-            'CV Analysis & Scoring',
-            'Basic AI Chat',
-            'Job Application Tracking',
+            '20 credits to try everything',
+            'Targeted CV generation (3 cr each)',
+            'CV analysis & ATS scoring (2 cr each)',
+            'Cover letters & interview sim (3 cr each)',
+            'Chat, email scan & job extraction (1 cr each)',
         ],
         popular: false,
     },
@@ -31,10 +32,11 @@ const PLANS = [
         period: 'month',
         description: 'For occasional job seekers',
         features: [
-            '150 Credits / month',
-            'CV Analysis & Scoring',
-            'AI Chat with history',
-            'Cover Letter Generation',
+            '150 credits / month',
+            'Targeted CV generation per job (3 cr)',
+            '~75 CV analyses or ATS scans',
+            '~50 cover letters per month',
+            'All features included',
         ],
         popular: false,
     },
@@ -46,12 +48,12 @@ const PLANS = [
         period: 'month',
         description: 'Best for active job hunters',
         features: [
-            '500 Credits / month',
-            'Everything in Starter',
-            'ATS Scoring & Scan',
-            'CV Generation',
-            'Interview Simulation',
-            'Auto-Jobs Workflow',
+            '500 credits / month',
+            'Targeted CV generation per job (3 cr)',
+            '~250 CV analyses or ATS scans',
+            '~165 cover letters per month',
+            'All features included',
+            '2× AI request rate',
         ],
         popular: true,
     },
@@ -61,13 +63,14 @@ const PLANS = [
         credits: 1500,
         price: 39,
         period: 'month',
-        description: 'Maximum firepower',
+        description: 'For heavy or high-volume use',
         features: [
-            '1,500 Credits / month',
-            'Everything in Pro',
-            'Unlimited CVs',
-            'Advanced Analytics',
-            'Priority Support',
+            '1,500 credits / month',
+            'Targeted CV generation per job (3 cr)',
+            '~750 CV analyses or ATS scans',
+            '~500 cover letters per month',
+            'All features included',
+            '4× AI request rate',
         ],
         popular: false,
     },
@@ -353,20 +356,28 @@ const SubscriptionsPage: React.FC = () => {
                 </div>
                 <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     <FAQItem
-                        question="What are credits used for?"
-                        answer="Credits power AI features: CV analysis (2 credits), cover letter generation (3), ATS scoring (2), interview simulation (3), chat messages (1), and more."
+                        question="What is targeted CV generation?"
+                        answer="For each job you track, the app can generate a tailored version of your CV that highlights the most relevant experience and skills for that specific role and job description. It costs 3 credits per generation and produces a downloadable PDF."
                     />
                     <FAQItem
-                        question="Can I upgrade or downgrade?"
-                        answer="Yes — use the Manage Billing button to switch plans or cancel. Changes take effect immediately or at the next billing cycle depending on the action."
+                        question="What do credits cost, and what do they cover?"
+                        answer="Credits power every AI action: chat messages and email scans (1 cr), CV analysis and ATS scoring (2 cr each), targeted CV generation, cover letter generation, and interview simulations (3 cr each). Job board searches cost 3 cr base + 0.25 cr per result."
                     />
                     <FAQItem
-                        question="What happens when credits run out?"
-                        answer="AI features are paused until the next billing cycle resets your credits. Upgrade to a higher plan to get more credits immediately."
+                        question="Do unused credits roll over?"
+                        answer="No — credits reset at the start of each billing cycle. On the Free tier, the 20 credits are one-time and never expire until used."
                     />
                     <FAQItem
-                        question="Is there a free trial?"
-                        answer="Yes — new accounts get 20 free credits, no credit card required. Credits are one-time for the free tier."
+                        question="What's the real difference between plans?"
+                        answer="Credits and AI rate limits. Every plan unlocks all features — the tiers simply give you more credits per month (150 / 500 / 1,500) and raise the cap on how many AI requests you can make in a short window, which matters when scanning large email batches or running multiple generations back-to-back."
+                    />
+                    <FAQItem
+                        question="Can I upgrade or downgrade at any time?"
+                        answer="Yes — open the Manage Billing portal to switch plans or cancel. Upgrades take effect immediately with prorated billing; downgrades apply at the end of the current billing period."
+                    />
+                    <FAQItem
+                        question="What happens when I run out of credits?"
+                        answer="AI-powered actions are paused for the rest of the billing cycle. Your tracked jobs, CVs, and application data are always accessible. Upgrading to a higher plan tops up your credits right away."
                     />
                 </div>
             </div>

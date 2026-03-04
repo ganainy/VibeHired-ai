@@ -192,7 +192,7 @@ const HOW_IT_WORKS = [
     {
         icon: MailIcon,
         title: 'Reads your Gmail',
-        description: 'Every 2 hours the server scans your inbox for new unread emails that look like job application responses.',
+        description: 'When you trigger a scan, the server reads your inbox for new unread emails that look like job application responses.',
     },
     {
         icon: SparkleIcon,
@@ -221,7 +221,7 @@ const EmailSuggestionsPage: React.FC = () => {
     const [hasScope, setHasScope] = useState<boolean | null>(null);
     const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
     const [actionError, setActionError] = useState<{ message: string; upgrade?: boolean } | null>(null);
-    const [lookbackDays, setLookbackDays] = useState(14);
+    const [scanLimit, setScanLimit] = useState(50);
     const [autoPollApplications, setAutoPollApplications] = useState(true);
     const [autoPollJobLeads, setAutoPollJobLeads] = useState(true);
     const [calendarUnchecked, setCalendarUnchecked] = useState<Set<string>>(new Set());
@@ -262,7 +262,7 @@ const EmailSuggestionsPage: React.FC = () => {
             ]);
             setSuggestions(data);
             setHasScope(scopeResult.hasScope);
-            setLookbackDays(prefs.lookbackDays);
+            setScanLimit(prefs.scanLimit ?? 50);
             setAutoPollApplications(prefs.autoPollApplications ?? true);
             setAutoPollJobLeads(prefs.autoPollJobLeads ?? true);
             setNoteAddedLocally(new Set(data.filter((s) => s.noteAdded).map((s) => s._id)));
@@ -335,7 +335,7 @@ const EmailSuggestionsPage: React.FC = () => {
     const handlePoll = async () => {
         setPolling(true);
         try {
-            const result = await pollNow(lookbackDays);
+            const result = await pollNow(scanLimit);
             await load();
             showToast(result.count > 0 ? `Found ${result.count} new suggestion${result.count > 1 ? 's' : ''}!` : 'No new job emails found.');
         } catch (err: any) {
@@ -345,10 +345,10 @@ const EmailSuggestionsPage: React.FC = () => {
         }
     };
 
-    const handleLookbackDaysChange = async (value: number) => {
-        setLookbackDays(value);
+    const handleScanLimitChange = async (value: number) => {
+        setScanLimit(value);
         try {
-            await updatePreferences({ lookbackDays: value });
+            await updatePreferences({ scanLimit: value });
         } catch {
             // non-fatal - preference not saved but UI still works
         }
@@ -414,17 +414,17 @@ const EmailSuggestionsPage: React.FC = () => {
 
                         <div className="flex items-center gap-2 shrink-0">
                             <span className="text-xs font-medium hidden sm:block" style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                                Scan window:
+                                Scan limit:
                             </span>
                             <select
-                                value={lookbackDays}
-                                onChange={(e) => handleLookbackDaysChange(Number(e.target.value))}
+                                value={scanLimit}
+                                onChange={(e) => handleScanLimitChange(Number(e.target.value))}
                                 className="input-base !w-auto text-sm"
                             >
-                                <option value={1}>Last 1 day</option>
-                                <option value={7}>Last 7 days</option>
-                                <option value={14}>Last 14 days</option>
-                                <option value={30}>Last 30 days</option>
+                                <option value={25}>Last 25 emails</option>
+                                <option value={50}>Last 50 emails</option>
+                                <option value={100}>Last 100 emails</option>
+                                <option value={200}>Last 200 emails</option>
                             </select>
                             <button
                                 onClick={handlePoll}
@@ -516,7 +516,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                         </button>
                                         <span className="text-[11.5px]" style={{ color: autoPollApplications ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
                                             <span style={{ fontWeight: autoPollApplications ? 600 : 400 }}>Applications</span>
-                                            {autoPollApplications ? ' · every 2h' : ' · off'}
+                                            {autoPollApplications ? ' · on' : ' · off'}
                                         </span>
                                     </label>
 
@@ -545,15 +545,12 @@ const EmailSuggestionsPage: React.FC = () => {
                                         </button>
                                         <span className="text-[11.5px]" style={{ color: autoPollJobLeads ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
                                             <span style={{ fontWeight: autoPollJobLeads ? 600 : 400 }}>Job Leads</span>
-                                            {autoPollJobLeads ? ' · every 2h' : ' · off'}
+                                            {autoPollJobLeads ? ' · on' : ' · off'}
                                         </span>
                                     </label>
 
                                     <p className="text-[11.5px]" style={{ color: 'var(--text-muted)' }}>
-                                        <span style={{ color: 'var(--text-secondary)' }}>Matched emails:</span> labelled <code style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, backgroundColor: 'var(--bg-elevated)' }}>job-tracker-processed</code> in Gmail so they're never shown twice
-                                    </p>
-                                    <p className="text-[11.5px]" style={{ color: 'var(--text-muted)' }}>
-                                        <span style={{ color: 'var(--text-secondary)' }}>Privacy:</span> email bodies are only sent to your own configured AI provider
+                                        <span style={{ color: 'var(--text-secondary)' }}>Matched emails:</span> labelled <code style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, backgroundColor: 'var(--bg-elevated)' }}>vibe-hired-processed</code> in Gmail so they're never shown twice
                                     </p>
                                 </div>
                             </div>
@@ -702,7 +699,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                     All caught up
                                 </p>
                                 <p className="text-sm max-w-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-                                    No pending suggestions.{(autoPollApplications || autoPollJobLeads) ? ' Auto-scan runs every 2 hours — or check now:' : ' Trigger a manual scan to look for new job emails.'}
+                                    No pending suggestions. Trigger a scan to look for new job emails.
                                 </p>
                                 <button
                                     onClick={handlePoll}
@@ -950,7 +947,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                             >
                                                 <XIcon /> Dismiss
                                             </button>
-                                            {(s.suggestedStatus || (hasCalEvent && hasScope)) && (
+                                            {(s.suggestedStatus && job || (hasCalEvent && hasScope)) && (
                                                 <button
                                                     onClick={() => handleAccept(s)}
                                                     disabled={busy}

@@ -70,7 +70,7 @@ export interface IProfile extends Document {
     showLinkedInSkills?: boolean;
     showLinkedInLanguages?: boolean;
     emailSuggestions?: {
-      lookbackDays?: number;
+      scanLimit?: number;
       autoPoll?: boolean;
       /** Separate auto-scan toggle for application response emails */
       autoPollApplications?: boolean;
@@ -255,11 +255,11 @@ const ProfileSchema: Schema = new Schema(
         default: true,
       },
       emailSuggestions: {
-        lookbackDays: {
+        scanLimit: {
           type: Number,
-          default: 14,
-          min: 1,
-          max: 30,
+          default: 50,
+          min: 25,
+          max: 200,
         },
         autoPoll: {
           type: Boolean,

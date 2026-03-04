@@ -679,7 +679,7 @@ const AutoJobsPage: React.FC = () => {
                             onClick={handleTrigger}
                             disabled={isWorkflowRunning || isTriggering}
                             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
-                            title="Run auto-jobs workflow (0.1 credits per job found)"
+                            title={`Run auto-jobs workflow (3 base + ${(settings.maxJobs || 100) * 0.25} credits = ${3 + (settings.maxJobs || 100) * 0.25} total)`}
                         >
                             {(isWorkflowRunning || isTriggering) ? (
                                 <>
@@ -690,7 +690,7 @@ const AutoJobsPage: React.FC = () => {
                                     <span>{isTriggering ? 'Starting...' : 'Running...'}</span>
                                 </>
                             ) : (
-                                <>🚀 Run Now <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>0.1 cr/job</span></>
+                                <>🚀 Run Now <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>3 base + 0.25 cr/job</span></>
                             )}
                         </button>
                     </div>
@@ -914,9 +914,6 @@ const AutoJobsPage: React.FC = () => {
                             />
                             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                                 Maximum number of jobs to process per run (20-1000, default: 100)
-                            </p>
-                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                                💰 Cost: {(settings.maxJobs || 100) * 0.1} credit ({(settings.maxJobs || 100) * 0.1} coins) per run • <Link to="/subscriptions" className="underline hover:text-amber-700">View plans</Link>
                             </p>
                         </div>
 

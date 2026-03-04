@@ -137,22 +137,6 @@ mongoose.connect(mongoUri)
   .then(() => {
     console.log('MongoDB Connected Successfully');
 
-    // Auto-job scheduling removed - jobs are now only manually triggered
-
-    // ── Gmail email suggestion polling (every 2 hours) ────────────────────
-    import('node-cron').then(({ default: cron }) => {
-      import('./services/emailSuggestionService').then(({ pollAllUsers }) => {
-        cron.schedule('0 */2 * * *', async () => {
-          try {
-            await pollAllUsers();
-          } catch (err) {
-            console.error('[Cron] Email suggestion poll error:', err);
-          }
-        });
-        console.log('[Cron] Gmail email suggestion poller scheduled (every 2 hours)');
-      });
-    });
-
     // Start listening only after successful DB connection
     const server = app.listen(port, () => {
       console.log(`[server]: Server is running at http://localhost:${port}`);

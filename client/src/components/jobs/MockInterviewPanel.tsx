@@ -23,6 +23,7 @@ interface Props {
     jobApplication: JobApplication;
     jobId: string;
     cvData?: JsonResumeSchema | null;
+    coverLetterText?: string | null;
 }
 
 // ── CV → readable text ────────────────────────────────────────────────────────
@@ -114,7 +115,7 @@ const ScoreBadge: React.FC<{ score: number }> = ({ score }) => {
     );
 };
 
-const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData }) => {
+const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, coverLetterText }) => {
     const speechLang = toSpeechLang(jobApplication.language);
     const tts = useSpeechSynthesis();
     const stt = useSpeechRecognition();
@@ -167,6 +168,12 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData }) 
             lines.push(cvToText(cvData));
         }
 
+        if (coverLetterText?.trim()) {
+            lines.push('');
+            lines.push('=== COVER LETTER I SUBMITTED ===');
+            lines.push(coverLetterText.trim().slice(0, 3000));
+        }
+
         lines.push('');
         lines.push('=== INSTRUCTIONS ===');
         lines.push('Conduct a full mock interview with me following these rules:');
@@ -191,7 +198,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData }) 
         lines.push('Start now by presenting Question 1.');
 
         return lines.join('\n');
-    }, [jobApplication]);
+    }, [jobApplication, coverLetterText]);
 
     const handleCopyPrompt = useCallback(async () => {
         const prompt = buildExternalPrompt();

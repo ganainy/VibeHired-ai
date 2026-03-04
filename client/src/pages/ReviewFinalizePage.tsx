@@ -107,6 +107,7 @@ const ReviewFinalizePage: React.FC = () => {
     const [jobDetailsSourceJobId, setJobDetailsSourceJobId] = useState<string | null>(null);
     const [isSavingJobDetails, setIsSavingJobDetails] = useState<boolean>(false);
     const [jobDetailsSaveError, setJobDetailsSaveError] = useState<string | null>(null);
+    const [isEditingJobDetails, setIsEditingJobDetails] = useState<boolean>(false);
     const [toast, setToast] = useState<ToastState | null>(null);
     const [isJobDescriptionExpanded, setIsJobDescriptionExpanded] = useState<boolean>(false);
     const [atsScores, setAtsScores] = useState<AtsScores | null>(null);
@@ -1897,6 +1898,7 @@ const ReviewFinalizePage: React.FC = () => {
             }
 
             showToast('Job details updated successfully', 'success');
+            setIsEditingJobDetails(false);
         } catch (error: any) {
             console.error('Failed to update job details:', error);
             setJobDetailsSaveError(error.message || 'Failed to update job details.');
@@ -2145,11 +2147,9 @@ const ReviewFinalizePage: React.FC = () => {
                                         Retry
                                     </span>
                                 ) : (
-                                    <span className="inline-flex items-center gap-1">
-                                        <span className="badge badge-gold text-xs px-2 py-0.5 cursor-pointer">
-                                            Calculate
-                                        </span>
-                                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 cr</span>
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>
+                                        Calculate
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 cr</span>
                                     </span>
                                 )}
                             </button>
@@ -2325,38 +2325,64 @@ const ReviewFinalizePage: React.FC = () => {
                     {activeTab === 'job-description' && (
                         <div className="w-full space-y-6">
 
-                            {/* Editable Job Details */}
+                            {/* Job Details - Read-only / Edit */}
                             <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 md:p-6">
-                                <div className="flex flex-wrap items-center justify-between gap-3 mb-5 md:mb-6">
+                                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                                     <div className="flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-primary">edit_square</span>
+                                        <span className="material-symbols-outlined text-primary">{isEditingJobDetails ? 'edit_square' : 'work'}</span>
                                         <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Job Details</h2>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        {jobDetailsHasChanges && (
-                                            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Unsaved changes</span>
+                                    <div className="flex items-center gap-2">
+                                        {isEditingJobDetails ? (
+                                            <>
+                                                {jobDetailsHasChanges && (
+                                                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Unsaved changes</span>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        setIsEditingJobDetails(false);
+                                                        // Revert unsaved changes
+                                                        if (jobDetailsInitialForm) {
+                                                            setJobDetailsForm(jobDetailsInitialForm);
+                                                        }
+                                                        setJobDetailsSaveError(null);
+                                                    }}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">close</span>
+                                                    <span>Cancel</span>
+                                                </button>
+                                                <button
+                                                    onClick={handleSaveJobDetails}
+                                                    disabled={!jobDetailsHasChanges || isSavingJobDetails || !jobDetailsForm}
+                                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-ink-950 bg-primary hover:bg-primaryLight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                >
+                                                    {isSavingJobDetails ? (
+                                                        <>
+                                                            <Spinner size="sm" />
+                                                            <span>Saving...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span className="material-symbols-outlined text-sm">save</span>
+                                                            <span>Save</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <button
+                                                onClick={() => setIsEditingJobDetails(true)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">edit</span>
+                                                <span>Edit</span>
+                                            </button>
                                         )}
-                                        <button
-                                            onClick={handleSaveJobDetails}
-                                            disabled={!jobDetailsHasChanges || isSavingJobDetails || !jobDetailsForm}
-                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-transparent text-xs font-medium rounded-md shadow-sm text-ink-950 bg-primary hover:bg-primaryLight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                        >
-                                            {isSavingJobDetails ? (
-                                                <>
-                                                    <Spinner size="sm" />
-                                                    <span>Saving...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="material-symbols-outlined text-sm">save</span>
-                                                    <span>Save Changes</span>
-                                                </>
-                                            )}
-                                        </button>
                                     </div>
                                 </div>
 
-                                {jobDetailsSaveError && (
+                                {jobDetailsSaveError && isEditingJobDetails && (
                                     <div className="mb-4">
                                         <ErrorAlert
                                             message={jobDetailsSaveError}
@@ -2365,7 +2391,8 @@ const ReviewFinalizePage: React.FC = () => {
                                     </div>
                                 )}
 
-                                {jobDetailsForm && (
+                                {isEditingJobDetails && jobDetailsForm ? (
+                                    /* ── Edit mode ── */
                                     <div className="space-y-5 md:space-y-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                                             <div>
@@ -2572,6 +2599,116 @@ const ReviewFinalizePage: React.FC = () => {
                                             />
                                         </div>
                                     </div>
+                                ) : (
+                                    /* ── Read-only mode ── */
+                                    jobDetailsForm && (
+                                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                                            {/* Job Title – always shown */}
+                                            <div className="flex flex-col gap-0.5">
+                                                <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Job Title</dt>
+                                                <dd className="text-sm font-semibold text-text-main-light dark:text-text-main-dark">{jobDetailsForm.jobTitle || <span className="italic text-gray-400">—</span>}</dd>
+                                            </div>
+                                            {/* Company – always shown */}
+                                            <div className="flex flex-col gap-0.5">
+                                                <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Company</dt>
+                                                <dd className="text-sm font-semibold text-text-main-light dark:text-text-main-dark">{jobDetailsForm.companyName || <span className="italic text-gray-400">—</span>}</dd>
+                                            </div>
+                                            {/* Status – always shown */}
+                                            <div className="flex flex-col gap-0.5">
+                                                <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Status</dt>
+                                                <dd><JobStatusBadge type="application" status={jobDetailsForm.status} /></dd>
+                                            </div>
+                                            {/* Language */}
+                                            {jobDetailsForm.language && (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Language</dt>
+                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">{jobDetailsForm.language === 'de' ? 'German' : 'English'}</dd>
+                                                </div>
+                                            )}
+                                            {/* Employment Type */}
+                                            {jobDetailsForm.jobType && (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Employment Type</dt>
+                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark capitalize">{jobDetailsForm.jobType.replace(/-/g, ' ')}</dd>
+                                                </div>
+                                            )}
+                                            {/* Date Added */}
+                                            {jobDetailsForm.createdAt && (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Date Added</dt>
+                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">{new Date(jobDetailsForm.createdAt).toLocaleDateString()}</dd>
+                                                </div>
+                                            )}
+                                            {/* Base CV */}
+                                            {jobDetailsForm.baseCvId && (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Base CV</dt>
+                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">
+                                                        {availableCvs.find(cv => cv.id === jobDetailsForm.baseCvId)?.name || jobDetailsForm.baseCvId}
+                                                    </dd>
+                                                </div>
+                                            )}
+                                            {/* Job URL(s) */}
+                                            {jobDetailsForm.jobUrls.filter(u => u.trim()).length > 0 && (
+                                                <div className="flex flex-col gap-0.5 sm:col-span-2">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Job URL{jobDetailsForm.jobUrls.filter(u => u.trim()).length > 1 ? 's' : ''}</dt>
+                                                    <dd className="flex flex-col gap-1">
+                                                        {jobDetailsForm.jobUrls.filter(u => u.trim()).map((url, idx) => (
+                                                            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="text-sm truncate max-w-xs hover:underline" style={{ color: 'var(--accent)' }}>{url}</a>
+                                                        ))}
+                                                    </dd>
+                                                </div>
+                                            )}
+                                            {/* Salary */}
+                                            {jobDetailsForm.salary && (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Salary</dt>
+                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">{jobDetailsForm.salary}</dd>
+                                                </div>
+                                            )}
+                                            {/* Contact Email */}
+                                            {jobDetailsForm.contactEmail && (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Contact Email</dt>
+                                                    <dd className="text-sm">
+                                                        <a href={`mailto:${jobDetailsForm.contactEmail}`} className="hover:underline" style={{ color: 'var(--accent)' }}>{jobDetailsForm.contactEmail}</a>
+                                                    </dd>
+                                                </div>
+                                            )}
+                                            {/* Contact Phone */}
+                                            {jobDetailsForm.contactPhone && (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Contact Phone</dt>
+                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">{jobDetailsForm.contactPhone}</dd>
+                                                </div>
+                                            )}
+                                            {/* Hiring Manager */}
+                                            {jobDetailsForm.hiringManagerName && (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Hiring Manager</dt>
+                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">{jobDetailsForm.hiringManagerName}</dd>
+                                                </div>
+                                            )}
+                                            {/* Application URL */}
+                                            {jobDetailsForm.applicationUrl && (
+                                                <div className="flex flex-col gap-0.5 sm:col-span-2">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Application Portal</dt>
+                                                    <dd className="text-sm">
+                                                        <a href={jobDetailsForm.applicationUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate" style={{ color: 'var(--accent)' }}>
+                                                            {jobDetailsForm.applicationUrl.length > 60 ? jobDetailsForm.applicationUrl.substring(0, 60) + '…' : jobDetailsForm.applicationUrl}
+                                                        </a>
+                                                    </dd>
+                                                </div>
+                                            )}
+                                            {/* Notes */}
+                                            {jobDetailsForm.notes && (
+                                                <div className="flex flex-col gap-0.5 sm:col-span-2">
+                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Notes</dt>
+                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark whitespace-pre-wrap">{jobDetailsForm.notes}</dd>
+                                                </div>
+                                            )}
+                                        </dl>
+                                    )
                                 )}
                             </div>
 
@@ -3933,7 +4070,7 @@ const ReviewFinalizePage: React.FC = () => {
 
                     {/* Tab 5: Mock Interview */}
                     {activeTab === 'mock-interview' && jobApplication && (
-                        <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} />
+                        <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} coverLetterText={coverLetterText} />
                     )}
 
                     {/* Tab 6: Reminders */}

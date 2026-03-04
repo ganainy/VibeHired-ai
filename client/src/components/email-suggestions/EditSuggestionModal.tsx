@@ -31,21 +31,6 @@ const ChevronDownIcon = () => (
     </svg>
 );
 
-const CalendarIcon = () => (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-        <line x1="16" y1="2" x2="16" y2="6" />
-        <line x1="8" y1="2" x2="8" y2="6" />
-        <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-);
-
-const PlusIcon = () => (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-);
 
 const SearchIcon = () => (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -449,17 +434,41 @@ const EditSuggestionModal: React.FC<EditSuggestionModalProps> = ({ suggestion, o
                             >
                                 Calendar Event
                             </label>
+                            {/* Toggle switch — disabled when suggestion has no calendar event at all */}
                             <button
                                 type="button"
-                                onClick={() => setCalEnabled((v) => !v)}
-                                className="text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors"
+                                role="switch"
+                                aria-checked={calEnabled}
+                                disabled={!origCal}
+                                onClick={() => origCal && setCalEnabled((v) => !v)}
+                                title={!origCal ? 'No calendar event attached to this suggestion' : undefined}
+                                className="relative inline-flex items-center flex-shrink-0 rounded-full transition-colors focus:outline-none"
                                 style={{
-                                    backgroundColor: calEnabled ? 'rgba(232,184,68,0.12)' : 'rgba(255,255,255,0.05)',
-                                    color: calEnabled ? 'var(--accent)' : 'var(--text-muted)',
-                                    border: `1px solid ${calEnabled ? 'rgba(232,184,68,0.3)' : 'var(--border)'}`,
+                                    width: 42,
+                                    height: 24,
+                                    backgroundColor: !origCal
+                                        ? 'var(--border)'
+                                        : calEnabled
+                                            ? 'var(--accent, #e8b844)'
+                                            : 'var(--bg-elevated)',
+                                    border: `1px solid ${!origCal ? 'transparent' : calEnabled ? 'transparent' : 'var(--border)'}`,
+                                    cursor: !origCal ? 'not-allowed' : 'pointer',
+                                    opacity: !origCal ? 0.45 : 1,
+                                    transition: 'background-color 200ms',
                                 }}
                             >
-                                {calEnabled ? <><CalendarIcon /> Enabled</> : <><PlusIcon /> Add event</>}
+                                <span
+                                    style={{
+                                        display: 'block',
+                                        width: 16,
+                                        height: 16,
+                                        borderRadius: '50%',
+                                        backgroundColor: calEnabled && origCal ? '#0e0e17' : 'var(--text-muted)',
+                                        transform: calEnabled && origCal ? 'translateX(21px)' : 'translateX(3px)',
+                                        transition: 'transform 200ms, background-color 200ms',
+                                        pointerEvents: 'none',
+                                    }}
+                                />
                             </button>
                         </div>
 

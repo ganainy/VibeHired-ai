@@ -555,7 +555,7 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
                                         >
                                             <XIcon /> Dismiss
                                         </button>
-                                        {(s.suggestedStatus || (hasCalEvent && hasScope)) && (
+                                        {(s.suggestedStatus && job || (hasCalEvent && hasScope)) && (
                                             <button
                                                 onClick={() => handleAccept(s)}
                                                 disabled={busy}

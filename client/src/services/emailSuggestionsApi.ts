@@ -68,11 +68,11 @@ export const listPendingSuggestions = async (): Promise<EmailSuggestion[]> => {
 
 /** Update an email suggestion (edit matched company, job title, or job application). */
 export const updateSuggestion = async (id: string, payload: UpdateSuggestionPayload): Promise<EmailSuggestion> => {
-    const { data } = await axios.put<EmailSuggestion>(
+    const { data } = await axios.put<{ message: string; suggestion: EmailSuggestion }>(
         `${API_BASE_URL}/email-suggestions/${id}`,
         payload
     );
-    return data;
+    return data.suggestion;
 };
 
 /** Accept a suggestion — applies the status change and optionally creates a calendar event. */
@@ -95,10 +95,10 @@ export const rejectSuggestion = async (id: string): Promise<void> => {
 };
 
 /** Manually trigger a Gmail poll for the current user. */
-export const pollNow = async (lookbackDays = 7): Promise<{ count: number; message: string }> => {
+export const pollNow = async (scanLimit = 50): Promise<{ count: number; message: string }> => {
     const { data } = await axios.post<{ count: number; message: string }>(
         `${API_BASE_URL}/email-suggestions/poll`,
-        { lookbackDays }
+        { scanLimit }
     );
     return data;
 };

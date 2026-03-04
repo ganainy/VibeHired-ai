@@ -62,45 +62,44 @@ function senderDomain(email: string): string {
     return email.includes('@') ? email.split('@')[1] : email;
 }
 
-// ── AI prompt ────────────────────────────────────────────────────────────────
+// ── AI prompt (batch) ────────────────────────────────────────────────────────
 
-function buildClassificationPrompt(subject: string, body: string, sender: string): string {
-    const truncatedBody = body.slice(0, 3000);
+interface BatchEmailInput {
+    idx: number;
+    sender: string;   // domain only
+    subject: string;
+    excerpt: string;  // sanitized body, truncated to 600 chars
+}
+
+/**
+ * Builds a single prompt that classifies ALL emails in one AI call.
+ * Each email is represented by idx, sender domain, subject, and a short excerpt.
+ */
+function buildBatchClassificationPrompt(emails: BatchEmailInput[]): string {
     const today = new Date().toISOString().split('T')[0];
     return `You are an assistant that analyses job application emails. Today's date is ${today}.
 
-Email Details:
-- From (domain only): ${sender}
-- Subject: ${subject}
-- Body (truncated to 3000 chars, PII redacted):
-${truncatedBody}
+Below is a JSON array of emails. Classify every one of them.
 
-Task:
-1. Determine if this email is related to a job application (e.g. rejection, interview invite, assessment, offer, acknowledgement, recruiter info, job board alert).
-2. If job-related, extract:
-   - The company name
-   - The job title / role (best guess from email context)
-   - The appropriate new status from ONLY these values: "Interview", "Assessment", "Rejected", "Offer". Use null if the email is an acknowledgment, job recommendation, or contains info without a real status change.
-   - A detailed note (2-4 sentences) summarising ALL key information from the email: interview details, salary/compensation figures, preparation tips, important context, or any actionable advice. Leave empty string if nothing useful.
-   - A calendar event if — and only if — the email mentions a specific date and/or time for an interview, assessment, deadline or similar scheduled event. Use null if no concrete datetime is mentioned.
-   - Your confidence level: "high" if the intent is very clear, "medium" if reasonably inferred, "low" if uncertain.
-   - The email category:
-     * "application_response" — the company is replying to a job application the user already submitted (rejection, interview invite, offer, assessment, acknowledgement).
-     * "job_offer" — a recruiter, headhunter, or job board (e.g. LinkedIn, XING, Stepstone, Indeed, Glassdoor) is proactively reaching out to suggest or offer the user new positions to apply to.
+${JSON.stringify(emails)}
 
-For suggestedCalendarEvent.dateTimeISO: produce a full ISO 8601 datetime string. If only a date is given (no time), use 09:00:00 UTC on that date. If the year is ambiguous, assume the nearest future occurrence.
+For EACH email return one object with these fields:
+- idx: (same number as input)
+- isJobRelated: boolean — true if this email is related to job hunting (application reply, recruiter outreach, job board alert, interview, offer, rejection, assessment, acknowledgement). false for newsletters, news, unrelated marketing.
+- suggestedStatus: "Interview" | "Assessment" | "Rejected" | "Offer" | null — use null for acknowledgements, job recommendations without a status change, or if unclear.
+- suggestedNote: string — 2-4 sentences summarising key info (interview details, salary, prep tips, deadlines). Empty string if nothing actionable.
+- suggestedCalendarEvent: { "title": string, "description": string, "dateTimeISO": string (ISO 8601 full datetime — if only a date given use 09:00:00Z, assume nearest future year if ambiguous), "notificationMinutesBefore": number } | null — ONLY if a specific date/time for an event is mentioned in the excerpt.
+- extractedCompany: string
+- extractedRole: string
+- confidence: "high" | "medium" | "low"
+- emailCategory: "application_response" | "job_offer" — "application_response" = the company replies to something the user already applied to; "job_offer" = recruiter/headhunter/job board proactively reaching out with new positions.
 
-Return ONLY valid JSON with this exact structure (no markdown, no extra keys):
-{
-  "isJobRelated": boolean,
-  "suggestedStatus": "Interview" | "Assessment" | "Rejected" | "Offer" | null,
-  "suggestedNote": string,
-  "suggestedCalendarEvent": { "title": string, "description": string, "dateTimeISO": string, "notificationMinutesBefore": number } | null,
-  "extractedCompany": string,
-  "extractedRole": string,
-  "confidence": "high" | "medium" | "low",
-  "emailCategory": "application_response" | "job_offer"
-}`;
+Return ONLY a valid JSON object in this exact shape (no markdown, no extra keys):
+{ "results": [{ "idx": 0, ... }, { "idx": 1, ... }, ...] }`;
+}
+
+interface BatchEmailClassification extends EmailClassification {
+    idx: number;
 }
 
 // ── Job matching ──────────────────────────────────────────────────────────────
@@ -155,71 +154,106 @@ async function matchJobApplication(
  * pending EmailSuggestion documents.  Returns number of suggestions created.
  * @param category - Optional category filter: 'application_response' or 'job_offer'
  */
-export async function pollEmailsForUser(userId: string, since?: Date, category?: 'application_response' | 'job_offer'): Promise<number> {
+export async function pollEmailsForUser(userId: string, limit?: number, category?: 'application_response' | 'job_offer'): Promise<number> {
+    const tPoll = Date.now();
+    const effectiveLimit = limit ?? 50;
+    console.log(`\n[EmailSuggestionService] ── pollEmailsForUser START (userId=${userId}, limit=${effectiveLimit}, category=${category ?? 'all'}) ──`);
+
     // Check Gmail scope is available before attempting any API calls
     const hasSco = await hasGmailScope(userId);
-    if (!hasSco) return 0;
+    if (!hasSco) {
+        console.log(`[EmailSuggestionService] No Gmail scope for user ${userId}, skipping`);
+        return 0;
+    }
 
-    const lookback = since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // default: last 7 days
-    const messages = await fetchNewMessages(userId, lookback);
-    if (messages.length === 0) return 0;
+    const messages = await fetchNewMessages(userId, effectiveLimit);
+    console.log(`[EmailSuggestionService] ${messages.length} message(s) fetched from Gmail`);
+    if (messages.length === 0) {
+        console.log(`[EmailSuggestionService] ── pollEmailsForUser END — 0 suggestions, ${Date.now() - tPoll}ms ──\n`);
+        return 0;
+    }
 
-    // AI is always available as long as GEMINI_API_KEY is configured on the server
+    // ── 1. Bulk duplicate check (one DB query for all messages) ──────────────
+    const tDup = Date.now();
+    const allIds = messages.map((m) => m.id);
+    const existingDocs = await EmailSuggestion.find({ userId, gmailMessageId: { $in: allIds } }).select('gmailMessageId').lean();
+    const existingIds = new Set(existingDocs.map((d) => d.gmailMessageId));
+    const newMessages = messages.filter((m) => !existingIds.has(m.id));
+    console.log(`[EmailSuggestionService] Duplicate check: ${Date.now() - tDup}ms — ${existingIds.size} duplicate(s) skipped, ${newMessages.length} new to classify`);
+
+    if (newMessages.length === 0) {
+        console.log(`[EmailSuggestionService] ── pollEmailsForUser END — all duplicates, ${Date.now() - tPoll}ms ──\n`);
+        return 0;
+    }
+
+    // ── 2. Single batch AI classification call ───────────────────────────────
     const aiAvailable = !!process.env.GEMINI_API_KEY;
+    let classifications: BatchEmailClassification[] = [];
 
+    if (aiAvailable) {
+        const batchInput: BatchEmailInput[] = newMessages.map((m, i) => ({
+            idx: i,
+            sender: senderDomain(m.senderEmail),
+            subject: m.subject,
+            excerpt: sanitizeEmailBody(m.body).slice(0, 600),
+        }));
+
+        const tAI = Date.now();
+        console.log(`[EmailSuggestionService] Sending batch of ${newMessages.length} email(s) to AI...`);
+        try {
+            const prompt = buildBatchClassificationPrompt(batchInput);
+            const raw = await generateStructuredResponse<{ results: BatchEmailClassification[] }>(userId, prompt);
+            // Normalise: handle both { results: [...] } and bare arrays defensively
+            const arr: BatchEmailClassification[] = Array.isArray(raw)
+                ? raw as unknown as BatchEmailClassification[]
+                : Array.isArray((raw as any).results)
+                    ? (raw as any).results
+                    : Object.values(raw as any);
+            classifications = arr;
+            console.log(`[EmailSuggestionService] Batch AI call: ${Date.now() - tAI}ms — got ${classifications.length} classification(s)`);
+        } catch (aiErr: any) {
+            const msg = `AI batch classification failed after ${Date.now() - tAI}ms: ${aiErr?.message ?? aiErr}`;
+            console.error(`[EmailSuggestionService] ${msg}`);
+            throw new Error(msg);
+        }
+    } else {
+        throw new Error('Email scanning requires an AI key (GEMINI_API_KEY) to be configured on the server.');
+    }
+
+    // ── 3. Save suggestions ──────────────────────────────────────────────────
     let created = 0;
 
-    for (const msg of messages) {
-        // Skip if we already have a suggestion for this Gmail message ID
-        const exists = await EmailSuggestion.exists({ userId, gmailMessageId: msg.id });
-        if (exists) continue;
-
-        let classification: EmailClassification = {
-            isJobRelated: false,
-            suggestedStatus: null,
-            suggestedNote: '',
-            suggestedCalendarEvent: null,
-            extractedCompany: '',
-            extractedRole: '',
-            confidence: 'low',
-            emailCategory: 'application_response',
-        };
-
-        if (aiAvailable) {
-            try {
-                const prompt = buildClassificationPrompt(
-                    msg.subject,
-                    sanitizeEmailBody(msg.body),
-                    senderDomain(msg.senderEmail),
-                );
-                classification = await generateStructuredResponse<EmailClassification>(userId, prompt);
-            } catch (aiErr) {
-                console.error(`[EmailSuggestionService] AI classification failed for message ${msg.id}:`, aiErr);
-                // Fall back to simple keyword heuristic
-                classification = fallbackClassify(msg.subject, msg.body, msg.senderEmail);
-            }
-        } else {
-            // No AI: use simple heuristic only
-            classification = fallbackClassify(msg.subject, msg.body, msg.senderEmail);
+    for (const cls of classifications) {
+        const msg = newMessages[cls.idx];
+        if (!msg) {
+            console.warn(`[EmailSuggestionService] No message for idx ${cls.idx}, skipping`);
+            continue;
         }
 
-        // Skip if not job-related, or if low confidence and there's genuinely nothing to surface
-        if (!classification.isJobRelated) continue;
+        const label = `[${cls.idx + 1}/${newMessages.length}] "${msg.subject.slice(0, 50)}"`;
+        console.log(`[EmailSuggestionService] ${label} → isJobRelated=${cls.isJobRelated}, status=${cls.suggestedStatus}, confidence=${cls.confidence}, category=${cls.emailCategory}`);
+
+        if (!cls.isJobRelated) {
+            console.log(`[EmailSuggestionService] ${label} not job-related, skipping`);
+            continue;
+        }
         if (
-            classification.confidence === 'low' &&
-            !classification.suggestedStatus &&
-            !classification.suggestedNote &&
-            !classification.suggestedCalendarEvent
+            cls.confidence === 'low' &&
+            !cls.suggestedStatus &&
+            !cls.suggestedNote &&
+            !cls.suggestedCalendarEvent
         ) {
+            console.log(`[EmailSuggestionService] ${label} low confidence + nothing to surface, skipping`);
+            continue;
+        }
+        if (category && cls.emailCategory !== category) {
+            console.log(`[EmailSuggestionService] ${label} category mismatch (got ${cls.emailCategory}, want ${category}), skipping`);
             continue;
         }
 
-        // Skip if category filter is set and doesn't match
-        if (category && classification.emailCategory !== category) {
-            continue;
-        }
-
-        const match = await matchJobApplication(userId, classification.extractedCompany, classification.extractedRole);
+        const tMatch = Date.now();
+        const match = await matchJobApplication(userId, cls.extractedCompany, cls.extractedRole);
+        console.log(`[EmailSuggestionService] ${label} job match: ${Date.now() - tMatch}ms — ${match ? `matched "${match.companyName}"` : 'no match'}`);
 
         await EmailSuggestion.create({
             userId,
@@ -229,19 +263,21 @@ export async function pollEmailsForUser(userId: string, since?: Date, category?:
             emailSnippet: msg.snippet || msg.body.slice(0, 300),
             senderName: msg.senderName,
             senderEmail: msg.senderEmail,
-            suggestedStatus: classification.suggestedStatus,
-            suggestedNote: classification.suggestedNote || undefined,
-            suggestedCalendarEvent: classification.suggestedCalendarEvent || undefined,
-            confidence: classification.confidence,
-            emailCategory: classification.emailCategory ?? 'application_response',
-            matchedCompanyName: match?.companyName ?? classification.extractedCompany,
-            matchedJobTitle: match?.jobTitle ?? classification.extractedRole,
+            suggestedStatus: cls.suggestedStatus,
+            suggestedNote: cls.suggestedNote || undefined,
+            suggestedCalendarEvent: cls.suggestedCalendarEvent || undefined,
+            confidence: cls.confidence,
+            emailCategory: cls.emailCategory ?? 'application_response',
+            matchedCompanyName: match?.companyName ?? cls.extractedCompany,
+            matchedJobTitle: match?.jobTitle ?? cls.extractedRole,
             status: 'pending',
         });
 
         created++;
+        console.log(`[EmailSuggestionService] ${label} ✓ suggestion saved (total: ${created})`);
     }
 
+    console.log(`[EmailSuggestionService] ── pollEmailsForUser END — ${created} suggestion(s) created from ${newMessages.length} new message(s) in ${Date.now() - tPoll}ms ──\n`);
     return created;
 }
 
@@ -297,48 +333,4 @@ export async function pollAllUsers(): Promise<void> {
             console.error(`[EmailSuggestionService] Error polling user ${profile.userId}:`, err);
         }
     }
-}
-
-// ── Fallback heuristic (no AI) ──────────────────────────────────────────────
-
-function fallbackClassify(subject: string, body: string, senderEmail: string): EmailClassification {
-    const text = `${subject} ${body}`.toLowerCase();
-
-    const isJobRelated =
-        /\b(application|applied|position|role|opportunity|candidate|hiring|recruiter|interview|offer|assessment|unfortunately|regret|not selected|moving forward)\b/.test(text);
-
-    if (!isJobRelated) {
-        return { isJobRelated: false, suggestedStatus: null, suggestedNote: '', suggestedCalendarEvent: null, extractedCompany: '', extractedRole: '', confidence: 'low', emailCategory: 'application_response' };
-    }
-
-    let suggestedStatus: JobStatus | null = null;
-    if (/\b(rejected|unfortunately|regret|not selected|not moving forward|no longer considering|other candidates)\b/.test(text)) {
-        suggestedStatus = 'Rejected';
-    } else if (/\b(interview|speak with you|schedule a call|meeting with)\b/.test(text)) {
-        suggestedStatus = 'Interview';
-    } else if (/\b(assessment|task|test|challenge|coding exercise|take-home)\b/.test(text)) {
-        suggestedStatus = 'Assessment';
-    } else if (/\b(offer|congratulations|pleased to offer|we would like to offer)\b/.test(text)) {
-        suggestedStatus = 'Offer';
-    }
-
-    // Heuristic: job boards / recruiters proactively reaching out → job_offer
-    const jobOfferDomains = /xing\.com|linkedin\.com|stepstone\.de|indeed\.com|glassdoor\.com|monster\.com|jobware\.de|arbeitsagentur\.de|experteer\.com|instaffo\.com|hays\.de|michael-page\.de|robertwalters\.de/;
-    const jobOfferKeywords = /\b(job recommendations?|new opportunities|jobs? that match|recommended jobs?|open positions? for you|we found .* jobs?|new jobs? near you|job alert|jobs? you might like)\b/;
-    const isJobOffer = jobOfferDomains.test(senderEmail) || jobOfferKeywords.test(text);
-
-    // Try to extract company from sender domain
-    const domain = senderEmail.split('@')[1]?.replace(/\.(com|co\..+|io|net|org|de)$/, '') ?? '';
-    const extractedCompany = domain.charAt(0).toUpperCase() + domain.slice(1);
-
-    return {
-        isJobRelated: true,
-        suggestedStatus,
-        suggestedNote: suggestedStatus ? `Email received: ${subject.slice(0, 100)}` : '',
-        suggestedCalendarEvent: null,
-        extractedCompany,
-        extractedRole: '',
-        confidence: suggestedStatus ? 'medium' : 'low',
-        emailCategory: isJobOffer ? 'job_offer' : 'application_response',
-    };
 }

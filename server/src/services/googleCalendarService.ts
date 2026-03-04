@@ -79,6 +79,9 @@ export async function createCalendarEvent(
     const calendar = google.calendar({ version: 'v3', auth });
 
     const startDateTime = new Date(reminder.dateTimeISO);
+    if (isNaN(startDateTime.getTime())) {
+        throw new Error(`Invalid dateTimeISO for calendar event: "${reminder.dateTimeISO}"`);
+    }
     // 30-min duration by default
     const endDateTime = new Date(startDateTime.getTime() + 30 * 60 * 1000);
 

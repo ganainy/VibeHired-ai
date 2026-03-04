@@ -74,12 +74,12 @@ router.get(
         let profile = await Profile.findOne({ userId }).lean();
         if (!profile) {
             // Return defaults if profile doesn't exist
-            res.json({ lookbackDays: 14 });
+            res.json({ scanLimit: 50 });
             return;
         }
 
         res.json({
-            lookbackDays: profile.settings?.emailSuggestions?.lookbackDays ?? 14,
+            scanLimit: profile.settings?.emailSuggestions?.scanLimit ?? 50,
             autoPollApplications: profile.settings?.emailSuggestions?.autoPollApplications ?? true,
             autoPollJobLeads: profile.settings?.emailSuggestions?.autoPollJobLeads ?? true,
         });
@@ -94,7 +94,7 @@ router.put(
     '/preferences',
     asyncHandler(async (req: Request, res: Response) => {
         const userId = String(req.user!._id);
-        const { lookbackDays, autoPollApplications, autoPollJobLeads } = req.body;
+        const { scanLimit, autoPollApplications, autoPollJobLeads } = req.body;
 
         // Find or create profile
         let profile = await Profile.findOne({ userId });
@@ -111,8 +111,8 @@ router.put(
         }
 
         // Update the preference
-        if (lookbackDays !== undefined) {
-            profile.settings.emailSuggestions.lookbackDays = Number(lookbackDays);
+        if (scanLimit !== undefined) {
+            profile.settings.emailSuggestions.scanLimit = Number(scanLimit);
         }
 
         if (autoPollApplications !== undefined) {
@@ -127,7 +127,7 @@ router.put(
         await profile.save();
 
         res.json({
-            lookbackDays: profile.settings.emailSuggestions.lookbackDays,
+            scanLimit: profile.settings.emailSuggestions.scanLimit ?? 50,
             autoPollApplications: profile.settings.emailSuggestions.autoPollApplications ?? true,
             autoPollJobLeads: profile.settings.emailSuggestions.autoPollJobLeads ?? true,
         });
@@ -254,11 +254,10 @@ router.post(
         }
         pollCooldowns.set(userId, now);
 
-        // Allow caller to specify a custom lookback window (days), default 7
-        const days = Number(req.body?.lookbackDays) || 7;
-        const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+        // Allow caller to specify how many recent emails to scan, default 50
+        const limit = Number(req.body?.scanLimit) || 50;
 
-        const count = await pollEmailsForUser(userId, since);
+        const count = await pollEmailsForUser(userId, limit);
         res.json({ message: `Poll complete. ${count} new suggestion(s) created.`, count });
     })
 );
@@ -359,8 +358,13 @@ router.post(
                     job.notes = job.notes ? `${job.notes}\n\n${noteEntry}` : noteEntry;
                 }
 
-                // Create calendar event if requested and one was suggested
-                if (includeCalendarEvent && suggestion.suggestedCalendarEvent) {
+                // Create calendar event if requested and one was suggested with a valid date
+                const calEventDate = suggestion.suggestedCalendarEvent?.dateTimeISO
+                    ? new Date(suggestion.suggestedCalendarEvent.dateTimeISO)
+                    : null;
+                const hasValidCalEvent = calEventDate && !isNaN(calEventDate.getTime());
+
+                if (includeCalendarEvent && suggestion.suggestedCalendarEvent && hasValidCalEvent) {
                     const calEvent = suggestion.suggestedCalendarEvent;
                     try {
                         const googleConnected = await isGoogleConnected(userId);
