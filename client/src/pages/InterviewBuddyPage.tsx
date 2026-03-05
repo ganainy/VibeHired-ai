@@ -93,11 +93,19 @@ const InterviewBuddyPage: React.FC = () => {
 
     setLaunching(true);
     setCompanionStatus('unknown');
-    window.location.href = deepLink;
 
-    // If the companion is installed the OS opens it; if not, nothing happens and
-    // the tab stays open. After 1.5 s with no navigation-away we mark it as
-    // not-installed and surface the download link.
+    // Use window.open instead of window.location.href so the current tab's URL
+    // is never modified. If window.location.href is used, Chrome may defer the
+    // external-protocol permission dialog across page navigations (e.g. an OAuth
+    // redirect) and replay it at the next login — making the dialog appear at an
+    // unexpected time. Firing the deep link via window.open keeps it scoped to a
+    // separate browsing context; the permission prompt appears immediately on
+    // this click and is never deferred into the login flow.
+    window.open(deepLink, '_blank', 'noopener,noreferrer');
+
+    // If the companion is installed the OS opens it; if not, nothing happens.
+    // After 1.5 s with no focus-return we mark it as not-installed and surface
+    // the download link.
     launchTimeoutRef.current = setTimeout(() => {
       setLaunching(false);
       setCompanionStatus('not-installed');
