@@ -56,6 +56,11 @@ import {
   Employer,
   SubLocation,
 } from '../services/employerApi';
+import {
+  getGoogleCalendarStatus,
+  listUpcomingEvents,
+  CalendarEvent,
+} from '../services/googleCalendarApi';
 import Spinner from '../components/common/Spinner';
 import { parseApiErrorMessage } from '../utils/parseApiError';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
@@ -95,6 +100,58 @@ function groupEntriesByDate(entries: WorkEntry[]): Map<string, WorkEntry[]> {
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(entry);
   }
+  return map;
+}
+
+// ── Calendar integration helpers ──────────────────────────────────────────
+
+type TimeLogItem =
+  | { kind: 'entry'; data: WorkEntry }
+  | { kind: 'calendar'; data: CalendarEvent };
+
+function getCalEventDateKey(event: CalendarEvent): string {
+  const raw = event.start.dateTime || event.start.date || '';
+  return raw.split('T')[0];
+}
+
+function getCalEventStartTime(event: CalendarEvent): string {
+  if (!event.start.dateTime) return '00:00';
+  const d = new Date(event.start.dateTime);
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function formatCalendarTime(dateTimeStr: string): string {
+  return new Date(dateTimeStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function groupItemsByDate(
+  entries: WorkEntry[],
+  calendarEvents: CalendarEvent[],
+): Map<string, TimeLogItem[]> {
+  const map = new Map<string, TimeLogItem[]>();
+
+  for (const entry of entries) {
+    const key = entry.date.split('T')[0];
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push({ kind: 'entry', data: entry });
+  }
+
+  for (const event of calendarEvents) {
+    const key = getCalEventDateKey(event);
+    if (!key) continue;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push({ kind: 'calendar', data: event });
+  }
+
+  // Sort items within each day by start time ascending
+  for (const items of map.values()) {
+    items.sort((a, b) => {
+      const aTime = a.kind === 'entry' ? a.data.startTime : getCalEventStartTime(a.data);
+      const bTime = b.kind === 'entry' ? b.data.startTime : getCalEventStartTime(b.data);
+      return aTime.localeCompare(bTime);
+    });
+  }
+
   return map;
 }
 
@@ -1411,6 +1468,11 @@ const WorkTrackerPage: React.FC = () => {
   const [loadingAppointmentTypes, setLoadingAppointmentTypes] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
 
+  // ── Calendar events (inline in Time Log) ────────────────────────────────
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [loadingCalendarEvents, setLoadingCalendarEvents] = useState(false);
+
   // ── Month navigation ──────────────────────────────────────────────────────
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getUTCFullYear());
@@ -1501,17 +1563,41 @@ const WorkTrackerPage: React.FC = () => {
     }
   }, []);
 
+  const fetchCalendarEvents = useCallback(async () => {
+    setLoadingCalendarEvents(true);
+    try {
+      const status = await getGoogleCalendarStatus();
+      setCalendarConnected(status.connected);
+      if (!status.connected) {
+        setCalendarEvents([]);
+        return;
+      }
+      // Build month-scoped timeMin / timeMax
+      const timeMin = new Date(viewYear, viewMonth - 1, 1).toISOString();
+      const timeMax = new Date(viewYear, viewMonth, 0, 23, 59, 59).toISOString();
+      const events = await listUpcomingEvents({ maxResults: 100, timeMin, timeMax });
+      setCalendarEvents(events);
+    } catch {
+      // Silently fail — calendar integration is optional
+      setCalendarEvents([]);
+    } finally {
+      setLoadingCalendarEvents(false);
+    }
+  }, [viewYear, viewMonth]);
+
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
+  useEffect(() => { fetchCalendarEvents(); }, [fetchCalendarEvents]);
   useEffect(() => { fetchEmployers(); }, [fetchEmployers]);
 
-  // Refresh entries when window gains focus (e.g., after switching from Calendar page)
+  // Refresh entries + calendar events when window gains focus (e.g., after switching from Calendar page)
   useEffect(() => {
     const handleFocus = () => {
       fetchEntries();
+      fetchCalendarEvents();
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [fetchEntries]);
+  }, [fetchEntries, fetchCalendarEvents]);
   useEffect(() => { fetchAppointmentTypes(); }, [fetchAppointmentTypes]);
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
@@ -1753,8 +1839,10 @@ const WorkTrackerPage: React.FC = () => {
   const monthLabel = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`;
 
   const grouped = groupEntriesByDate(entries);
-  const plannedGrouped = groupEntriesByDate(entries.filter((e) => e.status === 'planned'));
-  const doneGrouped = groupEntriesByDate(entries.filter((e) => e.status === 'done'));
+  // Planned: work entries + calendar events for the month
+  const plannedGrouped = groupItemsByDate(entries.filter((e) => e.status === 'planned'), calendarEvents);
+  // Done: work entries only (calendar events have no status)
+  const doneGrouped = groupItemsByDate(entries.filter((e) => e.status === 'done'), []);
   const sortedDateKeys = Array.from(grouped.keys()).sort();
   const plannedDateKeys = Array.from(plannedGrouped.keys()).sort(); // ascending — soonest first
   const doneDateKeys = Array.from(doneGrouped.keys()).sort().reverse(); // descending — most recent first
@@ -1775,21 +1863,69 @@ const WorkTrackerPage: React.FC = () => {
 
 
 
-  const renderDayCard = (dateKey: string, dayEntries: WorkEntry[]) => {
-    const dayHours = dayEntries.reduce((sum, e) => sum + (e.type === 'shift' ? e.hours : 0), 0);
-    const allDone = dayEntries.every((e) => e.status === 'done');
+  const renderDayCard = (dateKey: string, dayItems: TimeLogItem[]) => {
+    const workEntries = dayItems.filter((i): i is { kind: 'entry'; data: WorkEntry } => i.kind === 'entry');
+    const dayHours = workEntries.reduce((sum, i) => sum + (i.data.type === 'shift' ? i.data.hours : 0), 0);
+    const allDone = workEntries.length > 0 && workEntries.every((i) => i.data.status === 'done');
     return (
       <div key={dateKey} className="card overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
           <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
             {formatDate(dateKey)}
           </span>
-          <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: allDone ? 'rgba(45,212,160,0.1)' : 'var(--accent-bg)', color: allDone ? 'var(--jade)' : 'var(--accent)', border: `1px solid ${allDone ? 'rgba(45,212,160,0.2)' : 'var(--accent-dim)'}` }}>
-            {dayHours}h
-          </span>
+          {dayHours > 0 && (
+            <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: allDone ? 'rgba(45,212,160,0.1)' : 'var(--accent-bg)', color: allDone ? 'var(--jade)' : 'var(--accent)', border: `1px solid ${allDone ? 'rgba(45,212,160,0.2)' : 'var(--accent-dim)'}` }}>
+              {dayHours}h
+            </span>
+          )}
         </div>
         <ul className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
-          {dayEntries.map((entry) => {
+          {dayItems.map((item) => {
+            if (item.kind === 'calendar') {
+              const event = item.data;
+              const startStr = event.start.dateTime ? formatCalendarTime(event.start.dateTime) : null;
+              const endStr = event.end.dateTime ? formatCalendarTime(event.end.dateTime) : null;
+              return (
+                <li key={`cal-${event.id}`} className="flex items-start gap-3 px-4 py-3 transition-colors" style={{ background: 'rgba(99,102,241,0.025)' }}>
+                  {/* Spacer matching the toggle button width — calendar rows are read-only */}
+                  <div className="mt-0.5 shrink-0 flex items-center justify-center" style={{ width: 20, height: 20, color: 'var(--accent)', opacity: 0.55 }}>
+                    <CalendarDays size={15} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                        {event.summary || '(No title)'}
+                      </span>
+                      <span
+                        className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded"
+                        style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)', color: 'var(--accent)' }}
+                      >
+                        <CalendarDays size={9} /> Google Calendar
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+                      {startStr && endStr ? (
+                        <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                          {startStr} &ndash; {endStr}
+                        </span>
+                      ) : !event.start.dateTime ? (
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>All day</span>
+                      ) : null}
+                      {event.location && (
+                        <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                          <MapPin size={10} />{event.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {/* No action buttons — read-only calendar rows */}
+                  <div style={{ width: 28 }} />
+                </li>
+              );
+            }
+
+            // ── Work entry row (unchanged) ───────────────────────────────────
+            const entry = item.data;
             const isDone = entry.status === 'done';
             const isToggling = togglingId === entry._id;
             const isConfirmDelete = deletingEntryId === entry._id;
@@ -2030,7 +2166,7 @@ const WorkTrackerPage: React.FC = () => {
                 <div className="h-64 flex items-center justify-center card">
                   <Spinner size="lg" />
                 </div>
-              ) : entries.length === 0 ? (
+              ) : entries.length === 0 && calendarEvents.length === 0 ? (
                 <div className="card flex flex-col items-center justify-center py-16 text-center gap-4">
                   <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                     <Clock size={24} />
