@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import User, { IUser } from '../models/User';
 import UsageRecord from '../models/UsageRecord';
+import ExternalCallLog from '../models/ExternalCallLog';
 import { getUsageRecord, grantBonusCredits, resetBillingPeriod } from '../services/creditService';
 import { PlanType } from '../constants/plans';
 import { stripe } from '../services/stripeService';
@@ -170,13 +171,101 @@ export async function getAdminStats(req: Request, res: Response) {
             }
         }
 
+        const now = Date.now();
+        const last24hDate = new Date(now - 24 * 60 * 60 * 1000);
+        const externalStats = await ExternalCallLog.aggregate([
+            {
+                $facet: {
+                    totalsByCategory: [
+                        { $group: { _id: '$category', count: { $sum: 1 } } }
+                    ],
+                    last24hByCategory: [
+                        { $match: { createdAt: { $gte: last24hDate } } },
+                        { $group: { _id: '$category', count: { $sum: 1 } } }
+                    ],
+                    successByStatus: [
+                        { $group: { _id: '$success', count: { $sum: 1 } } }
+                    ],
+                    byProvider: [
+                        { $group: { _id: '$provider', count: { $sum: 1 } } },
+                        { $sort: { count: -1 } }
+                    ],
+                    topModels: [
+                        { $match: { category: 'ai', modelName: { $exists: true, $nin: ['', null] } } },
+                        { $group: { _id: '$modelName', count: { $sum: 1 } } },
+                        { $sort: { count: -1 } },
+                        { $limit: 10 }
+                    ],
+                    recentCalls: [
+                        { $sort: { createdAt: -1 } },
+                        { $limit: 20 },
+                        {
+                            $project: {
+                                _id: 1,
+                                category: 1,
+                                provider: 1,
+                                modelName: 1,
+                                host: 1,
+                                path: 1,
+                                method: 1,
+                                statusCode: 1,
+                                success: 1,
+                                durationMs: 1,
+                                errorMessage: 1,
+                                createdAt: 1,
+                            }
+                        }
+                    ]
+                }
+            }
+        ]);
+
+        const external = externalStats[0] || {};
+
+        const mapCount = (arr: Array<{ _id: string; count: number }> = []) =>
+            arr.reduce((acc: Record<string, number>, item) => {
+                if (item?._id) acc[item._id] = item.count || 0;
+                return acc;
+            }, {});
+
+        const statusMap = (external.successByStatus || []).reduce((acc: Record<string, number>, item: any) => {
+            acc[String(item?._id)] = item?.count || 0;
+            return acc;
+        }, {});
+
+        const totalsByCategory = mapCount(external.totalsByCategory || []);
+        const last24hByCategory = mapCount(external.last24hByCategory || []);
+
         const result = {
             totalUsers,
             activeUsers: activeUsersCount.length,
             totalRevenue,
             mrr,
             tierDistribution,
-            recentPayments
+            recentPayments,
+            externalCalls: {
+                totals: {
+                    ai: totalsByCategory.ai || 0,
+                    apify: totalsByCategory.apify || 0,
+                    all: (totalsByCategory.ai || 0) + (totalsByCategory.apify || 0),
+                },
+                last24h: {
+                    ai: last24hByCategory.ai || 0,
+                    apify: last24hByCategory.apify || 0,
+                    all: (last24hByCategory.ai || 0) + (last24hByCategory.apify || 0),
+                },
+                successful: statusMap.true || 0,
+                failed: statusMap.false || 0,
+                byProvider: (external.byProvider || []).map((item: any) => ({
+                    provider: item._id,
+                    count: item.count,
+                })),
+                topModels: (external.topModels || []).map((item: any) => ({
+                    modelName: item._id,
+                    count: item.count,
+                })),
+                recentCalls: external.recentCalls || [],
+            }
         };
 
         // Cache the result

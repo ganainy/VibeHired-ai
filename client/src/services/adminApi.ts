@@ -16,6 +16,42 @@ export interface AdminStats {
         customerEmail: string;
         createdAt: string;
     }>;
+    externalCalls?: {
+        totals: {
+            ai: number;
+            apify: number;
+            all: number;
+        };
+        last24h: {
+            ai: number;
+            apify: number;
+            all: number;
+        };
+        successful: number;
+        failed: number;
+        byProvider: Array<{
+            provider: string;
+            count: number;
+        }>;
+        topModels: Array<{
+            modelName: string;
+            count: number;
+        }>;
+        recentCalls: Array<{
+            _id: string;
+            category: 'ai' | 'apify';
+            provider: string;
+            modelName?: string;
+            host: string;
+            path: string;
+            method: string;
+            statusCode?: number;
+            success: boolean;
+            durationMs: number;
+            errorMessage?: string;
+            createdAt: string;
+        }>;
+    };
 }
 
 export interface AdminUser {
@@ -25,6 +61,7 @@ export interface AdminUser {
     role: 'user' | 'admin' | 'owner';
     plan: string;
     emailVerified: boolean;
+    isBlocked?: boolean;
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
     credits: number;

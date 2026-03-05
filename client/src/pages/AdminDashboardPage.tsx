@@ -74,6 +74,136 @@ const AdminDashboardPage: React.FC = () => {
                 />
             </div>
 
+            {stats.externalCalls && (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <StatCard
+                            label="AI Calls (Total)"
+                            value={stats.externalCalls.totals.ai}
+                            icon={<SparkIcon />}
+                            color="blue"
+                        />
+                        <StatCard
+                            label="Apify Calls (Total)"
+                            value={stats.externalCalls.totals.apify}
+                            icon={<DatabaseIcon />}
+                            color="gold"
+                        />
+                        <StatCard
+                            label="Calls (Last 24h)"
+                            value={stats.externalCalls.last24h.all}
+                            icon={<ClockIcon />}
+                            color="emerald"
+                        />
+                        <StatCard
+                            label="Failed Calls"
+                            value={stats.externalCalls.failed}
+                            icon={<AlertIcon />}
+                            color="purple"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+                            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                                <ActivityIcon /> Calls by Provider
+                            </h3>
+                            <div className="space-y-3">
+                                {stats.externalCalls.byProvider.length === 0 && (
+                                    <p className="text-sm text-zinc-500 italic">No provider calls recorded yet.</p>
+                                )}
+                                {stats.externalCalls.byProvider.map((item) => (
+                                    <div key={item.provider} className="flex items-center justify-between text-sm">
+                                        <span className="font-medium capitalize">{item.provider}</span>
+                                        <span className="text-zinc-500">{item.count}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+                            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                                <PieChartIcon /> Top AI Models
+                            </h3>
+                            <div className="space-y-3">
+                                {stats.externalCalls.topModels.length === 0 && (
+                                    <p className="text-sm text-zinc-500 italic">No model data recorded yet.</p>
+                                )}
+                                {stats.externalCalls.topModels.map((item) => (
+                                    <div key={item.modelName} className="flex items-center justify-between text-sm">
+                                        <span className="font-medium truncate">{item.modelName}</span>
+                                        <span className="text-zinc-500">{item.count}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+                            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                                <TrendingUpIcon /> Call Health
+                            </h3>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-medium">Successful</span>
+                                    <span className="text-emerald-600 dark:text-emerald-400">{stats.externalCalls.successful}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="font-medium">Failed</span>
+                                    <span className="text-rose-600 dark:text-rose-400">{stats.externalCalls.failed}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="font-medium">Success Rate</span>
+                                    <span className="text-zinc-500">
+                                        {stats.externalCalls.totals.all > 0
+                                            ? `${((stats.externalCalls.successful / stats.externalCalls.totals.all) * 100).toFixed(1)}%`
+                                            : '0%'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm overflow-hidden">
+                        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                            <ClockIcon /> Recent AI & Apify Calls
+                        </h3>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="text-zinc-500 text-xs uppercase tracking-wider border-b border-zinc-100 dark:border-zinc-800">
+                                        <th className="pb-3 font-semibold">Provider</th>
+                                        <th className="pb-3 font-semibold">Type</th>
+                                        <th className="pb-3 font-semibold">Model</th>
+                                        <th className="pb-3 font-semibold">Status</th>
+                                        <th className="pb-3 font-semibold">Latency</th>
+                                        <th className="pb-3 font-semibold">Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
+                                    {stats.externalCalls.recentCalls.map((call) => (
+                                        <tr key={call._id} className="text-sm">
+                                            <td className="py-4 font-medium capitalize">{call.provider}</td>
+                                            <td className="py-4 uppercase text-xs tracking-wide">{call.category}</td>
+                                            <td className="py-4 text-zinc-500">{call.modelName || '-'}</td>
+                                            <td className="py-4">
+                                                <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${call.success ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30'}`}>
+                                                    {call.statusCode || (call.success ? 'OK' : 'ERR')}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 text-zinc-500">{call.durationMs} ms</td>
+                                            <td className="py-4 text-zinc-500">{new Date(call.createdAt).toLocaleString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {stats.externalCalls.recentCalls.length === 0 && (
+                                <p className="text-center py-8 text-zinc-500 italic">No AI or Apify calls recorded yet.</p>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Tier Distribution */}
                 <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
@@ -202,6 +332,22 @@ const PieChartIcon = () => (
 const ClockIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+    </svg>
+);
+const SparkIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3l1.9 3.9L18 9l-4.1 2.1L12 15l-1.9-3.9L6 9l4.1-2.1z" />
+    </svg>
+);
+const DatabaseIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5" /><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
+    </svg>
+);
+const AlertIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
 );
 
