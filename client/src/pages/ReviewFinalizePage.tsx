@@ -2704,7 +2704,7 @@ const ReviewFinalizePage: React.FC = () => {
                                             {jobDetailsForm.notes && (
                                                 <div className="flex flex-col gap-0.5 sm:col-span-2">
                                                     <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Notes</dt>
-                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark whitespace-pre-wrap">{jobDetailsForm.notes}</dd>
+                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark whitespace-pre-wrap break-words">{jobDetailsForm.notes}</dd>
                                                 </div>
                                             )}
                                         </dl>

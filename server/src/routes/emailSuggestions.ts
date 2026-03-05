@@ -266,12 +266,14 @@ router.post(
 // POST /api/email-suggestions/:id/add-note
 // Independently append the suggested note to the matched job (without changing
 // the suggestion's status or the job's status).
+// Body: { includeEmailLink?: boolean }  (default true)
 // ─────────────────────────────────────────────────────────────────────────────
 router.post(
     '/:id/add-note',
     asyncHandler(async (req: Request, res: Response) => {
         const userId = String(req.user!._id);
         const { id } = req.params;
+        const includeEmailLink: boolean = req.body?.includeEmailLink !== false; // default true
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             res.status(400).json({ message: 'Invalid suggestion ID.' });
@@ -298,7 +300,10 @@ router.post(
                 const timestamp = new Date().toLocaleDateString('en-GB', {
                     day: '2-digit', month: 'short', year: 'numeric',
                 });
-                const noteEntry = `[${timestamp}] ${suggestion.suggestedNote}`;
+                let noteEntry = `[${timestamp}] ${suggestion.suggestedNote}`;
+                if (includeEmailLink) {
+                    noteEntry += `\n📧 Email: https://mail.google.com/mail/u/0/#all/${suggestion.gmailMessageId}`;
+                }
                 job.notes = job.notes ? `${job.notes}\n\n${noteEntry}` : noteEntry;
                 await job.save();
             }
@@ -314,7 +319,7 @@ router.post(
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/email-suggestions/:id/accept
 // Accept a suggestion: update the matched job's status.
-// Body: { includeCalendarEvent?: boolean }  (default true if suggestedCalendarEvent exists)
+// Body: { includeCalendarEvent?: boolean, includeEmailLink?: boolean }  (default true if suggestedCalendarEvent exists)
 // ─────────────────────────────────────────────────────────────────────────────
 router.post(
     '/:id/accept',
@@ -322,6 +327,7 @@ router.post(
         const userId = String(req.user!._id);
         const { id } = req.params;
         const includeCalendarEvent: boolean = req.body?.includeCalendarEvent !== false; // default true
+        const includeEmailLink: boolean = req.body?.includeEmailLink !== false; // default true
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             res.status(400).json({ message: 'Invalid suggestion ID.' });
@@ -354,7 +360,10 @@ router.post(
                     const timestamp = new Date().toLocaleDateString('en-GB', {
                         day: '2-digit', month: 'short', year: 'numeric',
                     });
-                    const noteEntry = `[${timestamp}] ${suggestion.suggestedNote}`;
+                    let noteEntry = `[${timestamp}] ${suggestion.suggestedNote}`;
+                    if (includeEmailLink) {
+                        noteEntry += `\n📧 Email: https://mail.google.com/mail/u/0/#all/${suggestion.gmailMessageId}`;
+                    }
                     job.notes = job.notes ? `${job.notes}\n\n${noteEntry}` : noteEntry;
                 }
 

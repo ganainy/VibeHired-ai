@@ -76,17 +76,17 @@ export const updateSuggestion = async (id: string, payload: UpdateSuggestionPayl
 };
 
 /** Accept a suggestion — applies the status change and optionally creates a calendar event. */
-export const acceptSuggestion = async (id: string, options?: { includeCalendarEvent?: boolean }): Promise<{ calendarEventCreated?: boolean; calendarWarning?: string }> => {
+export const acceptSuggestion = async (id: string, options?: { includeCalendarEvent?: boolean; includeEmailLink?: boolean }): Promise<{ calendarEventCreated?: boolean; calendarWarning?: string }> => {
     const { data } = await axios.post<{ calendarEventCreated?: boolean; calendarWarning?: string }>(
         `${API_BASE_URL}/email-suggestions/${id}/accept`,
-        { includeCalendarEvent: options?.includeCalendarEvent ?? true }
+        { includeCalendarEvent: options?.includeCalendarEvent ?? true, includeEmailLink: options?.includeEmailLink ?? true }
     );
     return data;
 };
 
 /** Append the suggested note to the matched job, independent of Accept/Reject. */
-export const addNoteSuggestion = async (id: string): Promise<void> => {
-    await axios.post(`${API_BASE_URL}/email-suggestions/${id}/add-note`);
+export const addNoteSuggestion = async (id: string, options?: { includeEmailLink?: boolean }): Promise<void> => {
+    await axios.post(`${API_BASE_URL}/email-suggestions/${id}/add-note`, { includeEmailLink: options?.includeEmailLink ?? true });
 };
 
 /** Reject / dismiss a suggestion. */
