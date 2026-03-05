@@ -508,6 +508,9 @@ Replace `your-app-name-backend` with your actual Heroku app name.
 - `VITE_BACKEND_URL` - Your Heroku backend URL + `/api`
   - Example: `https://your-app-name-backend.herokuapp.com/api`
   - Replace `your-app-name-backend` with your actual Heroku app name
+- `VITE_PAYMENTS_ENABLED` - Controls whether Stripe checkout and upgrade CTAs are shown
+  - Set to `false` while Stripe is in sandbox mode / not ready for users
+  - Set to `true` (or remove the variable entirely) when ready to enable payments
 
 ## Best Practices
 

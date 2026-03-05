@@ -89,7 +89,7 @@ const LoginPage: React.FC = () => {
     if (resendCooldown > 0) return;
     setResendingVerification(true);
     try {
-      await resendVerificationEmail();
+      await resendVerificationEmail(email);
       setVerificationSent(true);
       setResendCooldown(60); // 60 second cooldown
       const timer = setInterval(() => {

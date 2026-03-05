@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Check, Sparkles, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { PAYMENTS_ENABLED } from '../../utils/featureFlags';
 
 interface PlanStepProps {
   onFinish: () => void;
@@ -162,13 +163,15 @@ const PlanStep: React.FC<PlanStepProps> = ({ onFinish, onBack, isLoading }) => {
           Back
         </button>
         <div className="flex gap-2">
-          <button
-            className="btn-secondary text-sm px-4 flex items-center gap-2"
-            onClick={handleViewPlans}
-            disabled={isLoading}
-          >
-            View all plans
-          </button>
+          {PAYMENTS_ENABLED && (
+            <button
+              className="btn-secondary text-sm px-4 flex items-center gap-2"
+              onClick={handleViewPlans}
+              disabled={isLoading}
+            >
+              View all plans
+            </button>
+          )}
           <button
             className="btn-primary text-sm px-6 flex items-center gap-2"
             onClick={onFinish}

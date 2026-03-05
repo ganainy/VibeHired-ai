@@ -122,6 +122,8 @@ export const getGmailScopeStatus = async (): Promise<{ hasScope: boolean }> => {
 /** Get email suggestion preferences for the current user. */
 export interface EmailSuggestionPreferences {
     lookbackDays: number;
+    /** Maximum number of emails to scan per poll run. */
+    scanLimit?: number;
     /** Whether the server should automatically scan application response emails on the cron schedule. */
     autoPollApplications: boolean;
     /** Whether the server should automatically scan job offer/lead emails on the cron schedule. */

@@ -35,7 +35,7 @@ import { getGoogleConnectUrl } from '../../../services/googleCalendarApi';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const defaultPrefs = { lookbackDays: 14, defaultProvider: null, inboxProvider: null, autoPoll: false };
+const defaultPrefs = { lookbackDays: 14, autoPollApplications: false, autoPollJobLeads: false };
 
 function setupApiDefaults(overrides: Partial<typeof api> = {}) {
     vi.mocked(api.getGmailScopeStatus).mockResolvedValue({ hasScope: true });

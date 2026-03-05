@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { parseApiError, parseApiErrorMessage } from '../utils/parseApiError';
+import { PAYMENTS_ENABLED } from '../utils/featureFlags';
 import {
     listPendingSuggestions,
     acceptSuggestion,
@@ -227,7 +228,7 @@ const HOW_IT_WORKS = [
 function buildPollToast(r: PollNowResult): string {
     if (r.scanned === 0) return 'No new emails to scan.';
     const scannedPart = `Scanned ${r.scanned} email${r.scanned !== 1 ? 's' : ''}`;
-    if (r.created === 0) return `${scannedPart} — no job-related emails found.`;
+    if ((r.applicationResponses + r.jobLeads) === 0) return `${scannedPart} — no job-related emails found.`;
     const parts: string[] = [];
     if (r.applicationResponses > 0) parts.push(`${r.applicationResponses} application response${r.applicationResponses !== 1 ? 's' : ''}`);
     if (r.jobLeads > 0) parts.push(`${r.jobLeads} job lead${r.jobLeads !== 1 ? 's' : ''}`);
@@ -636,9 +637,13 @@ const EmailSuggestionsPage: React.FC = () => {
                                         {actionError.message}
                                     </p>
                                     {actionError.upgrade && (
-                                        <a href="/subscriptions" className="text-[12px] font-semibold underline mt-0.5 inline-block" style={{ color: 'var(--accent)' }}>
-                                            View upgrade options →
-                                        </a>
+                                        PAYMENTS_ENABLED
+                                            ? <a href="/subscriptions" className="text-[12px] font-semibold underline mt-0.5 inline-block" style={{ color: 'var(--accent)' }}>
+                                                View upgrade options →
+                                              </a>
+                                            : <span className="text-[12px] mt-0.5 inline-block" style={{ color: 'var(--text-muted)' }}>
+                                                Paid plans coming soon
+                                              </span>
                                     )}
                                 </div>
                                 <button onClick={() => setActionError(null)} className="text-xs opacity-50 hover:opacity-100 transition-opacity flex-shrink-0" style={{ color: 'var(--text-muted)' }}>✕</button>

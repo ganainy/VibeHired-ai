@@ -61,7 +61,7 @@ const LinkIcon = () => (
 function buildPollToast(r: PollNowResult): string {
     if (r.scanned === 0) return 'No new emails to scan.';
     const scannedPart = `Scanned ${r.scanned} email${r.scanned !== 1 ? 's' : ''}`;
-    if (r.created === 0) return `${scannedPart} — no job-related emails found.`;
+    if ((r.applicationResponses + r.jobLeads) === 0) return `${scannedPart} — no job-related emails found.`;
     const parts: string[] = [];
     if (r.applicationResponses > 0) parts.push(`${r.applicationResponses} application response${r.applicationResponses !== 1 ? 's' : ''}`);
     if (r.jobLeads > 0) parts.push(`${r.jobLeads} job lead${r.jobLeads !== 1 ? 's' : ''}`);

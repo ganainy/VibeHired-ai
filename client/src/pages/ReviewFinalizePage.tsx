@@ -20,6 +20,7 @@ import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
 import axios from 'axios';
 import ErrorAlert from '../components/common/ErrorAlert';
 import { parseApiError, parseApiErrorMessage } from '../utils/parseApiError';
+import { PAYMENTS_ENABLED } from '../utils/featureFlags';
 import SendToPhoneButton from '../components/jobs/SendToPhoneButton';
 import Spinner from '../components/common/Spinner';
 import SimpleLoader from '../components/common/SimpleLoader';
@@ -2068,11 +2069,15 @@ const ReviewFinalizePage: React.FC = () => {
                             {aiActionError.message}
                         </p>
                         {aiActionError.upgrade && (
-                            <a href="/subscriptions"
-                                className="text-xs font-semibold underline mt-0.5 inline-block"
-                                style={{ color: '#b45309' }}>
-                                View upgrade options →
-                            </a>
+                            PAYMENTS_ENABLED
+                                ? <a href="/subscriptions"
+                                    className="text-xs font-semibold underline mt-0.5 inline-block"
+                                    style={{ color: '#b45309' }}>
+                                    View upgrade options →
+                                  </a>
+                                : <span className="text-xs mt-0.5 inline-block" style={{ color: '#b45309' }}>
+                                    Paid plans coming soon
+                                  </span>
                         )}
                     </div>
                     <button

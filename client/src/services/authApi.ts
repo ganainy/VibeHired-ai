@@ -27,8 +27,8 @@ export interface UserProfile {
     id: string;
     email: string;
     username?: string;
-    role?: string;
-    plan?: string;
+    role?: 'user' | 'admin' | 'owner';
+    plan?: 'free' | 'starter' | 'pro' | 'premium';
     emailVerified?: boolean;
     onboardingComplete?: boolean;
     createdAt: string;

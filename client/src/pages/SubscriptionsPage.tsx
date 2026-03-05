@@ -6,6 +6,7 @@ import { getUsage, UsageInfo } from '../services/usageApi';
 import { createCheckoutSession, createPortalSession, syncSubscription } from '../services/subscriptionApi';
 import Spinner from '../components/common/Spinner';
 import Toast from '../components/common/Toast';
+import { PAYMENTS_ENABLED } from '../utils/featureFlags';
 
 const PLANS = [
     {
@@ -94,7 +95,10 @@ const PlanCard: React.FC<{
     let buttonText = '';
     let isDisabled = false;
 
-    if (isCurrentPlan) {
+    if (!PAYMENTS_ENABLED && plan.id !== 'free') {
+        buttonText = 'Coming Soon';
+        isDisabled = true;
+    } else if (isCurrentPlan) {
         buttonText = 'Current Plan';
         isDisabled = true;
     } else if (plan.id === 'free') {
@@ -230,6 +234,7 @@ const SubscriptionsPage: React.FC = () => {
 
     const handleSelectPlan = async (planId: string) => {
         if (planId === 'free') return;
+        if (!PAYMENTS_ENABLED) return;
 
         if (user?.plan && user.plan !== 'free') {
             setIsProcessing(true);
@@ -267,7 +272,7 @@ const SubscriptionsPage: React.FC = () => {
                     <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-display">Plans & Billing</h1>
                     <p className="text-zinc-500 mt-1">Manage your subscription and credit usage.</p>
                 </div>
-                {user?.plan && user.plan !== 'free' && (
+                {PAYMENTS_ENABLED && user?.plan && user.plan !== 'free' && (
                     <button
                         onClick={() => handleSelectPlan(user.plan!)}
                         disabled={isProcessing}
@@ -277,6 +282,18 @@ const SubscriptionsPage: React.FC = () => {
                     </button>
                 )}
             </div>
+
+            {/* Payments coming-soon banner */}
+            {!PAYMENTS_ENABLED && (
+                <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-2xl">
+                    <svg className="w-5 h-5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <span className="font-bold">Paid plans coming soon</span> — enjoy your free credits in the meantime. Subscriptions will be available shortly.
+                    </p>
+                </div>
+            )}
 
             {/* Success Banner */}
             {successBanner && (

@@ -10,6 +10,7 @@ import { getUsage, UsageInfo } from '../services/usageApi';
 import { createCheckoutSession, createPortalSession } from '../services/subscriptionApi';
 import { resendVerificationEmail } from '../services/authApi';
 import { Link } from 'react-router-dom';
+import { PAYMENTS_ENABLED } from '../utils/featureFlags';
 
 // Icon Components
 const EyeIcon = () => (
@@ -329,21 +330,29 @@ const SettingsPage: React.FC = () => {
             </div>
 
             {user?.plan !== 'free' ? (
-              <button
-                onClick={handleManageSubscription}
-                disabled={isCreatingPortal}
-                className="w-full py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-600 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
-              >
-                {isCreatingPortal ? <Spinner size="sm" /> : 'Manage Subscription'}
-              </button>
+              PAYMENTS_ENABLED && (
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={isCreatingPortal}
+                  className="w-full py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-600 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  {isCreatingPortal ? <Spinner size="sm" /> : 'Manage Subscription'}
+                </button>
+              )
             ) : (
               <>
-                <button
-                  onClick={() => handleUpgrade('pro')}
-                  className="w-full py-2.5 rounded-lg bg-gold-500 hover:bg-gold-600 text-gold-950 text-xs font-bold transition-all shadow-md shadow-gold-500/20"
-                >
-                  Upgrade to Pro
-                </button>
+                {PAYMENTS_ENABLED ? (
+                  <button
+                    onClick={() => handleUpgrade('pro')}
+                    className="w-full py-2.5 rounded-lg bg-gold-500 hover:bg-gold-600 text-gold-950 text-xs font-bold transition-all shadow-md shadow-gold-500/20"
+                  >
+                    Upgrade to Pro
+                  </button>
+                ) : (
+                  <div className="w-full py-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 text-xs font-semibold text-center cursor-not-allowed">
+                    Paid plans coming soon
+                  </div>
+                )}
                 <Link
                   to="/subscriptions"
                   className="w-full mt-2 py-2 block text-center text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
