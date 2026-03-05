@@ -1,5 +1,5 @@
 // electron/src/components/TranscriptBar.tsx
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 
 interface TranscriptBarProps {
   isListening: boolean;
@@ -19,6 +19,34 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
   onClear,
 }) => {
   const displayText = transcript || interimTranscript;
+  const activePointerIdRef = useRef<number | null>(null);
+
+  const handlePointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0 || activePointerIdRef.current !== null) return;
+
+    event.preventDefault();
+    activePointerIdRef.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    onPushStart();
+  }, [onPushStart]);
+
+  const stopActivePointer = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    if (activePointerIdRef.current !== event.pointerId) return;
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    activePointerIdRef.current = null;
+    onPushStop();
+  }, [onPushStop]);
+
+  const handlePointerCancel = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    if (activePointerIdRef.current !== event.pointerId) return;
+
+    activePointerIdRef.current = null;
+    onPushStop();
+  }, [onPushStop]);
 
   return (
     <div
@@ -34,11 +62,10 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
       {/* ── Push-to-talk mic button ── */}
       <button
         className="no-drag"
-        onMouseDown={(e) => { e.preventDefault(); onPushStart(); }}
-        onMouseUp={onPushStop}
-        onMouseLeave={() => { if (isListening) onPushStop(); }}
-        onTouchStart={(e) => { e.preventDefault(); onPushStart(); }}
-        onTouchEnd={onPushStop}
+        onPointerDown={handlePointerDown}
+        onPointerUp={stopActivePointer}
+        onPointerCancel={handlePointerCancel}
+        onLostPointerCapture={handlePointerCancel}
         title={isListening ? 'Release to generate answer' : 'Hold to record question'}
         style={{
           width: 40,
@@ -57,6 +84,7 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
           position: 'relative',
           userSelect: 'none',
           gap: 2,
+          touchAction: 'none',
           WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'],
         }}
       >

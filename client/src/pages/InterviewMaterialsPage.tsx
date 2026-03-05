@@ -76,15 +76,29 @@ const GlobalMaterialCard: React.FC<{
     onDelete: (id: string) => void;
     onPreview: (m: InterviewMaterial) => void;
     onToggleFavorite: (id: string) => void;
+    onEdit: (id: string, payload: import('../types/interviewMaterial').UpdateMaterialPayload) => Promise<void>;
     isUpdating: boolean;
-}> = ({ material, showJobChip = false, isAssignedToJob = false, onRemoveGlobal, onDelete, onPreview, onToggleFavorite, isUpdating }) => {
+}> = ({ material, showJobChip = false, isAssignedToJob = false, onRemoveGlobal, onDelete, onPreview, onToggleFavorite, onEdit, isUpdating }) => {
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [editMode, setEditMode] = useState(false);
+    const [editForm, setEditForm] = useState({
+        title: material.title,
+        description: material.description ?? '',
+        content: material.content ?? '',
+        url: material.url ?? '',
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    const EDITABLE_TYPES: MaterialType[] = ['text', 'markdown', 'link', 'docx'];
+    const isEditable = EDITABLE_TYPES.includes(material.type);
+    const hasContent = material.type === 'text' || material.type === 'markdown';
     const isLink = material.type === 'link';
-    const clickable = canPreviewInline(material.type) || isLink;
+    const clickable = !editMode && (canPreviewInline(material.type) || isLink);
     const jobRef = getJobRef(material);
     const jobId = getJobId(material);
 
     const handleCardClick = () => {
+        if (editMode) return;
         if (isLink && material.url) {
             window.open(material.url, '_blank', 'noopener,noreferrer');
         } else if (canPreviewInline(material.type)) {
@@ -92,22 +106,147 @@ const GlobalMaterialCard: React.FC<{
         }
     };
 
+    const openEdit = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditForm({
+            title: material.title,
+            description: material.description ?? '',
+            content: material.content ?? '',
+            url: material.url ?? '',
+        });
+        setEditMode(true);
+    };
+
+    const handleSave = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!editForm.title.trim()) return;
+        setIsSaving(true);
+        try {
+            const payload: import('../types/interviewMaterial').UpdateMaterialPayload = {
+                title: editForm.title.trim(),
+                description: editForm.description.trim() || undefined,
+                ...(hasContent ? { content: editForm.content } : {}),
+                ...(isLink ? { url: editForm.url.trim() } : {}),
+            };
+            await onEdit(material._id, payload);
+            setEditMode(false);
+        } catch {
+            // onEdit throws on failure — keep edit mode open
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <div
             onClick={clickable ? handleCardClick : undefined}
-            className={`group relative flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-200 ${clickable ? 'cursor-pointer hover:border-opacity-60' : ''
-                }`}
-            style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
+            className={`group relative flex flex-col gap-2 p-3.5 rounded-xl border transition-all duration-200 ${clickable ? 'cursor-pointer hover:border-opacity-60' : ''}`}
+            style={{ backgroundColor: 'var(--bg-elevated)', borderColor: editMode ? 'var(--accent)' : 'var(--border)' }}
         >
-            {/* Type icon */}
-            <div className="flex-shrink-0 mt-0.5">
-                <span className={`material-symbols-outlined text-xl ${colorForType(material.type)}`}>
-                    {iconForType(material.type)}
-                </span>
-            </div>
+            {editMode ? (
+                /* ── Edit mode ── */
+                <div className="space-y-2.5" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className={`material-symbols-outlined text-base flex-shrink-0 ${colorForType(material.type)}`}>{iconForType(material.type)}</span>
+                        <span className="text-xs font-semibold capitalize" style={{ color: 'var(--accent)' }}>Editing {material.type}</span>
+                    </div>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
+                    {/* Title */}
+                    <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Title</label>
+                        <input
+                            type="text"
+                            value={editForm.title}
+                            onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+                            className="w-full px-3 py-1.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400"
+                            style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Description <span className="font-normal opacity-60">(optional)</span></label>
+                        <input
+                            type="text"
+                            value={editForm.description}
+                            onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                            className="w-full px-3 py-1.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400"
+                            style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        />
+                    </div>
+
+                    {/* Content (text / markdown) */}
+                    {hasContent && (
+                        <div>
+                            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
+                                {material.type === 'markdown' ? 'Content (Markdown)' : 'Content'}
+                            </label>
+                            <textarea
+                                value={editForm.content}
+                                onChange={e => setEditForm(f => ({ ...f, content: e.target.value }))}
+                                rows={8}
+                                className="w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400 resize-y font-mono"
+                                style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                            />
+                        </div>
+                    )}
+
+                    {/* URL (link) */}
+                    {isLink && (
+                        <div>
+                            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>URL</label>
+                            <input
+                                type="url"
+                                value={editForm.url}
+                                onChange={e => setEditForm(f => ({ ...f, url: e.target.value }))}
+                                className="w-full px-3 py-1.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400"
+                                style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                            />
+                        </div>
+                    )}
+
+                    {/* docx note */}
+                    {material.type === 'docx' && (
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>To replace the file itself, delete this item and re-upload.</p>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 pt-1">
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving || !editForm.title.trim()}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
+                            style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-base)' }}
+                        >
+                            {isSaving
+                                ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                : <span className="material-symbols-outlined text-sm">check</span>
+                            }
+                            Save
+                        </button>
+                        <button
+                            onClick={e => { e.stopPropagation(); setEditMode(false); }}
+                            disabled={isSaving}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50"
+                            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                /* ── Normal view ── */
+                <>
+                    <div className="flex items-start gap-3">
+                        {/* Type icon */}
+                        <div className="flex-shrink-0 mt-0.5">
+                            <span className={`material-symbols-outlined text-xl ${colorForType(material.type)}`}>
+                                {iconForType(material.type)}
+                            </span>
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                         {/* Title */}
@@ -164,81 +303,94 @@ const GlobalMaterialCard: React.FC<{
 
                     </div>
 
-                    {/* Right: favourite star + hover actions */}
-                    <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                        {/* Favourite star — always visible */}
-                        <button
-                            onClick={() => onToggleFavorite(material._id)}
-                            disabled={isUpdating}
-                            title={material.isFavorite ? 'Remove from favourites' : 'Add to favourites'}
-                            className="p-1.5 rounded-lg transition-all disabled:opacity-50"
-                            style={{
-                                color: material.isFavorite ? 'var(--accent)' : 'var(--text-muted)',
-                                opacity: material.isFavorite ? 1 : 0.35,
-                            }}
-                        >
-                            <span
-                                className="material-symbols-outlined text-base"
-                                style={material.isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                        {/* Right: favourite star + hover actions */}
+                        <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {/* Favourite star — always visible */}
+                            <button
+                                onClick={() => onToggleFavorite(material._id)}
+                                disabled={isUpdating}
+                                title={material.isFavorite ? 'Remove from favourites' : 'Add to favourites'}
+                                className="p-1.5 rounded-lg transition-all disabled:opacity-50"
+                                style={{
+                                    color: material.isFavorite ? 'var(--accent)' : 'var(--text-muted)',
+                                    opacity: material.isFavorite ? 1 : 0.35,
+                                }}
                             >
-                                star
-                            </span>
-                        </button>
-                        {/* Other actions */}
-                        <div className="flex items-center gap-1">
-                            {material.cloudinaryUrl && (
-                                <a
-                                    href={material.cloudinaryUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    title="Open / download"
-                                    className="p-1.5 rounded-lg transition-colors"
-                                    style={{ color: 'var(--text-muted)' }}
+                                <span
+                                    className="material-symbols-outlined text-base"
+                                    style={material.isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
                                 >
-                                    <span className="material-symbols-outlined text-base">open_in_new</span>
-                                </a>
-                            )}
-                            {isAssignedToJob && (
-                                <Link
-                                    to={`/jobs/${jobId}/review/materials`}
-                                    title="Go to job"
-                                    className="p-1.5 rounded-lg transition-colors"
-                                    style={{ color: 'var(--text-muted)' }}
-                                >
-                                    <span className="material-symbols-outlined text-base">arrow_outward</span>
-                                </Link>
-                            )}
-                            {confirmDelete ? (
-                                <div className="flex items-center gap-1">
+                                    star
+                                </span>
+                            </button>
+                            {/* Other actions */}
+                            <div className="flex items-center gap-1">
+                                {isEditable && (
                                     <button
-                                        onClick={() => onDelete(material._id)}
+                                        onClick={openEdit}
+                                        title="Edit"
                                         disabled={isUpdating}
-                                        className="text-xs px-2 py-1 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                                        className="p-1.5 rounded-lg transition-colors hover:text-blue-500 disabled:opacity-50"
+                                        style={{ color: 'var(--text-muted)' }}
                                     >
-                                        Delete
+                                        <span className="material-symbols-outlined text-base">edit</span>
                                     </button>
+                                )}
+                                    {material.cloudinaryUrl && (
+                                    <a
+                                        href={material.cloudinaryUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Open / download"
+                                        className="p-1.5 rounded-lg transition-colors"
+                                        style={{ color: 'var(--text-muted)' }}
+                                    >
+                                        <span className="material-symbols-outlined text-base">open_in_new</span>
+                                    </a>
+                                )}
+                                {isAssignedToJob && (
+                                    <Link
+                                        to={`/jobs/${jobId}/review/materials`}
+                                        title="Go to job"
+                                        className="p-1.5 rounded-lg transition-colors"
+                                        style={{ color: 'var(--text-muted)' }}
+                                    >
+                                        <span className="material-symbols-outlined text-base">arrow_outward</span>
+                                    </Link>
+                                )}
+                                {confirmDelete ? (
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => onDelete(material._id)}
+                                            disabled={isUpdating}
+                                            className="text-xs px-2 py-1 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                                        >
+                                            Delete
+                                        </button>
+                                        <button
+                                            onClick={() => setConfirmDelete(false)}
+                                            className="text-xs px-2 py-1 rounded-md transition-colors"
+                                            style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                ) : (
                                     <button
-                                        onClick={() => setConfirmDelete(false)}
-                                        className="text-xs px-2 py-1 rounded-md transition-colors"
-                                        style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
+                                        onClick={() => setConfirmDelete(true)}
+                                        title="Delete"
+                                        disabled={isUpdating}
+                                        className="p-1.5 rounded-lg transition-colors hover:text-red-500 disabled:opacity-50"
+                                        style={{ color: 'var(--text-muted)' }}
                                     >
-                                        Cancel
+                                        <span className="material-symbols-outlined text-base">delete</span>
                                     </button>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => setConfirmDelete(true)}
-                                    title="Delete"
-                                    disabled={isUpdating}
-                                    className="p-1.5 rounded-lg transition-colors hover:text-red-500 disabled:opacity-50"
-                                    style={{ color: 'var(--text-muted)' }}
-                                >
-                                    <span className="material-symbols-outlined text-base">delete</span>
-                                </button>
-                            )}
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </div>{/* end justify-between */}
+                    </div>{/* end flex-1 min-w-0 */}
+                    </div>{/* end flex items-start gap-3 */}
 
                 {/* Remove from library */}
                 <button
@@ -250,7 +402,8 @@ const GlobalMaterialCard: React.FC<{
                     <span className="material-symbols-outlined text-sm">remove_circle_outline</span>
                     Remove from library
                 </button>
-            </div>
+            </>
+            )}
         </div>
     );
 };
@@ -292,8 +445,9 @@ const GroupedView: React.FC<{
     onDelete: (id: string) => void;
     onPreview: (m: InterviewMaterial) => void;
     onToggleFavorite: (id: string) => void;
+    onEdit: (id: string, payload: import('../types/interviewMaterial').UpdateMaterialPayload) => Promise<void>;
     updatingIds: Set<string>;
-}> = ({ groups, onRemoveGlobal, onDelete, onPreview, onToggleFavorite, updatingIds }) => {
+}> = ({ groups, onRemoveGlobal, onDelete, onPreview, onToggleFavorite, onEdit, updatingIds }) => {
     const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
         const saved = loadOpenGroups();
         // Keep only groups that still exist
@@ -378,6 +532,7 @@ const GroupedView: React.FC<{
                                     onDelete={onDelete}
                                     onPreview={onPreview}
                                     onToggleFavorite={onToggleFavorite}
+                                    onEdit={onEdit}
                                     isUpdating={updatingIds.has(m._id)}
                                 />
                             ))}
@@ -525,6 +680,19 @@ const InterviewMaterialsPage: React.FC = () => {
             // Revert on failure
             setMaterials(prev => prev.map(m => m._id === materialId ? { ...m, isFavorite: !newValue } : m));
             setError(e.message ?? 'Failed to update favourite');
+        } finally {
+            setUpdating(materialId, false);
+        }
+    };
+
+    const handleEdit = async (materialId: string, payload: import('../types/interviewMaterial').UpdateMaterialPayload) => {
+        setUpdating(materialId, true);
+        try {
+            const updated = await updateMaterial(materialId, payload);
+            setMaterials(prev => prev.map(m => m._id === materialId ? { ...m, ...updated } : m));
+        } catch (e: any) {
+            setError(e.message ?? 'Failed to save changes');
+            throw e; // keeps edit mode open in the card
         } finally {
             setUpdating(materialId, false);
         }
@@ -1091,6 +1259,7 @@ const InterviewMaterialsPage: React.FC = () => {
                     onDelete={handleDelete}
                     onPreview={setPreviewMaterial}
                     onToggleFavorite={handleToggleFavorite}
+                    onEdit={handleEdit}
                     updatingIds={updatingIds}
                 />
             ) : (
@@ -1105,6 +1274,7 @@ const InterviewMaterialsPage: React.FC = () => {
                             onDelete={handleDelete}
                             onPreview={setPreviewMaterial}
                             onToggleFavorite={handleToggleFavorite}
+                            onEdit={handleEdit}
                             isUpdating={updatingIds.has(m._id)}
                         />
                     ))}

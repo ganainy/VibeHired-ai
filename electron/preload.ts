@@ -6,7 +6,7 @@ export interface AuthPayload {
   apiUrl: string;
 }
 
-export type HotkeyAction = 'toggle-mic' | 'clear-answer';
+export type HotkeyAction = 'push-to-talk-start' | 'push-to-talk-stop' | 'clear-answer';
 
 // Expose a minimal, typed API to the renderer — no direct Node/Electron access.
 contextBridge.exposeInMainWorld('electronAPI', {

@@ -5,7 +5,7 @@ export interface AuthPayload {
   apiUrl: string;
 }
 
-export type HotkeyAction = 'toggle-mic' | 'clear-answer';
+export type HotkeyAction = 'push-to-talk-start' | 'push-to-talk-stop' | 'clear-answer';
 
 interface ElectronAPI {
   signalReady: () => Promise<void>;

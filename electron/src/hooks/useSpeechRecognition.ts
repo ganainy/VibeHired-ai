@@ -1,7 +1,7 @@
 // electron/src/hooks/useSpeechRecognition.ts
 // Adapted from client/src/hooks/useSpeechRecognition.ts — same logic,
 // runs inside the Electron BrowserWindow's Chromium renderer.
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 
 // ── Local Speech API type declarations ─────────────────────────────────────
 // Chromium's Web Speech API types; declared here for portability when the
@@ -62,24 +62,66 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const [interimTranscript, setInterimTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
+  const recognitionSessionRef = useRef(0);
 
   const isSupported = !!SpeechRecognitionAPI;
 
+  const detachRecognition = useCallback((recognition: ISpeechRecognition | null) => {
+    if (!recognition) return;
+
+    recognition.onstart = null;
+    recognition.onend = null;
+    recognition.onresult = null;
+    recognition.onerror = null;
+  }, []);
+
+  const stopRecognition = useCallback((recognition: ISpeechRecognition | null) => {
+    if (!recognition) return;
+
+    try {
+      recognition.stop();
+    } catch {
+      recognition.abort();
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      detachRecognition(recognitionRef.current);
+      stopRecognition(recognitionRef.current);
+      recognitionRef.current = null;
+    };
+  }, [detachRecognition, stopRecognition]);
+
   const startListening = useCallback((lang = 'en-US') => {
     if (!SpeechRecognitionAPI) return;
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+
+    const previousRecognition = recognitionRef.current;
+    detachRecognition(previousRecognition);
+    stopRecognition(previousRecognition);
 
     const recognition = new SpeechRecognitionAPI();
+    const sessionId = recognitionSessionRef.current + 1;
+    recognitionSessionRef.current = sessionId;
+
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = lang;
 
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
+    recognition.onstart = () => {
+      if (recognitionSessionRef.current !== sessionId) return;
+      setIsListening(true);
+    };
+    recognition.onend = () => {
+      if (recognitionSessionRef.current !== sessionId) return;
+
+      recognitionRef.current = null;
+      setIsListening(false);
+    };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
+      if (recognitionSessionRef.current !== sessionId) return;
+
       let finalSegment = '';
       let interimSegment = '';
 
@@ -99,19 +141,27 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (recognitionSessionRef.current !== sessionId) return;
+
       console.error('Speech recognition error:', event.error);
+      recognitionRef.current = null;
       setIsListening(false);
     };
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, []);
+  }, [detachRecognition, stopRecognition]);
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
+    const recognition = recognitionRef.current;
+    detachRecognition(recognition);
     recognitionRef.current = null;
+    recognitionSessionRef.current += 1;
+    stopRecognition(recognition);
+    recognitionRef.current = null;
+    setIsListening(false);
     setInterimTranscript('');
-  }, []);
+  }, [detachRecognition, stopRecognition]);
 
   const resetTranscript = useCallback(() => {
     setTranscript('');

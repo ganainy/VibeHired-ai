@@ -44,18 +44,17 @@ const App: React.FC = () => {
     });
 
     window.electronAPI.onHotkey((action) => {
-      if (action === 'toggle-mic') {
-        // Keyboard shortcut: press once = start, press again = stop + generate
+      if (action === 'push-to-talk-start') {
+        const currentAuth = authRef.current;
+        if (currentAuth && !isListeningRef.current) {
+          setAnswer(null);
+          setError(null);
+          resetTranscript();
+          startListening('en-US');
+        }
+      } else if (action === 'push-to-talk-stop') {
         if (isListeningRef.current) {
           stopListening();
-        } else {
-          const currentAuth = authRef.current;
-          if (currentAuth) {
-            setAnswer(null);
-            setError(null);
-            resetTranscript();
-            startListening('en-US');
-          }
         }
       } else if (action === 'clear-answer') {
         clearAll();

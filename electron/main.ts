@@ -90,6 +90,32 @@ function createWindow() {
     win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   }
 
+  let pushToTalkHeld = false;
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.code !== 'Space') return;
+
+    const isHoldShortcut = input.control && input.shift && !input.alt && !input.meta;
+    if (!isHoldShortcut) return;
+
+    event.preventDefault();
+
+    if (input.type === 'keyDown' && !input.isAutoRepeat && !pushToTalkHeld) {
+      pushToTalkHeld = true;
+      win?.webContents.send('hotkey', 'push-to-talk-start');
+    }
+
+    if (input.type === 'keyUp' && pushToTalkHeld) {
+      pushToTalkHeld = false;
+      win?.webContents.send('hotkey', 'push-to-talk-stop');
+    }
+  });
+
+  win.on('blur', () => {
+    if (!pushToTalkHeld) return;
+    pushToTalkHeld = false;
+    win?.webContents.send('hotkey', 'push-to-talk-stop');
+  });
+
   win.on('closed', () => {
     win = null;
   });
@@ -157,11 +183,6 @@ ipcMain.handle('toggle-visibility', () => {
 
 // ── Global shortcuts (OS-level, undetectable by web apps) ───────────────────
 function registerGlobalShortcuts() {
-  // Toggle mic
-  globalShortcut.register('CommandOrControl+Shift+Space', () => {
-    win?.webContents.send('hotkey', 'toggle-mic');
-  });
-
   // Hide / show overlay
   globalShortcut.register('CommandOrControl+Shift+H', () => {
     if (!win) return;
