@@ -144,8 +144,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       (response) => response,
       (error) => {
         if (error.response && error.response.status === 401) {
-          console.warn('Received 401 Unauthorized. Logging out...');
-          logout();
+          // Only force a global logout when the user genuinely has an active
+          // session (token present in localStorage). This prevents the interceptor
+          // from kicking the user out if an optional background request (e.g.
+          // the usage-refresh immediately after login) happens to fail with 401
+          // before the token is fully propagated, or when a network error is
+          // mis-reported as 401 by a proxy.
+          const hasStoredToken = !!localStorage.getItem('authToken');
+          // Never log out for requests that explicitly opt out (set skipLogoutOn401).
+          const skip = error.config?.skipLogoutOn401;
+          if (hasStoredToken && !skip) {
+            console.warn('Received 401 Unauthorized. Logging out...');
+            logout();
+          }
         } else if (error.response && error.response.status === 403 && error.response.data?.message?.includes('credits')) {
           console.warn('Insufficient credits detected.');
           setShowCreditLimitModal(true);
@@ -181,9 +192,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Set Axios default Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
 
-      // Fetch usage info immediately after login
+      // Fetch usage info immediately after login.
+      // Mark with skipLogoutOn401 so a transient failure here does not
+      // trigger the global logout interceptor and undo a successful login.
       try {
-        const usageData = await getUsage();
+        const usageData = await getUsage({ skipLogoutOn401: true });
         const updatedUser = { ...response.user, credits: usageData.usage.remaining };
         setUser(updatedUser);
         localStorage.setItem('authUser', JSON.stringify(updatedUser));
