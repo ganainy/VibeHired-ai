@@ -75,7 +75,7 @@ interface BatchEmailInput {
  * Builds a single prompt that classifies ALL emails in one AI call.
  * Each email is represented by idx, sender domain, subject, and a short excerpt.
  */
-function buildBatchClassificationPrompt(emails: BatchEmailInput[]): string {
+function buildDetailedClassificationPrompt(emails: BatchEmailInput[]): string {
     const today = new Date().toISOString().split('T')[0];
     return `You are an assistant that analyses job application emails. Today's date is ${today}.
 
@@ -98,6 +98,57 @@ Return ONLY a valid JSON object in this exact shape (no markdown, no extra keys)
 { "results": [{ "idx": 0, ... }, { "idx": 1, ... }, ...] }`;
 }
 
+// ── Pass 1: lightweight title screening ──────────────────────────────────────
+
+interface BatchTitleInput {
+    idx: number;
+    sender: string;  // domain only
+    subject: string;
+}
+
+interface TitleScreeningResult {
+    idx: number;
+    isJobRelated: boolean;
+    confidence: 'high' | 'medium' | 'low';
+    /** Preliminary category — enough to pre-filter before Pass 2 */
+    emailCategory: 'application_response' | 'job_offer' | null;
+}
+
+/**
+ * Builds a lightweight screening prompt — subjects + sender domains only.
+ * The AI returns only { idx, isJobRelated, emailCategory, confidence } per email,
+ * keeping the token footprint small and the response fast.
+ * When a categoryFilter is provided the prompt instructs the model to pre-classify
+ * category so Pass 2 only runs on emails that actually match the desired type.
+ */
+function buildTitleScreeningPrompt(
+    emails: BatchTitleInput[],
+    categoryFilter?: 'application_response' | 'job_offer'
+): string {
+    const categoryHint = categoryFilter
+        ? `\nIMPORTANT: The user ONLY wants to see "${categoryFilter === 'application_response' ? 'application_response' : 'job_offer'}" emails.
+- "application_response" = a company or recruiter replying to something the user already applied to (acknowledgement, interview invite, rejection, offer).
+- "job_offer" = recruiter or job board proactively suggesting new positions the user has NOT applied to yet.
+Set isJobRelated=false for emails that are clearly the wrong category — they will be skipped entirely.`
+        : '';
+
+    return `You are filtering emails for a job-hunting application. Today's date is ${new Date().toISOString().split('T')[0]}.
+
+Below is a JSON array of emails (sender domain + subject only).
+
+${JSON.stringify(emails)}
+
+For EACH email decide:
+1. isJobRelated — true if this email relates to job hunting (applications, interviews, assessments, offers, rejections, recruiter outreach, job board alerts). false for newsletters, order confirmations, surveys, banking, social, or clearly unrelated content.
+2. emailCategory — "application_response" if the company/recruiter is responding to something the user already applied to; "job_offer" if a recruiter or job board is proactively suggesting new positions. null if not job-related.
+3. confidence — "high" | "medium" | "low".
+${categoryHint}
+IMPORTANT: When in doubt about isJobRelated, set isJobRelated=true. It is safer to include a borderline email than to miss a real one.
+
+Return ONLY a valid JSON object (no markdown, no extra keys):
+{ "results": [{ "idx": 0, "isJobRelated": true, "emailCategory": "application_response", "confidence": "high" }, ...] }`;
+}
+
 interface BatchEmailClassification extends EmailClassification {
     idx: number;
 }
@@ -110,8 +161,8 @@ function normalize(s: string): string {
 
 async function matchJobApplication(
     userId: string,
-    extractedCompany: string,
-    extractedRole: string
+    extractedCompany: string | null,
+    extractedRole: string | null
 ): Promise<{ id: string; companyName: string; jobTitle: string } | null> {
     // Fetch all active jobs for the user (exclude soft-deleted)
     const jobs = await JobApplication.find({ userId, deletedAt: { $exists: false } })
@@ -120,8 +171,8 @@ async function matchJobApplication(
 
     if (jobs.length === 0) return null;
 
-    const normCompany = normalize(extractedCompany);
-    const normRole = normalize(extractedRole);
+    const normCompany = normalize(extractedCompany ?? '');
+    const normRole = normalize(extractedRole ?? '');
 
     // Score each job: company match is worth more than title match
     let best: typeof jobs[0] | null = null;
@@ -149,12 +200,25 @@ async function matchJobApplication(
 
 // ── Core polling function ─────────────────────────────────────────────────────
 
+export interface PollResult {
+    /** Total suggestions created in this run */
+    created: number;
+    /** Total emails retrieved from Gmail (before dedup) */
+    scanned: number;
+    /** Suggestions created with emailCategory = 'application_response' */
+    applicationResponses: number;
+    /** Suggestions created with emailCategory = 'job_offer' */
+    jobLeads: number;
+}
+
+const ZERO_RESULT: PollResult = { created: 0, scanned: 0, applicationResponses: 0, jobLeads: 0 };
+
 /**
  * Polls Gmail for new messages for a single user, classifies them, and stores
- * pending EmailSuggestion documents.  Returns number of suggestions created.
+ * pending EmailSuggestion documents.  Returns a PollResult breakdown.
  * @param category - Optional category filter: 'application_response' or 'job_offer'
  */
-export async function pollEmailsForUser(userId: string, limit?: number, category?: 'application_response' | 'job_offer'): Promise<number> {
+export async function pollEmailsForUser(userId: string, limit?: number, category?: 'application_response' | 'job_offer'): Promise<PollResult> {
     const tPoll = Date.now();
     const effectiveLimit = limit ?? 50;
     console.log(`\n[EmailSuggestionService] ── pollEmailsForUser START (userId=${userId}, limit=${effectiveLimit}, category=${category ?? 'all'}) ──`);
@@ -163,14 +227,15 @@ export async function pollEmailsForUser(userId: string, limit?: number, category
     const hasSco = await hasGmailScope(userId);
     if (!hasSco) {
         console.log(`[EmailSuggestionService] No Gmail scope for user ${userId}, skipping`);
-        return 0;
+        return ZERO_RESULT;
     }
 
     const messages = await fetchNewMessages(userId, effectiveLimit);
-    console.log(`[EmailSuggestionService] ${messages.length} message(s) fetched from Gmail`);
-    if (messages.length === 0) {
+    const scanned = messages.length;
+    console.log(`[EmailSuggestionService] ${scanned} message(s) fetched from Gmail`);
+    if (scanned === 0) {
         console.log(`[EmailSuggestionService] ── pollEmailsForUser END — 0 suggestions, ${Date.now() - tPoll}ms ──\n`);
-        return 0;
+        return ZERO_RESULT;
     }
 
     // ── 1. Bulk duplicate check (one DB query for all messages) ──────────────
@@ -183,45 +248,95 @@ export async function pollEmailsForUser(userId: string, limit?: number, category
 
     if (newMessages.length === 0) {
         console.log(`[EmailSuggestionService] ── pollEmailsForUser END — all duplicates, ${Date.now() - tPoll}ms ──\n`);
-        return 0;
+        return { ...ZERO_RESULT, scanned };
     }
 
-    // ── 2. Single batch AI classification call ───────────────────────────────
-    const aiAvailable = !!process.env.GEMINI_API_KEY;
+    // ── 2. Two-pass AI classification ────────────────────────────────────────
+    //   Pass 1 — title screening (subjects + sender domains only, very fast)
+    //   Pass 2 — detailed analysis of job-related emails only (smaller batch)
+    if (!process.env.GEMINI_API_KEY) {
+        throw new Error('Email scanning requires an AI key (GEMINI_API_KEY) to be configured on the server.');
+    }
+
     let classifications: BatchEmailClassification[] = [];
 
-    if (aiAvailable) {
-        const batchInput: BatchEmailInput[] = newMessages.map((m, i) => ({
-            idx: i,
-            sender: senderDomain(m.senderEmail),
-            subject: m.subject,
-            excerpt: sanitizeEmailBody(m.body).slice(0, 600),
-        }));
+    // ── Pass 1: screen subjects ──────────────────────────────────────────────
+    const titleInputs: BatchTitleInput[] = newMessages.map((m, i) => ({
+        idx: i,
+        sender: senderDomain(m.senderEmail),
+        subject: m.subject,
+    }));
 
-        const tAI = Date.now();
-        console.log(`[EmailSuggestionService] Sending batch of ${newMessages.length} email(s) to AI...`);
-        try {
-            const prompt = buildBatchClassificationPrompt(batchInput);
-            const raw = await generateStructuredResponse<{ results: BatchEmailClassification[] }>(userId, prompt);
-            // Normalise: handle both { results: [...] } and bare arrays defensively
-            const arr: BatchEmailClassification[] = Array.isArray(raw)
-                ? raw as unknown as BatchEmailClassification[]
-                : Array.isArray((raw as any).results)
-                    ? (raw as any).results
-                    : Object.values(raw as any);
-            classifications = arr;
-            console.log(`[EmailSuggestionService] Batch AI call: ${Date.now() - tAI}ms — got ${classifications.length} classification(s)`);
-        } catch (aiErr: any) {
-            const msg = `AI batch classification failed after ${Date.now() - tAI}ms: ${aiErr?.message ?? aiErr}`;
-            console.error(`[EmailSuggestionService] ${msg}`);
-            throw new Error(msg);
+    const tPass1 = Date.now();
+    console.log(`[EmailSuggestionService] Pass 1: screening ${newMessages.length} subject(s)${category ? ` (filter: ${category})` : ''}...`);
+    let jobRelatedIdxs: Set<number>;
+    try {
+        const screeningPrompt = buildTitleScreeningPrompt(titleInputs, category);
+        const screeningRaw = await generateStructuredResponse<{ results: TitleScreeningResult[] }>(userId, screeningPrompt);
+        const screeningArr: TitleScreeningResult[] = Array.isArray(screeningRaw)
+            ? screeningRaw as unknown as TitleScreeningResult[]
+            : Array.isArray((screeningRaw as any).results)
+                ? (screeningRaw as any).results
+                : Object.values(screeningRaw as any);
+        // Keep emails that are job-related (or borderline confidence) AND match the category filter
+        jobRelatedIdxs = new Set(
+            screeningArr
+                .filter((r) => {
+                    if (!r.isJobRelated && r.confidence === 'high') return false; // definitely not job-related
+                    if (category && r.emailCategory && r.emailCategory !== category && r.confidence === 'high') return false; // wrong category, AI is certain
+                    return true;
+                })
+                .map((r) => r.idx)
+        );
+        const skippedByCategory = screeningArr.filter((r) => category && r.emailCategory && r.emailCategory !== category && r.confidence === 'high').length;
+        console.log(`[EmailSuggestionService] Pass 1: ${Date.now() - tPass1}ms — ${jobRelatedIdxs.size}/${newMessages.length} flagged for detailed analysis (${skippedByCategory} skipped by category)`);
+    } catch (err: any) {
+        const msg = `Pass 1 (title screening) failed after ${Date.now() - tPass1}ms: ${err?.message ?? err}`;
+        console.error(`[EmailSuggestionService] ${msg}`);
+        throw new Error(msg);
+    }
+
+    if (jobRelatedIdxs.size === 0) {
+        console.log(`[EmailSuggestionService] ── pollEmailsForUser END — no job-related emails found, ${Date.now() - tPoll}ms ──\n`);
+        return { ...ZERO_RESULT, scanned };
+    }
+
+    // ── Pass 2: detailed classification of flagged emails only ───────────────
+    const detailInputs: BatchEmailInput[] = [];
+    for (let i = 0; i < newMessages.length; i++) {
+        if (jobRelatedIdxs.has(i)) {
+            detailInputs.push({
+                idx: i,  // original index preserved so newMessages[cls.idx] lookup works
+                sender: senderDomain(newMessages[i].senderEmail),
+                subject: newMessages[i].subject,
+                excerpt: sanitizeEmailBody(newMessages[i].body).slice(0, 600),
+            });
         }
-    } else {
-        throw new Error('Email scanning requires an AI key (GEMINI_API_KEY) to be configured on the server.');
+    }
+
+    const tPass2 = Date.now();
+    console.log(`[EmailSuggestionService] Pass 2: full analysis of ${detailInputs.length} email(s)...`);
+    try {
+        const detailPrompt = buildDetailedClassificationPrompt(detailInputs);
+        const detailRaw = await generateStructuredResponse<{ results: BatchEmailClassification[] }>(userId, detailPrompt);
+        // Normalise: handle both { results: [...] } and bare arrays defensively
+        const arr: BatchEmailClassification[] = Array.isArray(detailRaw)
+            ? detailRaw as unknown as BatchEmailClassification[]
+            : Array.isArray((detailRaw as any).results)
+                ? (detailRaw as any).results
+                : Object.values(detailRaw as any);
+        classifications = arr;
+        console.log(`[EmailSuggestionService] Pass 2: ${Date.now() - tPass2}ms — got ${classifications.length} classification(s)`);
+    } catch (err: any) {
+        const msg = `Pass 2 (detailed classification) failed after ${Date.now() - tPass2}ms: ${err?.message ?? err}`;
+        console.error(`[EmailSuggestionService] ${msg}`);
+        throw new Error(msg);
     }
 
     // ── 3. Save suggestions ──────────────────────────────────────────────────
     let created = 0;
+    let applicationResponses = 0;
+    let jobLeads = 0;
 
     for (const cls of classifications) {
         const msg = newMessages[cls.idx];
@@ -274,11 +389,13 @@ export async function pollEmailsForUser(userId: string, limit?: number, category
         });
 
         created++;
+        if ((cls.emailCategory ?? 'application_response') === 'job_offer') jobLeads++;
+        else applicationResponses++;
         console.log(`[EmailSuggestionService] ${label} ✓ suggestion saved (total: ${created})`);
     }
 
-    console.log(`[EmailSuggestionService] ── pollEmailsForUser END — ${created} suggestion(s) created from ${newMessages.length} new message(s) in ${Date.now() - tPoll}ms ──\n`);
-    return created;
+    console.log(`[EmailSuggestionService] ── pollEmailsForUser END — ${created} suggestion(s) created (${applicationResponses} app responses, ${jobLeads} job leads) from ${newMessages.length} new message(s) in ${Date.now() - tPoll}ms ──\n`);
+    return { created, scanned, applicationResponses, jobLeads };
 }
 
 /**
@@ -310,19 +427,19 @@ export async function pollAllUsers(): Promise<void> {
 
             // Poll for application responses if enabled
             if (autoPollApplications) {
-                const count = await pollEmailsForUser(String(profile.userId), undefined, 'application_response');
-                if (count > 0) {
-                    console.log(`[EmailSuggestionService] Created ${count} application response suggestion(s) for user ${profile.userId}`);
-                    totalCreated += count;
+                const r = await pollEmailsForUser(String(profile.userId), undefined, 'application_response');
+                if (r.created > 0) {
+                    console.log(`[EmailSuggestionService] Created ${r.created} application response suggestion(s) for user ${profile.userId}`);
+                    totalCreated += r.created;
                 }
             }
 
             // Poll for job leads if enabled
             if (autoPollJobLeads) {
-                const count = await pollEmailsForUser(String(profile.userId), undefined, 'job_offer');
-                if (count > 0) {
-                    console.log(`[EmailSuggestionService] Created ${count} job lead suggestion(s) for user ${profile.userId}`);
-                    totalCreated += count;
+                const r = await pollEmailsForUser(String(profile.userId), undefined, 'job_offer');
+                if (r.created > 0) {
+                    console.log(`[EmailSuggestionService] Created ${r.created} job lead suggestion(s) for user ${profile.userId}`);
+                    totalCreated += r.created;
                 }
             }
 

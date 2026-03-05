@@ -1457,6 +1457,7 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
 
 const WorkTrackerPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'timelog' | 'employers' | 'appointments'>('timelog');
+  const [entryTypeFilter, setEntryTypeFilter] = useState<'all' | 'shifts' | 'appointments' | 'calendar'>('all');
 
   // ── Data state ────────────────────────────────────────────────────────────
   const [entries, setEntries] = useState<WorkEntry[]>([]);
@@ -1572,8 +1573,11 @@ const WorkTrackerPage: React.FC = () => {
         setCalendarEvents([]);
         return;
       }
-      // Build month-scoped timeMin / timeMax
-      const timeMin = new Date(viewYear, viewMonth - 1, 1).toISOString();
+      // Build month-scoped timeMin / timeMax.
+      // Clamp timeMin to start-of-today so past events in the current (or previous) month are never shown.
+      const monthStart = new Date(viewYear, viewMonth - 1, 1);
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const timeMin = (monthStart > todayStart ? monthStart : todayStart).toISOString();
       const timeMax = new Date(viewYear, viewMonth, 0, 23, 59, 59).toISOString();
       const events = await listUpcomingEvents({ maxResults: 100, timeMin, timeMax });
       setCalendarEvents(events);
@@ -1649,7 +1653,10 @@ const WorkTrackerPage: React.FC = () => {
     setRemindLoadingId(entry._id);
     try {
       await deleteReminder(entry._id);
-      setEntries((prev) => prev.map((e) => e._id === entry._id ? { ...e, reminderCreated: false } : e));
+      setEntries((prev) => prev.map((e) => e._id === entry._id ? { ...e, reminderCreated: false, googleCalendarEventId: undefined } : e));
+      if (entry.googleCalendarEventId) {
+        setCalendarEvents((prev) => prev.filter((ev) => ev.id !== entry.googleCalendarEventId));
+      }
     } catch (err: any) {
       alert(err?.response?.data?.message ?? 'Failed to remove reminder.');
     } finally {
@@ -1832,6 +1839,7 @@ const WorkTrackerPage: React.FC = () => {
 
   // ── Computed ──────────────────────────────────────────────────────────────
   const monthHours = Math.round(entries.reduce((s, e) => s + (e.type === 'shift' ? e.hours : 0), 0) * 10) / 10;
+  const monthDoneHours = Math.round(entries.reduce((s, e) => s + (e.status === 'done' && e.type === 'shift' ? e.hours : 0), 0) * 10) / 10;
   const monthPlanned = entries.filter((e) => e.status === 'planned' && e.type === 'shift').length;
   const monthDone = entries.filter((e) => e.status === 'done' && e.type === 'shift').length;
   const monthAppointments = entries.filter((e) => e.type === 'appointment').length;
@@ -1839,10 +1847,16 @@ const WorkTrackerPage: React.FC = () => {
   const monthLabel = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`;
 
   const grouped = groupEntriesByDate(entries);
+  // Apply type filter to planned/done groups
+  const filteredEntries = entryTypeFilter === 'all' ? entries
+    : entryTypeFilter === 'shifts' ? entries.filter((e) => e.type === 'shift')
+    : entryTypeFilter === 'appointments' ? entries.filter((e) => e.type === 'appointment')
+    : []; // 'calendar' — no work entries
+  const filteredCalendarEvents = (entryTypeFilter === 'all' || entryTypeFilter === 'calendar') ? calendarEvents : [];
   // Planned: work entries + calendar events for the month
-  const plannedGrouped = groupItemsByDate(entries.filter((e) => e.status === 'planned'), calendarEvents);
+  const plannedGrouped = groupItemsByDate(filteredEntries.filter((e) => e.status === 'planned'), filteredCalendarEvents);
   // Done: work entries only (calendar events have no status)
-  const doneGrouped = groupItemsByDate(entries.filter((e) => e.status === 'done'), []);
+  const doneGrouped = groupItemsByDate(filteredEntries.filter((e) => e.status === 'done'), []);
   const sortedDateKeys = Array.from(grouped.keys()).sort();
   const plannedDateKeys = Array.from(plannedGrouped.keys()).sort(); // ascending — soonest first
   const doneDateKeys = Array.from(doneGrouped.keys()).sort().reverse(); // descending — most recent first
@@ -2061,7 +2075,7 @@ const WorkTrackerPage: React.FC = () => {
           <StatCard
             label="Total hours"
             value={loadingEntries ? '—' : `${monthHours}h`}
-            sub={loadingEntries ? undefined : `${entries.length} entries`}
+            sub={loadingEntries ? undefined : `${monthDoneHours}h done · ${entries.length} entries`}
             icon={<Clock size={18} />}
             accent
           />
@@ -2160,6 +2174,29 @@ const WorkTrackerPage: React.FC = () => {
               </div>
             </div>
 
+            {/* ── Type filter pills ─────────────────────────────────── */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {([
+                { key: 'all',          label: 'All',         icon: <Clock size={13} /> },
+                { key: 'shifts',       label: 'Shifts',      icon: <Briefcase size={13} /> },
+                { key: 'appointments', label: 'Appointments',icon: <CalendarDays size={13} /> },
+                { key: 'calendar',     label: 'Google Calendar', icon: <Calendar size={13} /> },
+              ] as { key: typeof entryTypeFilter; label: string; icon: React.ReactNode }[]).map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setEntryTypeFilter(f.key)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                  style={{
+                    background: entryTypeFilter === f.key ? 'var(--accent-bg)' : 'var(--bg-elevated)',
+                    border: `1px solid ${entryTypeFilter === f.key ? 'var(--accent-dim)' : 'var(--border)'}`,
+                    color: entryTypeFilter === f.key ? 'var(--accent)' : 'var(--text-muted)',
+                  }}
+                >
+                  {f.icon}{f.label}
+                </button>
+              ))}
+            </div>
+
             {/* Entry list */}
             <div className="space-y-4">
               {loadingEntries ? (
@@ -2174,6 +2211,16 @@ const WorkTrackerPage: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No entries for {MONTH_NAMES[viewMonth - 1]} {viewYear}</p>
                     <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Add your planned or worked hours above.</p>
+                  </div>
+                </div>
+              ) : plannedDateKeys.length === 0 && doneDateKeys.length === 0 ? (
+                <div className="card flex flex-col items-center justify-center py-12 text-center gap-3">
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                    {entryTypeFilter === 'shifts' ? <Briefcase size={20} /> : entryTypeFilter === 'appointments' ? <CalendarDays size={20} /> : entryTypeFilter === 'calendar' ? <Calendar size={20} /> : <Clock size={20} />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No {entryTypeFilter === 'all' ? 'entries' : entryTypeFilter} for {MONTH_NAMES[viewMonth - 1]} {viewYear}</p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Try a different filter or month.</p>
                   </div>
                 </div>
               ) : (

@@ -1,6 +1,6 @@
 # VibeHired
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Visit_Now-blue?style=for-the-badge)](https://vibehired-ai.netlify.app)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Visit_Now-blue?style=for-the-badge)](https://vibehired.ganainy.dev)
 [![License: MIT + Commons Clause](https://img.shields.io/badge/License-MIT%20%2B%20Commons%20Clause-yellow?style=for-the-badge)](./LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
@@ -9,7 +9,7 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 
 ## 🚀 Live Preview
 
-**Try the live application:** [https://vibehired-ai.netlify.app](https://vibehired-ai.netlify.app)
+**Try the live application:** [https://vibehired.ganainy.dev](https://vibehired.ganainy.dev)
 
 > **Note:** You'll need to provide your own API keys (Gemini API key for AI features) after registration. Get your free Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey).
 
@@ -81,7 +81,7 @@ VibeHired is an AI-powered job application assistant that automates and enhances
   - GitHub repository links
 - **Portfolio Publishing:** Toggle portfolio visibility (public/private)
 
-> **Example Portfolio:** See a live example of an automatically generated portfolio created using LinkedIn scraping, GitHub integration, and AI (not just a static portfolio) at [https://vibehired-ai.netlify.app/portfolio/ganainy](https://vibehired-ai.netlify.app/portfolio/ganainy).
+> **Example Portfolio:** See a live example of an automatically generated portfolio created using LinkedIn scraping, GitHub integration, and AI (not just a static portfolio) at [https://vibehired.ganainy.dev/portfolio/ganainy](https://vibehired.ganainy.dev/portfolio/ganainy).
 
 ### Settings & Configuration
 - **API Key Management:** Secure interface for managing API keys:
@@ -228,7 +228,7 @@ See the [LICENSE](./LICENSE) file for the full legal text.
 - ✅ Contributions via pull requests are welcome.
 - ❌ You may **not** host or sell VibeHired (or a substantially similar product) as a commercial service without written permission from the copyright holder.
 
-The official hosted service at [vibehired-ai.netlify.app](https://vibehired-ai.netlify.app) is operated and monetised exclusively by the project author.
+The official hosted service at [vibehired.ganainy.dev](https://vibehired.ganainy.dev) is operated and monetised exclusively by the project author.
 
 ## App Showcase
 

@@ -94,9 +94,17 @@ export const rejectSuggestion = async (id: string): Promise<void> => {
     await axios.post(`${API_BASE_URL}/email-suggestions/${id}/reject`);
 };
 
+export interface PollNowResult {
+    message: string;
+    count: number;
+    scanned: number;
+    applicationResponses: number;
+    jobLeads: number;
+}
+
 /** Manually trigger a Gmail poll for the current user. */
-export const pollNow = async (scanLimit = 50): Promise<{ count: number; message: string }> => {
-    const { data } = await axios.post<{ count: number; message: string }>(
+export const pollNow = async (scanLimit = 50): Promise<PollNowResult> => {
+    const { data } = await axios.post<PollNowResult>(
         `${API_BASE_URL}/email-suggestions/poll`,
         { scanLimit }
     );

@@ -257,8 +257,31 @@ router.post(
         // Allow caller to specify how many recent emails to scan, default 50
         const limit = Number(req.body?.scanLimit) || 50;
 
-        const count = await pollEmailsForUser(userId, limit);
-        res.json({ message: `Poll complete. ${count} new suggestion(s) created.`, count });
+        // Respect the user's category preferences
+        const profile = await Profile.findOne({ userId });
+        const emailSettings = profile?.settings?.emailSuggestions ?? {};
+        const autoPollApplications = (emailSettings as any).autoPollApplications ?? true;
+        const autoPollJobLeads = (emailSettings as any).autoPollJobLeads ?? true;
+
+        if (!autoPollApplications && !autoPollJobLeads) {
+            res.json({ message: 'Poll complete. 0 new suggestion(s) created.', count: 0 });
+            return;
+        }
+
+        // Single AI pass: pass a category filter only when one type is disabled
+        let category: 'application_response' | 'job_offer' | undefined;
+        if (autoPollApplications && !autoPollJobLeads) category = 'application_response';
+        else if (!autoPollApplications && autoPollJobLeads) category = 'job_offer';
+        // else: both enabled → no filter
+
+        const result = await pollEmailsForUser(userId, limit, category);
+        res.json({
+            message: `Poll complete. ${result.created} new suggestion(s) created.`,
+            count: result.created,
+            scanned: result.scanned,
+            applicationResponses: result.applicationResponses,
+            jobLeads: result.jobLeads,
+        });
     })
 );
 

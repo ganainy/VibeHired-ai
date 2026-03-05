@@ -4,6 +4,7 @@ import Profile from '../models/Profile';
 import { encrypt, decrypt } from '../utils/encryption';
 import { env } from '../config/env';
 import { IReminder } from '../models/JobApplication';
+import { AuthorizationError } from '../utils/errors/AppError';
 
 export interface CalendarEventItem {
     id: string;
@@ -164,21 +165,39 @@ export async function updateEvent(
     const auth = await getOAuth2Client(userId);
     const calendar = google.calendar({ version: 'v3', auth });
 
-    const response = await calendar.events.update({
-        calendarId: 'primary',
-        eventId,
-        requestBody: eventData,
-    });
+    try {
+        const response = await calendar.events.update({
+            calendarId: 'primary',
+            eventId,
+            requestBody: eventData,
+        });
 
-    const item = response.data;
-    return {
-        id: item.id ?? '',
-        summary: item.summary ?? '',
-        start: { dateTime: item.start?.dateTime ?? undefined, date: item.start?.date ?? undefined },
-        end: { dateTime: item.end?.dateTime ?? undefined, date: item.end?.date ?? undefined },
-        location: item.location ?? undefined,
-        description: item.description ?? undefined,
-    };
+        const item = response.data;
+        return {
+            id: item.id ?? '',
+            summary: item.summary ?? '',
+            start: { dateTime: item.start?.dateTime ?? undefined, date: item.start?.date ?? undefined },
+            end: { dateTime: item.end?.dateTime ?? undefined, date: item.end?.date ?? undefined },
+            location: item.location ?? undefined,
+            description: item.description ?? undefined,
+        };
+    } catch (err: any) {
+        // Google returns 403 when the user is not the organizer of the event
+        // (e.g. interview invites created by a recruiter).
+        const message: string = err?.message ?? err?.errors?.[0]?.message ?? '';
+        if (
+            err?.code === 403 ||
+            err?.status === 403 ||
+            message.toLowerCase().includes('organizer')
+        ) {
+            throw new AuthorizationError(
+                "This event was created by someone else (e.g. a recruiter invite). " +
+                "Only the organizer can change its shared properties. " +
+                "You can edit your own copy of the event directly in Google Calendar."
+            );
+        }
+        throw err;
+    }
 }
 
 /**

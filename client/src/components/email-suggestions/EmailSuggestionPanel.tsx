@@ -10,8 +10,10 @@ import {
     getPreferences,
     updatePreferences,
     type EmailSuggestion,
+    type PollNowResult,
 } from '../../services/emailSuggestionsApi';
 import { getGoogleConnectUrl } from '../../services/googleCalendarApi';
+import { useAuth } from '../../context/AuthContext';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -55,6 +57,16 @@ const LinkIcon = () => (
 );
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function buildPollToast(r: PollNowResult): string {
+    if (r.scanned === 0) return 'No new emails to scan.';
+    const scannedPart = `Scanned ${r.scanned} email${r.scanned !== 1 ? 's' : ''}`;
+    if (r.created === 0) return `${scannedPart} — no job-related emails found.`;
+    const parts: string[] = [];
+    if (r.applicationResponses > 0) parts.push(`${r.applicationResponses} application response${r.applicationResponses !== 1 ? 's' : ''}`);
+    if (r.jobLeads > 0) parts.push(`${r.jobLeads} job lead${r.jobLeads !== 1 ? 's' : ''}`);
+    return `${scannedPart} — found ${parts.join(' and ')}.`;
+}
 
 const STATUS_COLORS: Record<string, string> = {
     Interview: '#3b82f6',
@@ -120,6 +132,7 @@ interface Props {
 }
 
 const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }) => {
+    const { refreshUsage } = useAuth();
     const [suggestions, setSuggestions] = useState<EmailSuggestion[]>([]);
     const [loading, setLoading] = useState(false);
     const [polling, setPolling] = useState(false);
@@ -226,7 +239,8 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
         try {
             const result = await pollNow(lookbackDays);
             await load();
-            showToast(result.count > 0 ? `Found ${result.count} new suggestion(s)!` : 'No new emails found.');
+            showToast(buildPollToast(result));
+            try { await refreshUsage(); } catch { /* non-fatal */ }
         } catch {
             showToast('Poll failed. Check your Gmail connection.');
         } finally {

@@ -124,6 +124,29 @@ function extractBody(payload: gmail_v1.Schema$MessagePart): string {
     return payload.body?.data ? decodeBase64(payload.body.data) : '';
 }
 
+/** Run up to `concurrency` async tasks in parallel, preserving result order. */
+async function pAll<T>(
+    tasks: (() => Promise<T>)[],
+    concurrency: number
+): Promise<PromiseSettledResult<T>[]> {
+    const results: PromiseSettledResult<T>[] = new Array(tasks.length);
+    let next = 0;
+    async function worker() {
+        while (next < tasks.length) {
+            const i = next++;
+            try {
+                results[i] = { status: 'fulfilled', value: await tasks[i]() };
+            } catch (err) {
+                results[i] = { status: 'rejected', reason: err };
+            }
+        }
+    }
+    await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
+    return results;
+}
+
+const FETCH_CONCURRENCY = 10;
+
 /** Fetch the most recent `limit` unprocessed messages. Marks them processed. */
 export async function fetchNewMessages(userId: string, limit: number): Promise<GmailMessage[]> {
     const t0 = Date.now();
@@ -132,8 +155,9 @@ export async function fetchNewMessages(userId: string, limit: number): Promise<G
     const auth = await getOAuth2Client(userId);
     const gmail = google.gmail({ version: 'v1', auth });
 
-    // Query: unread, NOT already labelled (no time constraint — dedup is handled by the label)
-    const q = `is:unread -label:${PROCESSED_LABEL_NAME}`;
+    // Query the real last N unread emails — NO label filter here so the window
+    // is always anchored to the most recent N, not to the next-N-unlabeled.
+    const q = `is:unread`;
 
     const tList = Date.now();
     const listResp = await gmail.users.messages.list({
@@ -143,25 +167,43 @@ export async function fetchNewMessages(userId: string, limit: number): Promise<G
     });
     console.log(`[GmailService] messages.list took ${Date.now() - tList}ms`);
 
-    const messageIds = listResp.data.messages?.map((m) => m.id!) ?? [];
-    console.log(`[GmailService] ${messageIds.length} unprocessed message(s) found`);
-    if (messageIds.length === 0) return [];
+    const allIds = listResp.data.messages?.map((m) => m.id!) ?? [];
+    console.log(`[GmailService] ${allIds.length} message(s) in window`);
+    if (allIds.length === 0) return [];
 
     const tLabel = Date.now();
     const processedLabelId = await getOrCreateProcessedLabel(gmail);
     console.log(`[GmailService] getOrCreateProcessedLabel took ${Date.now() - tLabel}ms`);
 
-    const results: GmailMessage[] = [];
+    // ── Step 1: fast metadata check — find which IDs are already labelled ─────
+    // format=metadata with no extra headers returns just labelIds; much cheaper
+    // than a full fetch and runs in parallel.
+    const tMeta = Date.now();
+    const metaTasks = allIds.map((id) => async () => {
+        const res = await gmail.users.messages.get({ userId: 'me', id, format: 'metadata', metadataHeaders: [] });
+        return { id, labelIds: res.data.labelIds ?? [] };
+    });
+    const metaSettled = await pAll(metaTasks, FETCH_CONCURRENCY);
+    const alreadyLabelledIds = new Set(
+        metaSettled
+            .filter((r): r is PromiseFulfilledResult<{ id: string; labelIds: string[] }> => r.status === 'fulfilled')
+            .filter((r) => r.value.labelIds.includes(processedLabelId))
+            .map((r) => r.value.id)
+    );
+    const newIds = allIds.filter((id) => !alreadyLabelledIds.has(id));
+    console.log(`[GmailService] Metadata check: ${Date.now() - tMeta}ms — ${alreadyLabelledIds.size} already labelled, ${newIds.length} new to process`);
 
-    for (let i = 0; i < messageIds.length; i++) {
-        const id = messageIds[i];
+    if (newIds.length === 0) return [];
+
+    // ── Step 2: full fetch only the unlabelled messages ───────────────────────
+    const tasks = newIds.map((id, i) => async (): Promise<GmailMessage | null> => {
         const tMsg = Date.now();
         try {
             const msg = await gmail.users.messages.get({ userId: 'me', id, format: 'full' });
             const payload = msg.data.payload;
             if (!payload) {
-                console.warn(`[GmailService] [${i + 1}/${messageIds.length}] message ${id} has no payload, skipping`);
-                continue;
+                console.warn(`[GmailService] [${i + 1}/${newIds.length}] message ${id} has no payload, skipping`);
+                return null;
             }
 
             const headers = payload.headers ?? [];
@@ -179,29 +221,35 @@ export async function fetchNewMessages(userId: string, limit: number): Promise<G
 
             const body = extractBody(payload);
             const internalDate = msg.data.internalDate ? new Date(Number(msg.data.internalDate)) : new Date();
-            const fetchMs = Date.now() - tMsg;
+            console.log(`[GmailService] [${i + 1}/${newIds.length}] fetched in ${Date.now() - tMsg}ms — "${subject.slice(0, 60)}" from ${senderEmail}`);
 
-            console.log(`[GmailService] [${i + 1}/${messageIds.length}] fetched in ${fetchMs}ms — "${subject.slice(0, 60)}" from ${senderEmail}`);
-
-            results.push({ id, subject, snippet, body, senderName, senderEmail, receivedAt: internalDate });
-
-            // Mark as processed (non-fatal if this fails)
-            const tMod = Date.now();
-            try {
-                await gmail.users.messages.modify({
-                    userId: 'me',
-                    id,
-                    requestBody: { addLabelIds: [processedLabelId] },
-                });
-                console.log(`[GmailService] [${i + 1}/${messageIds.length}] labelled in ${Date.now() - tMod}ms`);
-            } catch (labelErr) {
-                console.warn(`[GmailService] Could not label message ${id}:`, labelErr);
-            }
+            return { id, subject, snippet, body, senderName, senderEmail, receivedAt: internalDate };
         } catch (msgErr) {
-            console.error(`[GmailService] [${i + 1}/${messageIds.length}] Error fetching message ${id} (${Date.now() - tMsg}ms):`, msgErr);
+            console.error(`[GmailService] [${i + 1}/${newIds.length}] Error fetching message ${id} (${Date.now() - tMsg}ms):`, msgErr);
+            return null;
         }
+    });
+
+    const settled = await pAll(tasks, FETCH_CONCURRENCY);
+    const results: GmailMessage[] = settled
+        .filter((r): r is PromiseFulfilledResult<GmailMessage | null> => r.status === 'fulfilled' && r.value !== null)
+        .map((r) => r.value!);
+
+    // ── Step 3: batchModify only the newly-processed IDs ─────────────────────
+    const tBatch = Date.now();
+    try {
+        await gmail.users.messages.batchModify({
+            userId: 'me',
+            requestBody: {
+                ids: newIds,
+                addLabelIds: [processedLabelId],
+            },
+        });
+        console.log(`[GmailService] batchModify (labelled ${newIds.length} message(s)) took ${Date.now() - tBatch}ms`);
+    } catch (batchErr) {
+        console.warn(`[GmailService] batchModify failed after ${Date.now() - tBatch}ms — emails may be re-fetched on next scan:`, batchErr);
     }
 
-    console.log(`[GmailService] fetchNewMessages done — ${results.length}/${messageIds.length} messages fetched in ${Date.now() - t0}ms total`);
+    console.log(`[GmailService] fetchNewMessages done — ${results.length}/${newIds.length} messages fetched (${alreadyLabelledIds.size}/${allIds.length} already labelled) in ${Date.now() - t0}ms total`);
     return results;
 }

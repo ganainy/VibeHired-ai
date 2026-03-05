@@ -89,6 +89,25 @@ async function getOAuth2Client(userId: string) {
  */
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!._id;
+
+  // ── Auto-flip stale 'planned' entries to 'done' ────────────────────────────
+  // Find every planned entry for this user and promote any whose end datetime
+  // has already passed to 'done', so the UI always reflects reality on load.
+  const now = new Date();
+  const plannedEntries = await WorkEntry.find({ userId, status: 'planned' });
+  const staleIds = plannedEntries
+    .filter((e) => {
+      const [eh, em] = e.endTime.split(':').map(Number);
+      const endDt = new Date(e.date);
+      endDt.setUTCHours(eh, em, 0, 0);
+      return endDt < now;
+    })
+    .map((e) => e._id);
+  if (staleIds.length > 0) {
+    await WorkEntry.updateMany({ _id: { $in: staleIds } }, { $set: { status: 'done' } });
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   const filter: Record<string, unknown> = { userId };
 
   if (req.query.status) filter.status = req.query.status;

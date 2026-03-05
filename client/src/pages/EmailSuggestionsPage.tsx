@@ -1,6 +1,7 @@
 // client/src/pages/EmailSuggestionsPage.tsx
 import React, { useCallback, useEffect, useState } from 'react';
 import Spinner from '../components/common/Spinner';
+import { useAuth } from '../context/AuthContext';
 import { parseApiError, parseApiErrorMessage } from '../utils/parseApiError';
 import {
     listPendingSuggestions,
@@ -12,6 +13,7 @@ import {
     getPreferences,
     updatePreferences,
     type EmailSuggestion,
+    type PollNowResult,
 } from '../services/emailSuggestionsApi';
 import { getGoogleConnectUrl } from '../services/googleCalendarApi';
 import EditSuggestionModal from '../components/email-suggestions/EditSuggestionModal';
@@ -115,6 +117,17 @@ const ExternalLinkIcon = () => (
     </svg>
 );
 
+const GmailLinkIcon = () => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        {/* envelope — offset left/down so the arrow doesn't overlap */}
+        <rect x="1" y="9" width="14" height="12" rx="1.5" />
+        <polyline points="1 10 8 15 15 10" />
+        {/* external-link arrow — top-right corner, clear of the envelope */}
+        <polyline points="15 3 21 3 21 9" />
+        <line x1="12" y1="11" x2="21" y2="3" />
+    </svg>
+);
+
 function formatCalEventDate(iso: string | null | undefined): string {
     if (!iso) return 'Date not specified';
     const d = new Date(iso);
@@ -211,9 +224,20 @@ const HOW_IT_WORKS = [
     },
 ];
 
+function buildPollToast(r: PollNowResult): string {
+    if (r.scanned === 0) return 'No new emails to scan.';
+    const scannedPart = `Scanned ${r.scanned} email${r.scanned !== 1 ? 's' : ''}`;
+    if (r.created === 0) return `${scannedPart} — no job-related emails found.`;
+    const parts: string[] = [];
+    if (r.applicationResponses > 0) parts.push(`${r.applicationResponses} application response${r.applicationResponses !== 1 ? 's' : ''}`);
+    if (r.jobLeads > 0) parts.push(`${r.jobLeads} job lead${r.jobLeads !== 1 ? 's' : ''}`);
+    return `${scannedPart} — found ${parts.join(' and ')}.`;
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 const EmailSuggestionsPage: React.FC = () => {
+    const { refreshUsage } = useAuth();
     const [suggestions, setSuggestions] = useState<EmailSuggestion[]>([]);
     const [loading, setLoading] = useState(true);
     const [polling, setPolling] = useState(false);
@@ -340,7 +364,8 @@ const EmailSuggestionsPage: React.FC = () => {
         try {
             const result = await pollNow(scanLimit);
             await load();
-            showToast(result.count > 0 ? `Found ${result.count} new suggestion${result.count > 1 ? 's' : ''}!` : 'No new job emails found.');
+            showToast(buildPollToast(result));
+            try { await refreshUsage(); } catch { /* non-fatal */ }
         } catch (err: any) {
             setActionError(parseApiError(err));
         } finally {
@@ -774,6 +799,26 @@ const EmailSuggestionsPage: React.FC = () => {
                                                     {s.suggestedStatus && <StatusPill status={s.suggestedStatus} />}
                                                 </div>
                                             </div>
+                                            {/* Open in Gmail — application responses only */}
+                                            {activeTab === 'application_response' && s.gmailMessageId && (
+                                                <a
+                                                    href={`https://mail.google.com/mail/u/0/#all/${s.gmailMessageId}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    title="Open in Gmail"
+                                                    className="shrink-0 flex items-center justify-center rounded-lg transition-colors"
+                                                    style={{
+                                                        width: 28, height: 28, marginTop: 1,
+                                                        color: 'var(--text-muted)',
+                                                        border: '1px solid var(--border-subtle)',
+                                                        backgroundColor: 'var(--bg-elevated)',
+                                                    }}
+                                                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}
+                                                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)'; }}
+                                                >
+                                                    <GmailLinkIcon />
+                                                </a>
+                                            )}
                                         </div>
                                     </div>
 
