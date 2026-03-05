@@ -44,9 +44,21 @@ const app: Express = express();
 const port = process.env.PORT || 5001;
 installExternalCallTracking();
 
+// Trust the first hop from Heroku's reverse proxy so that:
+//  - express-rate-limit can read X-Forwarded-For without throwing ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+//  - req.ip reflects the real client IP instead of Heroku's internal router IP
+app.set('trust proxy', 1);
+
 // CORS Configuration
+// FRONTEND_URL may be a single origin or a comma-separated list of origins,
+// e.g. "https://vibehired.ganainy.dev,https://vibehired-ai.netlify.app"
+const rawOrigins = (process.env.FRONTEND_URL ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
-  process.env.FRONTEND_URL, // Netlify URL
+  ...rawOrigins,
   'http://localhost:5173', // Local development
   'http://localhost:3000', // Alternative local port
 ].filter(Boolean) as string[]; // Remove undefined values
