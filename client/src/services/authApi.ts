@@ -71,14 +71,15 @@ export const loginUser = async (credentials: { email: string, password: string }
     }
 };
 
-export const getCurrentUserProfile = async (): Promise<UserProfile> => {
+export const getCurrentUserProfile = async (extraConfig?: object): Promise<UserProfile> => {
     try {
-        const response = await axios.get<UserProfile>(`${API_BASE_URL}/me`);
+        const response = await axios.get<UserProfile>(`${API_BASE_URL}/me`, extraConfig);
         return response.data;
     } catch (error) {
         console.error("Get Profile API error:", error);
         if (axios.isAxiosError(error) && error.response) {
-            throw error.response.data as ApiError;
+            // Preserve the HTTP status so callers can distinguish 401 (expired token) from 5xx
+            throw { ...(error.response.data as ApiError), status: error.response.status };
         }
         throw { message: 'An unknown error occurred fetching user profile.' } as ApiError;
     }

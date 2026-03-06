@@ -5,11 +5,10 @@ import { useAuth } from '../../context/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
-  skipOnboardingCheck?: boolean; // set true for the /onboarding route itself
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, skipOnboardingCheck = false }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -18,11 +17,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, skipOnboardin
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // Redirect to onboarding if the user hasn't completed it yet
-  if (!skipOnboardingCheck && user?.onboardingComplete === false) {
-    return <Navigate to="/onboarding" replace />;
   }
 
   return children;

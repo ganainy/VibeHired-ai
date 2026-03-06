@@ -200,6 +200,14 @@ export async function getAdminStats(req: Request, res: Response) {
                         { $sort: { createdAt: -1 } },
                         { $limit: 20 },
                         {
+                            $lookup: {
+                                from: 'users',
+                                localField: 'userId',
+                                foreignField: '_id',
+                                as: 'userInfo',
+                            }
+                        },
+                        {
                             $project: {
                                 _id: 1,
                                 category: 1,
@@ -213,6 +221,7 @@ export async function getAdminStats(req: Request, res: Response) {
                                 durationMs: 1,
                                 errorMessage: 1,
                                 createdAt: 1,
+                                userEmail: { $arrayElemAt: ['$userInfo.email', 0] },
                             }
                         }
                     ]
@@ -389,6 +398,39 @@ export async function adminGrantBonus(req: Request, res: Response) {
     } catch (error) {
         console.error('adminGrantBonus error:', error);
         res.status(500).json({ message: 'Failed to grant credits' });
+    }
+}
+
+/**
+ * Block or unblock a user account.
+ * PATCH /api/admin/users/:userId  { isBlocked: boolean }
+ */
+export async function setUserBlocked(req: Request, res: Response) {
+    const { userId } = req.params;
+    const { isBlocked } = req.body;
+
+    if (typeof isBlocked !== 'boolean') {
+        res.status(400).json({ message: 'isBlocked must be a boolean' });
+        return;
+    }
+
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+
+        (user as any).isBlocked = isBlocked;
+        await user.save({ validateBeforeSave: false });
+
+        // Bust the stats cache so the admin dashboard reflects the change
+        statsCache = null;
+
+        res.json({ message: isBlocked ? 'User blocked' : 'User unblocked', userId });
+    } catch (error) {
+        console.error('setUserBlocked error:', error);
+        res.status(500).json({ message: 'Failed to update user block status' });
     }
 }
 

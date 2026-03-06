@@ -10,6 +10,16 @@ The React + TypeScript + Vite single-page application for [VibeHired](../README.
 - `VITE_PAYMENTS_ENABLED` now gates Stripe/upgrade CTAs across onboarding, subscriptions, settings, review, and credit-limit prompts.
 - Post-login auth flow is hardened to avoid false logout on transient usage-fetch `401` failures.
 - Interview Buddy deep-link launching now uses `window.open(...)` to prevent deferred protocol prompts from showing during later login flow.
+- Onboarding wizard added with 4-step flow (Welcome, CV Upload, Job Prefs, Feature Tour).
+- Admin dashboard added with AI/Apify call tracking and statistics.
+- Credit system implementation with usage tracking and credit limits.
+- Email verification flow for enhanced security.
+- Interview materials favourites system with star toggle and filter.
+- Work Tracker enhancements: auto-flip planned entries, calendar events inline, filter pills.
+- Email suggestions improvements: manual scan only, batch AI classification, count-based limits.
+- Disposable email blocking with multi-layer detection.
+- Mock interview enhancements: separate first/second round options.
+- App branding: new VibeHired logo and gold credit badges.
 
 ## Tech Stack
 
@@ -93,6 +103,7 @@ All components follow the **Obsidian Intelligence** design system documented in 
 | `/register` | `RegisterPage` | Public |
 | `/forgot-password` | `ForgotPasswordPage` | Public |
 | `/reset-password` | `ResetPasswordPage` | Public |
+| `/verify-email` | `VerifyEmailPage` | Public |
 | `/auth/google` | `GoogleAuthCallbackPage` | Public |
 | `/portfolio/:username` | `PortfolioPage` | Public |
 | `/dashboard` | `DashboardPage` | Protected |
@@ -104,6 +115,9 @@ All components follow the **Obsidian Intelligence** design system documented in 
 | `/subscriptions` | `SubscriptionsPage` | Protected |
 | `/email-suggestions` | `EmailSuggestionsPage` | Protected |
 | `/work-tracker` | `WorkTrackerPage` | Protected |
-| `/interview-buddy` | `InterviewBuddyPage` | Protected |
+| `/interview-buddy` | `InterviewBuddyPage` | Protected (Admin/Owner only) |
 | `/interview-materials` | `InterviewMaterialsPage` | Protected |
+| `/admin` | `AdminDashboardPage` | Protected (Admin only) |
+| `/admin/users` | `AdminUsersPage` | Protected (Admin only) |
+| `/onboarding` | `OnboardingPage` | Protected (New users) |
 | `/jobs/:jobId/review/:tab?` | `ReviewFinalizePage` | Protected |

@@ -28,7 +28,6 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
-import OnboardingPage from './pages/OnboardingPage';
 import InterviewBuddyPage from './pages/InterviewBuddyPage';
 import AdminRoute from './components/auth/AdminRoute';
 
@@ -39,29 +38,11 @@ function App() {
 
   // Check if current route is a public portfolio route
   const isPortfolioRoute = location.pathname.startsWith('/portfolio/');
-  const isOnboardingRoute = location.pathname === '/onboarding';
 
   if (isPortfolioRoute) {
     return (
       <Routes>
         <Route path="/portfolio/:username" element={<PortfolioPage />} />
-      </Routes>
-    );
-  }
-
-  // Onboarding page renders outside MainLayout (full-screen wizard)
-  if (isOnboardingRoute) {
-    return (
-      <Routes>
-        <Route
-          path="/onboarding"
-          element={
-            <ProtectedRoute skipOnboardingCheck>
-              <OnboardingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
   }
@@ -153,7 +134,7 @@ function App() {
         <Route path="/admin/users" element={<ProtectedRoute><AdminUsersPage /></ProtectedRoute>} />
         <Route path="/interview-buddy" element={<ProtectedRoute><AdminRoute><InterviewBuddyPage /></AdminRoute></ProtectedRoute>} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/onboarding" element={<Navigate to="/dashboard" replace />} />
+
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route
           path="*"

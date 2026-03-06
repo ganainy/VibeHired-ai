@@ -46,6 +46,12 @@ router.patch('/users/:userId/plan', adminController.updateUser as RequestHandler
 router.post('/users/:userId/credits', adminController.adminGrantBonus as RequestHandler);
 
 /**
+ * PATCH /api/admin/users/:userId
+ * Block or unblock a user
+ */
+router.patch('/users/:userId', adminController.setUserBlocked as RequestHandler);
+
+/**
  * DELETE /api/admin/users/:userId/subscription
  * Cancel a user's Stripe subscription and revert them to free plan
  */

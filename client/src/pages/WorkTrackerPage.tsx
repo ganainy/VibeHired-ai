@@ -65,6 +65,9 @@ import Spinner from '../components/common/Spinner';
 import { parseApiErrorMessage } from '../utils/parseApiError';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useAuth } from '../context/AuthContext';
+import TourBanner from '../components/onboarding/TourBanner';
+import { usePageTour } from '../hooks/usePageTour';
+import { MOCK_WORK_ENTRY } from '../data/mockTourData';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1462,6 +1465,13 @@ const WorkTrackerPage: React.FC = () => {
   // ── Data state ────────────────────────────────────────────────────────────
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [employers, setEmployers] = useState<Employer[]>([]);
+
+  const { showTour: showWorkTour, dismiss: dismissWorkTour } = usePageTour('work-tracker');
+
+  // Auto-dismiss tour when user has real entries
+  useEffect(() => {
+    if (entries.length > 0) dismissWorkTour();
+  }, [entries.length]);
   const [appointmentTypes, setAppointmentTypes] = useState<PopulatedAppointmentType[]>([]);
   const [stats, setStats] = useState<WorkTrackerStats | null>(null);
   const [loadingEntries, setLoadingEntries] = useState(true);
@@ -2196,6 +2206,59 @@ const WorkTrackerPage: React.FC = () => {
                 </button>
               ))}
             </div>
+
+            {/* ── Demo Tour Section ────────────────────────────────────── */}
+            {showWorkTour && entries.length === 0 && calendarEvents.length === 0 && !loadingCalendarEvents && (
+              <div className="space-y-3">
+                <TourBanner pageLabel="Time Tracker" onDismiss={dismissWorkTour} />
+                {/* Mock day card — matches renderDayCard structure exactly */}
+                <div className="card overflow-hidden opacity-80 select-none pointer-events-none relative">
+                  {/* DEMO badge */}
+                  <span
+                    className="absolute top-2 right-2 z-10 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                    style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                  >
+                    demo
+                  </span>
+                  {/* Date header bar */}
+                  <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      {formatDate(MOCK_WORK_ENTRY.date)}
+                    </span>
+                  </div>
+                  {/* Entry row — calendar event style */}
+                  <ul className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <li className="flex items-start gap-3 px-4 py-3" style={{ background: 'rgba(99,102,241,0.025)' }}>
+                      <div className="mt-0.5 shrink-0 flex items-center justify-center" style={{ width: 20, height: 20, color: 'var(--accent)', opacity: 0.55 }}>
+                        <CalendarDays size={15} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                            {MOCK_WORK_ENTRY.title}
+                          </span>
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded"
+                            style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)', color: 'var(--accent)' }}
+                          >
+                            <CalendarDays size={9} /> Google Calendar
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {MOCK_WORK_ENTRY.startTime} &ndash; {MOCK_WORK_ENTRY.endTime}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                            <MapPin size={10} />{MOCK_WORK_ENTRY.employerName}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ width: 28 }} />
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
 
             {/* Entry list */}
             <div className="space-y-4">

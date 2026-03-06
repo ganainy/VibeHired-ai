@@ -477,5 +477,5 @@ export default ExamplePage;
 
 ---
 
-**Last Updated:** February 2026  
+**Last Updated:** March 2026  
 **Design system source:** `client/src/index.css`, `client/tailwind.config.js`

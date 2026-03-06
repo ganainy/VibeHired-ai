@@ -174,6 +174,7 @@ const AdminDashboardPage: React.FC = () => {
                                         <th className="pb-3 font-semibold">Provider</th>
                                         <th className="pb-3 font-semibold">Type</th>
                                         <th className="pb-3 font-semibold">Model</th>
+                                        <th className="pb-3 font-semibold">User</th>
                                         <th className="pb-3 font-semibold">Status</th>
                                         <th className="pb-3 font-semibold">Latency</th>
                                         <th className="pb-3 font-semibold">Time</th>
@@ -185,6 +186,7 @@ const AdminDashboardPage: React.FC = () => {
                                             <td className="py-4 font-medium capitalize">{call.provider}</td>
                                             <td className="py-4 uppercase text-xs tracking-wide">{call.category}</td>
                                             <td className="py-4 text-zinc-500">{call.modelName || '-'}</td>
+                                            <td className="py-4 text-zinc-500">{call.userEmail || '-'}</td>
                                             <td className="py-4">
                                                 <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${call.success ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30'}`}>
                                                     {call.statusCode || (call.success ? 'OK' : 'ERR')}

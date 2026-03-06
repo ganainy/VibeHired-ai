@@ -150,6 +150,35 @@ const SettingsPage: React.FC = () => {
   // Check if this is a new user (from registration)
   const isNewUser = location.state?.fromRegistration === true;
 
+  const usageActions = usageInfo?.actions ?? {};
+  const getActionCount = (...keys: string[]): number => {
+    for (const key of keys) {
+      const value = usageActions[key];
+      if (typeof value === 'number') return value;
+    }
+    return 0;
+  };
+
+  const quickStatItems = [
+    { label: 'CV Improvements', cost: '2 cr', count: getActionCount('analysis') },
+    { label: 'CV Generation', cost: '3 cr', count: getActionCount('cvGeneration') },
+    { label: 'AI Chat Messages', cost: '1 cr', count: getActionCount('chatMessages', 'chatMessage') },
+    { label: 'Job Extractions', cost: '1 cr', count: getActionCount('jobExtractions', 'jobExtraction') },
+    { label: 'Interview Prep', cost: '3 cr', count: getActionCount('interview') },
+    { label: 'Cover Letters', cost: '3 cr', count: getActionCount('coverLetter') },
+    { label: 'ATS Scoring', cost: '2 cr', count: getActionCount('atsScoring') },
+    { label: 'CV Parsing', cost: '2 cr', count: getActionCount('cvParsing') },
+    { label: 'Email Scans', cost: '1 cr', count: getActionCount('emailScans', 'emailScan') },
+    { label: 'Auto Jobs', cost: '3 base + 0.25/job', count: getActionCount('autoJobsWorkflow') },
+  ];
+
+  const totalActionsThisCycle = quickStatItems.reduce((sum, item) => sum + item.count, 0);
+  const peakActionCount = Math.max(1, ...quickStatItems.map((item) => item.count));
+  const creditsUsed = usageInfo?.usage.creditsUsed ?? 0;
+  const creditsRemaining = usageInfo?.usage.remaining ?? 0;
+  const creditLimit = usageInfo?.usage.creditLimit ?? 0;
+  const creditsRemainingPct = creditLimit > 0 ? Math.min(100, (creditsRemaining / creditLimit) * 100) : 0;
+
   const loadUsageData = async () => {
     try {
       setIsLoadingUsage(true);
@@ -263,8 +292,8 @@ const SettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-8 sm:py-10 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 py-8 sm:py-10 px-4" style={{ backgroundImage: "radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 36%)" }}>
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -303,29 +332,40 @@ const SettingsPage: React.FC = () => {
             </button>
           </div>
         )}
-
         {/* Subscription & Usage Overview */}
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="mb-8 grid grid-cols-1 xl:grid-cols-5 gap-6">
           {/* Active Plan Card */}
-          <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Active Plan</h3>
-              <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tight ${user?.plan === 'pro' || user?.plan === 'premium' ? 'bg-gold-500/20 text-gold-600' : 'bg-zinc-100 text-zinc-600'}`}>
+          <div className="xl:col-span-2 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.16em]">Active Plan</h3>
+              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${user?.plan === 'pro' || user?.plan === 'premium' ? 'bg-gold-500/20 text-gold-700 dark:text-gold-400' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300'}`}>
                 {user?.plan || 'Free'}
               </span>
             </div>
 
-            <div className="flex items-baseline gap-1 mb-4">
-              <span className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 italic">
-                {usageInfo?.usage.remaining ?? '0'}
-              </span>
-              <span className="text-sm text-zinc-500">Credits Remaining</span>
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
+                <p className="text-[11px] uppercase tracking-wide text-zinc-500">Remaining</p>
+                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{creditsRemaining}</p>
+              </div>
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
+                <p className="text-[11px] uppercase tracking-wide text-zinc-500">Used</p>
+                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{creditsUsed}</p>
+              </div>
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
+                <p className="text-[11px] uppercase tracking-wide text-zinc-500">Limit</p>
+                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{creditLimit}</p>
+              </div>
             </div>
 
-            <div className="w-full bg-zinc-100 dark:bg-zinc-700 h-2 rounded-full mb-6 overflow-hidden">
+            <div className="mb-2 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+              <span>Credit pool</span>
+              <span>{Math.round(creditsRemainingPct)}% remaining</span>
+            </div>
+            <div className="w-full bg-zinc-100 dark:bg-zinc-700 h-2.5 rounded-full mb-6 overflow-hidden">
               <div
-                className="bg-gold-500 h-full transition-all duration-1000"
-                style={{ width: `${Math.min(100, (usageInfo?.usage.remaining || 0) / (usageInfo?.usage.creditLimit || 1) * 100)}%` }}
+                className="bg-gold-500 h-full transition-all duration-700"
+                style={{ width: `${creditsRemainingPct}%` }}
               />
             </div>
 
@@ -364,60 +404,55 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {/* Usage Breakdown */}
-          <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 p-6">
-            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4">Quick Stats</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">CV Improvements <span className="text-zinc-400">· 2 cr</span></span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.analysis || 0}</span>
+          <div className="xl:col-span-3 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700 p-6">
+            <div className="flex items-start justify-between mb-5 gap-4">
+              <div>
+                <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.16em]">Quick Stats</h3>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Actions used in the current billing cycle</p>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">CV Generation <span className="text-zinc-400">· 3 cr</span></span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.cvGeneration || 0}</span>
+              <div className="px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200">
+                {totalActionsThisCycle} total actions
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">AI Chat Messages <span className="text-zinc-400">· 1 cr</span></span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.chatMessages || 0}</span>
+            </div>
+
+            {isLoadingUsage ? (
+              <div className="space-y-3">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <div key={idx} className="h-8 rounded-lg bg-zinc-100 dark:bg-zinc-700/60 animate-pulse" />
+                ))}
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Job Extractions <span className="text-zinc-400">· 1 cr</span></span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.jobExtraction || 0}</span>
+            ) : (
+              <div className="space-y-2.5">
+                {quickStatItems.map((item) => {
+                  const widthPct = Math.max(3, (item.count / peakActionCount) * 100);
+                  return (
+                    <div key={item.label} className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-2.5">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="text-zinc-600 dark:text-zinc-300">
+                          {item.label} <span className="text-zinc-400">· {item.cost}</span>
+                        </span>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">{item.count}</span>
+                      </div>
+                      <div className="h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-gold-500/80" style={{ width: `${widthPct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Interview Prep <span className="text-zinc-400">· 3 cr</span></span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.interview || 0}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Cover Letters <span className="text-zinc-400">· 3 cr</span></span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.coverLetter || 0}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">ATS Scoring <span className="text-zinc-400">· 2 cr</span></span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.atsScoring || 0}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">CV Parsing <span className="text-zinc-400">· 2 cr</span></span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.cvParsing || 0}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Email Scans <span className="text-zinc-400">· 1 cr</span></span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.emailScan || 0}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-500">Auto Jobs <span className="text-zinc-400">· 3 base + 0.25 cr/job</span></span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">{usageInfo?.actions.autoJobsWorkflow || 0}</span>
-              </div>
-              <div className="pt-3 border-t border-zinc-100 dark:border-zinc-700 flex justify-between text-xs">
-                <span className="text-zinc-400 italic">Resets on</span>
-                <span className="text-zinc-500">
-                  {usageInfo ? new Date(usageInfo.usage.billingPeriodEnd).toLocaleDateString() : '---'}
-                </span>
-              </div>
+            )}
+
+            <div className="pt-4 mt-4 border-t border-zinc-200 dark:border-zinc-700 flex justify-between text-xs">
+              <span className="text-zinc-400 italic">Resets on</span>
+              <span className="text-zinc-600 dark:text-zinc-300 font-medium">
+                {usageInfo ? new Date(usageInfo.usage.billingPeriodEnd).toLocaleDateString() : '---'}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Onboarding Section for New Users */}
+
         {isNewUser && (
           <div className="mb-6 sm:mb-8 rounded-xl shadow-sm overflow-hidden" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
             <button
@@ -550,3 +585,4 @@ const SettingsPage: React.FC = () => {
 };
 
 export default SettingsPage;
+

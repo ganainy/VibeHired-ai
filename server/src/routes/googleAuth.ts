@@ -297,11 +297,20 @@ router.get('/auth-callback', asyncHandler(async (req: Request, res: Response) =>
     // Find by googleId first, then by email (to link existing accounts)
     let user = await User.findOne({ googleId });
 
+    // Ensure existing Google users are always marked as verified (backfill for
+    // accounts created before this flag was set on OAuth sign-up).
+    if (user && !user.emailVerified) {
+        user.emailVerified = true;
+        await user.save({ validateBeforeSave: false });
+    }
+
     if (!user) {
         user = await User.findOne({ email: googleEmail });
         if (user) {
             // Link this Google account to the existing email account
             user.googleId = googleId;
+            // Google has already verified this email address
+            user.emailVerified = true;
             await user.save({ validateBeforeSave: false });
         } else {
             // Create a brand-new Google-only account
@@ -309,7 +318,8 @@ router.get('/auth-callback', asyncHandler(async (req: Request, res: Response) =>
             const taken = await User.findOne({ username });
             if (taken) username = `${username}${Math.floor(Math.random() * 9000) + 1000}`;
 
-            user = new User({ email: googleEmail, googleId, username });
+            // emailVerified: true because Google has already verified this email
+            user = new User({ email: googleEmail, googleId, username, emailVerified: true });
             await user.save({ validateBeforeSave: false });
         }
     }

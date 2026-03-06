@@ -109,11 +109,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // If we have a user, fetch their latest profile and usage
       if (storedToken && storedUser) {
         try {
-          const profile = await getCurrentUserProfile();
-          const usageData = await getUsage();
+          // Use skipLogoutOn401 so the global Axios interceptor doesn't race with this
+          // try/catch — we handle session expiry ourselves below.
+          const profile = await getCurrentUserProfile({ skipLogoutOn401: true });
+          const usageData = await getUsage({ skipLogoutOn401: true });
 
-          // Check if email is verified
-          if (!profile.emailVerified) {
+          // Block access only for email accounts whose verification is explicitly false.
+          // Google OAuth users always have emailVerified: true (set on the server).
+          if (profile.emailVerified === false) {
             console.warn('Email not verified. Logging out...');
             logout();
             setIsLoading(false);
@@ -128,7 +131,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           };
           setUser(updatedUser);
           localStorage.setItem('authUser', JSON.stringify(updatedUser));
-        } catch (err) {
+        } catch (err: any) {
+          // If the token is expired or revoked (401), log the user out cleanly.
+          // For transient server errors (5xx, network) keep the locally-cached
+          // session so the user isn't unexpectedly kicked out.
+          if (err?.status === 401) {
+            console.warn('Session expired or invalid. Logging out...');
+            logout();
+            setIsLoading(false);
+            return;
+          }
           console.error("Failed to sync profile/usage on init:", err);
         }
       }
@@ -224,6 +236,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('authToken', token);
       localStorage.setItem('authUser', JSON.stringify(userObj));
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Fetch full profile + usage in the background so credits/plan are available immediately
+      (async () => {
+        try {
+          const [profile, usageData] = await Promise.all([
+            getCurrentUserProfile(),
+            getUsage({ skipLogoutOn401: true }),
+          ]);
+          const updatedUser: User = {
+            ...userObj,
+            plan: profile.plan,
+            role: profile.role,
+            emailVerified: profile.emailVerified,
+            onboardingComplete: profile.onboardingComplete,
+            credits: usageData.usage.remaining,
+          };
+          setUser(updatedUser);
+          localStorage.setItem('authUser', JSON.stringify(updatedUser));
+        } catch (err) {
+          console.warn('Failed to fetch profile/usage after Google login', err);
+        }
+      })();
     } catch (e) {
       console.error('Failed to decode token', e);
     }

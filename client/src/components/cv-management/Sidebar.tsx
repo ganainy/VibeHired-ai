@@ -51,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div
                 onClick={() => onSelectCv(cv._id)}
                 style={isActive ? {background:'var(--bg-surface)', borderColor:'var(--accent)', boxShadow:'0 0 0 1px rgba(232,184,68,0.2)'} : {background:'var(--bg-surface)', borderColor:'var(--border)'}}
-                className="group relative p-3 rounded-xl border cursor-pointer transition-all duration-200 w-64 flex-shrink-0 hover:border-opacity-70"
+                className="group relative p-3 rounded-xl border cursor-pointer transition-all duration-200 w-64 flex-shrink-0 hover:border-opacity-70 overflow-hidden"
             >
                 {isActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{background:'var(--accent)'}} />
@@ -159,7 +159,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {onCreateBranch && (
                                 <button
                                     onClick={onCreateBranch}
-                                    className="flex flex-col items-center justify-center gap-2 w-32 rounded-xl border-2 border-dashed transition-all group"
+                                    className="flex flex-col items-center justify-center gap-2 w-32 rounded-xl border-2 border-dashed transition-all group pb-2.5"
                                     style={{borderColor:'var(--accent-dim)', background:'var(--accent-bg)', color:'var(--accent)'}}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.background='var(--accent-bg-hover,rgba(232,184,68,0.14))'; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor='var(--accent-dim)'; e.currentTarget.style.background='var(--accent-bg)'; }}

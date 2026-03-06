@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import { getGlobalMaterials, deleteMaterial, updateMaterial, createMaterial, generateMaterialTitle } from '../services/interviewMaterialsApi';
 import { InterviewMaterial, MaterialJobRef, MaterialType } from '../types/interviewMaterial';
 import MaterialPreviewModal, { canPreviewInline } from '../components/jobs/MaterialPreviewModal';
+import TourBanner from '../components/onboarding/TourBanner';
+import { usePageTour } from '../hooks/usePageTour';
+import { MOCK_MATERIAL } from '../data/mockTourData';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -552,6 +555,13 @@ const InterviewMaterialsPage: React.FC = () => {
     const [materials, setMaterials] = useState<InterviewMaterial[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const { showTour: showMaterialTour, dismiss: dismissMaterialTour } = usePageTour('interview-materials');
+
+    // Auto-dismiss tour when user has real materials
+    useEffect(() => {
+        if (materials.length > 0) dismissMaterialTour();
+    }, [materials.length]);
     const [viewMode, setViewMode] = useState<ViewMode>('grouped');
     const [search, setSearch] = useState('');
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -918,6 +928,64 @@ const InterviewMaterialsPage: React.FC = () => {
                     </span>
                 )}
             </div>
+
+            {/* ── Demo Tour Section ────────────────────────────────── */}
+            {showMaterialTour && materials.length === 0 && (
+                <div className="space-y-3">
+                    <TourBanner pageLabel="Prep Library" onDismiss={dismissMaterialTour} />
+                    {/* Mock material card — matches GlobalMaterialCard normal-view structure */}
+                    <div
+                        className="group relative flex flex-col gap-2 p-3.5 rounded-xl border opacity-80 select-none pointer-events-none"
+                        style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
+                    >
+                        {/* DEMO badge */}
+                        <span
+                            className="absolute top-2 right-10 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                            style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                        >
+                            demo
+                        </span>
+                        <div className="flex items-start gap-3">
+                            {/* Type icon */}
+                            <div className="flex-shrink-0 mt-0.5">
+                                <span className="material-symbols-outlined text-xl text-cyan-500">code</span>
+                            </div>
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium leading-snug" style={{ color: 'var(--text-primary)' }}>
+                                            {MOCK_MATERIAL.title}
+                                        </p>
+                                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                                            <span
+                                                className="text-xs px-1.5 py-0.5 rounded-md capitalize font-medium"
+                                                style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
+                                            >
+                                                {MOCK_MATERIAL.type}
+                                            </span>
+                                        </div>
+                                        {MOCK_MATERIAL.description && (
+                                            <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+                                                {MOCK_MATERIAL.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                    {/* Favourite star (filled) */}
+                                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                                        <span
+                                            className="p-1.5 material-symbols-outlined text-base"
+                                            style={{ color: 'var(--accent)', fontVariationSettings: "'FILL' 1" }}
+                                        >
+                                            star
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── Drop zone / Add buttons ── */}
             {addMode === 'idle' && (

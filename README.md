@@ -15,6 +15,22 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 - **Payments feature flag:** Stripe/upgrade CTAs are now controlled by `VITE_PAYMENTS_ENABLED` so paid flows can be hidden while Stripe rollout is not public.
 - **Work Tracker improvements:** Planned entries that are already in the past auto-transition to done, type-filter pills were added, reminder removal now also removes linked calendar event state, and total-hours cards now include done-hours context.
 - **Google Calendar timeline polish:** Current-month fetches now clamp to today so past events are not shown in upcoming timeline views.
+- **Admin Dashboard:** New admin panel with AI/Apify call tracking and statistics dashboard for monitoring usage and system health.
+- **AI Interview Buddy:** New Electron companion app with push-to-talk (Ctrl+Shift+Space), stealth overlay, and Web Speech API transcription for real-time interview assistance.
+- **Credit System:** Comprehensive credit-based system with usage tracking, credit limits, and detailed usage statistics across all features.
+- **Email Verification:** New email verification flow for enhanced security and account validation.
+- **Stripe Integration:** Full payment integration with subscription plans and Stripe checkout.
+- **Onboarding Wizard:** 4-step onboarding flow (Welcome, CV Upload, Job Prefs, Feature Tour) with smooth animations.
+- **Prep Materials Favourites:** Favourite system for interview materials with star toggle and filter capabilities.
+- **Email Suggestions improvements:** Manual scan only, batch AI classification, count-based scan limits (25/50/100/200 emails), and improved UI/UX.
+- **Disposable Email Blocking:** Multi-layer disposable email detection using burner-email-providers, disposable.debounce.io API, and DNS MX record verification.
+- **Registration UX improvements:** Fixed blank screen after submission with local isSubmitting state and added clear success banner.
+- **Mock Interview enhancements:** Separate first/second round prompt options with improved UI visibility.
+- **App branding:** New VibeHired logo, gold pill credit badges across all pages, and portfolio polish.
+- **ATS CV Template:** New ATS-optimized CV template for better applicant tracking system compatibility.
+- **AI Action Guards:** Rate limiting and usage tracking for all AI-powered features.
+- **Calendar Integration:** Google Calendar integration for interview scheduling and event management.
+- **Voice Command UX:** Push-to-talk (Ctrl+Shift+Space) instead of toggle for better control.
 
 ## 🚀 Live Preview
 
@@ -28,6 +44,8 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 - Secure registration and login using JWT
 - **Google OAuth:** Sign in with Google via a secure OAuth 2.0 callback flow
 - **Password Reset:** Forgot-password / reset-password email flow
+- **Email Verification:** Enhanced security with email verification flow for new accounts
+- **Disposable Email Blocking:** Multi-layer detection using static lists, API checks, and DNS MX verification
 - Protected routes with authentication middleware
 - User profile management
 
@@ -59,7 +77,8 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 - **Smart Placeholder System:** AI detects missing information and uses intelligent placeholder handling with context-aware user input modals
 
 ### Gmail Email Automation
-- **Automatic Email Scanning:** Server polls your Gmail inbox every 15 minutes for new unread emails matching job application responses
+- **Manual Email Scanning:** Trigger Gmail inbox scans on-demand with count-based limits (25/50/100/200 emails)
+- **Batch AI Classification:** All emails classified in a single AI call for efficiency
 - **AI Classification:** Your configured AI model (Gemini/OpenRouter/Ollama) classifies each email as a rejection, interview invite, assessment, or offer
 - **Smart Job Matching:** Parsed company name and job title are fuzzy-matched against your tracked applications
 - **Three independent suggestions per email:** Each card can carry a status change, a rich AI-written note (salary figures, prep advice, key facts), and a calendar event — each confirmed separately
@@ -67,7 +86,7 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 - **Calendar Event Suggestions:** When an email contains a concrete interview/assessment datetime, a checkbox (checked by default) lets you add the event to Google Calendar in one click via the existing Calendar integration
 - **Info-only cards:** Cards appear even when there is no status change — useful for emails that share salary data, recruiter advice, or prep tips
 - **Suggest-then-Confirm Flow:** Nothing is applied automatically — every detected change appears in the **Email Inbox** page for you to review, apply, or dismiss
-- **Deduplication:** Processed emails are labelled `job-tracker-processed` in Gmail so they're never surfaced twice
+- **Deduplication:** Processed emails are labelled `vibe-hired-processed` in Gmail so they're never surfaced twice
 - **Privacy First:** Email bodies are only sent to your own configured AI provider
 
 ### Analytics Dashboard
@@ -97,6 +116,15 @@ VibeHired is an AI-powered job application assistant that automates and enhances
   - Gemini API Key (Required for AI features)
   - Apify API Token (Optional for LinkedIn integration)
 - **User Profile Settings:** Manage account settings and preferences
+- **Credit System:** View credit usage, limits, and subscription status
+- **Subscription Plans:** View and upgrade to paid plans with Stripe integration
+- **Usage Statistics:** Detailed breakdown of credit usage across all features
+
+### Admin Dashboard
+- **AI Call Tracking:** Monitor all AI API calls and usage statistics
+- **Apify Call Tracking:** Track LinkedIn scraping API usage and costs
+- **System Statistics:** Overview of user activity, credits consumed, and system health
+- **User Management:** Admin panel for managing users and accounts
 
 ### Review & Finalization
 - **AI-Generated Draft Review:** Review and refine AI-generated CVs and cover letters with full editing capabilities before PDF generation
@@ -109,7 +137,17 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 - **Bulk upload:** Select or drop multiple files at once with a sequential upload queue and animated progress bar
 - **Inline preview:** Click any card to preview — PDFs and DOCX via Google Docs Viewer, images inline, Markdown rendered with full formatting via `react-markdown`
 - **Global Prep Library:** Mark any material as globally shared; view all materials across all jobs on the `/interview-materials` page with grouped or flat views
+- **Favourites System:** Star and filter favourite materials for quick access
 - **Cloudinary-backed file storage** for binary files; text and Markdown stored directly in the database — 30 MB per-file limit
+
+### AI Interview Buddy (Electron Companion App)
+- **Push-to-Talk:** Hold Ctrl+Shift+Space to speak; release to generate AI answers
+- **Stealth Overlay:** OS-level screen-share invisibility for stealth during interviews
+- **Web Speech API:** Real-time transcription inside Electron Chromium
+- **Deep Link Auth:** Custom `vibehired://` protocol for secure authentication
+- **Auto-Grant Permissions:** Automatic microphone permission handling
+- **Job Selection:** Choose which job application to get interview assistance for
+- **Structured AI Responses:** Gemini Flash answers with opener, key points, and closing statements
 
 ## Technology Stack
 
@@ -118,11 +156,13 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 - **Authentication:** JWT (jsonwebtoken), bcryptjs
 - **File Handling:** Multer
 - **Image Hosting:** Cloudinary
-- **AI:** Google Generative AI SDK (`@google/generative-ai`)
+- **AI:** Google Generative AI SDK (`@google/generative-ai`), Web Speech API
 - **Web Scraping:** Apify (for LinkedIn profile scraping)
 - **PDF Generation:** Puppeteer
 - **CV Schema:** JSON Resume ([https://jsonresume.org/](https://jsonresume.org/))
 - **Charts:** Recharts (for analytics visualizations)
+- **Payments:** Stripe (for subscription plans and checkout)
+- **Desktop App:** Electron (for AI Interview Buddy companion app)
 
 ## User-Provided API Keys
 
@@ -183,19 +223,23 @@ VibeHired is an AI-powered job application assistant that automates and enhances
      CLOUDINARY_API_KEY=<your_api_key>
      CLOUDINARY_API_SECRET=<your_api_secret>
      ```
-   - Deployment/frontend variables you will likely also need:
-     ```env
-     # Backend CORS allow-list; supports comma-separated origins
-     # Example: FRONTEND_URL=https://vibehired.ganainy.dev,https://vibehired-ai.netlify.app
-     FRONTEND_URL=<your_frontend_origin_or_csv_list>
+    - Deployment/frontend variables you will likely also need:
+      ```env
+      # Backend CORS allow-list; supports comma-separated origins
+      # Example: FRONTEND_URL=https://vibehired.ganainy.dev,https://vibehired-ai.netlify.app
+      FRONTEND_URL=<your_frontend_origin_or_csv_list>
 
-     # Frontend API base (set in Netlify/Vite environment)
-     VITE_BACKEND_URL=<your_backend_api_base>
+      # Frontend API base (set in Netlify/Vite environment)
+      VITE_BACKEND_URL=<your_backend_api_base>
 
-     # Optional payments rollout flag (frontend)
-     # false = hide Stripe upgrade CTAs and show "coming soon" messaging
-     VITE_PAYMENTS_ENABLED=false
-     ```
+      # Optional payments rollout flag (frontend)
+      # false = hide Stripe upgrade CTAs and show "coming soon" messaging
+      VITE_PAYMENTS_ENABLED=false
+
+      # Optional AI Interview Buddy companion app download URL (frontend)
+      # URL where users can download the Electron companion app
+      VITE_COMPANION_DOWNLOAD_URL=<your_download_url>
+      ```
 
 4. **Start development servers:**
    ```bash
@@ -213,13 +257,19 @@ VibeHired is an AI-powered job application assistant that automates and enhances
 
 After starting the application:
 
-1. Register a new account
-2. Navigate to **Settings** page
-3. Add your **Gemini API Key** (required for AI features)
+1. Register a new account (email verification will be sent)
+2. Verify your email address via the verification link
+3. Complete the 4-step onboarding wizard:
+   - Welcome to VibeHired
+   - Upload your CV (AI will parse it automatically)
+   - Set job preferences
+   - Feature tour
+4. Navigate to **Settings** page
+5. Add your **Gemini API Key** (required for AI features)
    - Get your free API key from: https://makersuite.google.com/app/apikey
-4. Optionally add **Apify Token** (for LinkedIn integration)
+6. Optionally add **Apify Token** (for LinkedIn integration)
    - Get your free token from: https://console.apify.com/account/integrations
-5. Optionally add **GitHub Token** in Portfolio Setup page (for GitHub integration with higher rate limits)
+7. Optionally add **GitHub Token** in Portfolio Setup page (for GitHub integration with higher rate limits)
 
 **Note:** API keys (Gemini, Apify) are managed per-user in the app settings page. GitHub token is managed per-user in the portfolio setup page.
 

@@ -24,6 +24,9 @@ import Spinner from '../components/common/Spinner';
 import SimpleLoader from '../components/common/SimpleLoader';
 import Toast from '../components/common/Toast';
 import DuplicateJobWarningModal from '../components/jobs/DuplicateJobWarningModal';
+import TourBanner from '../components/onboarding/TourBanner';
+import { usePageTour } from '../hooks/usePageTour';
+import { MOCK_JOB } from '../data/mockTourData';
 
 type JobPlatform = 'linkedin' | 'indeed' | 'xing' | 'stepstone' | null;
 
@@ -179,6 +182,13 @@ const DashboardPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
 
 
+
+  const { showTour: showJobTour, dismiss: dismissJobTour } = usePageTour('dashboard');
+
+  // Auto-dismiss tour when the user has real jobs
+  useEffect(() => {
+    if (jobs.length > 0) dismissJobTour();
+  }, [jobs.length]);
 
   // --- useEffect: Fetch initial job data ---
   useEffect(() => {
@@ -756,6 +766,8 @@ const DashboardPage: React.FC = () => {
 
 
 
+
+
         {/* Add Job Section */}
         <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-6">
           <div className="flex flex-col gap-4">
@@ -1148,19 +1160,86 @@ const DashboardPage: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <h3 className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">No job applications</h3>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        Get started by adding a new job application manually or by pasting a job URL above.
-                      </p>
-                      <div className="mt-6">
-                        <button
-                          onClick={handleOpenAddModal}
-                          className="btn-primary inline-flex items-center gap-2"
-                        >
-                          <AddIcon />
-                          <span>Add Your First Job</span>
-                        </button>
-                      </div>
+                      {showJobTour ? (
+                        /* ── Demo Tour Section ── */
+                        <div className="py-6 px-4 space-y-3">
+                          <TourBanner pageLabel="Job Dashboard" onDismiss={dismissJobTour} />
+                          <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--border)' }}>
+                            <table className="w-full text-left pointer-events-none select-none opacity-75">
+                              <thead>
+                                <tr>
+                                  <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Job Title</th>
+                                  <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Company</th>
+                                  <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Status</th>
+                                  <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Date Added</th>
+                                  <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Type</th>
+                                  <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Salary</th>
+                                  <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Contact</th>
+                                  <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400"></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr className="border-t border-slate-200 dark:border-slate-800 relative">
+                                  {/* DEMO badge */}
+                                  <td className="p-4 font-medium text-slate-900 dark:text-slate-100">
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
+                                        style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                                      >
+                                        demo
+                                      </span>
+                                      {MOCK_JOB.jobTitle}
+                                    </div>
+                                  </td>
+                                  <td className="p-4 text-slate-600 dark:text-slate-400">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0" />
+                                      {MOCK_JOB.companyName}
+                                    </div>
+                                  </td>
+                                  <td className="p-4">
+                                    <span
+                                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                                      style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}
+                                    >
+                                      {MOCK_JOB.status}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-slate-600 dark:text-slate-400">
+                                    <div className="flex flex-col">
+                                      <span className="text-xs text-slate-400 dark:text-slate-500">09:00</span>
+                                      <span>Today</span>
+                                    </div>
+                                  </td>
+                                  <td className="p-4 text-slate-600 dark:text-slate-400">Full-time</td>
+                                  <td className="p-4 text-slate-600 dark:text-slate-400">
+                                    <span className="text-xs font-medium">{MOCK_JOB.salary}</span>
+                                  </td>
+                                  <td className="p-4 text-slate-400 dark:text-slate-500">—</td>
+                                  <td className="p-4 text-slate-400 dark:text-slate-500">—</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <h3 className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">No job applications</h3>
+                          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            Get started by adding a new job application manually or by pasting a job URL above.
+                          </p>
+                          <div className="mt-6">
+                            <button
+                              onClick={handleOpenAddModal}
+                              className="btn-primary inline-flex items-center gap-2"
+                            >
+                              <AddIcon />
+                              <span>Add Your First Job</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
@@ -1426,14 +1505,14 @@ const DashboardPage: React.FC = () => {
                   </svg>
                 </button>
               </div>
-              <form onSubmit={handleFormSubmit} className="flex-1 flex flex-col">
+              <form onSubmit={handleFormSubmit} className="flex-1 flex flex-col min-h-0">
                 {modalError && (
                   <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded border border-red-300 dark:border-red-800">
                     {modalError}
                   </div>
                 )}
 
-                <div className="flex-1 overflow-y-auto pr-1">
+                <div className="flex-1 overflow-y-auto pr-1 min-h-0 pb-2">
                   {/* Job Title */}
                   <div className="mb-5">
                     <label htmlFor="jobTitle" className="label-overline mb-2 block">

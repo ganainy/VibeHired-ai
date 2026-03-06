@@ -14,6 +14,7 @@ For deployment see [DEPLOYMENT.md](./DEPLOYMENT.md).
    - [Register](#12-register)
    - [Forgot Password](#13-forgot-password)
    - [Reset Password](#14-reset-password)
+   - [Email Verification](#16-email-verification)
    - [Google OAuth Callback](#15-google-oauth-callback)
 2. [Dashboard](#2-dashboard)
 3. [CV Management](#3-cv-management)
@@ -25,6 +26,10 @@ For deployment see [DEPLOYMENT.md](./DEPLOYMENT.md).
 9. [Settings](#9-settings)
 10. [Prep Library](#10-prep-library)
 11. [Email Inbox](#11-email-inbox)
+12. [Admin Dashboard](#12-admin-dashboard)
+13. [AI Interview Buddy](#13-ai-interview-buddy)
+14. [Work Tracker](#14-work-tracker)
+15. [Calendar](#15-calendar)
 
 ---
 
@@ -101,6 +106,21 @@ For deployment see [DEPLOYMENT.md](./DEPLOYMENT.md).
 - Automatic — no user interaction needed
 - Exchanges the OAuth `code` for a JWT via `GET /api/auth/google/callback`
 - Stores the JWT in `localStorage` and redirects to `/dashboard`
+
+---
+
+### 1.6 Email Verification
+
+| Attribute | Value |
+|---|---|
+| **Route** | `/verify-email?token=<jwt>` |
+| **Auth required** | No (token validated server-side) |
+
+**Key interactions**
+- Token read from URL query string (`?token=`)
+- Submits to `POST /api/auth/verify-email`
+- On success redirects to `/dashboard` with success message
+- Email verification is required for new accounts after registration
 
 ---
 
@@ -499,4 +519,172 @@ Also accessible per-job via `/jobs/:jobId/review/materials` tab (component: `Int
 
 ---
 
-*Last Updated: February 2026*
+## 12. Admin Dashboard
+
+| Attribute | Value |
+|---|---|
+| **Route** | `/admin` |
+| **Auth required** | Yes (Admin only) |
+| **Component** | `AdminDashboardPage.tsx` |
+
+**Default state**
+- Overview of system statistics and usage metrics
+
+**Key interactions**
+
+| Action | Description |
+|---|---|
+| **AI Call Tracking** | View all AI API calls with timestamps, provider, and cost |
+| **Apify Call Tracking** | Monitor LinkedIn scraping API usage and costs |
+| **User Statistics** | Overview of total users, active users, and system health |
+| **Credit Consumption** | Track credits consumed across all features |
+| **System Health** | Monitor API response times, error rates, and system status |
+
+**API routes**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/admin/stats` | Get system statistics |
+| `GET` | `/api/admin/ai-calls` | Get AI call history |
+| `GET` | `/api/admin/apify-calls` | Get Apify call history |
+
+---
+
+## 13. AI Interview Buddy (Electron Companion App)
+
+| Attribute | Value |
+|---|---|
+| **Route** | `/interview-buddy` |
+| **Auth required** | Yes (Admin/Owner only) |
+| **Component** | `InterviewBuddyPage.tsx` |
+| **Platform** | Electron desktop application |
+
+**Default state**
+- Shows job selector for choosing which application to get assistance for
+- Displays download link for Electron companion app if not installed
+
+**Key interactions**
+
+| Action | Description |
+|---|---|
+| **Select job** | Choose which job application to get interview assistance for |
+| **Launch companion** | Opens Electron app via deep link (`vibehired://`) |
+| **Push-to-talk** | Hold Ctrl+Shift+Space to speak; release to generate AI answer |
+| **View transcript** | See real-time transcription of interview conversation |
+| **AI answers** | Get structured AI responses with opener, key points, and closing |
+
+**Technical details**
+
+| Feature | Description |
+|---|---|
+| **Stealth overlay** | OS-level screen-share invisibility for stealth during interviews |
+| **Web Speech API** | Real-time transcription inside Electron Chromium |
+| **Deep link auth** | Custom `vibehired://` protocol for secure authentication |
+| **Auto-grant permissions** | Automatic microphone permission handling |
+| **Gemini Flash** | Fast AI answer generation on mic release |
+| **Structured responses** | Opener + key points[] + closing |
+
+**API routes**
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/interview/:jobId/answer-question` | Generate AI answer for interview question |
+
+---
+
+## 14. Work Tracker
+
+| Attribute | Value |
+|---|---|
+| **Route** | `/work-tracker` |
+| **Auth required** | Yes |
+| **Component** | `WorkTrackerPage.tsx` |
+
+**Default state**
+- Current month/year view, `entryTypeFilter = 'all'`
+- Google Calendar events fetched automatically if the user has connected their calendar
+- Demo tour banner shown when no entries **and** no calendar events exist (dismissed via `localStorage`)
+
+**Key interactions**
+
+| Action | Description |
+|---|---|
+| **Add entry** | Log a shift or appointment with employer, date, start/end time, title |
+| **Toggle done** | Mark a planned entry as worked (done) or revert to planned |
+| **Month/year navigation** | Browse previous/future months |
+| **Filter by type** | Filter to Shifts, Appointments, Google Calendar events, or all |
+| **Employer management** | Create and manage employers with avatar icons |
+| **Appointment types** | Configure reusable appointment type labels |
+| **Google Calendar sync** | Read-only overlay of Google Calendar events as day-card rows |
+| **Reminder** | Set a push/email reminder for an upcoming entry |
+| **Delete entry** | Remove a logged entry with confirmation |
+
+**Entry types**
+
+| Type | Description |
+|---|---|
+| `shift` | Timed work shift with employer, hours, optional sub-location |
+| `appointment` | Appointment with a type label (e.g. "Client Meeting") |
+| `calendar` | Read-only row sourced from Google Calendar (not stored in DB) |
+
+**API routes**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/work-tracker/entries` | List entries for a month/year |
+| `POST` | `/api/work-tracker/entries` | Create a new entry |
+| `PUT` | `/api/work-tracker/entries/:id` | Update an entry |
+| `DELETE` | `/api/work-tracker/entries/:id` | Delete an entry |
+| `GET` | `/api/work-tracker/employers` | List employers |
+| `POST` | `/api/work-tracker/employers` | Create employer |
+| `PUT` | `/api/work-tracker/employers/:id` | Update employer |
+| `DELETE` | `/api/work-tracker/employers/:id` | Delete employer |
+
+---
+
+## 15. Calendar
+
+| Attribute | Value |
+|---|---|
+| **Route** | `/calendar` |
+| **Auth required** | Yes |
+| **Component** | `CalendarPage.tsx` |
+
+**Default state**
+- Requires Google Calendar to be connected (OAuth via Settings)
+- `activeFilter = 'upcoming'` — shows events from today forward
+- Demo tour banner shown when connected but no events found (dismissed via `localStorage`)
+
+**Key interactions**
+
+| Action | Description |
+|---|---|
+| **Connect Google Calendar** | OAuth flow initiated from Settings → Google Calendar section |
+| **Filter events** | Toggle between Upcoming, Today, This Week, This Month, Custom range |
+| **Add event** | Create a new Google Calendar event via modal (title, date, start/end time, location, description) |
+| **Edit event** | Update an existing event inline via modal |
+| **Delete event** | Remove an event from Google Calendar with confirmation |
+| **Grouped view** | Events grouped by date with date heading, event count, and divider |
+
+**Connection states**
+
+| State | UI |
+|---|---|
+| Not connected | Full-page connect CTA with OAuth button |
+| Connected, loading | Skeleton loader |
+| Connected, no events | Empty state (or demo tour if not yet dismissed) |
+| Connected, has events | Grouped date list with `EventRow` cards |
+
+**API routes**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/google-auth/calendar/events` | Fetch calendar events for a date range |
+| `POST` | `/api/google-auth/calendar/events` | Create a new calendar event |
+| `PUT` | `/api/google-auth/calendar/events/:id` | Update a calendar event |
+| `DELETE` | `/api/google-auth/calendar/events/:id` | Delete a calendar event |
+| `GET` | `/api/google-auth/calendar/status` | Check calendar connection status |
+
+---
+
+*Last Updated: March 2026*

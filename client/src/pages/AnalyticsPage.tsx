@@ -14,12 +14,22 @@ import { ApplicationsOverallWidget } from '../components/analytics/ApplicationsO
 import { getWorkTrackerAnalytics, WorkTrackerAnalytics, getWorkMonths } from '../services/workTrackerApi';
 import Spinner from '../components/common/Spinner';
 import ErrorAlert from '../components/common/ErrorAlert';
-import { Briefcase, Clock, ChevronDown } from 'lucide-react';
+import { Briefcase, Clock, ChevronDown, TrendingUp, Users, CalendarCheck2 } from 'lucide-react';
+import TourBanner from '../components/onboarding/TourBanner';
+import { usePageTour } from '../hooks/usePageTour';
+import { MOCK_ANALYTICS } from '../data/mockTourData';
 
 const AnalyticsPage: React.FC = () => {
     const [jobs, setJobs] = useState<JobApplication[]>([]);
     const [stats, setStats] = useState<ApplicationStats | null>(null);
     const [workAnalytics, setWorkAnalytics] = useState<WorkTrackerAnalytics | null>(null);
+
+    const { showTour: showAnalyticsTour, dismiss: dismissAnalyticsTour } = usePageTour('analytics');
+
+    // Auto-dismiss tour when user has real job data
+    useEffect(() => {
+        if (jobs.length > 0) dismissAnalyticsTour();
+    }, [jobs.length]);
     const [activeTab, setActiveTab] = useState<'jobs' | 'work'>(() => {
         return (localStorage.getItem('analytics_activeTab') as 'jobs' | 'work') || 'jobs';
     });
@@ -242,6 +252,49 @@ const AnalyticsPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* ── Demo Tour Section ─────────────────────────────────────────── */}
+            {showAnalyticsTour && jobs.length === 0 && !isLoadingJobs && (
+                <div className="space-y-3 mb-8">
+                    <TourBanner pageLabel="Analytics Dashboard" onDismiss={dismissAnalyticsTour} />
+                    {/* Mock stats grid */}
+                    <div
+                        className="grid grid-cols-2 md:grid-cols-3 gap-4 p-5 rounded-xl border opacity-80 select-none pointer-events-none"
+                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                    >
+                        {/* DEMO watermark */}
+                        <div className="col-span-2 md:col-span-3 flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Sample Data</p>
+                            <span
+                                className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                                style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                            >demo</span>
+                        </div>
+                        {[
+                            { icon: <Briefcase size={16} />, label: 'Applications', value: MOCK_ANALYTICS.totalApplications },
+                            { icon: <CalendarCheck2 size={16} />, label: 'Interviews', value: MOCK_ANALYTICS.interviews },
+                            { icon: <TrendingUp size={16} />, label: 'Response Rate', value: MOCK_ANALYTICS.responseRate },
+                            { icon: <Users size={16} />, label: 'Offers', value: MOCK_ANALYTICS.offers },
+                            { icon: <Clock size={16} />, label: 'Avg. Response', value: MOCK_ANALYTICS.avgTimeToResponse },
+                            { icon: <Briefcase size={16} />, label: 'Rejected', value: MOCK_ANALYTICS.rejected },
+                        ].map((item) => (
+                            <div
+                                key={item.label}
+                                className="flex flex-col gap-1 p-3 rounded-xl"
+                                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
+                            >
+                                <div className="flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+                                    {item.icon}
+                                    <span className="text-xs">{item.label}</span>
+                                </div>
+                                <p className="text-2xl font-bold font-mono mt-1" style={{ color: 'var(--text-primary)' }}>
+                                    {item.value}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {activeTab === 'jobs' ? (
                 /* Application Sections */

@@ -22,6 +22,9 @@ VibeHired is a full-stack AI-powered job application assistant designed to help 
 - **Image Hosting:** Cloudinary (for persistent profile images)
 - **CV Schema:** JSON Resume standard
 - **Charts:** Recharts (for analytics visualizations)
+- **Payments:** Stripe (for subscription plans and checkout)
+- **Desktop App:** Electron (for AI Interview Buddy companion app)
+- **Speech Recognition:** Web Speech API (for real-time transcription)
 
 ## Directory Structure
 
@@ -40,6 +43,11 @@ vibehired-ai/
 │   │   ├── lib/        # Library utilities
 │   │   └── hooks/      # Custom React hooks
 │   └── ...
+├── electron/       # Electron companion app for AI Interview Buddy
+│   ├── src/        # React application for Electron
+│   ├── main.ts      # Electron main process
+│   ├── preload.ts   # Electron preload script
+│   └── scripts/     # Setup and protocol registration scripts
 ├── server/         # Node.js backend application
 │   ├── src/
 │   │   ├── adapters/   # AI provider adapters (Gemini, OpenRouter, Ollama)
@@ -78,6 +86,7 @@ The client is a single-page application (SPA) built with React and TypeScript.
     - `GeneralCvAtsPanel.tsx`: General CV ATS analysis panel
   - `auth/`: Authentication components
     - `ProtectedRoute.tsx`: Route protection wrapper
+    - `AdminRoute.tsx`: Admin-only route protection
   - `chat/`: AI chat interface components
     - `FloatingChatButton.tsx`: Floating chat button
     - `JobChatModal.tsx`: Modal chat interface
@@ -132,7 +141,33 @@ The client is a single-page application (SPA) built with React and TypeScript.
     - `index.ts`: Public exports
   - `email-suggestions/`: Gmail inbox suggestion components
     - `EmailSuggestionPanel.tsx`: Slide-in sidebar panel variant — renders suggestion cards with three independent action sections (status change, AI note, calendar event)
+    - `EditSuggestionModal.tsx`: Modal for editing email suggestions
   - `generator/`: Draft generation components
+    - `UserInputModal.tsx`: Modal for user input during generation
+  - `jobs/`: Job application components
+    - `ApplicationCard.tsx`: Job application card
+    - `ApplicationPipelineKanban.tsx`: Kanban board for pipeline view
+    - `JobCvCard.tsx`: CV card for job applications
+    - `JobRecommendationBadge.tsx`: Recommendation badge component
+    - `JobStatusBadge.tsx`: Status badge component
+    - `ProgressIndicator.tsx`: Progress indicator
+    - `ReminderModal.tsx`: Reminder management modal
+    - `DuplicateJobWarningModal.tsx`: Duplicate job warning modal
+    - `MockInterviewPanel.tsx`: Mock interview preparation panel
+    - `InterviewMaterialsPanel.tsx`: Interview materials management panel
+    - `MaterialPreviewModal.tsx`: Material preview modal
+  - `onboarding/`: Per-page demo tour component
+    - `TourBanner.tsx`: Dismissible banner shown on empty pages — previews mock data so new users can see what each page looks like with real content
+  - `portfolio/`: Portfolio display components
+    - `About.tsx`: About section component
+    - `PortfolioLayout.tsx`: Main portfolio layout
+    - `Projects.tsx`: Projects display component
+  - `ui/`: UI component library
+    - `badge.tsx`: Badge component
+    - `separator.tsx`: Separator component
+  - `usage/`: Usage and credit management components
+    - `UserUsageModal.tsx`: Usage statistics and credit information modal
+    - `CreditLimitModal.tsx`: Credit limit warning modal
     - `UserInputModal.tsx`: Modal for user input during generation
   - `jobs/`: Job application components
     - `ApplicationCard.tsx`: Job application card
@@ -160,6 +195,7 @@ The client is a single-page application (SPA) built with React and TypeScript.
   - `RegisterPage.tsx`: User registration
   - `ForgotPasswordPage.tsx`: Request a password-reset link by email
   - `ResetPasswordPage.tsx`: Set a new password via reset token (reads `?token=` from URL)
+  - `VerifyEmailPage.tsx`: Email verification page for new accounts
   - `GoogleAuthCallbackPage.tsx`: OAuth 2.0 callback handler — exchanges the Google code for a JWT and redirects to `/dashboard`
   - `DashboardPage.tsx`: Main dashboard with job applications
   - `AutoJobsPage.tsx`: Automated job discovery and workflow management
@@ -170,6 +206,13 @@ The client is a single-page application (SPA) built with React and TypeScript.
   - `ReviewFinalizePage.tsx`: Review and finalize generated CVs/cover letters
   - `SettingsPage.tsx`: API key management and AI provider settings
   - `EmailSuggestionsPage.tsx`: Full `/email-inbox` page — lists AI-generated inbox suggestion cards (status change, note, calendar event sections)
+  - `SubscriptionsPage.tsx`: Subscription plans and Stripe checkout page
+  - `AdminDashboardPage.tsx`: Admin dashboard with AI/Apify call tracking and statistics
+  - `AdminUsersPage.tsx`: Admin user management page
+  - `InterviewBuddyPage.tsx`: AI Interview Buddy companion app launcher page
+  - `WorkTrackerPage.tsx`: Work tracking and time management page
+  - `InterviewMaterialsPage.tsx`: Interview materials library page
+  - `CalendarPage.tsx`: Google Calendar view — connected event browser with add/edit/delete
 
 - **`src/services`**: API communication layer - handles all HTTP requests to backend:
   - `analysisApi.ts`: CV analysis endpoints
@@ -186,6 +229,12 @@ The client is a single-page application (SPA) built with React and TypeScript.
   - `jobRecommendationApi.ts`: Job recommendation endpoints
   - `portfolioApi.ts`: Portfolio data endpoints
   - `settingsApi.ts`: Settings and API key management endpoints
+  - `subscriptionApi.ts`: Subscription plans and Stripe checkout endpoints
+  - `usageApi.ts`: Usage statistics and credit tracking endpoints
+  - `adminApi.ts`: Admin dashboard and statistics endpoints
+  - `interviewApi.ts`: AI Interview Buddy answer generation endpoints
+  - `interviewMaterialsApi.ts`: Interview materials management endpoints
+  - `workTrackerApi.ts`: Work tracking and time management endpoints
 
 - **`src/templates`**: Resume/CV templates (14 professional templates):
   - `ATSOptimizedResume.tsx`: ATS-optimized template
@@ -205,6 +254,14 @@ The client is a single-page application (SPA) built with React and TypeScript.
   - `config.ts`: Template configuration and registry
   - `index.ts`: Template exports
   - `TemplateWrapper.tsx`: Template wrapper component
+
+- **`src/hooks`**: Custom React hooks:
+  - `usePageTour.ts`: Manages per-page demo tour visibility — reads/writes `tour_dismissed_<pageKey>` in `localStorage`
+  - `useSpeechRecognition.ts`: Web Speech API wrapper for real-time transcription (used by AI Interview Buddy)
+  - `useSpeechSynthesis.ts`: Web Speech API synthesis wrapper
+
+- **`src/data`**: Static/mock data modules:
+  - `mockTourData.ts`: Typed mock data objects used by per-page demo tours (MOCK_JOB, MOCK_MATERIAL, MOCK_WORK_ENTRY, MOCK_CALENDAR_EVENT, MOCK_ANALYTICS)
 
 - **`src/context`**: React Context providers for global state:
   - `AuthContext.tsx`: User authentication state
@@ -238,6 +295,10 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
   - `linkedinController.ts`: LinkedIn profile scraping
   - `profileController.ts`: User profile management
   - `projectController.ts`: Portfolio project management
+  - `adminController.ts`: Admin dashboard and statistics management
+  - `interviewController.ts`: AI Interview Buddy answer generation
+  - `interviewMaterialController.ts`: Interview materials management
+  - `webhookController.ts`: Stripe webhook handling for subscriptions
 
 - **`src/models`**: Mongoose schemas for MongoDB collections:
   - `User.ts`: User accounts with authentication
@@ -250,6 +311,9 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
   - `ResumeCache.ts`: Cached resume parsing results
   - `CvAnalysis.ts`: CV analysis results with detailed ATS scores
   - `EmailSuggestion.ts`: Pending AI inbox suggestions (status change, note, calendar event) with a 90-day TTL
+  - `InterviewMaterial.ts`: Interview preparation materials with favourites support
+  - `ExternalCallLog.ts`: AI and Apify call tracking for admin dashboard
+  - `UsageRecord.ts`: Credit usage and consumption records
 
 - **`src/providers`**: AI provider registry and management:
   - `base.ts`: Base provider interface
@@ -277,6 +341,14 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
   - `projects.ts`: `/api/projects` - Portfolio project endpoints
   - `settings.ts`: `/api/settings` - Settings and API key management
   - `emailSuggestions.ts`: `/api/email-suggestions` - Gmail inbox scanning, AI suggestion CRUD, add-note, and accept-with-calendar actions
+  - `subscription.ts`: `/api/subscriptions` - Subscription plans and Stripe checkout endpoints
+  - `usage.ts`: `/api/usage` - Usage statistics and credit tracking endpoints
+  - `admin.ts`: `/api/admin` - Admin dashboard and statistics endpoints
+  - `interview.ts`: `/api/interview` - AI Interview Buddy answer generation endpoints
+  - `interviewMaterials.ts`: `/api/interview-materials` - Interview materials management endpoints
+  - `workTracker.ts`: `/api/work-tracker` - Work tracking and time management endpoints
+  - `googleAuth.ts`: `/api/google-auth` - Google OAuth endpoints
+  - `webhook.ts`: `/api/webhook` - Stripe webhook handling
 
 - **`src/services`**: Core business logic:
   - `analysisService.ts`: CV analysis logic
@@ -296,6 +368,11 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
   - `workflowProgressHelper.ts`: Workflow progress tracking utilities
   - `emailSuggestionService.ts`: Gmail polling, AI email classification (status + note + calendar), fuzzy job matching, suggestion persistence
   - `googleCalendarService.ts`: Google Calendar event creation via OAuth token; checks Calendar scope availability
+  - `creditService.ts`: Credit system management and tracking
+  - `stripeService.ts`: Stripe payment and subscription management
+  - `interviewService.ts`: AI Interview Buddy answer generation
+  - `interviewMaterialService.ts`: Interview materials management
+  - `externalCallTracking.ts`: AI and Apify call tracking for admin dashboard
 
 - **`src/utils`**: Utility functions and helpers:
   - `aiExtractor.ts`: AI-powered data extraction from job postings
@@ -326,6 +403,10 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
 
 - **`src/middleware`**: Express middleware:
   - `authMiddleware.ts`: JWT authentication verification
+  - `adminMiddleware.ts`: Admin-only route protection
+  - `aiRateLimiter.ts`: AI API rate limiting
+  - `rateLimiter.ts`: General rate limiting utilities
+  - `usageLimiter.ts`: Usage-based rate limiting
   - `errorHandler.ts`: Global error handling
   - `validateRequest.ts`: Request validation middleware
 
@@ -339,14 +420,19 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
 - **`src/config`**: Configuration files:
   - `cloudinary.ts`: Cloudinary configuration and upload utility
   - `env.ts`: Environment variable validation and loading
+  - `plans.ts`: Subscription plan definitions and features
 
 ## Core Capabilities
 
 ### User Management
 - **Authentication**: Secure user registration and login with JWT tokens
+- **Email Verification**: Email verification flow for new accounts
+- **Disposable Email Blocking**: Multi-layer detection using static lists, API checks, and DNS MX verification
 - **Profile Management**: User profiles with optional username for portfolio URLs
 - **Settings**: Per-user API key management (Gemini, OpenRouter, Ollama, Apify, GitHub)
 - **Multi-Provider AI Support**: Choose between Gemini, OpenRouter, or Ollama for AI features
+
+- **Per-Page Demo Tours**: New users see a dismissible `TourBanner` component on each empty page, displaying a realistic mock data card that exactly mirrors the real card layout — giving an immediate preview of what the page looks like with actual data. Tour visibility is persisted in `localStorage` and auto-hides when the user adds real content.
 
 ### Job Application Management
 - **CRUD Operations**: Create, read, update, and delete job applications
@@ -422,6 +508,29 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
   - Project descriptions and media
   - GitHub repository links
 - **Portfolio Publishing**: Toggle portfolio visibility (public/private)
+
+### Admin Dashboard
+- **System Statistics**: Overview of total users, active users, and system health
+- **AI Call Tracking**: Monitor all AI API calls with timestamps, provider, and cost
+- **Apify Call Tracking**: Track LinkedIn scraping API usage and costs
+- **Credit Consumption**: Track credits consumed across all features
+- **User Management**: Admin panel for managing users and accounts
+
+### Credit System
+- **Credit Tracking**: Detailed usage statistics and credit consumption tracking
+- **Subscription Plans**: Multiple plan tiers with different credit limits and features
+- **Stripe Integration**: Secure payment processing for subscription upgrades
+- **Usage Limits**: Per-feature credit costs and rate limiting
+- **Credit Rollover**: Unused credits roll over to next billing period
+
+### AI Interview Buddy (Electron Companion App)
+- **Push-to-Talk**: Hold Ctrl+Shift+Space to speak; release to generate AI answer
+- **Stealth Overlay**: OS-level screen-share invisibility for stealth during interviews
+- **Web Speech API**: Real-time transcription inside Electron Chromium
+- **Deep Link Auth**: Custom `vibehired://` protocol for secure authentication
+- **Auto-Grant Permissions**: Automatic microphone permission handling
+- **Job Selection**: Choose which job application to get interview assistance for
+- **Structured AI Responses**: Gemini Flash answers with opener, key points, and closing statements
 
 ### Document Generation
 - **PDF Generation**: Generate professional PDF documents for CVs and cover letters using Puppeteer

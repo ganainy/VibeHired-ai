@@ -31,6 +31,9 @@ import {
 } from '../services/googleCalendarApi';
 import SimpleLoader from '../components/common/SimpleLoader';
 import ConfirmModal from '../components/common/ConfirmModal';
+import TourBanner from '../components/onboarding/TourBanner';
+import { usePageTour } from '../hooks/usePageTour';
+import { MOCK_CALENDAR_EVENT } from '../data/mockTourData';
 
 // ── Types ──
 
@@ -405,6 +408,13 @@ const CalendarPage: React.FC = () => {
     const [connected, setConnected] = useState<boolean | null>(null);
     const [connectedEmail, setConnectedEmail] = useState<string | null>(null);
     const [events, setEvents] = useState<CalendarEvent[]>([]);
+
+    const { showTour: showCalTour, dismiss: dismissCalTour } = usePageTour('calendar');
+
+    // Auto-dismiss tour when user has real calendar events
+    useEffect(() => {
+        if (events.length > 0) dismissCalTour();
+    }, [events.length]);
     const [loading, setLoading] = useState(false);
     const [statusLoading, setStatusLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -635,6 +645,17 @@ const CalendarPage: React.FC = () => {
                 </div>
             )}
 
+            {/* Error banner */}
+            {error && (
+                <div className="alert-error flex items-start gap-2 text-sm">
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                    <span>{error}</span>
+                </div>
+            )}
+
+            {/* ── Demo Tour Section ─────────────────────────────────────────── */}
+            {/* (shown inside the connected+empty state below) */}
+
             {/* Status loading */}
             {statusLoading ? (
                 <div className="flex items-center justify-center py-24 gap-3" style={{ color: 'var(--text-muted)' }}>
@@ -772,6 +793,66 @@ const CalendarPage: React.FC = () => {
                     {loading ? (
                         <LoadingSkeleton />
                     ) : sortedDateKeys.length === 0 ? (
+                        showCalTour ? (
+                            /* ── Demo Tour Section ── */
+                            <div className="space-y-3 animate-in fade-in duration-300">
+                                <TourBanner pageLabel="Calendar" onDismiss={dismissCalTour} />
+                                {/* Date group heading — matches the real grouped list style */}
+                                <div>
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <p
+                                            className="text-sm font-semibold"
+                                            style={{ color: 'var(--text-primary)', fontFamily: 'Fraunces, Georgia, serif' }}
+                                        >
+                                            Next Week
+                                        </p>
+                                        <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+                                        <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>1 event</span>
+                                    </div>
+                                    {/* Mock event row — matches EventRow structure exactly */}
+                                    <div
+                                        className="relative flex gap-3 py-3 px-4 rounded-xl opacity-80 select-none pointer-events-none"
+                                        style={{ border: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}
+                                    >
+                                        {/* DEMO badge */}
+                                        <span
+                                            className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                                            style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                                        >
+                                            demo
+                                        </span>
+                                        {/* Time column */}
+                                        <div className="flex items-center gap-1 shrink-0 w-20 text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
+                                            <Clock size={11} className="shrink-0" />
+                                            14:00
+                                        </div>
+                                        {/* Event details */}
+                                        <div className="flex-1 min-w-0 pr-16">
+                                            <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                                                {MOCK_CALENDAR_EVENT.summary}
+                                            </p>
+                                            <p className="flex items-center gap-1 mt-0.5 text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                                                <MapPin size={10} className="shrink-0" />
+                                                {MOCK_CALENDAR_EVENT.location}
+                                            </p>
+                                            <p className="flex items-center gap-1 mt-0.5 text-xs truncate opacity-60 italic" style={{ color: 'var(--text-muted)' }}>
+                                                <FileText size={10} className="shrink-0" />
+                                                {MOCK_CALENDAR_EVENT.description}
+                                            </p>
+                                        </div>
+                                        {/* Actions (visual only) */}
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                            <button className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}>
+                                                <Pencil size={14} />
+                                            </button>
+                                            <button className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}>
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
                         /* Empty state */
                         <div
                             className="flex flex-col items-center justify-center py-20 gap-4 text-center"
@@ -802,6 +883,7 @@ const CalendarPage: React.FC = () => {
                                 </p>
                             </div>
                         </div>
+                        )
                     ) : (
                         /* Grouped event list */
                         <div className="space-y-7 animate-stagger">
