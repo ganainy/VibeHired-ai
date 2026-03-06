@@ -45,20 +45,29 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     const CvCard = ({ cv }: { cv: CVDocument }) => {
         const isActive = activeCvId === cv._id;
+        const isMock = cv._id === '__mock_cv__';
         const displayName = cv.displayName || cv.category || 'Unnamed CV';
 
         return (
             <div
                 onClick={() => onSelectCv(cv._id)}
                 style={isActive ? {background:'var(--bg-surface)', borderColor:'var(--accent)', boxShadow:'0 0 0 1px rgba(232,184,68,0.2)'} : {background:'var(--bg-surface)', borderColor:'var(--border)'}}
-                className="group relative p-3 rounded-xl border cursor-pointer transition-all duration-200 w-64 flex-shrink-0 hover:border-opacity-70 overflow-hidden"
+                className={`group relative p-3 rounded-xl border transition-all duration-200 w-64 flex-shrink-0 hover:border-opacity-70 overflow-hidden ${isMock ? 'pointer-events-none select-none opacity-70' : 'cursor-pointer'}`}
             >
                 {isActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{background:'var(--accent)'}} />
                 )}
 
                 <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-semibold text-sm line-clamp-1" style={{color:'var(--text-primary)'}}>
+                    <h3 className="font-semibold text-sm line-clamp-1 flex items-center gap-1.5" style={{color:'var(--text-primary)'}}>
+                        {isMock && (
+                            <span
+                                className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
+                                style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                            >
+                                demo
+                            </span>
+                        )}
                         {displayName}
                     </h3>
                 </div>

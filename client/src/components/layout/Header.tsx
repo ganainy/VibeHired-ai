@@ -144,6 +144,16 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
         { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
     ];
 
+    const mobileOnboardingNavByPath: Record<string, string> = {
+        '/dashboard': 'mobile-nav-dashboard',
+        '/manage-cv': 'mobile-nav-manage-cv',
+        '/email-suggestions': 'mobile-nav-email-suggestions',
+        '/analytics': 'mobile-nav-analytics',
+        '/portfolio-setup': 'mobile-nav-portfolio-setup',
+        '/settings': 'mobile-nav-settings',
+        '/work-tracker': 'mobile-nav-work-tracker',
+    };
+
     const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : 'U';
     const userLabel = user?.email?.split('@')[0] || 'User';
 
@@ -179,6 +189,7 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
                     </button>
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        data-onboarding="mobile-menu-button"
                         className="p-2 rounded-lg transition-colors"
                         style={{ color: 'var(--text-primary)' }}
                         aria-label="Toggle menu"
@@ -251,6 +262,7 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
                                     <Link
                                         key={item.path}
                                         to={item.path}
+                                        data-onboarding={mobileOnboardingNavByPath[item.path]}
                                         className="flex items-center gap-3.5 px-4 py-3.5 rounded-lg text-[0.9375rem] font-medium transition-all"
                                         style={{
                                             backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.09))' : 'transparent',

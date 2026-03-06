@@ -25,6 +25,9 @@ import Sidebar from '../components/cv-management/Sidebar';
 import CreateBranchModal from '../components/cv-management/CreateBranchModal';
 import { validateCvFile, formatFileSize } from '../lib/utils';
 import ConfirmModal from '../components/common/ConfirmModal';
+import TourBanner from '../components/onboarding/TourBanner';
+import { usePageTour } from '../hooks/usePageTour';
+import { MOCK_CV } from '../data/mockTourData';
 
 const CVManagementPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -100,6 +103,11 @@ const CVManagementPage: React.FC = () => {
   // Track last analyzed CV hash to avoid re-analyzing unchanged CVs
   // Can be backend hash (SHA256) or frontend hash (JSON string) - both work for comparison
   const lastAnalyzedCvHashRef = useRef<string | null>(null);
+
+  // Per-page demo tour
+  const { showTour, dismiss: dismissCvTour } = usePageTour('manage-cv');
+  // Show mock data only while the demo tour is active and no real CVs exist
+  const showMockTour = showTour && allCvs.length === 0 && !isLoadingJobCvs && !isLoadingCv;
 
   // Update URL when activeCvId changes
   useEffect(() => {
@@ -419,6 +427,11 @@ const CVManagementPage: React.FC = () => {
     // Fetch branches on mount, independent of master CV
     fetchAllCvsData();
   }, []);
+
+  // Auto-dismiss tour once the user has at least one real CV
+  useEffect(() => {
+    if (allCvs.length > 0) dismissCvTour();
+  }, [allCvs.length]);
 
   // Fetch ATS scores when switching context
   useEffect(() => {
@@ -912,9 +925,9 @@ const CVManagementPage: React.FC = () => {
       {/* Left Sidebar */}
       {!isReplacing && (
         <Sidebar
-          cvs={baseCvs}
+          cvs={showMockTour ? [MOCK_CV as CVDocument] : baseCvs}
           activeCvId={activeCvId}
-          onSelectCv={setActiveCvId}
+          onSelectCv={(id) => { if (id !== '__mock_cv__') setActiveCvId(id); }}
           onAddNewCv={() => {
             setIsReplacing(true);
             setSelectedFile(null);
@@ -925,19 +938,147 @@ const CVManagementPage: React.FC = () => {
             setSelectedFile(null);
             setCreationMode('upload');
           }}
-          onDeleteCv={handleDeleteCv}
-          onRenameBranch={handleRenameBranch}
-          onCreateBranch={() => setIsCreateBranchModalOpen(true)}
+          onDeleteCv={showMockTour ? undefined : handleDeleteCv}
+          onRenameBranch={showMockTour ? undefined : handleRenameBranch}
+          onCreateBranch={showMockTour ? undefined : () => setIsCreateBranchModalOpen(true)}
           className="w-full flex-shrink-0 z-20"
         />
       )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Upload/Create Overlay */}
-        {(!currentCvData || isReplacing) && !isLoadingCv ? (
+        {showMockTour ? (
+          /* ── Demo Tour — Mock CV Editor ── */
+          <div className="flex flex-col flex-1 min-h-0 gap-3">
+            {showTour && <TourBanner pageLabel="CV Workspace" onDismiss={dismissCvTour} />}
+            {/* Mock editor panel — mirrors CvEditorPanel layout */}
+            <div className="flex-1 min-h-0 flex flex-col rounded-xl border overflow-hidden pointer-events-none select-none"
+              style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+              {/* Toolbar */}
+              <div className="flex-shrink-0 px-4 py-3 border-b flex items-center justify-between gap-4"
+                style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+                <div className="flex items-center gap-3">
+                  <select disabled className="input-base px-3 py-1.5 text-sm min-w-[160px] opacity-50 cursor-not-allowed">
+                    <option>German LaTeX</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button disabled className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold opacity-40 cursor-not-allowed bg-gray-200 dark:bg-gray-600 text-gray-400">
+                    Save
+                  </button>
+                  <button disabled className="btn-primary flex items-center gap-2 px-4 py-1.5 text-sm opacity-60 cursor-not-allowed">
+                    Download PDF
+                  </button>
+                </div>
+              </div>
+              {/* Split view */}
+              <div className="flex-1 min-h-0 flex overflow-hidden">
+                {/* Left – editor */}
+                <div className="w-[45%] flex-shrink-0 overflow-y-auto p-5 flex flex-col gap-4 border-r" style={{ borderColor: 'var(--border)' }}>
+                  {/* Personal Info section */}
+                  <div className="rounded-xl border p-4 flex flex-col gap-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+                    <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Personal Info</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[['Full Name', 'Alex Johnson'], ['Job Title', 'Senior Frontend Dev'], ['Email', 'alex@example.com'], ['Phone', '+49 170 123 4567']].map(([label, val]) => (
+                        <div key={label} className="flex flex-col gap-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{label}</span>
+                          <div className="h-9 rounded-lg px-3 flex items-center text-sm font-medium" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>{val}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Summary</span>
+                      <div className="rounded-lg px-3 py-2 text-xs leading-relaxed" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)', minHeight: '4rem' }}>
+                        Results-driven frontend engineer with 6+ years building scalable React applications. Passionate about clean architecture and great UX.
+                      </div>
+                    </div>
+                  </div>
+                  {/* Work Experience section */}
+                  <div className="rounded-xl border p-4 flex flex-col gap-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+                    <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Work Experience</p>
+                    {[
+                      { title: 'Senior Frontend Engineer', company: 'TechCorp Inc.', period: 'Jan 2022 – Present', desc: 'Led migration from Angular to React 18, reducing bundle size by 40%.' },
+                      { title: 'Frontend Developer', company: 'Startup GmbH', period: 'Mar 2019 – Dec 2021', desc: 'Built and maintained 3 SaaS product dashboards used by 10k+ users.' },
+                    ].map((job) => (
+                      <div key={job.title} className="flex flex-col gap-1.5 pb-3 border-b last:border-0 last:pb-0" style={{ borderColor: 'var(--border)' }}>
+                        <div className="h-9 rounded-lg px-3 flex items-center text-sm font-medium" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>{job.title}</div>
+                        <div className="flex gap-2">
+                          <div className="flex-1 h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>{job.company}</div>
+                          <div className="h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{job.period}</div>
+                        </div>
+                        <div className="rounded-lg px-3 py-2 text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>{job.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Education section */}
+                  <div className="rounded-xl border p-4 flex flex-col gap-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
+                    <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Education</p>
+                    <div className="h-9 rounded-lg px-3 flex items-center text-sm font-medium" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>B.Sc. Computer Science</div>
+                    <div className="flex gap-2">
+                      <div className="flex-1 h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>TU Berlin</div>
+                      <div className="h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>2015 – 2019</div>
+                    </div>
+                  </div>
+                </div>
+                {/* Right – CV preview */}
+                <div className="flex-1 min-w-0 overflow-y-auto p-6 flex items-start justify-center" style={{ background: 'var(--bg-base)' }}>
+                  <div className="w-full max-w-[520px] rounded-xl border p-7 flex flex-col gap-5 shadow-sm" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                    {/* Header */}
+                    <div className="text-center flex flex-col items-center gap-1 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
+                      <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Alex Johnson</h2>
+                      <p className="text-sm font-medium" style={{ color: 'var(--accent)' }}>Senior Frontend Developer</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>alex@example.com · +49 170 123 4567 · Berlin, Germany</p>
+                    </div>
+                    {/* Summary */}
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Profile</p>
+                      <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        Results-driven frontend engineer with 6+ years building scalable React applications. Passionate about clean architecture, performance optimisation, and great user experience.
+                      </p>
+                    </div>
+                    {/* Experience */}
+                    <div className="flex flex-col gap-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Experience</p>
+                      {[
+                        { title: 'Senior Frontend Engineer', company: 'TechCorp Inc.', period: 'Jan 2022 – Present', desc: 'Led migration from Angular to React 18, reducing bundle size by 40%. Mentored 3 junior developers.' },
+                        { title: 'Frontend Developer', company: 'Startup GmbH', period: 'Mar 2019 – Dec 2021', desc: 'Built and maintained 3 SaaS product dashboards used by 10k+ monthly active users.' },
+                      ].map((job) => (
+                        <div key={job.title} className="flex flex-col gap-0.5">
+                          <div className="flex items-baseline justify-between">
+                            <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{job.title}</span>
+                            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{job.period}</span>
+                          </div>
+                          <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>{job.company}</span>
+                          <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{job.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Education */}
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Education</p>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>B.Sc. Computer Science</span>
+                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>2015 – 2019</span>
+                      </div>
+                      <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>TU Berlin</span>
+                    </div>
+                    {/* Skills */}
+                    <div className="flex flex-col gap-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Skills</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['React', 'TypeScript', 'Node.js', 'Tailwind CSS', 'GraphQL', 'Docker', 'CI/CD'].map(skill => (
+                          <span key={skill} className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>{skill}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (!currentCvData || isReplacing) && !isLoadingCv ? (
+          /* ── Upload / Create Overlay ── */
           <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-8">
-            {/* Back Button */}
             {allCvs.length > 0 && (
               <button
                 onClick={() => {

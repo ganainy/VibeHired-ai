@@ -185,11 +185,6 @@ const DashboardPage: React.FC = () => {
 
   const { showTour: showJobTour, dismiss: dismissJobTour } = usePageTour('dashboard');
 
-  // Auto-dismiss tour when the user has real jobs
-  useEffect(() => {
-    if (jobs.length > 0) dismissJobTour();
-  }, [jobs.length]);
-
   // --- useEffect: Fetch initial job data ---
   useEffect(() => {
     const fetchJobs = async () => {
@@ -1160,12 +1155,11 @@ const DashboardPage: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      {showJobTour ? (
-                        /* ── Demo Tour Section ── */
-                        <div className="py-6 px-4 space-y-3">
-                          <TourBanner pageLabel="Job Dashboard" onDismiss={dismissJobTour} />
+                      {/* ── Demo Tour Section: show mock only while tour is active ── */}
+                      {showJobTour && (<div className="py-6 px-4 space-y-3">
+                        <TourBanner pageLabel="Job Dashboard" onDismiss={dismissJobTour} />
                           <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--border)' }}>
-                            <table className="w-full text-left pointer-events-none select-none opacity-75">
+                            <table className="w-full text-left">
                               <thead>
                                 <tr>
                                   <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Job Title</th>
@@ -1175,13 +1169,15 @@ const DashboardPage: React.FC = () => {
                                   <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Type</th>
                                   <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Salary</th>
                                   <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Contact</th>
-                                  <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400"></th>
+                                  <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Actions</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                <tr className="border-t border-slate-200 dark:border-slate-800 relative">
-                                  {/* DEMO badge */}
-                                  <td className="p-4 font-medium text-slate-900 dark:text-slate-100">
+                                <tr
+                                  className="border-t border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                  onClick={() => navigate('/jobs/__mock_job__/review/job-description')}
+                                >
+                                  <td className="p-4 font-medium text-slate-800 dark:text-slate-100">
                                     <div className="flex items-center gap-2">
                                       <span
                                         className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
@@ -1195,7 +1191,7 @@ const DashboardPage: React.FC = () => {
                                   <td className="p-4 text-slate-600 dark:text-slate-400">
                                     <div className="flex items-center gap-2">
                                       <span className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0" />
-                                      {MOCK_JOB.companyName}
+                                      <span>{MOCK_JOB.companyName}</span>
                                     </div>
                                   </td>
                                   <td className="p-4">
@@ -1214,32 +1210,26 @@ const DashboardPage: React.FC = () => {
                                   </td>
                                   <td className="p-4 text-slate-600 dark:text-slate-400">Full-time</td>
                                   <td className="p-4 text-slate-600 dark:text-slate-400">
-                                    <span className="text-xs font-medium">{MOCK_JOB.salary}</span>
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-xs font-medium">{MOCK_JOB.salary}</span>
+                                    </div>
                                   </td>
                                   <td className="p-4 text-slate-400 dark:text-slate-500">—</td>
-                                  <td className="p-4 text-slate-400 dark:text-slate-500">—</td>
+                                  <td className="p-4">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <button className="flex items-center justify-center w-8 h-8 rounded-md text-slate-400 dark:text-slate-500">
+                                        <StarIcon filled={false} />
+                                      </button>
+                                      <button className="flex items-center justify-center w-8 h-8 rounded-md text-red-400 dark:text-red-500">
+                                        <DeleteIcon />
+                                      </button>
+                                    </div>
+                                  </td>
                                 </tr>
                               </tbody>
                             </table>
                           </div>
-                        </div>
-                      ) : (
-                        <>
-                          <h3 className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">No job applications</h3>
-                          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            Get started by adding a new job application manually or by pasting a job URL above.
-                          </p>
-                          <div className="mt-6">
-                            <button
-                              onClick={handleOpenAddModal}
-                              className="btn-primary inline-flex items-center gap-2"
-                            >
-                              <AddIcon />
-                              <span>Add Your First Job</span>
-                            </button>
-                          </div>
-                        </>
-                      )}
+                      </div>)}
                     </>
                   )}
                 </div>
@@ -1836,3 +1826,4 @@ const DashboardPage: React.FC = () => {
 };
 
 export default DashboardPage;
+

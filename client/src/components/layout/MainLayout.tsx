@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import CreditLimitModal from '../usage/CreditLimitModal';
+import RouteOnboarding from '../onboarding/RouteOnboarding';
 import { listPendingSuggestions } from '../../services/emailSuggestionsApi';
 import { useAuth } from '../../context/AuthContext';
 
@@ -45,6 +46,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
                 {/* Page content */}
                 <main
+                    data-onboarding="main-content"
                     className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar"
                     style={{ backgroundColor: 'var(--bg-base)' }}
                 >
@@ -53,6 +55,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     </div>
                 </main>
             </div>
+
+            <RouteOnboarding />
 
             {/* Global Modals */}
             <CreditLimitModal

@@ -67,7 +67,6 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useAuth } from '../context/AuthContext';
 import TourBanner from '../components/onboarding/TourBanner';
 import { usePageTour } from '../hooks/usePageTour';
-import { MOCK_WORK_ENTRY } from '../data/mockTourData';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1468,10 +1467,6 @@ const WorkTrackerPage: React.FC = () => {
 
   const { showTour: showWorkTour, dismiss: dismissWorkTour } = usePageTour('work-tracker');
 
-  // Auto-dismiss tour when user has real entries
-  useEffect(() => {
-    if (entries.length > 0) dismissWorkTour();
-  }, [entries.length]);
   const [appointmentTypes, setAppointmentTypes] = useState<PopulatedAppointmentType[]>([]);
   const [stats, setStats] = useState<WorkTrackerStats | null>(null);
   const [loadingEntries, setLoadingEntries] = useState(true);
@@ -1483,6 +1478,7 @@ const WorkTrackerPage: React.FC = () => {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [loadingCalendarEvents, setLoadingCalendarEvents] = useState(false);
+  const showMockWorkTour = showWorkTour && entries.length === 0 && calendarEvents.length === 0 && !loadingCalendarEvents && !loadingEntries;
 
   // ── Month navigation ──────────────────────────────────────────────────────
   const now = new Date();
@@ -2084,26 +2080,26 @@ const WorkTrackerPage: React.FC = () => {
         <div className="flex flex-wrap gap-4">
           <StatCard
             label="Total hours"
-            value={loadingEntries ? '—' : `${monthHours}h`}
-            sub={loadingEntries ? undefined : `${monthDoneHours}h done · ${entries.length} entries`}
+            value={loadingEntries ? '—' : showMockWorkTour ? '24h' : `${monthHours}h`}
+            sub={loadingEntries ? undefined : showMockWorkTour ? '16h done · 4 entries' : `${monthDoneHours}h done · ${entries.length} entries`}
             icon={<Clock size={18} />}
             accent
           />
           <StatCard
             label="Employers"
-            value={loadingEntries ? '—' : monthEmployers}
-            sub={`${employers.length} registered`}
+            value={loadingEntries ? '—' : showMockWorkTour ? 2 : monthEmployers}
+            sub={showMockWorkTour ? '2 registered' : `${employers.length} registered`}
             icon={<Building2 size={18} />}
           />
           <StatCard
             label="Shifts"
-            value={loadingEntries ? '—' : `${monthPlanned + monthDone}`}
-            sub={`${monthPlanned} planned · ${monthDone} done`}
+            value={loadingEntries ? '—' : showMockWorkTour ? '3' : `${monthPlanned + monthDone}`}
+            sub={showMockWorkTour ? '1 planned · 2 done' : `${monthPlanned} planned · ${monthDone} done`}
             icon={<Briefcase size={18} />}
           />
           <StatCard
             label="Appointments"
-            value={loadingEntries ? '—' : monthAppointments}
+            value={loadingEntries ? '—' : showMockWorkTour ? 1 : monthAppointments}
             sub={monthLabel}
             icon={<CalendarDays size={18} />}
           />
@@ -2208,54 +2204,128 @@ const WorkTrackerPage: React.FC = () => {
             </div>
 
             {/* ── Demo Tour Section ────────────────────────────────────── */}
-            {showWorkTour && entries.length === 0 && calendarEvents.length === 0 && !loadingCalendarEvents && (
-              <div className="space-y-3">
+            {showMockWorkTour && (
+              <div className="space-y-4">
                 <TourBanner pageLabel="Time Tracker" onDismiss={dismissWorkTour} />
-                {/* Mock day card — matches renderDayCard structure exactly */}
-                <div className="card overflow-hidden opacity-80 select-none pointer-events-none relative">
-                  {/* DEMO badge */}
-                  <span
-                    className="absolute top-2 right-2 z-10 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                    style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-                  >
-                    demo
-                  </span>
-                  {/* Date header bar */}
-                  <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
-                    <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      {formatDate(MOCK_WORK_ENTRY.date)}
-                    </span>
+                <div className="opacity-80 select-none pointer-events-none">
+
+                {/* ── Planned section ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <p className="label-overline flex items-center gap-1.5"><Circle size={10} /> Planned</p>
+                    <span className="badge badge-ember text-[10px]">1</span>
                   </div>
-                  {/* Entry row — calendar event style */}
-                  <ul className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <li className="flex items-start gap-3 px-4 py-3" style={{ background: 'rgba(99,102,241,0.025)' }}>
-                      <div className="mt-0.5 shrink-0 flex items-center justify-center" style={{ width: 20, height: 20, color: 'var(--accent)', opacity: 0.55 }}>
-                        <CalendarDays size={15} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                            {MOCK_WORK_ENTRY.title}
-                          </span>
-                          <span
-                            className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded"
-                            style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)', color: 'var(--accent)' }}
-                          >
-                            <CalendarDays size={9} /> Google Calendar
-                          </span>
+                  <div className="space-y-3">
+                    {/* Day card: planned shift */}
+                    <div className="card overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Thu, 12 Mar 2026</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>demo</span>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 flex-wrap">
-                          <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-                            {MOCK_WORK_ENTRY.startTime} &ndash; {MOCK_WORK_ENTRY.endTime}
-                          </span>
-                          <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-                            <MapPin size={10} />{MOCK_WORK_ENTRY.employerName}
-                          </span>
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>8h</span>
+                      </div>
+                      <ul className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+                        <li className="flex items-start gap-3 px-4 py-3">
+                          <div className="mt-0.5 shrink-0" style={{ color: 'var(--text-muted)' }}><Circle size={20} /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div style={{ width: 22, height: 22, borderRadius: 8, background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>AC</div>
+                              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Acme Corp</span>
+                              <span className="font-normal ml-1 text-sm" style={{ color: 'var(--text-muted)' }}>&mdash; Morning Shift</span>
+                              <span className="badge badge-gold text-[10px]">shift</span>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>08:00 &ndash; 16:30</span>
+                              <span className="font-mono text-xs font-semibold" style={{ color: 'var(--accent)' }}>8h</span>
+                              <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>(30m break)</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><CalendarDays size={16} /></div>
+                            <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Pencil size={14} /></div>
+                            <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Trash2 size={14} /></div>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Done section ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <p className="label-overline flex items-center gap-1.5"><CheckCircle2 size={10} /> Done</p>
+                    <span className="badge badge-jade text-[10px]">2</span>
+                  </div>
+                  <div className="space-y-3">
+                    {/* Day card: done shift */}
+                    <div className="card overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Tue, 10 Mar 2026</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>demo</span>
+                        </div>
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(45,212,160,0.1)', color: 'var(--jade)', border: '1px solid rgba(45,212,160,0.2)' }}>8h</span>
+                      </div>
+                      <ul className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+                        <li className="flex items-start gap-3 px-4 py-3" style={{ background: 'rgba(45,212,160,0.02)' }}>
+                          <div className="mt-0.5 shrink-0" style={{ color: 'var(--jade)' }}><CheckCircle2 size={20} /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div style={{ width: 22, height: 22, borderRadius: 8, background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>AC</div>
+                              <span className="text-sm font-medium" style={{ color: 'var(--text-muted)', textDecoration: 'line-through' }}>Acme Corp</span>
+                              <span className="font-normal ml-1 text-sm" style={{ color: 'var(--text-muted)', textDecoration: 'line-through' }}>&mdash; Evening Shift</span>
+                              <span className="badge badge-gold text-[10px]">shift</span>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>14:00 &ndash; 22:30</span>
+                              <span className="font-mono text-xs font-semibold" style={{ color: 'var(--jade)' }}>8h</span>
+                              <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>(30m break)</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <div className="p-1.5 rounded-lg" style={{ color: 'var(--jade)' }}><CheckCircle2 size={16} /></div>
+                            <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Pencil size={14} /></div>
+                            <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Trash2 size={14} /></div>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                    {/* Day card: done appointment */}
+                    <div className="card overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Mon, 9 Mar 2026</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>demo</span>
                         </div>
                       </div>
-                      <div style={{ width: 28 }} />
-                    </li>
-                  </ul>
+                      <ul className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+                        <li className="flex items-start gap-3 px-4 py-3" style={{ background: 'rgba(45,212,160,0.02)' }}>
+                          <div className="mt-0.5 shrink-0" style={{ color: 'var(--jade)' }}><CheckCircle2 size={20} /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <CalendarDays size={12} style={{ color: 'var(--text-muted)' }} />
+                              </div>
+                              <span className="text-sm font-medium" style={{ color: 'var(--text-muted)', textDecoration: 'line-through' }}>Client Strategy Meeting</span>
+                              <span className="badge badge-ink text-[10px]">appointment</span>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>09:00 &ndash; 11:00</span>
+                              <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>Prep strategy deck beforehand</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <div className="p-1.5 rounded-lg" style={{ color: 'var(--jade)' }}><CheckCircle2 size={16} /></div>
+                            <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Pencil size={14} /></div>
+                            <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Trash2 size={14} /></div>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
                 </div>
               </div>
             )}
@@ -2266,16 +2336,9 @@ const WorkTrackerPage: React.FC = () => {
                 <div className="h-64 flex items-center justify-center card">
                   <Spinner size="lg" />
                 </div>
-              ) : entries.length === 0 && calendarEvents.length === 0 ? (
-                <div className="card flex flex-col items-center justify-center py-16 text-center gap-4">
-                  <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                    <Clock size={24} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No entries for {MONTH_NAMES[viewMonth - 1]} {viewYear}</p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Add your planned or worked hours above.</p>
-                  </div>
-                </div>
+              ) : showMockWorkTour ? (
+                // Suppress empty state when mock demo data is showing above
+                null
               ) : plannedDateKeys.length === 0 && doneDateKeys.length === 0 ? (
                 <div className="card flex flex-col items-center justify-center py-12 text-center gap-3">
                   <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
@@ -2720,3 +2783,7 @@ const VoicePreviewModal: React.FC<{
 };
 
 export default WorkTrackerPage;
+
+
+
+

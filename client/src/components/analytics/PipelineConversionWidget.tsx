@@ -46,7 +46,7 @@ export const PipelineConversionWidget: React.FC<PipelineConversionWidgetProps> =
                         <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{data.applied}</span>
                     </div>
                     <div className="w-full rounded-full h-2" style={{ background: 'var(--bg-elevated)' }}>
-                        <div className="h-2 rounded-full w-full transition-all duration-500" style={{ background: 'var(--accent-dim)' }}></div>
+                        <div className="h-2 rounded-full transition-all duration-500" style={{ width: data.applied > 0 ? '100%' : '0%', background: 'var(--accent-dim)' }}></div>
                     </div>
                 </div>
 

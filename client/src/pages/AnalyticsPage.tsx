@@ -17,7 +17,7 @@ import ErrorAlert from '../components/common/ErrorAlert';
 import { Briefcase, Clock, ChevronDown, TrendingUp, Users, CalendarCheck2 } from 'lucide-react';
 import TourBanner from '../components/onboarding/TourBanner';
 import { usePageTour } from '../hooks/usePageTour';
-import { MOCK_ANALYTICS } from '../data/mockTourData';
+import { MOCK_ANALYTICS, getMockAnalyticsData } from '../data/mockTourData';
 
 const AnalyticsPage: React.FC = () => {
     const [jobs, setJobs] = useState<JobApplication[]>([]);
@@ -30,6 +30,10 @@ const AnalyticsPage: React.FC = () => {
     useEffect(() => {
         if (jobs.length > 0) dismissAnalyticsTour();
     }, [jobs.length]);
+
+    // Stable mock data for the demo tour (generated once on mount)
+    const mockAnalyticsData = React.useMemo(() => getMockAnalyticsData(), []);
+
     const [activeTab, setActiveTab] = useState<'jobs' | 'work'>(() => {
         return (localStorage.getItem('analytics_activeTab') as 'jobs' | 'work') || 'jobs';
     });
@@ -56,6 +60,13 @@ const AnalyticsPage: React.FC = () => {
         const saved = localStorage.getItem('weekly_application_goal');
         return saved ? parseInt(saved, 10) : 20;
     });
+
+    // When in demo tour mode, feed mock data into the real widgets
+    const isDemo = showAnalyticsTour && jobs.length === 0 && !isLoadingJobs;
+    const displayJobs = isDemo ? mockAnalyticsData.jobs : jobs;
+    const displayStats = isDemo ? mockAnalyticsData.stats : stats;
+    const displayWeeklyGoalTarget = isDemo ? mockAnalyticsData.weeklyGoalTarget : weeklyGoal;
+
 
     const monthOptions = [
         { value: 'today', label: 'Today' },
@@ -253,46 +264,10 @@ const AnalyticsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── Demo Tour Section ─────────────────────────────────────────── */}
-            {showAnalyticsTour && jobs.length === 0 && !isLoadingJobs && (
-                <div className="space-y-3 mb-8">
+            {/* ── Demo Tour Banner ─────────────────────────────────────────── */}
+            {isDemo && (
+                <div className="mb-6">
                     <TourBanner pageLabel="Analytics Dashboard" onDismiss={dismissAnalyticsTour} />
-                    {/* Mock stats grid */}
-                    <div
-                        className="grid grid-cols-2 md:grid-cols-3 gap-4 p-5 rounded-xl border opacity-80 select-none pointer-events-none"
-                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
-                    >
-                        {/* DEMO watermark */}
-                        <div className="col-span-2 md:col-span-3 flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Sample Data</p>
-                            <span
-                                className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                                style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-                            >demo</span>
-                        </div>
-                        {[
-                            { icon: <Briefcase size={16} />, label: 'Applications', value: MOCK_ANALYTICS.totalApplications },
-                            { icon: <CalendarCheck2 size={16} />, label: 'Interviews', value: MOCK_ANALYTICS.interviews },
-                            { icon: <TrendingUp size={16} />, label: 'Response Rate', value: MOCK_ANALYTICS.responseRate },
-                            { icon: <Users size={16} />, label: 'Offers', value: MOCK_ANALYTICS.offers },
-                            { icon: <Clock size={16} />, label: 'Avg. Response', value: MOCK_ANALYTICS.avgTimeToResponse },
-                            { icon: <Briefcase size={16} />, label: 'Rejected', value: MOCK_ANALYTICS.rejected },
-                        ].map((item) => (
-                            <div
-                                key={item.label}
-                                className="flex flex-col gap-1 p-3 rounded-xl"
-                                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
-                            >
-                                <div className="flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
-                                    {item.icon}
-                                    <span className="text-xs">{item.label}</span>
-                                </div>
-                                <p className="text-2xl font-bold font-mono mt-1" style={{ color: 'var(--text-primary)' }}>
-                                    {item.value}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
                 </div>
             )}
 
@@ -302,8 +277,8 @@ const AnalyticsPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-1">
                             <WeeklyGoalWidget
-                                jobs={jobs}
-                                target={weeklyGoal}
+                                jobs={displayJobs}
+                                target={displayWeeklyGoalTarget}
                                 onUpdateTarget={handleUpdateWeeklyGoal}
                             />
                         </div>
@@ -313,7 +288,7 @@ const AnalyticsPage: React.FC = () => {
                                 <h3 className="text-sm font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Pipeline Conversion</h3>
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
-                                <PipelineConversionWidget stats={stats} hideCardStyles={true} />
+                                <PipelineConversionWidget stats={displayStats} hideCardStyles={true} />
                             </div>
                         </div>
 
@@ -326,11 +301,11 @@ const AnalyticsPage: React.FC = () => {
                                     <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Application Volume Over Time</h3>
                                 </div>
                                 <div className="flex-1 min-h-0">
-                                    {isLoadingStats ? (
+                                    {isLoadingStats && !isDemo ? (
                                         <div className="h-full flex items-center justify-center"><Spinner /></div>
                                     ) : (
                                         <ApplicationsOverTimeChart
-                                            data={stats?.applicationsOverTimeByStatus || []}
+                                            data={displayStats?.applicationsOverTimeByStatus || []}
                                             selectedMonth={selectedMonth}
                                         />
                                     )}
@@ -340,7 +315,7 @@ const AnalyticsPage: React.FC = () => {
                     </div>
 
                     <div className="card p-6 overflow-hidden shadow-sm">
-                        <RecentActivityWidget jobs={jobs} />
+                        <RecentActivityWidget jobs={displayJobs} />
                     </div>
 
                     {/* Archived Application Pipeline Section

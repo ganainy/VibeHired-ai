@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CVManagementPage from './pages/CVManagementPage';
 import ReviewFinalizePage from './pages/ReviewFinalizePage';
+import MockJobReviewPage from './pages/MockJobReviewPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import PortfolioPage from './pages/PortfolioPage';
 import PortfolioSetupPage from './pages/PortfolioSetupPage';
@@ -121,6 +122,10 @@ function App() {
         <Route
           path="/jobs/:jobId/review/ai-review"
           element={<Navigate to="../cv" relative="path" replace />}
+        />
+        <Route
+          path="/jobs/__mock_job__/review/:tab?"
+          element={<MockJobReviewPage />}
         />
         <Route
           path="/jobs/:jobId/review/:tab?"

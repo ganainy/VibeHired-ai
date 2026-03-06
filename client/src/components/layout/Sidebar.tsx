@@ -168,11 +168,25 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
         { path: '/subscriptions', label: 'Subscription', icon: CreditCardIcon },
     ];
 
+    const onboardingNavByPath: Record<string, string> = {
+        '/dashboard': 'nav-dashboard',
+        '/manage-cv': 'nav-manage-cv',
+        '/email-suggestions': 'nav-email-suggestions',
+        '/interview-materials': 'nav-interview-materials',
+        '/work-tracker': 'nav-work-tracker',
+        '/calendar': 'nav-calendar',
+        '/analytics': 'nav-analytics',
+        '/portfolio-setup': 'nav-portfolio-setup',
+        '/settings': 'nav-settings',
+        '/subscriptions': 'nav-subscriptions',
+    };
+
     const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : 'U';
     const userLabel = user?.email?.split('@')[0] || 'User';
 
     return (
         <aside
+            data-onboarding="sidebar"
             style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
             className={`hidden md:flex flex-col h-screen flex-shrink-0 transition-all duration-300 relative border-r
                 ${isCollapsed ? 'w-[72px]' : 'w-[230px]'}`}
@@ -250,6 +264,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                                 key={item.path}
                                 to={item.path}
                                 title={isCollapsed ? item.label : undefined}
+                                data-onboarding={onboardingNavByPath[item.path]}
                                 className="flex items-center rounded-lg transition-all duration-150 group relative"
                                 style={{
                                     padding: isCollapsed ? '10px' : '9px 12px',

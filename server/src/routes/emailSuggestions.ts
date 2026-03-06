@@ -254,6 +254,15 @@ router.post(
         }
         pollCooldowns.set(userId, now);
 
+        // Guard: Gmail scope must be connected before scanning
+        const scopeOk = await hasGmailScope(userId);
+        if (!scopeOk) {
+            res.status(403).json({
+                message: 'Gmail account not connected. Please connect your Gmail account to scan for job emails.',
+            });
+            return;
+        }
+
         // Allow caller to specify how many recent emails to scan, default 50
         const limit = Number(req.body?.scanLimit) || 50;
 
