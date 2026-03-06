@@ -5,6 +5,12 @@ The React + TypeScript + Vite single-page application for [VibeHired](../README.
 > **License:** MIT + Commons Clause — see [LICENSE](../LICENSE) for details.
 > Free for personal/non-commercial use. Commercial hosting or resale requires written permission from the author.
 
+## Recent Updates (March 2026)
+
+- `VITE_PAYMENTS_ENABLED` now gates Stripe/upgrade CTAs across onboarding, subscriptions, settings, review, and credit-limit prompts.
+- Post-login auth flow is hardened to avoid false logout on transient usage-fetch `401` failures.
+- Interview Buddy deep-link launching now uses `window.open(...)` to prevent deferred protocol prompts from showing during later login flow.
+
 ## Tech Stack
 
 | Layer | Choice |
@@ -40,6 +46,7 @@ Create a `.env.local` file in this (`client/`) directory or set the variable in 
 | Variable | Required | Description |
 |---|---|---|
 | `VITE_BACKEND_URL` | Production only | Absolute URL of the deployed backend API. Leave unset for local dev (proxied via Vite). |
+| `VITE_PAYMENTS_ENABLED` | Optional | Feature flag for paid plans UI. Set to `false` to hide Stripe checkout/upgrade CTAs and show "coming soon" messaging. |
 
 ## Available Scripts
 
@@ -94,4 +101,9 @@ All components follow the **Obsidian Intelligence** design system documented in 
 | `/analytics` | `AnalyticsPage` | Protected |
 | `/portfolio-setup` | `PortfolioSetupPage` | Protected |
 | `/settings` | `SettingsPage` | Protected |
+| `/subscriptions` | `SubscriptionsPage` | Protected |
+| `/email-suggestions` | `EmailSuggestionsPage` | Protected |
+| `/work-tracker` | `WorkTrackerPage` | Protected |
+| `/interview-buddy` | `InterviewBuddyPage` | Protected |
+| `/interview-materials` | `InterviewMaterialsPage` | Protected |
 | `/jobs/:jobId/review/:tab?` | `ReviewFinalizePage` | Protected |

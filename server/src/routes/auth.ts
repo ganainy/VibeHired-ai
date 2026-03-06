@@ -11,6 +11,11 @@ import authMiddleware from '../middleware/authMiddleware';
 import { env } from '../config/env';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../utils/emailService';
 import * as MailChecker from 'mailchecker';
+import dns from 'dns/promises';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const disposableEmailDomains: string[] = require('disposable-email-domains');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { isEmailBurner } = require('burner-email-providers') as { isEmailBurner: (email: string) => boolean };
 import { authRateLimiter, passwordResetLimiter, emailVerificationLimiter } from '../middleware/rateLimiter';
 
 const router: Router = express.Router();
@@ -55,20 +60,59 @@ router.post('/register', authRateLimiter, validateRequest({ body: registerBodySc
             return;
         }
 
-        // Check for disposable/temporary email domains using MailChecker
-        // Also check parent domains to catch subdomains (e.g. sub.mailinator.com)
+        // Multi-layer disposable email check:
+        //   1. mailchecker npm package
+        //   2. disposable-email-domains npm package
+        //   3. burner-email-providers npm package
+        //   4. disposable.debounce.io API (if static checks pass)
+        //   5. DNS MX record verification (ensures the domain can actually receive mail)
+        // Parent-domain scanning covers subdomains (e.g. sub.mailinator.com).
         const emailDomain = email.split('@')[1].toLowerCase();
         const domainParts = emailDomain.split('.');
-        let isDisposable = !MailChecker.isValid(email);
+        let isDisposable = !MailChecker.isValid(email)
+            || disposableEmailDomains.includes(emailDomain)
+            || isEmailBurner(email);
+
         if (!isDisposable) {
             for (let i = 1; i < domainParts.length - 1; i++) {
                 const parentDomain = domainParts.slice(i).join('.');
-                if (!MailChecker.isValid(`check@${parentDomain}`)) {
+                if (!MailChecker.isValid(`check@${parentDomain}`)
+                    || disposableEmailDomains.includes(parentDomain)
+                    || isEmailBurner(`check@${parentDomain}`)) {
                     isDisposable = true;
                     break;
                 }
             }
         }
+
+        // debounce.io API check — runs only if all static package checks pass.
+        if (!isDisposable) {
+            try {
+                const debounceRes = await fetch(`https://disposable.debounce.io/?email=${encodeURIComponent(email)}`, { signal: AbortSignal.timeout(4000) });
+                if (debounceRes.ok) {
+                    const data = await debounceRes.json() as { disposable: string };
+                    if (data.disposable === 'true') {
+                        isDisposable = true;
+                    }
+                }
+            } catch {
+                // API unreachable or timed out — fall through to DNS check.
+            }
+        }
+
+        // DNS MX check — if the domain has no MX records it can never receive mail.
+        if (!isDisposable) {
+            try {
+                const mxRecords = await dns.resolveMx(emailDomain);
+                if (!mxRecords || mxRecords.length === 0) {
+                    isDisposable = true;
+                }
+            } catch {
+                // DNS lookup failed (domain doesn't exist, NXDOMAIN, etc.) — treat as invalid.
+                isDisposable = true;
+            }
+        }
+
         if (isDisposable) {
             res.status(400).json({ message: 'Registration with temporary or disposable email addresses is not allowed. Please use a permanent email.' });
             return;

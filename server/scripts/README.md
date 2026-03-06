@@ -7,6 +7,8 @@ All scripts live in `server/scripts/` and are run with `ts-node` from the **`ser
 Every script reads from `server/.env`.  
 The minimum required variables are:
 
+> Note: Recent server updates now allow `FRONTEND_URL` to be a comma-separated list (for example custom domain + Netlify domain) when you run the API.
+
 ```env
 MONGODB_URI=mongodb://localhost:27017/job-app-assistant
 GEMINI_API_KEY=<your-key>      # only needed for AI scripts

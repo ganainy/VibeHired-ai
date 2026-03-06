@@ -232,16 +232,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Register function (doesn't log in automatically)
   const register = React.useCallback(async (credentials: { email: string, username: string, password: string }): Promise<RegisterResponse | null> => {
     setError(null);
-    setIsLoading(true); // Use isLoading maybe? Or a separate registerLoading state
+    // Do NOT set the global isLoading here — that triggers the full-screen spinner
+    // in App.tsx which unmounts RegisterPage and wipes its local state (including
+    // registrationSuccess). RegisterPage manages its own submit-loading via the
+    // isLoading value it already reads from this context via the login/register
+    // button disabled state; the spinner there is driven by local state instead.
     try {
       const data = await registerUser(credentials);
-      // Optionally set a success message state here instead of error
-      setIsLoading(false);
       return data;
     } catch (err: any) {
       console.error("Registration failed:", err);
       setError(err.message || 'Registration failed.');
-      setIsLoading(false);
       return null;
     }
   }, []);

@@ -7,6 +7,15 @@
 
 VibeHired is an AI-powered job application assistant that automates and enhances your job search process. The platform uses multi-provider AI (Google Gemini, OpenRouter, Ollama) to analyze CVs, generate personalized cover letters, score ATS compatibility, extract job requirements, and provide real-time application assistance—all while you maintain full control over your data and API usage. Transform the tedious job application process into an efficient, intelligent workflow.
 
+## Recent Updates (March 2026)
+
+- **Auth reliability fix:** Resolved a production `401` logout loop after login by standardizing the usage endpoint env var (`VITE_BACKEND_URL`) and hardening post-login usage refresh behavior.
+- **Server networking hardening:** Express now trusts the first proxy hop (`trust proxy = 1`) and supports **multi-origin CORS** via comma-separated `FRONTEND_URL`.
+- **Interview Buddy deep-link fix:** Launch now uses `window.open(...)` to avoid deferred external-protocol prompts reappearing during later login flows.
+- **Payments feature flag:** Stripe/upgrade CTAs are now controlled by `VITE_PAYMENTS_ENABLED` so paid flows can be hidden while Stripe rollout is not public.
+- **Work Tracker improvements:** Planned entries that are already in the past auto-transition to done, type-filter pills were added, reminder removal now also removes linked calendar event state, and total-hours cards now include done-hours context.
+- **Google Calendar timeline polish:** Current-month fetches now clamp to today so past events are not shown in upcoming timeline views.
+
 ## 🚀 Live Preview
 
 **Try the live application:** [https://vibehired.ganainy.dev](https://vibehired.ganainy.dev)
@@ -173,6 +182,19 @@ VibeHired is an AI-powered job application assistant that automates and enhances
      CLOUDINARY_CLOUD_NAME=<your_cloud_name>
      CLOUDINARY_API_KEY=<your_api_key>
      CLOUDINARY_API_SECRET=<your_api_secret>
+     ```
+   - Deployment/frontend variables you will likely also need:
+     ```env
+     # Backend CORS allow-list; supports comma-separated origins
+     # Example: FRONTEND_URL=https://vibehired.ganainy.dev,https://vibehired-ai.netlify.app
+     FRONTEND_URL=<your_frontend_origin_or_csv_list>
+
+     # Frontend API base (set in Netlify/Vite environment)
+     VITE_BACKEND_URL=<your_backend_api_base>
+
+     # Optional payments rollout flag (frontend)
+     # false = hide Stripe upgrade CTAs and show "coming soon" messaging
+     VITE_PAYMENTS_ENABLED=false
      ```
 
 4. **Start development servers:**

@@ -78,7 +78,8 @@ const RegisterPage: React.FC = () => {
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
   const [touched, setTouched] = useState({ email: false, username: false, password: false, confirmPassword: false });
 
-  const { register, error: authError, isLoading } = useAuth();
+  const { register, error: authError } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
@@ -122,7 +123,9 @@ const RegisterPage: React.FC = () => {
     if (password !== confirmPassword) { setConfirmPasswordError('Passwords do not match'); return; }
 
     setEmailError(null); setUsernameError(null); setPasswordError(null); setConfirmPasswordError(null);
+    setIsSubmitting(true);
     const result = await register({ email, username, password });
+    setIsSubmitting(false);
     if (result?.requiresVerification) {
       setRegisteredEmail(email);
       setEmailSendFailed(result.emailSendFailed ?? false);
@@ -175,6 +178,14 @@ const RegisterPage: React.FC = () => {
           </button>
         </div>
         <div className="w-full max-w-[420px] rounded-2xl p-8 text-center" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+          {/* Success confirmation — always shown regardless of email delivery status */}
+          <div className="rounded-xl p-3 mb-6 flex items-center justify-center gap-2" style={{ backgroundColor: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.25)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--jade, #2dd4a0)" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span className="text-sm font-semibold" style={{ color: 'var(--jade, #2dd4a0)' }}>Account created successfully!</span>
+          </div>
+
           <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
             style={{ backgroundColor: 'rgba(232,184,68,0.1)', border: '1px solid rgba(232,184,68,0.25)' }}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -183,18 +194,18 @@ const RegisterPage: React.FC = () => {
             </svg>
           </div>
           <h1 className="text-2xl font-semibold mb-2" style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}>
-            {emailSendFailed ? 'Email delivery issue' : 'Check your inbox'}
+            {emailSendFailed ? 'One more step' : 'Check your inbox'}
           </h1>
           {emailSendFailed ? (
             <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-              Your account was created, but we couldn't send the verification email. Click below to try again.
+              We couldn't send the verification email to <span className="font-semibold break-all" style={{ color: 'var(--text-primary)' }}>{registeredEmail}</span>. Click below to try again — you must verify your email before signing in.
             </p>
           ) : (
             <>
               <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>We sent a verification link to</p>
               <p className="text-sm font-semibold mb-3 break-all" style={{ color: 'var(--text-primary)' }}>{registeredEmail}</p>
               <p className="text-xs mb-6" style={{ color: 'var(--text-muted)' }}>
-                The link expires in 24 hours. Check your spam folder if you don't see it.
+                Click the link in the email to activate your account. The link expires in 24 hours. Check your spam folder if you don't see it.
               </p>
             </>
           )}
@@ -467,17 +478,17 @@ const RegisterPage: React.FC = () => {
           {/* Submit */}
           <button
             type="submit"
-            disabled={isLoading || registrationSuccess}
+            disabled={isSubmitting || registrationSuccess}
             className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all mt-2"
             style={{
               backgroundColor: 'var(--accent)',
               color: '#0e0e17',
               boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(232,184,68,0.2)',
-              opacity: (isLoading || registrationSuccess) ? 0.7 : 1,
-              cursor: (isLoading || registrationSuccess) ? 'not-allowed' : 'pointer',
+              opacity: (isSubmitting || registrationSuccess) ? 0.7 : 1,
+              cursor: (isSubmitting || registrationSuccess) ? 'not-allowed' : 'pointer',
             }}
             onMouseEnter={(e) => {
-              if (!isLoading && !registrationSuccess) {
+              if (!isSubmitting && !registrationSuccess) {
                 (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent-hover)';
                 (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
               }
@@ -487,7 +498,7 @@ const RegisterPage: React.FC = () => {
               (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
             }}
           >
-            {isLoading ? (
+            {isSubmitting ? (
               <>
                 <Spinner size="xs" />
                 <span>Connecting…</span>
@@ -524,17 +535,17 @@ const RegisterPage: React.FC = () => {
 
           <button
             type="button"
-            disabled={googleLoading || isLoading}
+            disabled={googleLoading || isSubmitting}
             onClick={handleGoogleSignUp}
             className="w-full flex items-center justify-center gap-2.5 rounded-xl py-3 text-sm font-medium transition-all mb-6"
             style={{
               backgroundColor: 'var(--bg-elevated)',
               border: '1px solid var(--border)',
               color: 'var(--text-primary)',
-              opacity: googleLoading || isLoading ? 0.6 : 1,
-              cursor: googleLoading || isLoading ? 'not-allowed' : 'pointer',
+              opacity: googleLoading || isSubmitting ? 0.6 : 1,
+              cursor: googleLoading || isSubmitting ? 'not-allowed' : 'pointer',
             }}
-            onMouseEnter={(e) => { if (!googleLoading && !isLoading) (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; }}
+            onMouseEnter={(e) => { if (!googleLoading && !isSubmitting) (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}
           >
             {googleLoading ? (
