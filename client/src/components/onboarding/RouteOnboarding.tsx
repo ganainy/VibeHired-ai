@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { BookOpen, ChevronRight, HelpCircle, Sparkles, X } from 'lucide-react';
+import { BookOpen, ChevronRight, HelpCircle, X } from 'lucide-react';
 
-/* ─── Storage key prefix — matches usePageTour ───────────────────────────── */
-const TOUR_DISMISSED_PREFIX = 'tour_dismissed_';
+/* ─── Storage key prefix ─────────────────────────────────────────────────── */
 const GUIDE_SHOWN_PREFIX = 'guide_shown_';
 
 /* ─── Per-page guide config ──────────────────────────────────────────────── */
@@ -13,8 +12,6 @@ type PageGuide = {
     title: string;
     description: string;
     features: string[];
-    /** When set, a "Re-show demo preview" action clears this tour dismissed key */
-    mockTourKey?: string;
 };
 
 const PAGE_GUIDES: PageGuide[] = [
@@ -29,7 +26,6 @@ const PAGE_GUIDES: PageGuide[] = [
             'Spot follow-up actions with at-a-glance status badges',
             'Click any job to open its full review workspace',
         ],
-        mockTourKey: 'dashboard',
     },
     {
         key: 'manage-cv',
@@ -42,7 +38,6 @@ const PAGE_GUIDES: PageGuide[] = [
             'Import from an existing PDF or paste plain text',
             'Export or copy finals ready for applications',
         ],
-        mockTourKey: 'manage-cv',
     },
     {
         key: 'email-suggestions',
@@ -91,7 +86,6 @@ const PAGE_GUIDES: PageGuide[] = [
             'View weekly and monthly activity summaries',
             'Review and export your time logs at any point',
         ],
-        mockTourKey: 'work-tracker',
     },
     {
         key: 'interview-materials',
@@ -141,6 +135,30 @@ const PAGE_GUIDES: PageGuide[] = [
             'Share a direct link to your live portfolio',
         ],
     },
+    {
+        key: 'auto-jobs',
+        match: (p) => p.startsWith('/auto-jobs'),
+        title: 'Auto Jobs',
+        description: 'Automatically discover and import matching job listings from LinkedIn based on your saved preferences.',
+        features: [
+            'Configure keywords, location, job type, and experience level',
+            'Run automated LinkedIn job scraping with one click',
+            'Review AI-scored matches and spot the best fits instantly',
+            'Promote matching jobs straight to your main dashboard',
+        ],
+    },
+    {
+        key: 'interview-buddy',
+        match: (p) => p.startsWith('/interview-buddy'),
+        title: 'Interview Buddy',
+        description: 'A stealth AI companion that transcribes interview questions and surfaces structured answers in real time.',
+        features: [
+            'Install the companion app once — runs silently on your machine',
+            'Fully invisible on screen share, taskbar, and task manager',
+            'Hold Ctrl+Shift+Space to capture the interviewer\'s question',
+            'AI-generated answer appears in a floating overlay only you can see',
+        ],
+    },
 ];
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -150,34 +168,35 @@ const RouteOnboarding: React.FC = () => {
 
     const guide = PAGE_GUIDES.find((g) => g.match(location.pathname));
 
-    // Auto-open once on the very first visit to each route
+    // Auto-open once on the very first visit to each route.
+    // setOpen(false) on every route change so the panel closes when navigating
+    // away, and only re-opens automatically on a page that hasn't been seen yet.
     useEffect(() => {
         if (!guide) return;
         const seenKey = `${GUIDE_SHOWN_PREFIX}${guide.key}`;
         try {
-            if (localStorage.getItem(seenKey) === 'true') return;
-            localStorage.setItem(seenKey, 'true');
+            if (localStorage.getItem(seenKey) === 'true') {
+                setOpen(false);
+                return;
+            }
         } catch {
             // ignore localStorage errors
         }
-        // Small delay so the page has rendered before the panel slides in
-        const timer = window.setTimeout(() => setOpen(true), 600);
+        // Mark as seen only when the panel actually opens (inside the timeout),
+        // to avoid counting routes that were navigated away from in < 600 ms.
+        const timer = window.setTimeout(() => {
+            try {
+                localStorage.setItem(seenKey, 'true');
+            } catch {
+                // ignore localStorage errors
+            }
+            setOpen(true);
+        }, 600);
         return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [guide?.key]);
 
     if (!guide) return null;
-
-    const handleReshow = () => {
-        if (!guide.mockTourKey) return;
-        try {
-            localStorage.removeItem(`${TOUR_DISMISSED_PREFIX}${guide.mockTourKey}`);
-        } catch {
-            // ignore localStorage errors
-        }
-        setOpen(false);
-        window.location.reload();
-    };
 
     return (
         <>
@@ -284,34 +303,6 @@ const RouteOnboarding: React.FC = () => {
                         </ul>
                     </div>
 
-                    {/* Demo preview re-show block */}
-                    {guide.mockTourKey && (
-                        <div
-                            className="rounded-xl p-4 flex flex-col gap-3"
-                            style={{
-                                background: 'var(--accent-bg)',
-                                border: '1px solid var(--accent-dim)',
-                            }}
-                        >
-                            <div className="flex items-center gap-2">
-                                <Sparkles size={13} style={{ color: 'var(--accent)' }} />
-                                <p className="text-xs font-semibold" style={{ color: 'var(--accent)' }}>
-                                    Demo Preview
-                                </p>
-                            </div>
-                            <p className="text-xs leading-relaxed" style={{ color: 'var(--accent)' }}>
-                                This page shows sample data while it's empty. If you dismissed the preview, you can bring it back here.
-                            </p>
-                            <button
-                                type="button"
-                                onClick={handleReshow}
-                                className="self-start px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
-                                style={{ background: 'var(--accent)', color: 'var(--bg-base)' }}
-                            >
-                                Re-show demo preview
-                            </button>
-                        </div>
-                    )}
                 </div>
 
                 {/* Footer */}
