@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import appLogo from '../../assets/app-logo.png';
+import { VibeHiredLogo } from '../VibeHiredLogo';
 // ── Inbox icon (email suggestions) ───────────────────────────────────────────────────────
 const InboxIconMobile = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -169,12 +170,7 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
                     <span style={{ color: 'var(--accent)' }}>
                         <Logo />
                     </span>
-                    <span
-                        className="font-semibold text-[1rem] tracking-tight"
-                        style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
-                    >
-                        VibeHired
-                    </span>
+                    <VibeHiredLogo size={18} className="px-0" />
                 </Link>
 
                 {/* Right actions */}

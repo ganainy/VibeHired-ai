@@ -1,6 +1,6 @@
 // client/src/components/jobs/InterviewMaterialsPanel.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { InterviewMaterial, MaterialType, CreateMaterialPayload } from '../../types/interviewMaterial';
+import { InterviewMaterial, MaterialType, CreateMaterialPayload, UpdateMaterialPayload } from '../../types/interviewMaterial';
 import {
     getMaterialsByJob,
     createMaterial,
@@ -59,12 +59,50 @@ const MaterialCard: React.FC<{
     material: InterviewMaterial;
     onToggleGlobal: (id: string, isGlobal: boolean) => void;
     onDelete: (id: string) => void;
+    onSave: (id: string, payload: UpdateMaterialPayload) => Promise<void>;
     onPreview: (material: InterviewMaterial) => void;
     isUpdating: boolean;
-}> = ({ material, onToggleGlobal, onDelete, onPreview, isUpdating }) => {
+}> = ({ material, onToggleGlobal, onDelete, onSave, onPreview, isUpdating }) => {
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [editForm, setEditForm] = useState({
+        title: material.title,
+        description: material.description ?? '',
+        content: material.content ?? '',
+        url: material.url ?? '',
+    });
+
+    const startEdit = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditForm({
+            title: material.title,
+            description: material.description ?? '',
+            content: material.content ?? '',
+            url: material.url ?? '',
+        });
+        setIsEditing(true);
+    };
+
+    const handleSave = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!editForm.title.trim()) return;
+        setIsSaving(true);
+        try {
+            await onSave(material._id, {
+                title: editForm.title.trim(),
+                description: editForm.description.trim() || undefined,
+                content: (material.type === 'text' || material.type === 'markdown') ? editForm.content : undefined,
+                url: material.type === 'link' ? editForm.url.trim() : undefined,
+            });
+            setIsEditing(false);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const isLink = material.type === 'link';
-    const clickable = canPreviewInline(material.type) || isLink;
+    const clickable = (canPreviewInline(material.type) || isLink) && !isEditing;
 
     const handleCardClick = () => {
         if (isLink && material.url) {
@@ -77,7 +115,7 @@ const MaterialCard: React.FC<{
     return (
         <div
             onClick={clickable ? handleCardClick : undefined}
-            className={`group relative flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-200 ${
+            className={`group relative flex flex-col gap-3 p-3.5 rounded-xl border transition-all duration-200 ${
                 clickable ? 'cursor-pointer hover:border-opacity-60' : ''
             }`}
             style={{
@@ -85,6 +123,8 @@ const MaterialCard: React.FC<{
                 borderColor: 'var(--border)',
             }}
         >
+            {/* Top row: icon + info + actions */}
+            <div className="flex items-start gap-3">
             {/* Type icon */}
             <div className="flex-shrink-0 mt-0.5">
                 <span className={`material-symbols-outlined text-xl ${colorForType(material.type)}`}>
@@ -145,17 +185,28 @@ const MaterialCard: React.FC<{
 
                     {/* Actions */}
                     <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {/* Edit */}
+                        {!isEditing && (
+                            <button
+                                onClick={startEdit}
+                                title="Edit"
+                                className="p-1.5 rounded-lg transition-all hover:text-blue-500"
+                                style={{ color: 'var(--text-muted)' }}
+                            >
+                                <span className="material-symbols-outlined text-base">edit</span>
+                            </button>
+                        )}
                         {/* Delete */}
                         {confirmDelete ? (
                             <div className="flex items-center gap-1">
                                 <button
-                                    onClick={() => onDelete(material._id)}
+                                    onClick={(e) => { e.stopPropagation(); onDelete(material._id); }}
                                     className="text-xs px-2 py-1 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
                                 >
                                     Delete
                                 </button>
                                 <button
-                                    onClick={() => setConfirmDelete(false)}
+                                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}
                                     className="text-xs px-2 py-1 rounded-md transition-colors"
                                     style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
                                 >
@@ -163,17 +214,80 @@ const MaterialCard: React.FC<{
                                 </button>
                             </div>
                         ) : (
-                            <button
-                                onClick={() => setConfirmDelete(true)}
-                                title="Delete"
-                                className="p-1.5 rounded-lg transition-all hover:text-red-500"
-                                style={{ color: 'var(--text-muted)' }}
-                            >
-                                <span className="material-symbols-outlined text-base">delete</span>
-                            </button>
+                            !isEditing && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
+                                    title="Delete"
+                                    className="p-1.5 rounded-lg transition-all hover:text-red-500"
+                                    style={{ color: 'var(--text-muted)' }}
+                                >
+                                    <span className="material-symbols-outlined text-base">delete</span>
+                                </button>
+                            )
                         )}
                     </div>
                 </div>
+            </div>{/* closes flex-1 min-w-0 info */}
+
+            </div>{/* end top row */}
+
+            {/* Inline edit form */}
+            {isEditing && (
+                <div className="space-y-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                    <input
+                        autoFocus
+                        value={editForm.title}
+                        onChange={(e) => setEditForm(f => ({ ...f, title: e.target.value }))}
+                        placeholder="Title"
+                        className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                    />
+                    <input
+                        value={editForm.description}
+                        onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
+                        placeholder="Description (optional)"
+                        className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                    />
+                    {(material.type === 'text' || material.type === 'markdown') && (
+                        <textarea
+                            rows={5}
+                            value={editForm.content}
+                            onChange={(e) => setEditForm(f => ({ ...f, content: e.target.value }))}
+                            placeholder="Content"
+                            className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-blue-400 font-mono resize-y"
+                            style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        />
+                    )}
+                    {material.type === 'link' && (
+                        <input
+                            value={editForm.url}
+                            onChange={(e) => setEditForm(f => ({ ...f, url: e.target.value }))}
+                            placeholder="URL"
+                            className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                        />
+                    )}
+                    <div className="flex justify-end gap-2">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsEditing(false); }}
+                            className="text-xs px-3 py-1.5 rounded-lg border transition-colors"
+                            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving || !editForm.title.trim()}
+                            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all disabled:opacity-50"
+                            style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-text, #1a1200)' }}
+                        >
+                            {isSaving ? <span className="inline-block w-3 h-3 border-2 border-t-transparent rounded-full animate-spin" /> : null}
+                            Save
+                        </button>
+                    </div>
+                </div>
+            )}
 
                 {/* Global toggle */}
                 <div className="flex items-center gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
@@ -187,7 +301,7 @@ const MaterialCard: React.FC<{
                     >
                         <span
                             className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transform transition-transform ${
-                                material.isGlobal ? 'translate-x-4.5' : 'translate-x-0.5'
+                                material.isGlobal ? 'translate-x-5' : 'translate-x-0.5'
                             }`}
                         />
                     </button>
@@ -195,7 +309,7 @@ const MaterialCard: React.FC<{
                         {material.isGlobal ? 'In Prep Library' : 'Add to Prep Library'}
                     </span>
                 </div>
-            </div>
+
         </div>
     );
 };
@@ -383,6 +497,13 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                 return next;
             });
         }
+    };
+
+    // ── Save (inline edit) ───────────────────────────────────────────────────
+
+    const handleSaveMaterial = async (materialId: string, payload: UpdateMaterialPayload) => {
+        const updated = await updateMaterial(materialId, payload);
+        setMaterials(prev => prev.map(m => (m._id === materialId ? updated : m)));
     };
 
     // ── Render ─────────────────────────────────────────────────────────────────
@@ -682,7 +803,7 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                         >
                             <span
                                 className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transform transition-transform ${
-                                    form.isGlobal ? 'translate-x-4.5' : 'translate-x-0.5'
+                                    form.isGlobal ? 'translate-x-5' : 'translate-x-0.5'
                                 }`}
                             />
                         </button>
@@ -744,6 +865,7 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                             material={m}
                             onToggleGlobal={handleToggleGlobal}
                             onDelete={handleDelete}
+                            onSave={handleSaveMaterial}
                             onPreview={setPreviewMaterial}
                             isUpdating={updatingIds.has(m._id)}
                         />

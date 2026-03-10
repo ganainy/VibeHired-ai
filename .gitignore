@@ -22,6 +22,7 @@ yarn-error.log*
 
 # Temporary files
 server/temp_pdfs
+server/temp_uploads
 
 # Ignore influence directory
 influence/

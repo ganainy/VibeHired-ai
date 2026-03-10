@@ -7,8 +7,6 @@ All scripts live in `server/scripts/` and are run with `ts-node` from the **`ser
 Every script reads from `server/.env`.  
 The minimum required variables are:
 
-> Note: Recent server updates now allow `FRONTEND_URL` to be a comma-separated list (for example custom domain + Netlify domain) when you run the API.
-
 ```env
 MONGODB_URI=mongodb://localhost:27017/job-app-assistant
 GEMINI_API_KEY=<your-key>      # only needed for AI scripts
@@ -129,71 +127,6 @@ npm run migrate-cv-branches
 - ⚠️ **Run once** after deploying the CV branch feature — subsequent runs are safe (idempotent) but unnecessary  
 - ⚠️ Uses the database pointed to by `MONGODB_URI` — double-check before running against production  
 - Runs inside a **MongoDB transaction** — automatically rolls back on any error  
-
----
-
-## 5. `capture-screenshots.ts` — Refresh Demo Screenshots
-
-Launches a headless Chromium browser, signs in to the local dev server, navigates to every major page, and saves PNG screenshots to the `demo/` directory at the project root.
-
-### Prerequisites
-
-- Frontend dev server running at `http://localhost:5173` (`npm run dev` from repo root)
-- Backend dev server running at `http://localhost:5001`
-- At least one user account in the database
-- At least one job application with a generated draft (for review-page screenshots)
-
-### Usage
-
-```bash
-cd server
-
-# Pass credentials via CLI flags
-npm run capture-screenshots -- --user you@example.com --pass yourpassword
-
-# Or via environment variables
-SCREENSHOT_USER=you@example.com SCREENSHOT_PASS=yourpassword npm run capture-screenshots
-```
-
-### CLI flags
-
-| Flag | Env var | Description |
-|------|---------|-------------|
-| `--user <email>` | `SCREENSHOT_USER` | Email of the account to sign in with |
-| `--pass <password>` | `SCREENSHOT_PASS` | Password for that account |
-
-Credentials are **never** committed — they are read at runtime only.
-
-### Output
-
-All screenshots are written to `<repo-root>/demo/` at **1440 × 900 px, 2× device scale** (retina quality).
-
-| File | Page |
-|------|------|
-| `login.png` | Login page |
-| `register.png` | Registration page |
-| `forgot-password.png` | Forgot password page |
-| `main-dashboard.png` | Dashboard — table view |
-| `dashboard-kanban.png` | Dashboard — kanban view |
-| `auto-jobs.png` | Auto Jobs page |
-| `cv-management.png` | CV Management page |
-| `analytics-dashboard.png` | Analytics dashboard |
-| `settings.png` | Settings page |
-| `portfolio-setup.png` | Portfolio Setup — Tab 0: Connect Accounts |
-| `portfolio-setup-github.png` | Portfolio Setup — Tab 1: GitHub Repos |
-| `portfolio-setup-linkedin.png` | Portfolio Setup — Tab 2: LinkedIn Data |
-| `portfolio-setup-publish.png` | Portfolio Setup — Tab 3: Publish |
-| `portfolio-setup-community.png` | Portfolio Setup — Tab 4: Community |
-| `custom-portfolio.png` | Public portfolio page |
-| `custom-job-cv.png` | Review page — CV tab |
-| `custom-job-coverletter.png` | Review page — Cover letter tab |
-| `ats-analysis.png` | Review page — ATS tab |
-| `job-details.png` | Dashboard — inline job details panel |
-
-### Safety
-
-- Does **not** modify any database data — read-only browsing session
-- Credentials sourced only from CLI / env vars, never hardcoded
 
 ---
 

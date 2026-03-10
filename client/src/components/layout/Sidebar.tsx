@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import appLogo from '../../assets/app-logo.png';
+import { VibeHiredLogo } from '../VibeHiredLogo';
 
 // ── Email inbox icon ──────────────────────────────────────────────────────────
 const InboxIcon = () => (
@@ -206,19 +207,11 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
             {/* ── Brand ── */}
             <Link
                 to="/dashboard"
-                className="flex items-center h-[64px] border-b overflow-hidden transition-colors hover:opacity-80"
+                className="flex items-center h-[64px] border-b transition-colors hover:opacity-80"
                 style={{ borderColor: 'var(--border)', paddingLeft: isCollapsed ? '0' : '20px', justifyContent: isCollapsed ? 'center' : 'flex-start' }}
             >
-                <span style={{ color: 'var(--accent)' }} className="shrink-0">
-                    <Logo />
-                </span>
                 {!isCollapsed && (
-                    <span
-                        className="ml-2.5 font-display font-semibold tracking-tight text-[1.1rem] transition-opacity duration-200"
-                        style={{ color: 'var(--text-primary)', fontFamily: 'Fraunces, Georgia, serif' }}
-                    >
-                        VibeHired
-                    </span>
+                    <VibeHiredLogo size={36} />
                 )}
             </Link>
 

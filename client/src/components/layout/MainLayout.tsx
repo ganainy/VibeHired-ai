@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import CreditLimitModal from '../usage/CreditLimitModal';
@@ -13,23 +13,29 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const { user, showCreditLimitModal, setShowCreditLimitModal } = useAuth();
     const [pendingCount, setPendingCount] = useState(0);
-
-    const refreshCount = useCallback(async () => {
-        if (!user) return;
-        try {
-            const suggestions = await listPendingSuggestions();
-            setPendingCount(suggestions.length);
-        } catch {
-            // non-fatal
-        }
-    }, [user]);
+    const userId = user?.id ?? null;
 
     // Poll for pending suggestion count every 60 seconds
     useEffect(() => {
-        refreshCount();
-        const interval = setInterval(refreshCount, 60_000);
-        return () => clearInterval(interval);
-    }, [refreshCount]);
+        if (!userId) return;
+
+        let cancelled = false;
+        const fetchCount = async () => {
+            try {
+                const suggestions = await listPendingSuggestions();
+                if (!cancelled) setPendingCount(suggestions.length);
+            } catch {
+                // non-fatal
+            }
+        };
+
+        fetchCount();
+        const interval = setInterval(fetchCount, 60_000);
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
+    }, [userId]);
 
     return (
         <div

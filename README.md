@@ -327,4 +327,6 @@ The official hosted service at [vibehired.ganainy.dev](https://vibehired.ganainy
 | **Public Portfolio** | Share your professional portfolio with a clean, modern public page. | ![Public Portfolio](demo/custom-portfolio.png) |
 | **Settings** | Manage your API keys for AI features (Gemini, OpenRouter, Ollama) and integrations (Apify). Configure AI provider settings and model selection. | ![Settings](demo/settings.png) |
 | **Prep Library** | Global view of all interview preparation materials shared across jobs — grouped by company with search and flat/grouped toggle. Click any card to preview PDFs, images, or rendered Markdown inline. | ![Prep Library](demo/prep-library.png) |
+| **Prep Library - Upload Queue** | Multi-file upload flow with queued processing and progress states for adding preparation assets. | ![Prep Library Upload Queue](demo/prep-library-upload.png) |
+| **Prep Library - Inline Preview** | Material preview experience for PDFs, images, and markdown/text content directly inside the prep workspace. | ![Prep Library Inline Preview](demo/prep-library-preview.png) |
 | **Materials Tab** | Per-job prep materials panel with drag-and-drop upload, multi-file bulk progress, and inline Google Docs Viewer preview for PDFs and DOCX. | ![Materials Tab](demo/materials-tab.png) |

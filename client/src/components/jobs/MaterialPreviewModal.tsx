@@ -1,5 +1,6 @@
 // client/src/components/jobs/MaterialPreviewModal.tsx
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { InterviewMaterial, MaterialType } from '../../types/interviewMaterial';
@@ -72,7 +73,7 @@ const MaterialPreviewModal: React.FC<Props> = ({ material, onClose }) => {
         return () => window.removeEventListener('keydown', handler);
     }, [onClose]);
 
-    return (
+    const modal = (
         <div
             className="fixed inset-0 z-[60] flex items-center justify-center p-4"
             style={{ backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
@@ -284,6 +285,8 @@ const MaterialPreviewModal: React.FC<Props> = ({ material, onClose }) => {
             </div>
         </div>
     );
+
+    return ReactDOM.createPortal(modal, document.body);
 };
 
 export default MaterialPreviewModal;

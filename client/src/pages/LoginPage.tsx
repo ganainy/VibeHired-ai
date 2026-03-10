@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { getGoogleLoginUrl, resendVerificationEmail } from '../services/authApi';
 import Spinner from '../components/common/Spinner';
 import appLogo from '../assets/app-logo.png';
+import { VibeHiredLogo } from '../components/VibeHiredLogo';
 
 
 
@@ -194,20 +195,7 @@ const LoginPage: React.FC = () => {
 
         {/* Brand */}
         <div className="relative z-10">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: 'var(--accent-bg, rgba(232,184,68,0.15))', border: '1px solid rgba(232,184,68,0.25)' }}
-            >
-              <img src={appLogo} alt="VibeHired" width="18" height="18" style={{ display: 'block', objectFit: 'contain' }} />
-            </div>
-            <span
-              className="text-lg font-semibold"
-              style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
-            >
-              VibeHired
-            </span>
-          </div>
+          <VibeHiredLogo size={44} />
         </div>
 
         {/* Main editorial text */}
@@ -261,15 +249,7 @@ const LoginPage: React.FC = () => {
         {/* Theme toggle + mobile brand */}
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-2 md:hidden">
-            <span style={{ color: 'var(--accent)', fontSize: '1.25rem' }}>
-              <img src={appLogo} alt="VibeHired" width="22" height="22" style={{ display: 'block', objectFit: 'contain', borderRadius: '5px' }} />
-            </span>
-            <span
-              className="font-semibold"
-              style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
-            >
-              VibeHired
-            </span>
+            <VibeHiredLogo size={22} className="px-0" />
           </div>
           <div className="md:ml-auto">
             <button
