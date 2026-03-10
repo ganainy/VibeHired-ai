@@ -155,9 +155,40 @@ const LoginPage: React.FC = () => {
   };
 
   const features = [
-    { icon: '⚡', text: 'AI-powered job matching & CV tailoring' },
-    { icon: '📊', text: 'Application pipeline with real-time analytics' },
-    { icon: '🚀', text: 'Automated job discovery across platforms' },
+    {
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <path d="M9 13h6M9 17h4" />
+          <path d="M9 9h1" />
+        </svg>
+      ),
+      text: 'AI-tailored CV & cover letter for every role',
+    },
+    {
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+          <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+        </svg>
+      ),
+      text: 'Every application, deadline & interview in one place',
+    },
+    {
+      icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+          <path d="M3 20h18" />
+        </svg>
+      ),
+      text: 'Stats & insights across your entire job search',
+    },
   ];
 
   return (
@@ -205,15 +236,14 @@ const LoginPage: React.FC = () => {
               className="text-4xl xl:text-5xl font-semibold leading-[1.1] tracking-tight"
               style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
             >
-              Land your next<br />
-              <span style={{ color: 'var(--accent)' }}>role faster.</span>
+              Tailored applications,<br />
+              <span style={{ color: 'var(--accent)' }}>all in one place.</span>
             </h1>
             <p
               className="mt-4 text-base leading-relaxed max-w-sm"
               style={{ color: 'var(--text-secondary)' }}
             >
-              The intelligent job application platform that helps you track, optimize,
-              and automate your entire job search.
+              Generate tailored CVs and cover letters for every role, track every application and interview, and get insights on your progress — all from one dashboard.
             </p>
           </div>
 
@@ -222,7 +252,7 @@ const LoginPage: React.FC = () => {
             {features.map((f, i) => (
               <li key={i} className="flex items-center gap-3">
                 <span
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                   style={{ backgroundColor: 'var(--accent-bg, rgba(232,184,68,0.1))', border: '1px solid rgba(232,184,68,0.2)' }}
                 >
                   {f.icon}

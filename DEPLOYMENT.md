@@ -78,9 +78,15 @@ Set the required environment variables on Heroku:
    | Key | Value | Notes |
    |-----|-------|-------|
    | `MONGODB_URI` | `mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/job-app-assistant?retryWrites=true&w=majority` | Replace with your MongoDB connection string from Part 1 |
-   | `JWT_SECRET` | `your-super-secret-jwt-key-min-32-chars` | Generate a strong random string (min 32 characters). You can use: `openssl rand -base64 32` |
-   | `ENCRYPTION_KEY` | `your-encryption-key-min-32-chars` | Generate a strong random string (min 32 characters) for encrypting API keys. You can use: `openssl rand -base64 32` |
-   | `FRONTEND_URL` | `https://your-netlify-app.netlify.app` | Set a placeholder for now, update after Netlify deployment |
+   | `JWT_SECRET` | `your-super-secret-jwt-key-min-32-chars` | Generate a strong random string (min 32 chars): `openssl rand -base64 32` |
+   | `ENCRYPTION_KEY` | `your-encryption-key-min-32-chars` | Generate a strong random string (min 32 chars): `openssl rand -base64 32` |
+   | `GEMINI_API_KEY` | `AIza...` | Required for all AI features. Get from [Google AI Studio](https://makersuite.google.com/app/apikey) |
+   | `APIFY_API_KEY` | `apify_api_...` | Required for LinkedIn profile scraping. Get from [Apify Console](https://console.apify.com/account/integrations) |
+   | `SMTP_HOST` | `smtp.gmail.com` | SMTP server for password-reset and verification emails |
+   | `SMTP_PORT` | `587` | SMTP port |
+   | `SMTP_USER` | `your-gmail@gmail.com` | Gmail address used to send emails |
+   | `SMTP_PASS` | `xxxx xxxx xxxx xxxx` | 16-character Google App Password (not your Gmail password) |
+   | `FRONTEND_URL` | `https://your-netlify-app.netlify.app` | Set a placeholder for now, update after Netlify deployment. Supports comma-separated origins. |
    | `NODE_ENV` | `production` | Set to production mode |
    | `CLOUDINARY_CLOUD_NAME` | `your-cloud-name` | Your Cloudinary cloud name (from Cloudinary Dashboard) |
    | `CLOUDINARY_API_KEY` | `your-api-key` | Your Cloudinary API key (from Cloudinary Dashboard) |
@@ -147,11 +153,11 @@ The project is already configured for Heroku deployment:
    - Select your repository
 
 3. **Configure build settings:**
-   - Netlify should auto-detect settings from `netlify.toml`, but verify:
-   - **Base directory:** Leave empty (root)
-   - **Build command:** `cd client && npm install && npm run build`
-   - **Publish directory:** `client/dist`
-   - These are already configured in `netlify.toml`
+   - Netlify auto-detects settings from `netlify.toml` in the repository root. The file already sets:
+   - **Base directory:** `client`
+   - **Build command:** `npm run build`
+   - **Publish directory:** `dist` (relative to base)
+   - No manual changes needed here.
 
 4. **Set environment variables:**
    - Before deploying, click "Show advanced" → "New variable"
@@ -493,8 +499,14 @@ Replace `your-app-name-backend` with your actual Heroku app name.
 
 - `MONGODB_URI` - MongoDB Atlas connection string
 - `JWT_SECRET` - Secret key for JWT tokens (min 32 chars)
-- `ENCRYPTION_KEY` - Secret key for encrypting API keys (min 32 chars)
-- `FRONTEND_URL` - Your Netlify app URL (e.g., `https://your-app.netlify.app`)
+- `ENCRYPTION_KEY` - Secret key for encrypting stored data (min 32 chars)
+- `GEMINI_API_KEY` - Google Gemini API key (required for all AI features)
+- `APIFY_API_KEY` - Apify API token (required for LinkedIn profile scraping)
+- `SMTP_HOST` - SMTP server hostname (e.g. `smtp.gmail.com`)
+- `SMTP_PORT` - SMTP port (e.g. `587`)
+- `SMTP_USER` - Email address used to send password-reset and verification emails
+- `SMTP_PASS` - SMTP password / Google App Password
+- `FRONTEND_URL` - Your Netlify app URL; supports comma-separated origins
 - `NODE_ENV` - Set to `production`
 - `CLOUDINARY_CLOUD_NAME` - Your Cloudinary cloud name
 - `CLOUDINARY_API_KEY` - Your Cloudinary API key

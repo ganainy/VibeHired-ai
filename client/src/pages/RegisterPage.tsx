@@ -277,19 +277,19 @@ const RegisterPage: React.FC = () => {
             className="text-4xl xl:text-5xl font-semibold leading-[1.1] tracking-tight"
             style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
           >
-            Your career,<br />
-            <span style={{ color: 'var(--accent)' }}>intelligently managed.</span>
+            Your job search,<br />
+            <span style={{ color: 'var(--accent)' }}>in one place.</span>
           </h1>
           <p className="text-base leading-relaxed max-w-sm" style={{ color: 'var(--text-secondary)' }}>
-            Create your free account and start tracking, optimizing, and automating your job hunt today.
+            Tailored CVs, cover letters, application tracking, calendar reminders, and stats — everything your search needs, in a single dashboard.
           </p>
 
           {/* Steps */}
           <ol className="space-y-4">
             {[
-              { num: '01', text: 'Create your account' },
-              { num: '02', text: 'Add your CV & preferences' },
-              { num: '03', text: 'Let AI handle the rest' },
+              { num: '01', text: 'Upload your master CV once' },
+              { num: '02', text: 'Generate a tailored CV & cover letter per role' },
+              { num: '03', text: 'Track applications, interviews & deadlines' },
             ].map(step => (
               <li key={step.num} className="flex items-center gap-4">
                 <span
