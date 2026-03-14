@@ -1,6 +1,15 @@
 // client/src/components/jobs/RemindersPanel.tsx
 import React, { useState } from 'react';
-import { IReminder, deleteReminderApi } from '../../services/jobApi';
+import {
+    IReminder,
+    IFollowUpSuggestion,
+    deleteReminderApi,
+    dismissFollowUpApi,
+    generateFollowUpDraftApi,
+    getFollowUpSuggestionApi,
+    markFollowUpSentApi,
+    snoozeFollowUpOneWeekApi,
+} from '../../services/jobApi';
 import ReminderModal from './ReminderModal';
 import Spinner from '../common/Spinner';
 
@@ -56,6 +65,14 @@ function formatDateTime(iso: string): string {
     }
 }
 
+function buildGmailComposeUrl(to?: string, subject?: string, body?: string): string {
+    const params = new URLSearchParams();
+    if (to) params.set('to', to);
+    if (subject) params.set('su', subject);
+    if (body) params.set('body', body);
+    return `https://mail.google.com/mail/?view=cm&fs=1&${params.toString()}`;
+}
+
 const RemindersPanel: React.FC<RemindersPanelProps> = ({
     jobId,
     jobTitle,
@@ -68,6 +85,37 @@ const RemindersPanel: React.FC<RemindersPanelProps> = ({
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [followUpSuggestion, setFollowUpSuggestion] = useState<IFollowUpSuggestion | null>(null);
+    const [isLoadingFollowUp, setIsLoadingFollowUp] = useState<boolean>(true);
+    const [isGeneratingFollowUpDraft, setIsGeneratingFollowUpDraft] = useState<boolean>(false);
+    const [followUpAction, setFollowUpAction] = useState<'snooze' | 'dismiss' | 'sent' | null>(null);
+
+    React.useEffect(() => {
+        let mounted = true;
+
+        const loadFollowUp = async () => {
+            setIsLoadingFollowUp(true);
+            try {
+                const suggestion = await getFollowUpSuggestionApi(jobId);
+                if (mounted) {
+                    setFollowUpSuggestion(suggestion);
+                }
+            } catch {
+                if (mounted) {
+                    setFollowUpSuggestion(null);
+                }
+            } finally {
+                if (mounted) {
+                    setIsLoadingFollowUp(false);
+                }
+            }
+        };
+
+        loadFollowUp();
+        return () => {
+            mounted = false;
+        };
+    }, [jobId]);
 
     const handleReminderAdded = (reminder: IReminder) => {
         const updated = [...reminders, reminder];
@@ -86,6 +134,74 @@ const RemindersPanel: React.FC<RemindersPanelProps> = ({
             onToast?.(err?.response?.data?.message || 'Failed to delete reminder.', 'error');
         } finally {
             setDeletingId(null);
+        }
+    };
+
+    const canShowFollowUpCard = followUpSuggestion && (
+        followUpSuggestion.status === 'suggested' ||
+        followUpSuggestion.status === 'snoozed' ||
+        followUpSuggestion.isDue
+    );
+
+    const handleGenerateFollowUpDraft = async () => {
+        setIsGeneratingFollowUpDraft(true);
+        try {
+            const suggestion = await generateFollowUpDraftApi(jobId);
+            setFollowUpSuggestion(suggestion);
+            onToast?.('AI follow-up email draft generated.', 'success');
+        } catch (err: any) {
+            onToast?.(err?.response?.data?.message || 'Failed to generate follow-up email.', 'error');
+        } finally {
+            setIsGeneratingFollowUpDraft(false);
+        }
+    };
+
+    const handleSnoozeOneWeek = async () => {
+        setFollowUpAction('snooze');
+        try {
+            const suggestion = await snoozeFollowUpOneWeekApi(jobId);
+            setFollowUpSuggestion(suggestion);
+            onToast?.('Follow-up suggestion snoozed for 1 week.', 'info');
+        } catch (err: any) {
+            onToast?.(err?.response?.data?.message || 'Failed to snooze follow-up.', 'error');
+        } finally {
+            setFollowUpAction(null);
+        }
+    };
+
+    const handleDismissFollowUp = async () => {
+        setFollowUpAction('dismiss');
+        try {
+            const suggestion = await dismissFollowUpApi(jobId);
+            setFollowUpSuggestion(suggestion);
+            onToast?.('Follow-up suggestion dismissed.', 'info');
+        } catch (err: any) {
+            onToast?.(err?.response?.data?.message || 'Failed to dismiss follow-up.', 'error');
+        } finally {
+            setFollowUpAction(null);
+        }
+    };
+
+    const handleMarkFollowUpSent = async () => {
+        setFollowUpAction('sent');
+        try {
+            const suggestion = await markFollowUpSentApi(jobId);
+            setFollowUpSuggestion(suggestion);
+            onToast?.('Marked follow-up as sent.', 'success');
+        } catch (err: any) {
+            onToast?.(err?.response?.data?.message || 'Failed to mark follow-up as sent.', 'error');
+        } finally {
+            setFollowUpAction(null);
+        }
+    };
+
+    const handleCopyFollowUpBody = async () => {
+        if (!followUpSuggestion?.draftBody) return;
+        try {
+            await navigator.clipboard.writeText(followUpSuggestion.draftBody);
+            onToast?.('Follow-up email copied to clipboard.', 'success');
+        } catch {
+            onToast?.('Could not copy to clipboard.', 'error');
         }
     };
 
@@ -131,6 +247,118 @@ const RemindersPanel: React.FC<RemindersPanelProps> = ({
             )}
 
             {/* Reminders list */}
+            {isLoadingFollowUp ? (
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <Spinner size="sm" />
+                    <span>Checking follow-up suggestion...</span>
+                </div>
+            ) : canShowFollowUpCard && followUpSuggestion && (
+                <div className="rounded-xl border border-blue-200 dark:border-blue-800/40 bg-blue-50/70 dark:bg-blue-900/20 p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">No response follow-up</p>
+                            <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                                {followUpSuggestion.isDue
+                                    ? `It has been ${followUpSuggestion.daysWithoutResponse} days since this application. Suggested follow-up starts at day 14.`
+                                    : `Follow-up reminder will trigger on ${formatDateTime(followUpSuggestion.dueDateISO)}.`}
+                            </p>
+                            {followUpSuggestion.recipientEmail && (
+                                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                    To:{' '}
+                                    <a
+                                        href={buildGmailComposeUrl(
+                                            followUpSuggestion.recipientEmail,
+                                            followUpSuggestion.draftSubject,
+                                            followUpSuggestion.draftBody
+                                        )}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-semibold hover:underline"
+                                        title="Open Gmail draft addressed to this recipient"
+                                    >
+                                        {followUpSuggestion.recipientEmail}
+                                    </a>
+                                </p>
+                            )}
+                            {followUpSuggestion.status === 'snoozed' && followUpSuggestion.snoozedUntil && (
+                                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                    Snoozed until {formatDateTime(followUpSuggestion.snoozedUntil)}
+                                </p>
+                            )}
+                        </div>
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700">
+                            AI Suggestion
+                        </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            onClick={handleGenerateFollowUpDraft}
+                            disabled={isGeneratingFollowUpDraft || followUpAction !== null}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-60"
+                        >
+                            {isGeneratingFollowUpDraft ? 'Generating...' : 'Generate AI Email'}
+                        </button>
+                        <button
+                            onClick={handleSnoozeOneWeek}
+                            disabled={isGeneratingFollowUpDraft || followUpAction !== null}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 disabled:opacity-60"
+                        >
+                            {followUpAction === 'snooze' ? 'Snoozing...' : 'Snooze 1 Week'}
+                        </button>
+                        <button
+                            onClick={handleMarkFollowUpSent}
+                            disabled={isGeneratingFollowUpDraft || followUpAction !== null}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60"
+                        >
+                            {followUpAction === 'sent' ? 'Saving...' : 'Mark Sent'}
+                        </button>
+                        <button
+                            onClick={handleDismissFollowUp}
+                            disabled={isGeneratingFollowUpDraft || followUpAction !== null}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-transparent border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 disabled:opacity-60"
+                        >
+                            {followUpAction === 'dismiss' ? 'Dismissing...' : 'Dismiss'}
+                        </button>
+                    </div>
+
+                    {followUpSuggestion.draftBody && (
+                        <div className="rounded-lg border border-blue-200 dark:border-blue-800/50 bg-white/80 dark:bg-gray-900/50 p-3 space-y-2">
+                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-200">
+                                Subject: {followUpSuggestion.draftSubject || 'Follow-up on my application'}
+                            </p>
+                            <p className="text-xs whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                                {followUpSuggestion.draftBody}
+                            </p>
+                            <div className="flex justify-end">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={handleCopyFollowUpBody}
+                                        className="text-xs font-medium text-blue-700 dark:text-blue-300 hover:underline"
+                                    >
+                                        Copy Email Body
+                                    </button>
+                                    {followUpSuggestion.recipientEmail && (
+                                        <a
+                                            href={buildGmailComposeUrl(
+                                                followUpSuggestion.recipientEmail,
+                                                followUpSuggestion.draftSubject,
+                                                followUpSuggestion.draftBody
+                                            )}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs font-medium text-blue-700 dark:text-blue-300 hover:underline"
+                                        >
+                                            Open in Gmail Draft
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {reminders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 gap-3 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
                     <div className="p-3 rounded-2xl bg-gray-100 dark:bg-gray-700/60 text-gray-400 dark:text-gray-500">

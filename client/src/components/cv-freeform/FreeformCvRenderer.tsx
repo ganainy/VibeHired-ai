@@ -17,7 +17,11 @@ function lbl(k: string) {
 
 function normalizeListItemText(v: FreeformJsonValue): FreeformJsonValue {
   if (typeof v !== 'string') return v;
-  return v.replace(/^\s*(?:[•\-–—]+\s*)+/, '').trimStart();
+  return v
+    .replace(/^\s*(?:[•\-–—]+\s*)+/, '')
+    .replace(/\r?\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function normalizeParagraphText(v: FreeformJsonValue) {
@@ -30,9 +34,12 @@ function normalizeParagraphText(v: FreeformJsonValue) {
 const Txt = ({ v, className = '' }: { v: FreeformJsonValue; className?: string }) => {
   if (v === null || v === undefined) return null;
   if (typeof v === 'boolean') return <span className={className}>{v ? 'Yes' : 'No'}</span>;
-  const text = String(v);
+  const text = String(v)
+    .replace(/\r?\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!text.trim()) return null;
-  return <span className={`whitespace-pre-wrap break-words ${className}`}>{text}</span>;
+  return <span className={`whitespace-normal break-words ${className}`}>{text}</span>;
 };
 
 const SectionHeading = ({ title }: { title: string }) => (
@@ -65,12 +72,12 @@ const CvEntry = ({ obj, root, path }: { obj: FreeformJsonObject; root: FreeformJ
   return (
     <div className="space-y-[2px]">
       {hasInlineTitleValue && (
-        <div className="flex justify-between items-baseline gap-4">
-          <div className="flex gap-2 items-baseline text-[12.5px] text-gray-800 leading-snug">
-            <span className="font-bold text-gray-900 shrink-0">{String(titleEntry![1]).trim()}:</span>
+        <div className="space-y-[1px]">
+          <p className="text-[12.5px] text-gray-800 leading-snug break-words">
+            <span className="font-bold text-gray-900">{String(titleEntry![1]).trim()}:</span>{' '}
             <Txt v={keyValueEntry![1]} />
-          </div>
-          {showRightAlignedDate && <Txt v={dateEntry![1]} className="text-[12px] text-gray-600 shrink-0" />}
+          </p>
+          {showRightAlignedDate && <Txt v={dateEntry![1]} className="text-[12px] text-gray-600" />}
         </div>
       )}
       {!hasInlineTitleValue && (titleEntry || dateEntry) && (
@@ -131,10 +138,10 @@ const CvEntry = ({ obj, root, path }: { obj: FreeformJsonObject; root: FreeformJ
         const text = String(v ?? '');
         if (!text.trim()) return null;
         return (
-          <div key={k} className="flex gap-2 text-[12.5px] text-gray-800 leading-snug">
-            <span className="font-semibold shrink-0">{lbl(k)}:</span>
+          <p key={k} className="text-[12.5px] text-gray-800 leading-snug break-words">
+            <span className="font-semibold">{lbl(k)}:</span>{' '}
             <Txt v={v} />
-          </div>
+          </p>
         );
       })}
     </div>
@@ -201,10 +208,10 @@ const SectionBody = ({ value, root, sectionKey }: { value: FreeformJsonValue; ro
           const text = String(v ?? '');
           if (!text.trim()) return null;
           return (
-            <div key={k} className="flex gap-2 items-baseline">
-              <span className="font-bold text-[12.5px] text-gray-900 shrink-0">{lbl(k)}:</span>
+            <p key={k} className="text-[12.5px] text-gray-800 leading-snug break-words">
+              <span className="font-bold text-gray-900">{lbl(k)}:</span>{' '}
               <Txt v={v} className="text-[12.5px] text-gray-800" />
-            </div>
+            </p>
           );
         })}
       </div>

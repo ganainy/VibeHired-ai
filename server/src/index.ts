@@ -37,6 +37,7 @@ import { handleStripeWebhook } from './controllers/webhookController';
 import protect from './middleware/authMiddleware'; // Import default export and alias it as 'protect'
 import { errorHandler } from './middleware/errorHandler';
 import { installExternalCallTracking } from './services/externalCallTracking';
+import { initializeScheduler } from './utils/scheduler';
 // Import providers to ensure they register themselves
 import './providers';
 
@@ -152,6 +153,8 @@ mongoose.connect(mongoUri)
     console.log('MongoDB Connected Successfully');
 
     // Start listening only after successful DB connection
+    initializeScheduler();
+
     const server = app.listen(port, () => {
       console.log(`[server]: Server is running at http://localhost:${port}`);
     });

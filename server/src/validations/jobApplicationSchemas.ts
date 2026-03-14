@@ -170,3 +170,10 @@ export const reminderIdParamSchema = z.object({
   id: z.string().min(1, 'Job ID is required'),
   reminderId: z.string().min(1, 'Reminder ID is required'),
 });
+
+/**
+ * Follow-up suggestion job id param
+ */
+export const followUpJobIdParamSchema = z.object({
+  id: z.string().min(1, 'Job ID is required'),
+});

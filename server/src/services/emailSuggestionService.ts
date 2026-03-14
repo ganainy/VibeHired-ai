@@ -370,6 +370,14 @@ export async function pollEmailsForUser(userId: string, limit?: number, category
         const match = await matchJobApplication(userId, cls.extractedCompany, cls.extractedRole);
         console.log(`[EmailSuggestionService] ${label} job match: ${Date.now() - tMatch}ms — ${match ? `matched "${match.companyName}"` : 'no match'}`);
 
+        // If this looks like a response to an existing application, record the latest response time.
+        if (match && (cls.emailCategory ?? 'application_response') === 'application_response') {
+            await JobApplication.updateOne(
+                { _id: match.id, userId },
+                { $set: { lastResponseAt: new Date() } }
+            );
+        }
+
         await EmailSuggestion.create({
             userId,
             jobApplicationId: match ? match.id : undefined,

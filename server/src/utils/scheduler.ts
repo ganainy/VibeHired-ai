@@ -2,6 +2,7 @@
 import cron from 'node-cron';
 import Profile from '../models/Profile';
 import { runAutoJobWorkflow } from '../services/autoJobWorkflow';
+import { runFollowUpSuggestionSweep } from '../services/followUpSuggestionService';
 
 /**
  * Initialize the auto-job scheduler
@@ -65,6 +66,21 @@ export const initializeScheduler = () => {
 
     console.log('✓ Scheduler running: Checks every hour for workflows to execute');
     console.log('✓ Default schedule: Daily at 9 AM for each user\n');
+
+    // Run follow-up suggestion sweep daily at 08:00 server time
+    cron.schedule('0 8 * * *', async () => {
+        try {
+            console.log('\n----- Follow-up Suggestion Sweep -----');
+            console.log(`Time: ${new Date().toISOString()}`);
+            const result = await runFollowUpSuggestionSweep();
+            console.log(`Checked ${result.checked} applied job(s), suggested ${result.suggested} follow-up email reminder(s)`);
+            console.log('----- Follow-up Sweep Complete -----\n');
+        } catch (error: any) {
+            console.error('Error in follow-up suggestion sweep:', error);
+        }
+    });
+
+    console.log('✓ Follow-up sweep: Daily at 8 AM\n');
 };
 
 /**

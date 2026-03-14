@@ -18,6 +18,17 @@ export interface IReminder {
     createdAt: Date;
 }
 
+export interface IFollowUpSuggestion {
+    status: 'none' | 'suggested' | 'snoozed' | 'dismissed' | 'sent';
+    suggestedAt?: Date;
+    snoozedUntil?: Date;
+    draftSubject?: string;
+    draftBody?: string;
+    draftGeneratedAt?: Date;
+    sentAt?: Date;
+    dismissedAt?: Date;
+}
+
 // Interface defining the structure of a Job Application document
 export interface IJobApplication extends Document {
     userId: mongoose.Schema.Types.ObjectId;
@@ -25,6 +36,8 @@ export interface IJobApplication extends Document {
     companyName: string;
     status: 'Applied' | 'Not Applied' | 'Interview' | 'Assessment' | 'Rejected' | 'Closed' | 'Offer'; // Example statuses
     dateApplied?: Date; // Optional: Mark when applied
+    lastResponseAt?: Date; // Latest detected recruiter/company response timestamp
+    lastFollowUpSentAt?: Date; // Latest follow-up email sent timestamp
     jobUrl?: string; // Optional but useful
     notes?: string; // Optional user notes
     salary?: string; // Salary (can be number, range, or text like "50k-70k")
@@ -116,6 +129,8 @@ export interface IJobApplication extends Document {
     appliedAtsSuggestions?: string[]; // History of applied ATS improvements (used to exclude from future scans)
     // --- Reminders ---
     reminders?: IReminder[];
+    // --- Follow-up suggestions ---
+    followUpSuggestion?: IFollowUpSuggestion;
     // --- Standard Timestamps ---
     createdAt: Date;
     updatedAt: Date;
@@ -129,6 +144,8 @@ const JobApplicationSchema: Schema = new Schema(
         companyName: { type: String, required: true, trim: true },
         status: { type: String, required: true, enum: ['Applied', 'Not Applied', 'Interview', 'Assessment', 'Rejected', 'Closed', 'Offer'], default: 'Not Applied' },
         dateApplied: { type: Date },
+        lastResponseAt: { type: Date, index: true },
+        lastFollowUpSentAt: { type: Date },
         jobUrl: { type: String, trim: true },
         notes: { type: String, trim: true },
         salary: { type: String, trim: true }, // Flexible format: "50000", "50k-70k", "$80,000 - $100,000"
@@ -241,7 +258,23 @@ const JobApplicationSchema: Schema = new Schema(
             calendarEventId: { type: String },
             status: { type: String, enum: ['pending', 'synced', 'error'], default: 'pending' },
             createdAt: { type: Date, default: Date.now }
-        }]
+        }],
+        // --- Follow-up suggestion schema ---
+        followUpSuggestion: {
+            status: {
+                type: String,
+                enum: ['none', 'suggested', 'snoozed', 'dismissed', 'sent'],
+                default: 'none',
+                index: true,
+            },
+            suggestedAt: { type: Date },
+            snoozedUntil: { type: Date },
+            draftSubject: { type: String },
+            draftBody: { type: String },
+            draftGeneratedAt: { type: Date },
+            sentAt: { type: Date },
+            dismissedAt: { type: Date },
+        }
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );
@@ -254,6 +287,7 @@ JobApplicationSchema.index({ userId: 1, isAutoJob: 1, processingStatus: 1, 'reco
 
 // Index for querying dashboard jobs
 JobApplicationSchema.index({ userId: 1, showInDashboard: 1, status: 1 });
+JobApplicationSchema.index({ userId: 1, status: 1, 'followUpSuggestion.status': 1, 'followUpSuggestion.snoozedUntil': 1 });
 
 /**
  * Cascade delete: When a job is deleted, also delete its associated CV

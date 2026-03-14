@@ -53,6 +53,8 @@ export interface JobApplication {
     };
     // userId?: string; // Add later
     reminders?: IReminder[];
+    lastResponseAt?: string;
+    followUpSuggestion?: IFollowUpSuggestion;
 }
 
 /** Reminder sub-document (mirrors server IReminder) */
@@ -66,6 +68,20 @@ export interface IReminder {
     calendarEventId?: string;
     status: 'pending' | 'synced' | 'error';
     createdAt: string;
+}
+
+export interface IFollowUpSuggestion {
+    jobId: string;
+    status: 'none' | 'suggested' | 'snoozed' | 'dismissed' | 'sent';
+    isDue: boolean;
+    daysWithoutResponse: number;
+    dueDateISO: string;
+    recipientEmail?: string;
+    suggestedAt?: string;
+    snoozedUntil?: string;
+    draftSubject?: string;
+    draftBody?: string;
+    draftGeneratedAt?: string;
 }
 
 /** Shape returned by AI parse endpoint */
@@ -325,6 +341,48 @@ export const deleteReminderApi = async (
 ): Promise<{ message: string; reminders: IReminder[] }> => {
     const response = await axios.delete(
         `${API_BASE_URL}/job-applications/${jobId}/reminders/${reminderId}`
+    );
+    return response.data;
+};
+
+export const getFollowUpSuggestionApi = async (jobId: string): Promise<IFollowUpSuggestion> => {
+    const response = await axios.get<IFollowUpSuggestion>(
+        `${API_BASE_URL}/job-applications/${jobId}/follow-up`
+    );
+    return response.data;
+};
+
+export const generateFollowUpDraftApi = async (jobId: string): Promise<IFollowUpSuggestion> => {
+    const response = await axios.post<IFollowUpSuggestion>(
+        `${API_BASE_URL}/job-applications/${jobId}/follow-up/generate-draft`
+    );
+    return response.data;
+};
+
+export const snoozeFollowUpOneWeekApi = async (jobId: string): Promise<IFollowUpSuggestion> => {
+    const response = await axios.post<IFollowUpSuggestion>(
+        `${API_BASE_URL}/job-applications/${jobId}/follow-up/snooze-one-week`
+    );
+    return response.data;
+};
+
+export const dismissFollowUpApi = async (jobId: string): Promise<IFollowUpSuggestion> => {
+    const response = await axios.post<IFollowUpSuggestion>(
+        `${API_BASE_URL}/job-applications/${jobId}/follow-up/dismiss`
+    );
+    return response.data;
+};
+
+export const markFollowUpSentApi = async (jobId: string): Promise<IFollowUpSuggestion> => {
+    const response = await axios.post<IFollowUpSuggestion>(
+        `${API_BASE_URL}/job-applications/${jobId}/follow-up/mark-sent`
+    );
+    return response.data;
+};
+
+export const getPendingFollowUpSuggestionsApi = async (): Promise<IFollowUpSuggestion[]> => {
+    const response = await axios.get<IFollowUpSuggestion[]>(
+        `${API_BASE_URL}/job-applications/follow-ups/pending`
     );
     return response.data;
 };

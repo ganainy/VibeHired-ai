@@ -21,11 +21,20 @@ import {
   parseReminderBodySchema,
   addReminderBodySchema,
   reminderIdParamSchema,
+  followUpJobIdParamSchema,
 } from '../validations/jobApplicationSchemas';
 import { objectIdParamSchema, jobIdParamSchema, filenameParamSchema } from '../validations/commonSchemas';
 import { parseReminder } from '../services/reminderParserService';
 import { createCalendarEvent, deleteCalendarEvent, isGoogleConnected } from '../services/googleCalendarService';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  dismissFollowUpSuggestion,
+  generateFollowUpDraft,
+  getFollowUpSuggestionForJob,
+  getPendingFollowUpSuggestionsForUser,
+  markFollowUpSent,
+  snoozeFollowUpOneWeek,
+} from '../services/followUpSuggestionService';
 
 const router: Router = express.Router();
 
@@ -134,9 +143,16 @@ const createJobHandler: RequestHandler = async (req: ValidatedRequest, res) => {
       showInDashboard: true // Manual jobs always show in dashboard
     };
 
+    if (jobData.status === 'Applied' && !jobData.dateApplied) {
+      jobData.dateApplied = new Date();
+    }
+
     // Allow setting custom createdAt date
     if (createdAt) {
       jobData.createdAt = new Date(createdAt);
+      if (jobData.status === 'Applied' && !jobData.dateApplied) {
+        jobData.dateApplied = new Date(createdAt);
+      }
     }
 
     const newJob = new JobApplication(jobData);
@@ -226,6 +242,24 @@ const regenerateAllRecommendationsHandler: RequestHandler = async (req, res) => 
 };
 router.post('/recommendations/regenerate', usageLimiter('analysis'), regenerateAllRecommendationsHandler);
 
+// GET /api/job-applications/follow-ups/pending
+const getPendingFollowUpsHandler: RequestHandler = async (req, res) => {
+  const user = req.user as { _id: mongoose.Types.ObjectId | string };
+  if (!user) {
+    res.status(401).json({ message: 'User not authenticated correctly.' });
+    return;
+  }
+
+  try {
+    const pending = await getPendingFollowUpSuggestionsForUser(String(user._id));
+    res.status(200).json(pending);
+  } catch (error: any) {
+    console.error('Error fetching pending follow-up suggestions:', error);
+    res.status(500).json({ message: error.message || 'Failed to fetch follow-up suggestions.' });
+  }
+};
+router.get('/follow-ups/pending', getPendingFollowUpsHandler);
+
 // GET /api/jobs/:id - Retrieve a single job application (ensure it belongs to user)
 const getJobByIdHandler: RequestHandler = async (req: ValidatedRequest, res) => {
   if (!req.user) {
@@ -257,6 +291,15 @@ const updateJobHandler: RequestHandler = async (req: ValidatedRequest, res) => {
   try {
     // Prepare update data
     const updateData: any = { ...req.validated!.body! };
+
+    if (updateData.status === 'Applied' && !updateData.dateApplied) {
+      updateData.dateApplied = new Date();
+      updateData.lastResponseAt = null;
+    }
+
+    if (updateData.status && updateData.status !== 'Applied') {
+      updateData.lastResponseAt = new Date();
+    }
 
     // Check if createdAt is being updated
     const isUpdatingCreatedAt = updateData.createdAt !== undefined;
@@ -682,6 +725,9 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
     });
 
     // 3. Save the document
+    if (newJob.status === 'Applied' && !newJob.dateApplied) {
+      newJob.dateApplied = new Date();
+    }
     const savedJob = await newJob.save();
     console.log(`Successfully created job ${savedJob._id} from pasted text`);
 
@@ -886,6 +932,125 @@ const getJobRecommendationHandler: RequestHandler = async (req: ValidatedRequest
   }
 };
 router.get('/:id/recommendation', validateRequest({ params: objectIdParamSchema }), getJobRecommendationHandler);
+
+// ==========================================================================
+// FOLLOW-UP EMAIL SUGGESTION ENDPOINTS
+// ==========================================================================
+
+const getFollowUpSuggestionHandler: RequestHandler = async (req: ValidatedRequest, res) => {
+  const user = req.user as { _id: mongoose.Types.ObjectId | string };
+  if (!user) {
+    res.status(401).json({ message: 'User not authenticated correctly.' });
+    return;
+  }
+
+  const { id: jobId } = req.validated!.params!;
+
+  try {
+    const suggestion = await getFollowUpSuggestionForJob(String(user._id), jobId);
+    if (!suggestion) {
+      res.status(404).json({ message: 'Job application not found.' });
+      return;
+    }
+    res.status(200).json(suggestion);
+  } catch (error: any) {
+    console.error(`Failed to load follow-up suggestion for job ${jobId}:`, error);
+    res.status(500).json({ message: error.message || 'Failed to load follow-up suggestion.' });
+  }
+};
+router.get('/:id/follow-up', validateRequest({ params: followUpJobIdParamSchema }), getFollowUpSuggestionHandler);
+
+const generateFollowUpDraftHandler: RequestHandler = async (req: ValidatedRequest, res) => {
+  const user = req.user as { _id: mongoose.Types.ObjectId | string };
+  if (!user) {
+    res.status(401).json({ message: 'User not authenticated correctly.' });
+    return;
+  }
+
+  const { id: jobId } = req.validated!.params!;
+
+  try {
+    const suggestion = await generateFollowUpDraft(String(user._id), jobId);
+    if (!suggestion) {
+      res.status(404).json({ message: 'Job application not found.' });
+      return;
+    }
+    res.status(200).json(suggestion);
+  } catch (error: any) {
+    console.error(`Failed to generate follow-up draft for job ${jobId}:`, error);
+    res.status(500).json({ message: error.message || 'Failed to generate follow-up draft.' });
+  }
+};
+router.post('/:id/follow-up/generate-draft', validateRequest({ params: followUpJobIdParamSchema }), generateFollowUpDraftHandler);
+
+const snoozeFollowUpHandler: RequestHandler = async (req: ValidatedRequest, res) => {
+  const user = req.user as { _id: mongoose.Types.ObjectId | string };
+  if (!user) {
+    res.status(401).json({ message: 'User not authenticated correctly.' });
+    return;
+  }
+
+  const { id: jobId } = req.validated!.params!;
+
+  try {
+    const suggestion = await snoozeFollowUpOneWeek(String(user._id), jobId);
+    if (!suggestion) {
+      res.status(404).json({ message: 'Job application not found.' });
+      return;
+    }
+    res.status(200).json(suggestion);
+  } catch (error: any) {
+    console.error(`Failed to snooze follow-up for job ${jobId}:`, error);
+    res.status(500).json({ message: error.message || 'Failed to snooze follow-up.' });
+  }
+};
+router.post('/:id/follow-up/snooze-one-week', validateRequest({ params: followUpJobIdParamSchema }), snoozeFollowUpHandler);
+
+const dismissFollowUpHandler: RequestHandler = async (req: ValidatedRequest, res) => {
+  const user = req.user as { _id: mongoose.Types.ObjectId | string };
+  if (!user) {
+    res.status(401).json({ message: 'User not authenticated correctly.' });
+    return;
+  }
+
+  const { id: jobId } = req.validated!.params!;
+
+  try {
+    const suggestion = await dismissFollowUpSuggestion(String(user._id), jobId);
+    if (!suggestion) {
+      res.status(404).json({ message: 'Job application not found.' });
+      return;
+    }
+    res.status(200).json(suggestion);
+  } catch (error: any) {
+    console.error(`Failed to dismiss follow-up for job ${jobId}:`, error);
+    res.status(500).json({ message: error.message || 'Failed to dismiss follow-up.' });
+  }
+};
+router.post('/:id/follow-up/dismiss', validateRequest({ params: followUpJobIdParamSchema }), dismissFollowUpHandler);
+
+const markFollowUpSentHandler: RequestHandler = async (req: ValidatedRequest, res) => {
+  const user = req.user as { _id: mongoose.Types.ObjectId | string };
+  if (!user) {
+    res.status(401).json({ message: 'User not authenticated correctly.' });
+    return;
+  }
+
+  const { id: jobId } = req.validated!.params!;
+
+  try {
+    const suggestion = await markFollowUpSent(String(user._id), jobId);
+    if (!suggestion) {
+      res.status(404).json({ message: 'Job application not found.' });
+      return;
+    }
+    res.status(200).json(suggestion);
+  } catch (error: any) {
+    console.error(`Failed to mark follow-up as sent for job ${jobId}:`, error);
+    res.status(500).json({ message: error.message || 'Failed to mark follow-up as sent.' });
+  }
+};
+router.post('/:id/follow-up/mark-sent', validateRequest({ params: followUpJobIdParamSchema }), markFollowUpSentHandler);
 
 
 // ============================================================================

@@ -9,6 +9,19 @@ import CvLivePreview from '../cv-editor/CvLivePreview';
 import DynamicCvForm from '../cv-editor/dynamic/DynamicCvForm';
 import FreeformCvEditor from '../cv-freeform/FreeformCvEditor';
 
+const SHOW_EDITOR_PREF_KEY = 'cv_workspace_show_editor_panel';
+
+function loadShowEditorPreference(): boolean {
+  try {
+    const raw = localStorage.getItem(SHOW_EDITOR_PREF_KEY);
+    if (raw === '0') return false;
+    if (raw === '1') return true;
+  } catch {
+    // Ignore storage errors and use default
+  }
+  return true;
+}
+
 function isJsonResumeLike(data: unknown): data is JsonResumeSchema {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
   const candidate = data as Record<string, unknown>;
@@ -97,8 +110,15 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
 }) => {
   const [rightView, setRightView] = useState<'preview' | 'ats'>(atsPanel ? defaultRightView : 'preview');
   const [availableTemplates, setAvailableTemplates] = useState<TemplateConfig[]>([]);
-  const [showEditorPanel, setShowEditorPanel] = useState(true);
+  const [showEditorPanel, setShowEditorPanel] = useState<boolean>(() => loadShowEditorPreference());
   useEffect(() => { setAvailableTemplates(getAllTemplates()); }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem(SHOW_EDITOR_PREF_KEY, showEditorPanel ? '1' : '0');
+    } catch {
+      // Ignore storage errors
+    }
+  }, [showEditorPanel]);
 
   // Determine whether to use the AI-driven dynamic editor
   const isDynamic = Boolean(cvDescriptor && cvDescriptor.length > 0 && cvData && cvId);

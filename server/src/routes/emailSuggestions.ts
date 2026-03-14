@@ -387,6 +387,10 @@ router.post(
                     job.status = suggestion.suggestedStatus;
                 }
 
+                if (suggestion.emailCategory === 'application_response') {
+                    (job as any).lastResponseAt = new Date();
+                }
+
                 // Append note if it hasn't already been added via /add-note
                 if (suggestion.suggestedNote && !suggestion.noteAdded) {
                     const timestamp = new Date().toLocaleDateString('en-GB', {

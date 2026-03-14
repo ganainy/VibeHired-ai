@@ -155,6 +155,40 @@ const DashboardPage: React.FC = () => {
 
   // --- Toast State ---
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [showOnlyDueFollowUps, setShowOnlyDueFollowUps] = useState<boolean>(false);
+
+  const getRecipientEmail = (job: JobApplication): string | null => {
+    const direct = job.contactEmail?.trim();
+    if (direct) return direct;
+
+    const legacy = job.contact?.trim();
+    if (!legacy) return null;
+
+    const match = legacy.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    return match?.[0] ?? null;
+  };
+
+  const isOlderThanTwoWeeks = (job: JobApplication): boolean => {
+    const anchor = job.dateApplied || job.createdAt;
+    if (!anchor) return false;
+
+    const appliedAt = new Date(anchor).getTime();
+    if (Number.isNaN(appliedAt)) return false;
+
+    const daysElapsed = Math.floor((Date.now() - appliedAt) / (1000 * 60 * 60 * 24));
+    return daysElapsed > 14;
+  };
+
+  const favoriteCount = useMemo(() => jobs.filter((job) => job.isFavorite === true).length, [jobs]);
+  const notesCount = useMemo(() => jobs.filter((job) => !!job.notes && job.notes.trim().length > 0).length, [jobs]);
+  const needsFollowUpJobIds = useMemo(
+    () => jobs
+      .filter((job) => job.status === 'Applied' && Boolean(getRecipientEmail(job)) && isOlderThanTwoWeeks(job))
+      .map((job) => job._id),
+    [jobs]
+  );
+  const needsFollowUpCount = needsFollowUpJobIds.length;
+  const needsFollowUpJobIdSet = useMemo(() => new Set(needsFollowUpJobIds), [needsFollowUpJobIds]);
 
 
 
@@ -202,6 +236,12 @@ const DashboardPage: React.FC = () => {
     };
     fetchJobs();
   }, []);
+
+  useEffect(() => {
+    if (showOnlyDueFollowUps && needsFollowUpCount === 0) {
+      setShowOnlyDueFollowUps(false);
+    }
+  }, [showOnlyDueFollowUps, needsFollowUpCount]);
 
   // --- useEffect: Fetch CV branches ---
   useEffect(() => {
@@ -259,7 +299,7 @@ const DashboardPage: React.FC = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType]);
+  }, [filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, showOnlyDueFollowUps]);
 
   // --- Derived State: Filtered and Sorted Jobs ---
   const displayedJobs = useMemo(() => {
@@ -293,6 +333,11 @@ const DashboardPage: React.FC = () => {
     // Apply Has Notes Filter
     if (filterHasNotes) {
       filteredJobs = filteredJobs.filter(job => !!job.notes && job.notes.trim().length > 0);
+    }
+
+    // Apply Follow-up Due Filter
+    if (showOnlyDueFollowUps) {
+      filteredJobs = filteredJobs.filter(job => needsFollowUpJobIdSet.has(job._id));
     }
 
     // Apply Sorting
@@ -344,7 +389,11 @@ const DashboardPage: React.FC = () => {
     }
 
     return filteredJobs;
-  }, [jobs, filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, sortKey, sortDirection]);
+  }, [jobs, filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, showOnlyDueFollowUps, needsFollowUpJobIdSet, sortKey, sortDirection]);
+
+  const handleToggleDueFollowUpFilter = () => {
+    setShowOnlyDueFollowUps(prev => !prev);
+  };
 
   // --- Modal Event Handlers ---
   const handleOpenAddModal = () => {
@@ -701,6 +750,12 @@ const DashboardPage: React.FC = () => {
     </svg>
   );
 
+  const FollowUpIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 4.26a2.25 2.25 0 002.22 0L21 8M5.25 19.5h13.5A2.25 2.25 0 0021 17.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
+    </svg>
+  );
+
   // --- Render Loading State ---
   if (isLoading) {
     return (
@@ -741,21 +796,27 @@ const DashboardPage: React.FC = () => {
             <h1 className="page-title">Job Dashboard</h1>
             <p style={{ color: 'var(--text-secondary)' }}>Manage your job applications and track your progress</p>
           </div>
-          {(() => {
-            const todayCount = jobs.filter(job => {
-              const jobDate = new Date(job.createdAt);
-              const today = new Date();
-              return jobDate.getDate() === today.getDate() &&
-                jobDate.getMonth() === today.getMonth() &&
-                jobDate.getFullYear() === today.getFullYear();
-            }).length;
-            return todayCount > 0 ? (
-              <div className="flex items-center gap-3 bg-zinc-900 dark:bg-white px-5 py-3 rounded-xl shadow-lg">
-                <span className="text-sm text-zinc-400 dark:text-zinc-500">Today's Applications</span>
-                <span className="text-2xl font-bold text-white dark:text-zinc-900">{todayCount}</span>
-              </div>
-            ) : null;
-          })()}
+          <div className="flex flex-wrap items-center gap-2">
+            {(() => {
+              const todayCount = jobs.filter(job => {
+                const jobDate = new Date(job.createdAt);
+                const today = new Date();
+                return jobDate.getDate() === today.getDate() &&
+                  jobDate.getMonth() === today.getMonth() &&
+                  jobDate.getFullYear() === today.getFullYear();
+              }).length;
+              return todayCount > 0 ? (
+                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-900/20 text-zinc-800 dark:text-zinc-300">
+                  <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold bg-zinc-500 dark:bg-zinc-400 text-white dark:text-zinc-900">
+                    {todayCount}
+                  </span>
+                  <span className="text-xs font-semibold tracking-wide">TODAY'S APPLICATIONS</span>
+                </div>
+              ) : null;
+            })()}
+
+            
+          </div>
         </div>
 
 
@@ -1104,6 +1165,9 @@ const DashboardPage: React.FC = () => {
                     >
                       <StarIcon filled={filterFavorite} />
                       <span>Favorites</span>
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+                        {favoriteCount}
+                      </span>
                     </button>
 
                     <button
@@ -1116,19 +1180,30 @@ const DashboardPage: React.FC = () => {
                     >
                       <span className="material-symbols-outlined text-base" style={{ fontSize: '16px' }}>sticky_note_2</span>
                       <span>Has Notes</span>
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+                        {notesCount}
+                      </span>
                     </button>
 
-                    {(filterText || filterStatus || filterJobType || filterFavorite || filterHasNotes) && (
-                      <button
-                        onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); }}
-                        className="inline-flex items-center gap-1 h-10 px-3 rounded-lg text-sm font-medium transition-all hover:opacity-80"
-                        style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
-                        title="Clear all filters"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>close</span>
-                        <span>Clear</span>
-                      </button>
-                    )}
+                    <button
+                      onClick={handleToggleDueFollowUpFilter}
+                      disabled={needsFollowUpCount === 0}
+                      className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      style={showOnlyDueFollowUps
+                        ? { background: 'var(--accent)', color: '#0e0e17', border: '1px solid transparent' }
+                        : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                      title={needsFollowUpCount > 0 ? 'Show jobs that need a follow-up email' : 'No jobs currently need a follow-up email'}
+                    >
+                      <FollowUpIcon />
+                      <span>Needs Follow-up</span>
+                      {needsFollowUpCount > 0 && (
+                        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+                          {needsFollowUpCount}
+                        </span>
+                      )}
+                    </button>
+
+                    
                   </div>
                 </div>
               </div>
@@ -1146,7 +1221,7 @@ const DashboardPage: React.FC = () => {
                       </p>
                       <div className="mt-6">
                         <button
-                          onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); }}
+                          onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); setShowOnlyDueFollowUps(false); }}
                           className="btn-primary"
                         >
                           Clear Filters
@@ -1421,6 +1496,19 @@ const DashboardPage: React.FC = () => {
                                 title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                               >
                                 <StarIcon filled={!!job.isFavorite} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/jobs/${job._id}/review/reminders`);
+                                }}
+                                className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id)
+                                  ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60'
+                                  : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                                  }`}
+                                title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'}
+                              >
+                                <FollowUpIcon />
                               </button>
                               {/* Delete button */}
                               <button
@@ -1797,10 +1885,10 @@ const DashboardPage: React.FC = () => {
                 </button>
                 <button onClick={handleDeleteConfirm} className="btn-danger">
                   Delete
-                </button>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
         )}
 
         {/* Toast Notification */}

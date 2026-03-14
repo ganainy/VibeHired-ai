@@ -25,7 +25,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     className = ''
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [isFiltersExpanded, setIsFiltersExpanded] = useState<boolean>(true);
 
     const filteredCvs = cvs.filter(cv => {
         const displayName = cv.displayName || cv.category || 'Unnamed CV';
@@ -44,10 +43,71 @@ const Sidebar: React.FC<SidebarProps> = ({
         return `${Math.floor(diffInSeconds / 604800)}w ago`;
     };
 
+    const getCvLanguageLabel = (cv: CVDocument): 'English' | 'German' | 'Unknown' => {
+        const data: any = cv.cvJson || {};
+
+        const metaLanguageCandidates = [
+            data?.meta?.language,
+            data?.meta?.lang,
+            data?.meta?.locale,
+        ]
+            .filter((v: unknown) => typeof v === 'string')
+            .map((v: string) => v.toLowerCase());
+
+        const explicit = metaLanguageCandidates.find((v: string) => v.startsWith('de') || v.startsWith('en'));
+        if (explicit?.startsWith('de')) return 'German';
+        if (explicit?.startsWith('en')) return 'English';
+
+        const sampleChunks: string[] = [];
+        const push = (value: unknown) => {
+            if (typeof value === 'string' && value.trim()) {
+                sampleChunks.push(value.trim().toLowerCase());
+            }
+        };
+
+        push(data?.basics?.label);
+        push(data?.basics?.summary);
+        push(data?.work?.[0]?.position);
+        push(data?.work?.[0]?.summary);
+        push(data?.education?.[0]?.studyType);
+        push(data?.education?.[0]?.area);
+
+        const sectionLabels = data?.meta?.sectionLabels;
+        if (sectionLabels && typeof sectionLabels === 'object') {
+            Object.values(sectionLabels).forEach(push);
+        }
+
+        const vhTagKeys = data?.__vh_tags && typeof data.__vh_tags === 'object'
+            ? Object.keys(data.__vh_tags)
+            : [];
+        vhTagKeys.slice(0, 20).forEach(push);
+
+        const signals = `${sampleChunks.join(' ')} ${(cv.displayName || '').toLowerCase()} ${(cv.category || '').toLowerCase()}`;
+
+        const germanHints = [
+            /\b(berufserfahrung|ausbildung|kenntnisse|sprachen|zusammenfassung|lebenslauf)\b/i,
+            /\b(und|mit|der|die|das|ich|für|im|als)\b/i,
+            /\b(deutsch|german|de)\b/i,
+        ];
+        const englishHints = [
+            /\b(experience|education|skills|summary|resume|cover letter)\b/i,
+            /\b(and|with|the|for|responsible|developed)\b/i,
+            /\b(english|en)\b/i,
+        ];
+
+        const germanScore = germanHints.reduce((acc, re) => acc + (re.test(signals) ? 1 : 0), 0);
+        const englishScore = englishHints.reduce((acc, re) => acc + (re.test(signals) ? 1 : 0), 0);
+
+        if (germanScore > englishScore) return 'German';
+        if (englishScore > germanScore) return 'English';
+        return 'Unknown';
+    };
+
     const CvCard = ({ cv }: { cv: CVDocument }) => {
         const isActive = activeCvId === cv._id;
         const isMock = cv._id === '__mock_cv__';
         const displayName = cv.displayName || cv.category || 'Unnamed CV';
+        const languageLabel = getCvLanguageLabel(cv);
 
         return (
             <div
@@ -85,7 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </span>
                         )}
                         <span className="badge badge-ink text-[10px] px-1.5 py-0.5">
-                            English
+                            {languageLabel}
                         </span>
                     </div>
                 </div>
@@ -142,42 +202,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <div className="flex items-center gap-4">
                         <h2 className="text-sm font-extrabold uppercase tracking-widest label-overline" style={{color:'var(--text-primary)'}}>My Documents</h2>
 
-                        {/* Search moved here */}
-                        {isFiltersExpanded && (
-                            <div className="relative w-48 flex-shrink-0">
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-gray-400">
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                </span>
-                                <input
-                                    type="text"
-                                    placeholder="Filter CVs..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="input-base w-full py-1.5 pl-8 pr-3 text-[11px] font-medium focus:ring-gold-500/30"
-                                />
-                            </div>
-                        )}
+                        <div className="relative w-48 flex-shrink-0">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-gray-400">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </span>
+                            <input
+                                type="text"
+                                placeholder="Filter CVs..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="input-base w-full py-1.5 pl-8 pr-3 text-[11px] font-medium focus:ring-gold-500/30"
+                            />
+                        </div>
                     </div>
-
-                    {/* Filter Toggle Switch */}
-                    <button
-                        onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-                        style={{color:'var(--text-primary)', background:'var(--bg-elevated)', borderColor:'var(--border)'}}
-                    >
-                        <span>{isFiltersExpanded ? 'Hide Filters' : 'Show Filters'}</span>
-                        {isFiltersExpanded ? (
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
-                        ) : (
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        )}
-                    </button>
                 </div>
 
                 {/* Row 2: Cards Only */}
