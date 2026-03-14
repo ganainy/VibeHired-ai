@@ -1,1 +1,0 @@
-npm warn config ignoring workspace config at E:\VS-projects\job-app-assistant\server/.npmrc

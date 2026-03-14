@@ -7,6 +7,13 @@ import { TemplateConfig, getAllTemplates } from '../../templates/config';
 import { ResumeBuilder } from '../resume-builder';
 import CvLivePreview from '../cv-editor/CvLivePreview';
 import DynamicCvForm from '../cv-editor/dynamic/DynamicCvForm';
+import FreeformCvEditor from '../cv-freeform/FreeformCvEditor';
+
+function isJsonResumeLike(data: unknown): data is JsonResumeSchema {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+  const candidate = data as Record<string, unknown>;
+  return 'basics' in candidate || 'work' in candidate || 'education' in candidate || 'skills' in candidate;
+}
 
 export type CvSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -90,6 +97,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
 }) => {
   const [rightView, setRightView] = useState<'preview' | 'ats'>(atsPanel ? defaultRightView : 'preview');
   const [availableTemplates, setAvailableTemplates] = useState<TemplateConfig[]>([]);
+  const [showEditorPanel, setShowEditorPanel] = useState(true);
   useEffect(() => { setAvailableTemplates(getAllTemplates()); }, []);
 
   // Determine whether to use the AI-driven dynamic editor
@@ -99,6 +107,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   const dynamicPayload: CvDynamicPayload | null = isDynamic
     ? { descriptor: cvDescriptor!, data: cvData! }
     : null;
+  const isFreeformJson = Boolean(data && !isJsonResumeLike(data));
 
 
 
@@ -130,11 +139,22 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
         {/* Unified Toolbar inside the card */}
         <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setShowEditorPanel((prev) => !prev)}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+              aria-expanded={showEditorPanel}
+              aria-label={showEditorPanel ? 'Hide editor panel' : 'Show editor panel'}
+            >
+              {showEditorPanel ? 'Hide Editor' : 'Show Editor'}
+            </button>
+
             {/* Template selector — only show when more than one template is available */}
             {availableTemplates.length > 1 && (
               <select
                 value={templateId}
                 onChange={(e) => onTemplateChange(e.target.value)}
+                disabled={isFreeformJson}
                 className="input-base px-3 py-1.5 text-sm min-w-[160px] focus:ring-gold-500/50"
               >
                 {availableTemplates.map((t) => (
@@ -179,6 +199,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
             {/* Download PDF button */}
             <button
               onClick={() => handlePrint()}
+              disabled={false}
               className="btn-primary flex items-center gap-2 px-4 py-1.5 text-sm"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,9 +225,10 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 flex-1 min-h-0 divide-x divide-gray-200 dark:divide-gray-700">
+        <div className={`grid ${showEditorPanel ? 'grid-cols-1 lg:grid-cols-2 divide-x divide-gray-200 dark:divide-gray-700' : 'grid-cols-1'} flex-1 min-h-0`}>
 
           {/* Editor pane */}
+          {showEditorPanel && (
           <div className="h-full overflow-y-auto p-6">
             <div className="w-full pb-6">
               {/* Dynamic AI-driven editor */}
@@ -220,12 +242,20 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
               )}
 
               {/* Legacy JsonResume editor (shown when descriptor not yet generated) */}
-              {!isDynamic && data && (
+              {!isDynamic && data && !isFreeformJson && (
                 <ResumeBuilder
                   data={data}
                   onChange={onChange}
                   onImproveSection={onImproveSection}
                   improvingSections={improvingSections}
+                />
+              )}
+
+              {/* Freeform JSON editor */}
+              {!isDynamic && data && isFreeformJson && (
+                <FreeformCvEditor
+                  value={data as Record<string, any>}
+                  onChange={(next) => onChange(next as JsonResumeSchema)}
                 />
               )}
 
@@ -237,6 +267,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
               )}
             </div>
           </div>
+          )}
 
           {/* Preview / ATS pane */}
           <div className="h-full overflow-y-auto" style={{ minHeight: '800px' }}>

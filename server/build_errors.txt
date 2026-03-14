@@ -1,3 +1,0 @@
-npm warn config ignoring workspace config at E:\VS-projects\job-app-assistant\server/.npmrc
-src/domain/adapters/index.ts(10,35): error TS2307: Cannot find module './OpenRouterAdapter' or its corresponding type declarations.
-src/providers/geminiProvider.ts(93,51): error TS2551: Property 'providers' does not exist on type '{ provider?: string | undefined; batchSize?: number | undefined; models?: { analysis?: string | undefined; relevance?: string | undefined; generation?: string | undefined; } | undefined; }'. Did you mean 'provider'?

@@ -66,8 +66,8 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
             }
         }
 
-        if (!baseCvJson?.basics) {
-            res.status(400).json({ message: 'Valid base CV with basics section not found. Please create a CV first or provide base CV data.' });
+        if (!baseCvJson) {
+            res.status(400).json({ message: 'No base CV found. Please create a CV first or provide base CV data.' });
             return;
         }
 

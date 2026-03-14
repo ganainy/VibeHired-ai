@@ -25,6 +25,12 @@ export interface ICV extends Document {
     
     jobApplicationId?: Types.ObjectId | null;
     cvJson?: JsonResumeSchema | null;
+    /** Immutable snapshot of the first extraction result from uploaded file. */
+    originalCvJson?: JsonResumeSchema | null;
+    /** Extraction strategy used when parsing the uploaded CV. */
+    extractionMode?: 'strict' | 'standard' | null;
+    /** Timestamp of the initial extraction snapshot. */
+    extractionTimestamp?: Date | null;
     /**
      * AI-generated structural descriptor produced once at upload time.
      * When present, the UI and PDF are built dynamically from this + cvData.
@@ -94,6 +100,20 @@ const CVSchema = new Schema<ICV>(
         cvJson: {
             type: Schema.Types.Mixed,
             required: false,
+            default: null,
+        },
+        originalCvJson: {
+            type: Schema.Types.Mixed,
+            required: false,
+            default: null,
+        },
+        extractionMode: {
+            type: String,
+            enum: ['strict', 'standard'],
+            default: null,
+        },
+        extractionTimestamp: {
+            type: Date,
             default: null,
         },
         cvDescriptor: {

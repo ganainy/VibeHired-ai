@@ -30,6 +30,9 @@ export interface CVDocument {
         jobUrl?: string;
     } | null;
     cvJson?: JsonResumeSchema | null;
+    hasOriginalCvJson?: boolean;
+    extractionMode?: 'strict' | 'standard' | null;
+    extractionTimestamp?: string | null;
     /** AI-generated structural descriptor. Null for legacy CVs. */
     cvDescriptor?: CvSectionDescriptor[] | null;
     /** Free-form content keyed by descriptor section key. Null for legacy CVs. */
@@ -169,7 +172,11 @@ export const createCvBranch = async (data: CreateBranchRequest): Promise<CreateB
 /**
  * Upload a new CV file as a branch (supports PDF, DOCX, RTF)
  */
-export const uploadCvBranch = async (file: File, category: string, displayName: string): Promise<UploadBranchResponse> => {
+export const uploadCvBranch = async (
+    file: File,
+    category: string,
+    displayName: string,
+): Promise<UploadBranchResponse> => {
     const formData = new FormData();
     formData.append('cvFile', file);
     formData.append('category', category);
@@ -586,4 +593,20 @@ export const filterJobCvs = (cvs: CVDocument[]): CVDocument[] => {
  */
 export const findCvForJob = (cvs: CVDocument[], jobId: string): CVDocument | undefined => {
     return cvs.find(cv => cv.jobApplicationId === jobId);
+};
+
+/**
+ * Reset editable CV JSON to immutable original extraction snapshot.
+ */
+export const resetCvFromSource = async (cvId: string): Promise<UpdateCvResponse> => {
+    try {
+        const response = await axios.post<UpdateCvResponse>(`${API_BASE_URL}/${cvId}/reset-from-source`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Reset CV from source API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred resetting the CV from source.' };
+    }
 };

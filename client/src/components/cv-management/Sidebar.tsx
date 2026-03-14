@@ -25,6 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     className = ''
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [isFiltersExpanded, setIsFiltersExpanded] = useState<boolean>(true);
 
     const filteredCvs = cvs.filter(cv => {
         const displayName = cv.displayName || cv.category || 'Unnamed CV';
@@ -142,21 +143,41 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <h2 className="text-sm font-extrabold uppercase tracking-widest label-overline" style={{color:'var(--text-primary)'}}>My Documents</h2>
 
                         {/* Search moved here */}
-                        <div className="relative w-48 flex-shrink-0">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-gray-400">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </span>
-                            <input
-                                type="text"
-                                placeholder="Filter CVs..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="input-base w-full py-1.5 pl-8 pr-3 text-[11px] font-medium focus:ring-gold-500/30"
-                            />
-                        </div>
+                        {isFiltersExpanded && (
+                            <div className="relative w-48 flex-shrink-0">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-gray-400">
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder="Filter CVs..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="input-base w-full py-1.5 pl-8 pr-3 text-[11px] font-medium focus:ring-gold-500/30"
+                                />
+                            </div>
+                        )}
                     </div>
+
+                    {/* Filter Toggle Switch */}
+                    <button
+                        onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border"
+                        style={{color:'var(--text-primary)', background:'var(--bg-elevated)', borderColor:'var(--border)'}}
+                    >
+                        <span>{isFiltersExpanded ? 'Hide Filters' : 'Show Filters'}</span>
+                        {isFiltersExpanded ? (
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                        ) : (
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        )}
+                    </button>
                 </div>
 
                 {/* Row 2: Cards Only */}

@@ -481,7 +481,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         let baseCvJson: JsonResumeSchema | null = null;
         let usedBaseCvId: string | undefined = undefined;
 
-        if (baseCvDataOverride && typeof baseCvDataOverride === 'object' && baseCvDataOverride.basics) {
+        if (baseCvDataOverride && typeof baseCvDataOverride === 'object' && !Array.isArray(baseCvDataOverride)) {
             // Only use override if it looks like a CV
             console.log(`Using overridden Base CV data for job ${jobId}`);
             baseCvJson = baseCvDataOverride;
@@ -507,7 +507,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             }
         }
 
-        if (!baseCvJson?.basics) { res.status(400).json({ message: 'Valid base CV with basics section not found in user profile or provided override.' }); return; }
+        if (!baseCvJson) { res.status(400).json({ message: 'No base CV found in user profile or provided override.' }); return; }
 
         // Fetch Custom Prompt (if any) or use override
         const profile = await Profile.findOne({ userId: userId });

@@ -5,6 +5,7 @@ import CreditLimitModal from '../usage/CreditLimitModal';
 import RouteOnboarding from '../onboarding/RouteOnboarding';
 import { listPendingSuggestions } from '../../services/emailSuggestionsApi';
 import { useAuth } from '../../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -14,10 +15,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const { user, showCreditLimitModal, setShowCreditLimitModal } = useAuth();
     const [pendingCount, setPendingCount] = useState(0);
     const userId = user?.id ?? null;
+    const location = useLocation();
 
-    // Poll for pending suggestion count every 60 seconds
+    // Fetch pending suggestion count only when user explicitly navigates to Inbox.
     useEffect(() => {
         if (!userId) return;
+        if (!location.pathname.startsWith('/email-suggestions')) return;
 
         let cancelled = false;
         const fetchCount = async () => {
@@ -30,12 +33,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         };
 
         fetchCount();
-        const interval = setInterval(fetchCount, 60_000);
         return () => {
             cancelled = true;
-            clearInterval(interval);
         };
-    }, [userId]);
+    }, [userId, location.pathname]);
 
     return (
         <div

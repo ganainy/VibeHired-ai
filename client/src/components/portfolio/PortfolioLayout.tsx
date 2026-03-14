@@ -338,7 +338,18 @@ const PortfolioLayout: React.FC<PortfolioLayoutProps> = ({
           </div>
           <div style={{ borderTop: '1px solid var(--border)' }}>
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-              © {new Date().getFullYear()} {displayName}. All rights reserved.
+              © {new Date().getFullYear()} {displayName}. All rights reserved. Generated with{' '}
+              <a
+                href="https://vibehired.ganainy.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}
+                onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+              >
+                VibeHired
+              </a>
+              .
             </div>
           </div>
         </footer>

@@ -4,6 +4,13 @@ import { getTemplate, TemplateConfig } from '../../templates/config';
 import { TemplateWrapper } from '../../templates/TemplateWrapper';
 import { CvDynamicPayload } from '../../types/cvDescriptor';
 import DynamicTemplate from '../../templates/DynamicTemplate';
+import FreeformCvRenderer from '../cv-freeform/FreeformCvRenderer';
+
+function isJsonResumeLike(data: unknown): data is JsonResumeSchema {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+  const candidate = data as Record<string, unknown>;
+  return 'basics' in candidate || 'work' in candidate || 'education' in candidate || 'skills' in candidate;
+}
 
 interface CvLivePreviewProps {
   data: JsonResumeSchema | null;
@@ -62,6 +69,21 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
       <div className={`flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg ${className}`}>
         <div className="text-center">
           <p className="text-gray-500 dark:text-gray-400">No CV data available for preview</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isJsonResumeLike(data)) {
+    return (
+      <div className={`flex flex-col h-full ${className}`}>
+        <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6">
+          <div id="cv-preview-container">
+            <FreeformCvRenderer
+              ref={ref as React.RefObject<HTMLDivElement>}
+              value={data as Record<string, any>}
+            />
+          </div>
         </div>
       </div>
     );

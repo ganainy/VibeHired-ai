@@ -30,6 +30,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "framer-motion": "^12.9.2",
+    "mongodb": "^7.1.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.5.2",
     "stripe": "^20.4.0"

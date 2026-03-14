@@ -18,7 +18,7 @@ export const generateDescriptorFromJson = async (
 ): Promise<CvDynamicPayload> => {
     const prompt = `You are a CV structure expert. Analyse the CV data below and return a structured descriptor that describes every section of the CV plus the actual content for each section.
 
-CV data (JSON Resume format):
+CV data (JSON, potentially freeform):
 ${JSON.stringify(cvJson, null, 2)}
 
 === YOUR TASK ===
@@ -61,8 +61,7 @@ Return a JSON object with exactly two top-level keys:
 
 === IMPORTANT ===
 - Only include sections that have actual content in the CV. Omit empty sections from both descriptor and data.
-- The "basics" section (name, contact info) MUST always be first (order: 0).
-- Put summary/objective second if present (order: 1).
+- Preserve the original section order from the provided JSON as closely as possible.
 - Return ONLY the JSON object. No markdown, no explanation.`;
 
     const payload = await generateStructuredResponse<CvDynamicPayload>(userId, prompt);
