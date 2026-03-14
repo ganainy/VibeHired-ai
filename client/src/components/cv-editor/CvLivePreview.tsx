@@ -23,6 +23,8 @@ interface CvLivePreviewProps {
    * skipped entirely.
    */
   dynamicPayload?: CvDynamicPayload | null;
+  diffChanges?: Array<{ section: string; before?: string; after?: string; reason?: string }>;
+  showDiffOverlay?: boolean;
 }
 
 /** Ref API exposed by CvLivePreview */
@@ -34,6 +36,8 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
   onTemplateChange,
   className = '',
   dynamicPayload,
+  diffChanges,
+  showDiffOverlay = false,
 }, ref) => {
   const previewRef = useRef<HTMLDivElement>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateConfig | null>(null);
@@ -56,7 +60,13 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
             className="bg-white mx-auto w-full"
             id="cv-preview-container"
           >
-            <DynamicTemplate ref={previewRef} payload={dynamicPayload} templateId={templateId} />
+            <DynamicTemplate
+              ref={previewRef}
+              payload={dynamicPayload}
+              templateId={templateId}
+              diffChanges={diffChanges}
+              showDiffOverlay={showDiffOverlay}
+            />
           </div>
         </div>
       </div>

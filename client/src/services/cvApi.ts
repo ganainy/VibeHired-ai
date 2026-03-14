@@ -44,6 +44,8 @@ export interface CVDocument {
         section: string;
         description: string;
         reason: string;
+        before?: string;
+        after?: string;
     }> | null;
     createdAt: string;
     updatedAt: string;

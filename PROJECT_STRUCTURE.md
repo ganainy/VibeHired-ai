@@ -20,7 +20,7 @@ VibeHired is a full-stack AI-powered job application assistant designed to help 
 - **Authentication:** JWT (jsonwebtoken), bcryptjs
 - **File Handling:** Multer
 - **Image Hosting:** Cloudinary (for persistent profile images)
-- **CV Schema:** JSON Resume standard
+- **CV Schema:** Hybrid model — JSON Resume + dynamic freeform (`cvDescriptor` + `cvData` + `__vh_tags`)
 - **Charts:** Recharts (for analytics visualizations)
 - **Payments:** Stripe (for subscription plans and checkout)
 - **Desktop App:** Electron (for AI Interview Buddy companion app)
@@ -98,13 +98,13 @@ The client is a single-page application (SPA) built with React and TypeScript.
     - `SearchableSelect.tsx`: Searchable select dropdown
     - `Spinner.tsx`: Loading spinner
     - `Toast.tsx`: Toast notification component
-  - `cv-editor/`: Comprehensive CV editor with section-by-section editing
+  - `cv-editor/`: CV editor, live preview, and dynamic rendering pipeline
     - `ArrayItemControls.tsx`: Controls for array items
     - `BasicsEditor.tsx`: Basic information editor
     - `CertificatesEditor.tsx`: Certificates section editor
     - `CvDocumentRenderer.tsx`: Document renderer
     - `CvFormEditor.tsx`: Main CV form editor
-    - `CvLivePreview.tsx`: Live preview component
+    - `CvLivePreview.tsx`: Live preview component (legacy + dynamic/freeform rendering paths)
     - `CvPreviewModal.tsx`: Preview modal
     - `EditableList.tsx`: Editable list component
     - `EditableText.tsx`: Editable text component
@@ -120,7 +120,7 @@ The client is a single-page application (SPA) built with React and TypeScript.
   - `cv-management/`: CV management components
     - `Sidebar.tsx`: Sidebar navigation for CV branch list
   - `cv-workspace/`: Unified CV edit workspace components
-    - `CvEditorPanel.tsx`: Combines the live CV preview and section editor into a single A4-surface panel (used by the unified edit/review flow)
+    - `CvEditorPanel.tsx`: Combines dynamic editor + live preview, persists Show/Hide editor preference, and supports inline tailoring diff overlay
   - `layout/`: Application shell components
     - `Header.tsx`: Top navigation bar (user menu, theme toggle)
     - `MainLayout.tsx`: Root authenticated layout wrapper — renders `Header`, `Sidebar`, and the page `<Outlet>`
@@ -225,7 +225,7 @@ The client is a single-page application (SPA) built with React and TypeScript.
   - `coverLetterApi.ts`: Cover letter generation endpoints
   - `cvApi.ts`: CV management endpoints
   - `generatorApi.ts`: Draft generation endpoints
-  - `jobApi.ts`: Job application CRUD endpoints
+  - `jobApi.ts`: Job application CRUD + follow-up reminder endpoints
   - `jobRecommendationApi.ts`: Job recommendation endpoints
   - `portfolioApi.ts`: Portfolio data endpoints
   - `settingsApi.ts`: Settings and API key management endpoints
@@ -333,9 +333,9 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
   - `chat.ts`: `/api/chat` - AI chat endpoints
   - `coverLetter.ts`: `/api/cover-letter` - Cover letter endpoints
   - `cvs.ts`: `/api/cvs` - Unified CV management endpoints (Master & Job CVs)
-  - `generator.ts`: `/api/generator` - Draft generation endpoints
+  - `generator.ts`: `/api/generator` - Draft generation endpoints with tailored-change tracking (`section`, `reason`, `before`, `after`)
   - `github.ts`: `/api/github` - GitHub integration endpoints
-  - `jobApplications.ts`: `/api/job-applications` - Job application CRUD
+  - `jobApplications.ts`: `/api/job-applications` - Job application CRUD + follow-up suggestion routes (generate draft, snooze, dismiss, mark sent, pending list)
   - `linkedin.ts`: `/api/linkedin` - LinkedIn scraping endpoints
   - `profile.ts`: `/api/profile` - Profile management endpoints
   - `projects.ts`: `/api/projects` - Portfolio project endpoints
@@ -366,7 +366,8 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
   - `linkedinService.ts`: LinkedIn profile scraping via Apify
   - `resumeCacheService.ts`: Resume parsing cache management
   - `workflowProgressHelper.ts`: Workflow progress tracking utilities
-  - `emailSuggestionService.ts`: Gmail polling, AI email classification (status + note + calendar), fuzzy job matching, suggestion persistence
+  - `emailSuggestionService.ts`: Gmail polling, AI email classification (status + note + calendar), fuzzy job matching, suggestion persistence, and response-timestamp updates for follow-up logic
+  - `followUpSuggestionService.ts`: Follow-up eligibility checks, snooze/sent/dismiss actions, and AI follow-up email draft generation
   - `googleCalendarService.ts`: Google Calendar event creation via OAuth token; checks Calendar scope availability
   - `creditService.ts`: Credit system management and tracking
   - `stripeService.ts`: Stripe payment and subscription management
@@ -441,6 +442,7 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
 - **Dashboard Views**: Table view with filtering and sorting, plus kanban pipeline view
 - **Notes & Metadata**: Store notes, URLs, languages, and other job-related information
 - **Job Recommendations**: AI-powered job recommendation system with relevance scoring
+- **Follow-up Suggestions**: 14-day no-response nudges with one-week snooze and AI-generated follow-up email drafts
 
 ### Automated Job Discovery (Auto Jobs)
 - **Workflow System**: Automated job discovery workflow with progress tracking
@@ -456,7 +458,8 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
 ### CV Management
 - **CV Upload**: Support for multiple formats (PDF, DOCX, RTF, TXT)
 - **Unified CV Architecture**: Single "Master CV" source of truth with support for unlimited job-specific variations
-- **Format Agnostic**: Stores CV data in a structured JSON Resume format
+- **Format Agnostic**: Supports both structured JSON Resume and dynamic freeform CV data
+- **Dynamic Rendering System**: `cvDescriptor` + `cvData` + `__vh_tags` enable custom section editing/rendering without hardcoded schema changes
 - **Master vs. Job CVs**: Clear distinction between the master document and tailored versions for specific applications
 - **Rich Editor**: Comprehensive section-by-section CV editor:
   - Basics (contact info, summary)
@@ -538,6 +541,7 @@ The server is a RESTful API built with Node.js, Express, and TypeScript.
 - **Draft Management**: Save and retrieve drafts for later editing
 - **Download System**: Secure download of generated PDF files
 - **Template Selection**: Choose from 14 professional resume templates
+- **Tailoring Change Transparency**: Review UI shows AI-authored change log with section, reason, and before/after snippets, plus inline diff mode
 
 ### Web Scraping
 - **Job Posting Extraction**: Fetch and parse job posting content from URLs

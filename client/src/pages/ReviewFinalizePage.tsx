@@ -46,6 +46,19 @@ interface ToastState {
     type: 'success' | 'error' | 'info';
 }
 
+const EMPTY_CV_DATA: JsonResumeSchema = { basics: {} };
+
+function hasMeaningfulContent(value: unknown): boolean {
+    if (value == null) return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    if (typeof value === 'number' || typeof value === 'boolean') return true;
+    if (Array.isArray(value)) return value.some(hasMeaningfulContent);
+    if (typeof value === 'object') {
+        return Object.values(value as Record<string, unknown>).some(hasMeaningfulContent);
+    }
+    return false;
+}
+
 type JobDetailsFormData = {
     jobTitle: string;
     companyName: string;
@@ -68,7 +81,7 @@ const ReviewFinalizePage: React.FC = () => {
     const navigate = useNavigate();
     const { refreshUsage } = useAuth();
     const [jobApplication, setJobApplication] = useState<JobApplication | null>(null);
-    const [cvData, setCvData] = useState<JsonResumeSchema>({ basics: {} });
+    const [cvData, setCvData] = useState<JsonResumeSchema>(EMPTY_CV_DATA);
     const [currentCvId, setCurrentCvId] = useState<string | null>(null);
     const [currentCvFilename, setCurrentCvFilename] = useState<string | null>(null);
     const [liveCvDescriptor, setLiveCvDescriptor] = useState<CvSectionDescriptor[] | null>(null);
@@ -96,7 +109,8 @@ const ReviewFinalizePage: React.FC = () => {
     const [generateCvError, setGenerateCvError] = useState<string | null>(null);
     // Shared inline error for AI actions (improve section, ATS scan, apply suggestions)
     const [aiActionError, setAiActionError] = useState<{ message: string; upgrade?: boolean } | null>(null);
-    const [tailoringChanges, setTailoringChanges] = useState<any[] | null>(null); // New state for changes
+    const [tailoringChanges, setTailoringChanges] = useState<Array<{ section: string; description: string; reason: string; before?: string; after?: string }> | null>(null);
+    const [showInlineCvDiff, setShowInlineCvDiff] = useState<boolean>(false);
 
     // New state for generation progress
     type GenerationStep = 'idle' | 'analyzing' | 'matching' | 'tailoring' | 'finalizing';
@@ -539,7 +553,8 @@ const ReviewFinalizePage: React.FC = () => {
                     setCvData(cvResponse.cv.cvJson);
                     setCurrentCvId(cvResponse.cv._id);
                     setCurrentCvFilename(cvResponse.cv.filename ?? null);
-                    setTailoringChanges(cvResponse.cv.tailoringChanges || null);
+                    setTailoringChanges(cvResponse.cv.tailoringChanges ?? []);
+                    setShowInlineCvDiff(false);
                     lastSavedCvDataRef.current = JSON.stringify(cvResponse.cv.cvJson);
                     setLiveCvDescriptor(cvResponse.cv.cvDescriptor ?? null);
                     setLiveCvData(cvResponse.cv.cvData ?? null);
@@ -549,7 +564,8 @@ const ReviewFinalizePage: React.FC = () => {
                     setCurrentCvFilename(null);
                     setLiveCvDescriptor(null);
                     setLiveCvData(null);
-                    setTailoringChanges(null);
+                    setTailoringChanges([]);
+                    setShowInlineCvDiff(false);
                     // Fallback to legacy draftCvJson if no CV document yet
                     if (data.draftCvJson) {
                         setCvData(data.draftCvJson);
@@ -622,11 +638,32 @@ const ReviewFinalizePage: React.FC = () => {
         }
     }, [jobApplication, isLoading]);
 
+    const hasPersistableCvContent = React.useMemo(() => {
+        return hasMeaningfulContent(cvData) || hasMeaningfulContent(liveCvData) || Boolean(liveCvDescriptor?.length);
+    }, [cvData, liveCvData, liveCvDescriptor]);
+
+    const resetLocalCvState = useCallback(() => {
+        if (autoSaveTimeoutRef.current) {
+            clearTimeout(autoSaveTimeoutRef.current);
+            autoSaveTimeoutRef.current = null;
+        }
+
+        setCvData(EMPTY_CV_DATA);
+        setCurrentCvId(null);
+        setCurrentCvFilename(null);
+        setLiveCvDescriptor(null);
+        setLiveCvData(null);
+        setTailoringChanges(null);
+        setShowInlineCvDiff(false);
+        setCvSaveStatus('idle');
+        lastSavedCvDataRef.current = JSON.stringify(EMPTY_CV_DATA);
+    }, []);
+
     // A CV doc is attached when currentCvId is set (even raw-PDF-only with no JSON)
     const hasLocalCv = React.useMemo(() => {
         if (currentCvId) return true;
-        return !!(cvData && cvData.basics && Object.keys(cvData.basics).length > 0);
-    }, [cvData, currentCvId]);
+        return hasPersistableCvContent;
+    }, [currentCvId, hasPersistableCvContent]);
 
     // Sync state with jobApplication for the Tailor Form
     useEffect(() => {
@@ -1099,7 +1136,7 @@ const ReviewFinalizePage: React.FC = () => {
                     draftCoverLetterText: coverLetterText,
                 };
 
-                if (cvData && typeof cvData === 'object' && Object.keys(cvData).length > 0 && coverLetterText && coverLetterText.trim().length > 0) {
+                if (hasPersistableCvContent && coverLetterText && coverLetterText.trim().length > 0) {
                     const currentStatus = jobApplication.generationStatus;
                     if (currentStatus !== 'finalized') {
                         updatePayload.generationStatus = 'draft_ready';
@@ -1109,9 +1146,9 @@ const ReviewFinalizePage: React.FC = () => {
                 await updateJob(jobId, updatePayload);
 
                 // 2. Update CV in Unified Model
-                if (currentCvId) {
+                if (currentCvId && hasPersistableCvContent) {
                     await updateCv(currentCvId, { cvJson: cvData });
-                } else {
+                } else if (hasPersistableCvContent) {
                     const newCvResponse = await createJobCv(jobId, { cvJson: cvData });
                     setCurrentCvId(newCvResponse.cv._id);
                 }
@@ -1135,7 +1172,7 @@ const ReviewFinalizePage: React.FC = () => {
                 clearTimeout(autoSaveTimeoutRef.current);
             }
         };
-    }, [cvData, coverLetterText, jobId, jobApplication, currentCvId]);
+    }, [cvData, coverLetterText, jobId, jobApplication, currentCvId, hasPersistableCvContent]);
 
     const handleRefreshJobDetails = async () => {
         if (!jobId || !jobApplication?.jobUrl || parseMultipleUrls(jobApplication.jobUrl || '').length === 0) return;
@@ -1280,7 +1317,7 @@ const ReviewFinalizePage: React.FC = () => {
                 draftCoverLetterText: coverLetterText,
             };
 
-            if (cvData && typeof cvData === 'object' && Object.keys(cvData).length > 0 && coverLetterText && coverLetterText.trim().length > 0) {
+            if (hasPersistableCvContent && coverLetterText && coverLetterText.trim().length > 0) {
                 const currentStatus = jobApplication.generationStatus;
                 if (currentStatus !== 'finalized') {
                     updatePayload.generationStatus = 'draft_ready';
@@ -1290,9 +1327,9 @@ const ReviewFinalizePage: React.FC = () => {
             await updateJob(jobId, updatePayload);
 
             // 2. Update/Create CV in Unified Model
-            if (currentCvId) {
+            if (currentCvId && hasPersistableCvContent) {
                 await updateCv(currentCvId, { cvJson: cvData });
-            } else {
+            } else if (hasPersistableCvContent) {
                 const newCvResponse = await createJobCv(jobId, { cvJson: cvData });
                 setCurrentCvId(newCvResponse.cv._id);
             }
@@ -1344,7 +1381,7 @@ const ReviewFinalizePage: React.FC = () => {
                 draftCoverLetterText: coverLetterText,
             };
 
-            if (cvData && typeof cvData === 'object' && Object.keys(cvData).length > 0 && coverLetterText && coverLetterText.trim().length > 0) {
+            if (hasPersistableCvContent && coverLetterText && coverLetterText.trim().length > 0) {
                 const currentStatus = jobApplication?.generationStatus;
                 if (currentStatus !== 'finalized') {
                     updatePayload.generationStatus = 'draft_ready';
@@ -1354,9 +1391,9 @@ const ReviewFinalizePage: React.FC = () => {
             await updateJob(jobId, updatePayload);
 
             // Save CV to Unified Model
-            if (currentCvId) {
+            if (currentCvId && hasPersistableCvContent) {
                 await updateCv(currentCvId, { cvJson: cvData });
-            } else {
+            } else if (hasPersistableCvContent) {
                 const newCvResponse = await createJobCv(jobId, { cvJson: cvData });
                 setCurrentCvId(newCvResponse.cv._id);
             }
@@ -1385,7 +1422,7 @@ const ReviewFinalizePage: React.FC = () => {
             // Ensure latest CV changes are saved before generating PDF
             const updatePayload: any = {};
 
-            if (cvData && typeof cvData === 'object' && Object.keys(cvData).length > 0) {
+            if (hasPersistableCvContent) {
                 const currentStatus = jobApplication?.generationStatus;
                 if (currentStatus !== 'finalized') {
                     updatePayload.generationStatus = 'draft_ready';
@@ -1398,9 +1435,9 @@ const ReviewFinalizePage: React.FC = () => {
             }
 
             // Save CV to Unified Model
-            if (currentCvId) {
+            if (currentCvId && hasPersistableCvContent) {
                 await updateCv(currentCvId, { cvJson: cvData });
-            } else {
+            } else if (hasPersistableCvContent) {
                 const newCvResponse = await createJobCv(jobId, { cvJson: cvData });
                 setCurrentCvId(newCvResponse.cv._id);
             }
@@ -3599,12 +3636,8 @@ const ReviewFinalizePage: React.FC = () => {
                                                         return;
                                                     }
                                                 }
-                                                setCvData({ basics: {} });
-                                                setCurrentCvId(null);
-                                                setCurrentCvFilename(null);
-                                                setLiveCvDescriptor(null);
-                                                setLiveCvData(null);
-                                                setTailoringChanges(null);
+                                                setJobApplication(prev => prev ? { ...prev, draftCvJson: null } : null);
+                                                resetLocalCvState();
                                                 showToast('CV removed', 'success');
                                             }}
                                             className="inline-flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors"
@@ -3632,15 +3665,18 @@ const ReviewFinalizePage: React.FC = () => {
                                     cvDescriptor={liveCvDescriptor}
                                     cvData={liveCvData}
                                     onDynamicChange={handleDynamicChange}
+                                    diffChanges={tailoringChanges || []}
+                                    showDiffOverlay={showInlineCvDiff}
                                     onDelete={async () => {
                                         if (window.confirm('Are you sure you want to delete this CV? You will need to regenerate it.')) {
                                             if (currentCvId) {
                                                 try {
                                                     await deleteCv(currentCvId);
-                                                    setCvData({ basics: {} });
-                                                    setCurrentCvId(null);
-                                                    setCurrentCvFilename(null);
-                                                    setJobApplication(prev => prev ? { ...prev, draftCvJson: undefined } : null);
+                                                    if (jobId) {
+                                                        await updateJob(jobId, { draftCvJson: null });
+                                                    }
+                                                    setJobApplication(prev => prev ? { ...prev, draftCvJson: null } : null);
+                                                    resetLocalCvState();
                                                     showToast('CV deleted successfully', 'success');
                                                 } catch (err: any) {
                                                     console.error('Failed to delete CV', err);
@@ -3649,8 +3685,8 @@ const ReviewFinalizePage: React.FC = () => {
                                             } else if (jobId && jobApplication?.draftCvJson) {
                                                 try {
                                                     await updateJob(jobId, { draftCvJson: null });
-                                                    setCvData({ basics: {} });
-                                                    setJobApplication(prev => prev ? { ...prev, draftCvJson: undefined } : null);
+                                                    setJobApplication(prev => prev ? { ...prev, draftCvJson: null } : null);
+                                                    resetLocalCvState();
                                                     showToast('CV deleted successfully', 'success');
                                                 } catch (err: any) {
                                                     console.error('Failed to delete legacy CV', err);
@@ -3661,7 +3697,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     }}
                                 >
                                     {/* Tailoring Changes Panel - Show what AI changed */}
-                                    {tailoringChanges && tailoringChanges.length > 0 && (
+                                    {tailoringChanges !== null && (
                                         <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                                             <details className="group">
                                                 <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-transparent group-open:border-zinc-100 dark:group-open:border-zinc-800">
@@ -3674,15 +3710,39 @@ const ReviewFinalizePage: React.FC = () => {
                                                                 Tailoring Changes
                                                             </h3>
                                                             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                                                {tailoringChanges.length} modification{tailoringChanges.length !== 1 ? 's' : ''} recorded
+                                                                {tailoringChanges.length > 0
+                                                                    ? `${tailoringChanges.length} modification${tailoringChanges.length !== 1 ? 's' : ''} recorded`
+                                                                    : 'No section-level change details were provided for this version'}
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <span className="text-zinc-400 group-open:rotate-180 transition-transform duration-200">
-                                                        <span className="material-symbols-outlined text-[20px]">expand_more</span>
-                                                    </span>
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                setShowInlineCvDiff((prev) => !prev);
+                                                            }}
+                                                            disabled={tailoringChanges.length === 0}
+                                                            className="text-xs font-semibold px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            title="Show changed sections directly in CV preview"
+                                                        >
+                                                            {showInlineCvDiff ? 'Hide Inline Diff' : 'Show Inline Diff'}
+                                                        </button>
+                                                        <span className="text-zinc-400 group-open:rotate-180 transition-transform duration-200">
+                                                            <span className="material-symbols-outlined text-[20px]">expand_more</span>
+                                                        </span>
+                                                    </div>
                                                 </summary>
                                                 <div className="p-4 pt-0 divide-y divide-slate-100 dark:divide-slate-800">
+                                                    {tailoringChanges.length === 0 && (
+                                                        <div className="py-4 text-sm text-zinc-600 dark:text-zinc-300">
+                                                            This tailored CV was generated, but the model did not return section-level diff details.
+                                                            Regenerate to capture richer change details.
+                                                        </div>
+                                                    )}
+
                                                     {tailoringChanges.map((change, index) => (
                                                         <div
                                                             key={index}
@@ -3694,12 +3754,36 @@ const ReviewFinalizePage: React.FC = () => {
                                                                 </span>
                                                                 <div className="flex-1 min-w-0 space-y-1.5">
                                                                     <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-snug">
-                                                                        {change.description}
+                                                                        {change.before || change.after
+                                                                            ? `In ${change.section}, changed from "${change.before || '—'}" to "${change.after || '—'}".`
+                                                                            : change.description}
                                                                     </p>
                                                                     <p className="text-xs text-zinc-500 dark:text-zinc-500 flex items-center gap-2 italic">
                                                                         <span className="w-1 h-1 rounded-full" style={{ background: 'var(--accent)' }}></span>
                                                                         {change.reason}
                                                                     </p>
+
+                                                                    {(change.before || change.after) && (
+                                                                        <details className="mt-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 p-2.5">
+                                                                            <summary className="cursor-pointer text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
+                                                                                View content diff
+                                                                            </summary>
+                                                                            <div className="mt-2 space-y-2">
+                                                                                {change.before && (
+                                                                                    <div>
+                                                                                        <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-1">Before</p>
+                                                                                        <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">{change.before}</p>
+                                                                                    </div>
+                                                                                )}
+                                                                                {change.after && (
+                                                                                    <div>
+                                                                                        <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-1">After</p>
+                                                                                        <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">{change.after}</p>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </details>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </div>

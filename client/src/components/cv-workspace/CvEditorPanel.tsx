@@ -86,6 +86,10 @@ export interface CvEditorPanelProps {
    * Called when the user edits any field in the dynamic editor.
    */
   onDynamicChange?: (payload: CvDynamicPayload) => void;
+  /** Optional list of section diffs for inline preview highlighting */
+  diffChanges?: Array<{ section: string; before?: string; after?: string; reason?: string }>;
+  /** Whether to show inline diff overlay in preview */
+  showDiffOverlay?: boolean;
 }
 
 const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
@@ -107,6 +111,8 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   cvDescriptor,
   cvData,
   onDynamicChange,
+  diffChanges,
+  showDiffOverlay = false,
 }) => {
   const [rightView, setRightView] = useState<'preview' | 'ats'>(atsPanel ? defaultRightView : 'preview');
   const [availableTemplates, setAvailableTemplates] = useState<TemplateConfig[]>([]);
@@ -300,6 +306,8 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                 templateId={templateId}
                 onTemplateChange={onTemplateChange}
                 dynamicPayload={dynamicPayload}
+                diffChanges={diffChanges}
+                showDiffOverlay={showDiffOverlay}
               />
             )}
           </div>

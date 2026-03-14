@@ -50,6 +50,8 @@ export interface ICV extends Document {
         section: string;       // e.g., "work", "skills", "summary"
         description: string;   // What was changed
         reason: string;        // Why it was changed (connection to job requirements)
+        before?: string;       // Optional before snapshot
+        after?: string;        // Optional after snapshot
     }> | null;
     version: number;           // For optimistic concurrency in workspace
     snapshotVersion?: number;
@@ -141,6 +143,8 @@ const CVSchema = new Schema<ICV>(
                 section: { type: String, required: true },
                 description: { type: String, required: true },
                 reason: { type: String, required: true },
+                before: { type: String },
+                after: { type: String },
             }],
             default: null,
         },

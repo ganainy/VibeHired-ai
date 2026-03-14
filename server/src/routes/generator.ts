@@ -18,6 +18,7 @@ import { jobIdParamSchema, filenameParamSchema } from '../validations/commonSche
 import { improveCvSection, applyAtsSuggestion } from '../controllers/generatorController';
 import { asyncHandler } from '../utils/asyncHandler';
 import { generateDescriptorFromJson } from '../services/generatorService';
+import { CvSectionDescriptor } from '../types/cvDescriptor';
 
 const router: Router = express.Router();
 router.use(authMiddleware as RequestHandler); // Apply auth to all routes in this file
@@ -31,6 +32,275 @@ interface GenerateDraftReadyResponse { status: "draft_ready"; message: string; j
 // Define an interface for the expected user object structure
 interface AuthenticatedUser {
     _id: mongoose.Types.ObjectId | string;
+}
+
+interface TailoringChange {
+    section: string;
+    description: string;
+    reason: string;
+    before?: string;
+    after?: string;
+}
+
+function isNonEmptyObject(value: unknown): value is Record<string, any> {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value as Record<string, any>).length > 0);
+}
+
+function isJsonResumeLike(value: unknown): boolean {
+    if (!isNonEmptyObject(value)) return false;
+    return ['basics', 'work', 'education', 'skills', 'projects', 'languages'].some((k) => k in value);
+}
+
+function stringifyCompact(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value.replace(/\s+/g, ' ').trim();
+    if (Array.isArray(value)) return value.map((v) => stringifyCompact(v)).filter(Boolean).join(' | ').trim();
+    if (typeof value === 'object') {
+        return Object.values(value as Record<string, unknown>)
+            .map((v) => stringifyCompact(v))
+            .filter(Boolean)
+            .join(' | ')
+            .trim();
+    }
+    return String(value).trim();
+}
+
+function normalizeTailoringChanges(raw: unknown): TailoringChange[] | null {
+    if (!Array.isArray(raw)) return null;
+
+    const normalized = raw
+        .map((item): TailoringChange | null => {
+            if (!item || typeof item !== 'object') return null;
+            const obj = item as Record<string, unknown>;
+
+            const section = String(obj.section ?? obj.sectionKey ?? obj.key ?? '').trim();
+            const description = String(obj.description ?? obj.explanation ?? obj.change ?? '').trim();
+            const reason = String(obj.reason ?? obj.why ?? 'Tailored to better match the job requirements.').trim();
+            const before = String(obj.before ?? obj.from ?? obj.previous ?? '').trim();
+            const after = String(obj.after ?? obj.to ?? obj.updated ?? '').trim();
+
+            if (!section || !description) return null;
+
+            return {
+                section,
+                description,
+                reason,
+                before: before || undefined,
+                after: after || undefined,
+            };
+        })
+        .filter((v): v is TailoringChange => v !== null);
+
+    return normalized.length > 0 ? normalized : null;
+}
+
+async function generateAiTailoringChanges(
+    userId: string,
+    languageName: string,
+    jobDescription: string,
+    baseSnapshot: unknown,
+    tailoredSnapshot: unknown,
+): Promise<TailoringChange[] | null> {
+    const prompt = `You are a CV comparison assistant.
+
+Compare the ORIGINAL CV snapshot and the TAILORED CV snapshot and return concrete, section-level changes.
+
+Target language of CV content: ${languageName}
+
+Job description context:
+---
+${jobDescription.slice(0, 5000)}
+---
+
+ORIGINAL snapshot:
+\`\`\`json
+${JSON.stringify(baseSnapshot, null, 2).slice(0, 30000)}
+\`\`\`
+
+TAILORED snapshot:
+\`\`\`json
+${JSON.stringify(tailoredSnapshot, null, 2).slice(0, 30000)}
+\`\`\`
+
+Rules:
+- Return 3-12 meaningful changes when possible.
+- Use section names that are present in the CV.
+- Each change must include a concise before and after snippet.
+- Write description/reason/before/after in English.
+- If very few true changes exist, still include the most important ones.
+- Output JSON only in this exact shape:
+{
+  "changes": [
+    {
+      "section": "string",
+      "description": "string",
+      "reason": "string",
+      "before": "string",
+      "after": "string"
+    }
+  ]
+}`;
+
+    try {
+        const parsed = await generateStructuredResponse<any>(userId, prompt, { maxTokens: 2500 });
+        return normalizeTailoringChanges(parsed?.changes ?? parsed);
+    } catch (err: any) {
+        console.warn(`AI comparison changes fallback failed: ${err.message}`);
+        return null;
+    }
+}
+
+function buildFreeformCvJsonFromDynamic(
+    descriptor: CvSectionDescriptor[],
+    data: Record<string, any>,
+    fallbackOriginal?: Record<string, any> | null,
+): Record<string, any> {
+    const out: Record<string, any> = {};
+    const sorted = [...descriptor].sort((a, b) => a.order - b.order);
+    for (const section of sorted) {
+        if (Object.prototype.hasOwnProperty.call(data, section.key)) {
+            out[section.label || section.key] = data[section.key];
+        }
+    }
+
+    if (fallbackOriginal && typeof fallbackOriginal === 'object' && !Array.isArray(fallbackOriginal)) {
+        if ((fallbackOriginal as any).__vh_tags && !out.__vh_tags) {
+            out.__vh_tags = (fallbackOriginal as any).__vh_tags;
+        }
+        if ((fallbackOriginal as any).meta && !out.meta) {
+            out.meta = (fallbackOriginal as any).meta;
+        }
+    }
+
+    return out;
+}
+
+function isEmptyDynamicValue(value: unknown): boolean {
+    if (value === null || value === undefined) return true;
+    if (typeof value === 'string') return value.trim().length === 0;
+    if (Array.isArray(value)) return value.length === 0 || value.every((v) => isEmptyDynamicValue(v));
+    if (typeof value === 'object') {
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (entries.length === 0) return true;
+        return entries.every(([, v]) => isEmptyDynamicValue(v));
+    }
+    return false;
+}
+
+function mergeDynamicEntry(baseEntry: any, aiEntry: any): any {
+    if (isEmptyDynamicValue(aiEntry)) return baseEntry;
+    if (!isNonEmptyObject(baseEntry) || !isNonEmptyObject(aiEntry)) return aiEntry;
+
+    const merged: Record<string, any> = { ...baseEntry };
+    for (const [k, v] of Object.entries(aiEntry)) {
+        if (isEmptyDynamicValue(v)) continue;
+        if (isNonEmptyObject(merged[k]) && isNonEmptyObject(v)) {
+            merged[k] = mergeDynamicEntry(merged[k], v);
+        } else {
+            merged[k] = v;
+        }
+    }
+    return merged;
+}
+
+function mergeTailoredDynamicData(
+    descriptor: CvSectionDescriptor[],
+    baseData: Record<string, any>,
+    aiData: Record<string, any>,
+): Record<string, any> {
+    const merged: Record<string, any> = { ...baseData };
+
+    for (const section of descriptor) {
+        const key = section.key;
+        const baseValue = baseData[key];
+        const aiValue = aiData[key];
+
+        if (aiValue === undefined) {
+            merged[key] = baseValue;
+            continue;
+        }
+
+        if (section.sectionType === 'freetext') {
+            merged[key] = isEmptyDynamicValue(aiValue) ? baseValue : aiValue;
+            continue;
+        }
+
+        if (section.sectionType === 'single-object') {
+            merged[key] = mergeDynamicEntry(baseValue, aiValue);
+            continue;
+        }
+
+        if (section.sectionType === 'string-list') {
+            merged[key] = Array.isArray(aiValue) && aiValue.length > 0
+                ? aiValue.filter((v) => !isEmptyDynamicValue(v))
+                : baseValue;
+            continue;
+        }
+
+        // object-list
+        if (section.sectionType === 'object-list') {
+            const baseArr = Array.isArray(baseValue) ? baseValue : [];
+            const aiArr = Array.isArray(aiValue) ? aiValue : [];
+
+            if (aiArr.length === 0) {
+                merged[key] = baseArr;
+                continue;
+            }
+
+            const out: any[] = [];
+            const max = Math.max(baseArr.length, aiArr.length);
+            for (let i = 0; i < max; i++) {
+                const b = baseArr[i];
+                const a = aiArr[i];
+                if (a === undefined) {
+                    out.push(b);
+                    continue;
+                }
+                if (b === undefined) {
+                    out.push(a);
+                    continue;
+                }
+                out.push(mergeDynamicEntry(b, a));
+            }
+            merged[key] = out;
+            continue;
+        }
+
+        merged[key] = isEmptyDynamicValue(aiValue) ? baseValue : aiValue;
+    }
+
+    return merged;
+}
+
+function createSectionDiffChanges(
+    descriptor: CvSectionDescriptor[],
+    originalData: Record<string, any>,
+    tailoredData: Record<string, any>,
+): Array<{ section: string; description: string; reason: string; before?: string; after?: string }> {
+    const diffs: Array<{ section: string; description: string; reason: string; before?: string; after?: string }> = [];
+
+    const sorted = [...descriptor].sort((a, b) => a.order - b.order);
+    for (const section of sorted) {
+        const key = section.key;
+        const beforeRaw = originalData?.[key];
+        const afterRaw = tailoredData?.[key];
+        const beforeJson = JSON.stringify(beforeRaw ?? null);
+        const afterJson = JSON.stringify(afterRaw ?? null);
+        if (beforeJson === afterJson) continue;
+
+        const beforeText = stringifyCompact(beforeRaw).slice(0, 1200);
+        const afterText = stringifyCompact(afterRaw).slice(0, 1200);
+
+        diffs.push({
+            section: section.label || section.key,
+            description: 'Section content was tailored for stronger job relevance.',
+            reason: 'Computed by comparing the tailored CV against the selected base CV.',
+            before: beforeText || '(empty)',
+            after: afterText || '(empty)',
+        });
+    }
+
+    return diffs;
 }
 
 
@@ -479,6 +749,8 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         if (!currentUser) { res.status(404).json({ message: "User not found." }); return; }
 
         let baseCvJson: JsonResumeSchema | null = null;
+        let baseCvDescriptor: CvSectionDescriptor[] | null = null;
+        let baseCvDynamicData: Record<string, any> | null = null;
         let usedBaseCvId: string | undefined = undefined;
 
         if (baseCvDataOverride && typeof baseCvDataOverride === 'object' && !Array.isArray(baseCvDataOverride)) {
@@ -490,6 +762,8 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             const specificCv = await CV.findOne({ _id: baseCvId, userId });
             if (specificCv && specificCv.cvJson) {
                 baseCvJson = specificCv.cvJson;
+                baseCvDescriptor = Array.isArray(specificCv.cvDescriptor) ? (specificCv.cvDescriptor as CvSectionDescriptor[]) : null;
+                baseCvDynamicData = isNonEmptyObject(specificCv.cvData) ? (specificCv.cvData as Record<string, any>) : null;
                 usedBaseCvId = specificCv._id.toString();
                 console.log(`Using specific Base CV (${baseCvId}) for job ${jobId}`);
             } else {
@@ -502,6 +776,8 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             const masterCv = await CV.findOne({ userId, isMasterCv: true });
             if (masterCv && masterCv.cvJson) {
                 baseCvJson = masterCv.cvJson;
+                baseCvDescriptor = Array.isArray(masterCv.cvDescriptor) ? (masterCv.cvDescriptor as CvSectionDescriptor[]) : null;
+                baseCvDynamicData = isNonEmptyObject(masterCv.cvData) ? (masterCv.cvData as Record<string, any>) : null;
                 usedBaseCvId = masterCv._id.toString();
                 console.log("Using Master CV from Unified CV Model.");
             }
@@ -516,7 +792,58 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         // 2. Construct CV-only Gemini Prompt
         let prompt: string;
 
-        if (customPrompt) {
+        const baseCvIsJsonResume = isJsonResumeLike(baseCvJson);
+        const hasDynamicBaseCv = Array.isArray(baseCvDescriptor) && baseCvDescriptor.length > 0 && isNonEmptyObject(baseCvDynamicData);
+
+        if (hasDynamicBaseCv) {
+            const dynamicContext = {
+                descriptor: baseCvDescriptor,
+                data: baseCvDynamicData,
+            };
+
+            prompt = `
+            You are tailoring a CV for ${languageName} job applications.
+            The CV uses a dynamic descriptor/data system. You MUST preserve this structure.
+
+            Input CV dynamic payload:
+            \`\`\`json
+            ${JSON.stringify(dynamicContext, null, 2)}
+            \`\`\`
+
+            Target job description:
+            ---
+            ${job.jobDescriptionText}
+            ---
+
+            Requirements:
+            - Keep the SAME descriptor section keys and field keys. Do not rename or delete them.
+            - Keep all sections present in the base CV; do not drop sections.
+            - You may reorder list items for relevance but keep factual integrity.
+            - Do not invent skills, experience, or certificates.
+            - Tailor wording and prioritization to match the job.
+            - All CV text must be in ${languageName}.
+            - Return a detailed changes array in English, including concrete before/after snippets.
+            - Include every meaningful edited section; do not return an empty changes array.
+
+            Return ONLY JSON in this exact shape:
+            {
+              "tailoredData": { "<sectionKey>": <same data type as input> },
+              "changes": [
+                {
+                  "section": "string",
+                  "description": "string",
+                  "reason": "string",
+                  "before": "string",
+                  "after": "string"
+                }
+              ]
+            }
+            `;
+
+            if (customPrompt) {
+                prompt += `\n\nAdditional user instructions:\n${customPrompt}`;
+            }
+        } else if (customPrompt) {
             // Use custom prompt but inject necessary context variables
             prompt = customPrompt
                 .replace('{{language}}', languageName)
@@ -527,7 +854,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             if (!customPrompt.includes('{{baseCv}}')) {
                 prompt += `\n\n**Context Data:**\nBase CV Data: ${JSON.stringify(baseCvJson, null, 2)}\nJob Description: ${job.jobDescriptionText}\nTarget Language: ${languageName}`;
             }
-        } else {
+        } else if (baseCvIsJsonResume) {
             // Default Prompt with Changes Tracking
             prompt = `
             You are an expert career advisor specialized in the ${languageName} job market.
@@ -561,7 +888,9 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             *   **IMPORTANT:** Do NOT mention the specific name of the company you are applying to anywhere in the generated CV (e.g. in the summary, objective, or descriptions). Focus on the role and skills, but keep the document company-agnostic.
             *   All textual content within the JSON object (names, summaries, descriptions, etc.) MUST be in ${languageName}.
             *   SECTION LABELS TRANSLATION: Include a \`meta.sectionLabels\` object in the tailoredCv JSON with translated section names in ${languageName}. For example, for German: {"summary": "Zusammenfassung", "work": "Berufserfahrung", "education": "Ausbildung", "skills": "Fähigkeiten & Technologien", "languages": "Sprachen", "projects": "Projekte", "certificates": "Zertifikate", "awards": "Auszeichnungen", "volunteer": "Ehrenamt", "interests": "Interessen", "references": "Referenzen"}.
-            *   **IMPORTANT:** Also provide a list of changes you made. **The 'description' and 'reason' fields in this list MUST ALWAYS BE IN ENGLISH, regardless of the target language of the CV.**
+            *   **IMPORTANT:** Also provide a list of changes you made. **The 'description', 'reason', 'before', and 'after' fields in this list MUST ALWAYS BE IN ENGLISH, regardless of the target language of the CV.**
+            *   For each change item, include concise BEFORE and AFTER snippets (plain text) showing what was adjusted.
+            *   Include all meaningful edited sections; do not return an empty list.
 
             **Output Format:**
             Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain:
@@ -570,6 +899,8 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
                 - \`section\`: The CV section that was modified (use English keys: "summary", "work", "skills", "education", "projects", etc.)
                 - \`description\`: A brief description of what was changed (IN ENGLISH)
                 - \`reason\`: Why this change was made, ideally referencing relevant job requirements (IN ENGLISH)
+                - \`before\`: Short text snippet from original content (IN ENGLISH)
+                - \`after\`: Short text snippet from updated content (IN ENGLISH)
 
             Example output structure:
             \`\`\`json
@@ -584,7 +915,9 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
                 {
                   "section": "summary",
                   "description": "Rewrote professional summary to highlight cloud expertise",
-                  "reason": "Job requires extensive AWS and cloud architecture experience"
+                  "reason": "Job requires extensive AWS and cloud architecture experience",
+                  "before": "General software profile with broad responsibilities.",
+                  "after": "Cloud-focused profile emphasizing AWS architecture and deployment."
                 },
                 {
                   "section": "work",
@@ -595,6 +928,64 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
                   "section": "skills",
                   "description": "Reordered skills to prioritize Python and machine learning",
                   "reason": "These are listed as primary requirements in the job description"
+                }
+              ]
+            }
+            \`\`\`
+        `;
+        } else {
+            // Freeform CV prompt with tag preservation
+            prompt = `
+            You are an expert career advisor specialized in the ${languageName} job market.
+            Your task is to tailor a provided freeform CV JSON for a specific job application and document the changes you made.
+
+            **Target Language:** ${languageName} (${requestedLanguage})
+
+            **Inputs:**
+            1. **Base CV Data (freeform JSON):**
+               \`\`\`json
+               ${JSON.stringify(baseCvJson, null, 2)}
+               \`\`\`
+            2. **Target Job Description (Text):**
+               ---
+               ${job.jobDescriptionText}
+               ---
+
+            **Instructions:**
+            * Analyze the Base CV and the Target Job Description.
+            * Keep the CV as FREEFORM JSON (not JSON Resume schema).
+            * Keep section keys and overall structure style close to the base CV.
+            * Preserve and return the top-level \`__vh_tags\` object if present; if missing, create one that maps important fields for rendering.
+            * Do not invent skills/experience/certifications/facts.
+            * Keep all factual data, names, dates, and achievements truthful.
+            * You may reorder items to better match the role, but do not drop important sections.
+            * All CV textual content must be in ${languageName}.
+            * The tailored CV must be detailed and not shorter than the base CV.
+            * Also provide a list of changes with English descriptions/reasons.
+            * For each change item, include concise BEFORE and AFTER snippets in English.
+            * Include all meaningful edited sections; do not return an empty changes list.
+
+            **Output Format:**
+            Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON MUST contain:
+            1. \`tailoredCv\`: The full tailored freeform CV JSON.
+            2. \`changes\`: Array of objects with:\n   - \`section\`\n   - \`description\` (IN ENGLISH)\n   - \`reason\` (IN ENGLISH)\n   - \`before\` (IN ENGLISH)\n   - \`after\` (IN ENGLISH)
+
+            Example output shape:
+            \`\`\`json
+            {
+              "tailoredCv": {
+                "unsectioned": { "Name": "..." },
+                "PROFIL": "...",
+                "BERUFSERFAHRUNG": [ ... ],
+                "__vh_tags": { ... }
+              },
+              "changes": [
+                {
+                  "section": "PROFIL",
+                  "description": "Rewrote profile summary to emphasize support automation and API-facing troubleshooting.",
+                  "reason": "The job description prioritizes support quality and technical automation skills.",
+                  "before": "General profile with broad IT interests.",
+                  "after": "Profile emphasizes support automation, API troubleshooting, and measurable IT operations impact."
                 }
               ]
             }
@@ -645,26 +1036,104 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
 
         // 4. Handle both new format (with changes) and legacy format (direct CV)
         let tailoredCvJson;
-        let tailoringChanges: Array<{ section: string; description: string; reason: string }> | null = null;
+        let tailoringChanges: TailoringChange[] | null = null;
 
-        if (parsedResponse.tailoredCv && typeof parsedResponse.tailoredCv === 'object') {
+        let tailoredDynamicData: Record<string, any> | null = null;
+
+        if (hasDynamicBaseCv && parsedResponse.tailoredData && isNonEmptyObject(parsedResponse.tailoredData)) {
+            tailoredDynamicData = mergeTailoredDynamicData(
+                baseCvDescriptor as CvSectionDescriptor[],
+                baseCvDynamicData as Record<string, any>,
+                parsedResponse.tailoredData as Record<string, any>,
+            );
+            tailoredCvJson = buildFreeformCvJsonFromDynamic(
+                baseCvDescriptor as CvSectionDescriptor[],
+                tailoredDynamicData,
+                baseCvJson as Record<string, any>
+            );
+            tailoringChanges = normalizeTailoringChanges(parsedResponse.changes);
+            console.log(`Parsed dynamic-tailored response with ${tailoringChanges?.length || 0} changes.`);
+        } else if (parsedResponse.tailoredCv && typeof parsedResponse.tailoredCv === 'object') {
             // New format: { tailoredCv: {...}, changes: [...] }
             tailoredCvJson = parsedResponse.tailoredCv;
-            tailoringChanges = Array.isArray(parsedResponse.changes) ? parsedResponse.changes : null;
+            tailoringChanges = normalizeTailoringChanges(parsedResponse.changes);
             console.log(`Parsed new format response with ${tailoringChanges?.length || 0} changes.`);
-        } else if (parsedResponse.basics) {
-            // Legacy format: Direct CV JSON (for backwards compatibility with custom prompts)
+        } else if (isNonEmptyObject(parsedResponse)) {
+            // Legacy/direct format: direct CV JSON (supports both JSON Resume and freeform objects)
             tailoredCvJson = parsedResponse;
-            console.log("Parsed legacy format response (direct CV JSON, no changes).");
+            if (Array.isArray((parsedResponse as any).changes)) {
+                tailoringChanges = normalizeTailoringChanges((parsedResponse as any).changes);
+                delete (tailoredCvJson as any).changes;
+            }
+            console.log("Parsed direct CV JSON response (no tailoredCv wrapper).");
         } else {
             console.error("Parsed response is invalid:", parsedResponse);
             throw new Error("AI response missing expected structure.");
         }
 
         // 5. Validate CV structure
-        if (!tailoredCvJson || typeof tailoredCvJson !== 'object' || !tailoredCvJson.basics) {
-            console.error("Parsed CV JSON is invalid or missing basics:", tailoredCvJson);
-            throw new Error("Parsed CV JSON is invalid or missing the 'basics' section.");
+        if (!isNonEmptyObject(tailoredCvJson)) {
+            console.error("Parsed CV JSON is invalid or empty:", tailoredCvJson);
+            throw new Error("Parsed CV JSON is invalid or empty.");
+        }
+
+        const hasOnlyOverallChange = Boolean(
+            tailoringChanges
+            && tailoringChanges.length === 1
+            && tailoringChanges[0].section.toLowerCase() === 'overall'
+        );
+
+        if (!tailoringChanges || tailoringChanges.length === 0 || hasOnlyOverallChange) {
+            const baseSnapshot = hasDynamicBaseCv && isNonEmptyObject(baseCvDynamicData)
+                ? { descriptor: baseCvDescriptor, data: baseCvDynamicData }
+                : baseCvJson;
+            const tailoredSnapshot = hasDynamicBaseCv && tailoredDynamicData
+                ? { descriptor: baseCvDescriptor, data: tailoredDynamicData }
+                : tailoredCvJson;
+
+            const aiChanges = await generateAiTailoringChanges(
+                userId,
+                languageName,
+                job.jobDescriptionText || '',
+                baseSnapshot,
+                tailoredSnapshot,
+            );
+            if (aiChanges && aiChanges.length > 0) {
+                tailoringChanges = aiChanges;
+            }
+        }
+
+        if (hasDynamicBaseCv && tailoredDynamicData && (!tailoringChanges || tailoringChanges.length === 0)) {
+            const computedDiff = createSectionDiffChanges(
+                baseCvDescriptor as CvSectionDescriptor[],
+                baseCvDynamicData as Record<string, any>,
+                tailoredDynamicData,
+            );
+            if (computedDiff.length > 0) {
+                tailoringChanges = computedDiff;
+            } else if (!tailoringChanges || tailoringChanges.length === 0) {
+                tailoringChanges = [
+                    {
+                        section: 'overall',
+                        description: 'Tailored CV generated with the same section structure as the base CV.',
+                        reason: 'No section-level text delta was detected by automatic comparison.',
+                    },
+                ];
+            }
+        }
+
+        if ((!tailoringChanges || tailoringChanges.length === 0) && isNonEmptyObject(baseCvJson) && isNonEmptyObject(tailoredCvJson)) {
+            const baseSerialized = JSON.stringify(baseCvJson);
+            const tailoredSerialized = JSON.stringify(tailoredCvJson);
+            if (baseSerialized !== tailoredSerialized) {
+                tailoringChanges = [
+                    {
+                        section: 'overall',
+                        description: 'Tailored CV content differs from the selected base CV.',
+                        reason: 'Detected via full-document comparison when section-level changes were not provided.',
+                    },
+                ];
+            }
         }
 
         // 6. Save ONLY the CV draft (not cover letter)
@@ -686,6 +1155,10 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         if (jobCv) {
             jobCv.cvJson = tailoredCvJson;
             jobCv.tailoringChanges = tailoringChanges;
+            if (hasDynamicBaseCv && tailoredDynamicData) {
+                jobCv.cvDescriptor = baseCvDescriptor as CvSectionDescriptor[];
+                jobCv.cvData = tailoredDynamicData;
+            }
             await jobCv.save();
         } else {
             // Create new Job CV if missing
@@ -703,6 +1176,8 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
                 displayName: jobDisplayName,
                 cvJson: tailoredCvJson,
                 tailoringChanges: tailoringChanges,
+                cvDescriptor: hasDynamicBaseCv && tailoredDynamicData ? (baseCvDescriptor as CvSectionDescriptor[]) : null,
+                cvData: hasDynamicBaseCv && tailoredDynamicData ? tailoredDynamicData : null,
             });
         }
 
@@ -710,15 +1185,19 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
 
         // Non-fatally generate the dynamic descriptor so the /review/cv tab
         // can immediately render the dynamic editor after the CV is tailored.
-        try {
-            const descriptorPayload = await generateDescriptorFromJson(tailoredCvJson, userId);
-            await CV.findOneAndUpdate(
-                { jobApplicationId: jobId, userId: userId },
-                { $set: { cvDescriptor: descriptorPayload.descriptor, cvData: descriptorPayload.data } },
-            );
-            console.log(`Dynamic descriptor saved for CV (job ${jobId}).`);
-        } catch (descErr: any) {
-            console.warn(`Descriptor generation failed (non-fatal): ${descErr.message}`);
+        if (!(hasDynamicBaseCv && tailoredDynamicData)) {
+            try {
+                const descriptorPayload = await generateDescriptorFromJson(tailoredCvJson, userId);
+                await CV.findOneAndUpdate(
+                    { jobApplicationId: jobId, userId: userId },
+                    { $set: { cvDescriptor: descriptorPayload.descriptor, cvData: descriptorPayload.data } },
+                );
+                console.log(`Dynamic descriptor saved for CV (job ${jobId}).`);
+            } catch (descErr: any) {
+                console.warn(`Descriptor generation failed (non-fatal): ${descErr.message}`);
+            }
+        } else {
+            console.log(`Reused dynamic descriptor/data from base CV for tailored CV (job ${jobId}).`);
         }
 
         res.status(200).json({

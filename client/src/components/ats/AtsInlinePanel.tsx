@@ -117,6 +117,56 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [atsScores]);
 
+    const feedbackWithIdx = allSuggestions
+        .map((s, i) => ({ ...s, origIdx: i }))
+        .filter(s => s.type === 'feedback' && !appliedIndices.has(s.origIdx));
+    const keywordsWithIdx = allSuggestions
+        .map((s, i) => ({ ...s, origIdx: i }))
+        .filter(s => s.type === 'keyword' && !appliedIndices.has(s.origIdx));
+    const skillsWithIdx = allSuggestions
+        .map((s, i) => ({ ...s, origIdx: i }))
+        .filter(s => s.type === 'skill' && !appliedIndices.has(s.origIdx));
+
+    const remainingItems = [...feedbackWithIdx, ...keywordsWithIdx, ...skillsWithIdx];
+    const remainingCount = remainingItems.length;
+    const appliedCount = appliedIndices.size;
+
+    const selectedCount = [...selectedIndices].filter(idx => !appliedIndices.has(idx)).length;
+    const allSelected = remainingCount > 0 && selectedCount === remainingCount;
+    const someSelected = selectedCount > 0;
+
+    const toggleItem = useCallback((origIdx: number) => {
+        setSelectedIndices(prev => {
+            const next = new Set(prev);
+            if (next.has(origIdx)) next.delete(origIdx); else next.add(origIdx);
+            return next;
+        });
+    }, []);
+
+    const toggleAll = useCallback(() => {
+        if (allSelected) {
+            setSelectedIndices(new Set());
+        } else {
+            setSelectedIndices(new Set(remainingItems.map(i => i.origIdx)));
+        }
+    }, [allSelected, remainingItems]);
+
+    const handleApplySelected = useCallback(async () => {
+        const items = remainingItems
+            .filter(i => selectedIndices.has(i.origIdx))
+            .map(i => ({ suggestion: i.text, index: i.origIdx }));
+        if (items.length === 0) return;
+        await onApplyBatch(items);
+        setAppliedIndices(prev => {
+            const next = new Set(prev);
+            items.forEach(i => next.add(i.index));
+            return next;
+        });
+        setSelectedIndices(new Set());
+    }, [remainingItems, selectedIndices, onApplyBatch]);
+
+    const score = atsScores?.score ?? 0;
+
     // ── Loading / Scanning states ─────────────────────────────────────────────
     if (isLoading) {
         return (
@@ -171,59 +221,6 @@ const AtsInlinePanel: React.FC<AtsInlinePanelProps> = ({
             </div>
         );
     }
-
-    // ── Results ───────────────────────────────────────────────────────────────
-    const score = atsScores.score ?? 0;
-
-    const feedbackWithIdx = allSuggestions
-        .map((s, i) => ({ ...s, origIdx: i }))
-        .filter(s => s.type === 'feedback' && !appliedIndices.has(s.origIdx));
-    const keywordsWithIdx = allSuggestions
-        .map((s, i) => ({ ...s, origIdx: i }))
-        .filter(s => s.type === 'keyword' && !appliedIndices.has(s.origIdx));
-    const skillsWithIdx = allSuggestions
-        .map((s, i) => ({ ...s, origIdx: i }))
-        .filter(s => s.type === 'skill' && !appliedIndices.has(s.origIdx));
-
-    const remainingItems = [...feedbackWithIdx, ...keywordsWithIdx, ...skillsWithIdx];
-    const remainingCount = remainingItems.length;
-    const appliedCount = appliedIndices.size;
-
-    // Derived selection state
-    const selectedCount = [...selectedIndices].filter(idx => !appliedIndices.has(idx)).length;
-    const allSelected = remainingCount > 0 && selectedCount === remainingCount;
-    const someSelected = selectedCount > 0;
-
-    const toggleItem = useCallback((origIdx: number) => {
-        setSelectedIndices(prev => {
-            const next = new Set(prev);
-            if (next.has(origIdx)) next.delete(origIdx); else next.add(origIdx);
-            return next;
-        });
-    }, []);
-
-    const toggleAll = useCallback(() => {
-        if (allSelected) {
-            setSelectedIndices(new Set());
-        } else {
-            setSelectedIndices(new Set(remainingItems.map(i => i.origIdx)));
-        }
-    }, [allSelected, remainingItems]);
-
-    const handleApplySelected = useCallback(async () => {
-        const items = remainingItems
-            .filter(i => selectedIndices.has(i.origIdx))
-            .map(i => ({ suggestion: i.text, index: i.origIdx }));
-        if (items.length === 0) return;
-        await onApplyBatch(items);
-        // Mark all as applied on success (onApplyBatch throws on error)
-        setAppliedIndices(prev => {
-            const next = new Set(prev);
-            items.forEach(i => next.add(i.index));
-            return next;
-        });
-        setSelectedIndices(new Set());
-    }, [remainingItems, selectedIndices, onApplyBatch]);
 
     // Row checkbox component
     const RowCheckbox: React.FC<{ origIdx: number }> = ({ origIdx }) => (

@@ -145,6 +145,8 @@ For deployment see [DEPLOYMENT.md](./DEPLOYMENT.md).
 | **Add Job (Manual)** | Fill in fields manually |
 | **CV Branch selection** | Choose which CV branch to attach to the job during creation |
 | **Filter & sort** | Filter by status, sort by any column |
+| **Quick filters with counters** | Favorites, Has Notes, and Needs Follow-up counters; `Needs Follow-up` filters jobs where `status=Applied`, contact email exists, and application age > 14 days |
+| **Follow-up action icon** | Per-row action opens job follow-up workflow directly at `/jobs/:jobId/review/reminders` |
 | **Toggle Kanban** | Switch to visual kanban pipeline view (`ApplicationPipelineKanban`) — tracks: Not Applied → Applied → Interview → Assessment → Offer / Rejected |
 | **Job row click** | Expands inline job details panel (`demo/job-details.png`) |
 | **Quick actions** | Mark status, open review page, delete job |
@@ -177,12 +179,12 @@ For deployment see [DEPLOYMENT.md](./DEPLOYMENT.md).
 | **Select branch** | Load an existing CV branch into the editor |
 | **Create branch** | Create a new blank branch or copy from an existing one |
 | **Set primary** | Mark a branch as the default for new job applications |
-| **Upload CV** | Upload PDF / DOCX / RTF / TXT → AI parses into JSON Resume schema via `POST /api/cvs/parse` |
-| **Section editing** | `CvFormEditor` — section-by-section rich editing for: Basics, Work Experience, Education, Skills, Projects, Certificates, Languages |
+| **Upload CV** | Upload PDF / DOCX / RTF / TXT → AI parses into freeform JSON with `__vh_tags` metadata via `POST /api/cvs/parse` |
+| **Section editing** | Dynamic descriptor/data editor (`DynamicCvForm`) for freeform CV structures, with legacy editor fallback when needed |
 | **Live preview** | `CvLivePreview` — real-time A4 preview using any of the 14 templates |
 | **Template selector** | Switch between 14 professional resume templates |
 | **AI CV Analysis** | Analyze a section with AI feedback (`SectionAnalysisPanel`) |
-| **Bold formatting** | Markdown `**bold**` in custom sections for keyword emphasis |
+| **Language badge detection** | CV cards auto-detect language (English/German/Unknown) from metadata and content signals |
 
 **AI features used**
 - CV parsing from file — Gemini (`POST /api/cvs/parse`)
@@ -292,6 +294,8 @@ No AI features — analytics are computed from stored job application data.
 | **PDF download** | Generate and download PDF via `GET /api/generator/:jobId/download` (Puppeteer) |
 | **Save draft** | Persist edits for later refinement |
 | **User input modal** | `UserInputModal` — AI requests missing info (e.g. salary expectation, start date) via smart placeholder system |
+| **Tailoring Changes panel** | Always-visible changes card after generation; shows section-level AI changes with before/after snippets and reason |
+| **Inline diff mode** | Toggle `Show Inline Diff` to render old text in red and new text in green directly above affected sections; reason is available via info icon |
 
 **AI features used**
 - Draft generation — Gemini / OpenRouter / Ollama (`generatorService`)

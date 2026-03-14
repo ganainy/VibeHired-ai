@@ -4,6 +4,17 @@ import { CvDynamicPayload, CvSectionDescriptor, DisplayStyle } from '../types/cv
 interface DynamicTemplateProps {
   payload: CvDynamicPayload;
   templateId?: string;
+  diffChanges?: Array<{ section: string; before?: string; after?: string; reason?: string }>;
+  showDiffOverlay?: boolean;
+}
+
+function normalizeSectionId(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function compactForDiff(value?: string): string {
+  if (!value) return '';
+  return value.replace(/\s+/g, ' ').trim().slice(0, 260);
 }
 
 // ─── Per-template accent themes ───────────────────────────────────────────────
@@ -116,7 +127,7 @@ function TextBlock({ descriptor, data, theme }: { descriptor: CvSectionDescripto
 const KNOWN_ENTRY_KEYS = new Set([
   'position','degree','studyType','name','title','company','institution','organization','publisher',
   'location','startDate','endDate','date','summary','description','highlights','bullets','details',
-  'url','website','fluency','keywords','network','username','issuer','awarder','reference',
+  'url','website','fluency','keywords','network','username','issuer','awarder','reference','content','category',
 ]);
 
 function TimelineSection({ descriptor, data, theme }: { descriptor: CvSectionDescriptor; data: any; theme: Theme }) {
@@ -127,11 +138,11 @@ function TimelineSection({ descriptor, data, theme }: { descriptor: CvSectionDes
       <SectionHeading label={descriptor.label} theme={theme} />
       <div className="space-y-3">
         {items.map((entry, idx) => {
-          const title = entry.position || entry.degree || entry.studyType || entry.name || entry.title || '';
+          const title = entry.position || entry.degree || entry.studyType || entry.name || entry.title || entry.category || '';
           const org = entry.name || entry.company || entry.institution || entry.organization || entry.publisher || '';
           const loc = entry.location || '';
           const range = dateRange(entry);
-          const desc = entry.summary || entry.description || '';
+          const desc = entry.summary || entry.description || entry.content || '';
           const bs = bullets(entry);
           const entryUrl = entry.url || '';
           // Custom fields: keys not in the known set
@@ -227,10 +238,10 @@ function TagCloudSection({ descriptor, data, theme }: { descriptor: CvSectionDes
       <SectionHeading label={descriptor.label} theme={theme} />
       <div className="space-y-0.5">
         {items.map((item, idx) => {
-          const groupName = item.name || item.language || '';
+          const groupName = item.name || item.language || item.category || '';
           const keywords: string[] = Array.isArray(item.keywords) ? item.keywords
             : item.fluency ? [item.fluency] : [];
-          const allWords = keywords.join(', ') || item.fluency || '';
+          const allWords = keywords.join(', ') || item.fluency || item.content || item.value || '';
           return (
             <div key={idx} className="text-[8.5pt] text-gray-700 leading-snug">
               {groupName && (
@@ -256,7 +267,7 @@ function PlainListSection({ descriptor, data, theme }: { descriptor: CvSectionDe
           const title = item.name || item.title || item.organization || '';
           const sub = item.issuer || item.awarder || item.date || '';
           const url = item.url || '';
-          const desc = item.summary || item.description || item.reference || '';
+          const desc = item.summary || item.description || item.reference || item.content || '';
           return (
             <div key={idx} className="flex justify-between items-start">
               <div className="flex-1 min-w-0 pr-2">
@@ -334,9 +345,16 @@ function renderSection(descriptor: CvSectionDescriptor, data: any, theme: Theme)
  * DynamicTemplate renders a complete CV from a CvDynamicPayload.
  * It replaces all hardcoded JsonResume-bound templates when cvDescriptor is present.
  */
-const DynamicTemplate = forwardRef<HTMLDivElement, DynamicTemplateProps>(({ payload, templateId }, ref) => {
+const DynamicTemplate = forwardRef<HTMLDivElement, DynamicTemplateProps>(({ payload, templateId, diffChanges = [], showDiffOverlay = false }, ref) => {
   const { descriptor, data } = payload;
   const theme = getTheme(templateId);
+
+  const diffMap = new Map<string, { before?: string; after?: string; reason?: string }>();
+  diffChanges.forEach((item) => {
+    if (!item?.section) return;
+    diffMap.set(normalizeSectionId(item.section), { before: item.before, after: item.after, reason: item.reason });
+  });
+  const overallDiff = diffMap.get('overall');
 
   const sections = [...descriptor]
     .filter((s) => s.visible !== false)
@@ -346,9 +364,84 @@ const DynamicTemplate = forwardRef<HTMLDivElement, DynamicTemplateProps>(({ payl
     <div
       ref={ref}
       className="bg-white text-black p-6 w-full max-w-[210mm] mx-auto font-sans"
-      style={{ minHeight: '297mm', fontSize: '10pt', lineHeight: 1.4 }}
+      style={{
+        minHeight: '297mm',
+        fontSize: '10pt',
+        lineHeight: 1.4,
+      }}
     >
-      {sections.map((s) => renderSection(s, data[s.key], theme))}
+      {showDiffOverlay && overallDiff && (
+        <div className="mb-2 text-[7.5pt] leading-snug">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              {overallDiff.before && (
+                <div style={{ color: '#b91c1c' }}>
+                  - {compactForDiff(overallDiff.before)}
+                </div>
+              )}
+              {overallDiff.after && (
+                <div style={{ color: '#166534' }}>
+                  + {compactForDiff(overallDiff.after)}
+                </div>
+              )}
+            </div>
+            {overallDiff.reason && (
+              <details className="flex-shrink-0">
+                <summary
+                  title="Show change reason"
+                  className="list-none cursor-pointer inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-300 text-[10px] text-gray-600"
+                >
+                  i
+                </summary>
+                <div className="mt-1 max-w-[260px] p-1.5 rounded border border-gray-200 text-[7.5pt] text-gray-600 bg-white shadow-sm">
+                  {overallDiff.reason}
+                </div>
+              </details>
+            )}
+          </div>
+        </div>
+      )}
+
+      {sections.map((s) => {
+        const diff = diffMap.get(normalizeSectionId(s.label)) || diffMap.get(normalizeSectionId(s.key));
+        const showDiff = showDiffOverlay && Boolean(diff);
+        return (
+          <div key={s.key}>
+            {showDiff && (
+              <div className="mb-1 text-[7.5pt] leading-snug">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    {diff?.before && (
+                      <div style={{ color: '#b91c1c' }}>
+                        - {compactForDiff(diff.before)}
+                      </div>
+                    )}
+                    {diff?.after && (
+                      <div style={{ color: '#166534' }}>
+                        + {compactForDiff(diff.after)}
+                      </div>
+                    )}
+                  </div>
+                  {diff?.reason && (
+                    <details className="flex-shrink-0">
+                      <summary
+                        title="Show change reason"
+                        className="list-none cursor-pointer inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-300 text-[10px] text-gray-600"
+                      >
+                        i
+                      </summary>
+                      <div className="mt-1 max-w-[260px] p-1.5 rounded border border-gray-200 text-[7.5pt] text-gray-600 bg-white shadow-sm">
+                        {diff.reason}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              </div>
+            )}
+            {renderSection(s, data[s.key], theme)}
+          </div>
+        );
+      })}
     </div>
   );
 });
