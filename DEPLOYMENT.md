@@ -87,6 +87,7 @@ Set the required environment variables on Heroku:
    | `SMTP_USER` | `your-gmail@gmail.com` | Gmail address used to send emails |
    | `SMTP_PASS` | `xxxx xxxx xxxx xxxx` | 16-character Google App Password (not your Gmail password) |
    | `FRONTEND_URL` | `https://your-netlify-app.netlify.app` | Set a placeholder for now, update after Netlify deployment. Supports comma-separated origins. |
+   | `PUPPETEER_EXECUTABLE_PATH` | `/app/.apt/usr/bin/google-chrome-stable` | Recommended for PDF generation in Heroku/container environments when using system Chrome |
    | `NODE_ENV` | `production` | Set to production mode |
    | `CLOUDINARY_CLOUD_NAME` | `your-cloud-name` | Your Cloudinary cloud name (from Cloudinary Dashboard) |
    | `CLOUDINARY_API_KEY` | `your-api-key` | Your Cloudinary API key (from Cloudinary Dashboard) |
@@ -97,6 +98,14 @@ Set the required environment variables on Heroku:
    - Your app will automatically restart after each config var is added
 
 **Note:** The `PORT` variable is automatically set by Heroku - you don't need to add it.
+
+### Step 2.1: Chrome for PDF Rendering (Puppeteer)
+
+Cover letter/CV PDF endpoints use Puppeteer. If your deployment does not include Puppeteer's bundled Chrome, install system Chrome and set:
+
+- `PUPPETEER_EXECUTABLE_PATH=/app/.apt/usr/bin/google-chrome-stable`
+
+For Heroku, the common setup is adding a Google Chrome buildpack before the Node.js buildpack, then redeploying.
 
 ### Step 3: Connect GitHub Repository for Auto-Deploy
 

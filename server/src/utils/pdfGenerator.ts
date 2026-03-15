@@ -27,13 +27,61 @@ const ensureDirExists = async (dirPath: string) => {
 // --- Function to generate PDF from HTML content ---
 let browserInstance: Browser | null = null;
 
+const KNOWN_CHROME_PATHS = [
+    '/app/.apt/usr/bin/google-chrome-stable',
+    '/app/.apt/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+];
+
+const resolveChromeExecutablePath = async (): Promise<string | undefined> => {
+    const explicitPath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.GOOGLE_CHROME_BIN || process.env.CHROME_BIN;
+    if (explicitPath) {
+        return explicitPath;
+    }
+
+    for (const candidatePath of KNOWN_CHROME_PATHS) {
+        try {
+            await fs.access(candidatePath);
+            return candidatePath;
+        } catch {
+            continue;
+        }
+    }
+
+    return undefined;
+};
+
 const getBrowser = async (): Promise<Browser> => {
     if (!browserInstance) {
         console.log('Launching new Puppeteer browser instance...');
-        browserInstance = await puppeteer.launch({
+        const executablePath = await resolveChromeExecutablePath();
+        const launchOptions: Parameters<typeof puppeteer.launch>[0] = {
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--no-zygote',
+            ],
+        };
+
+        if (executablePath) {
+            launchOptions.executablePath = executablePath;
+            console.log(`Using Chromium executable: ${executablePath}`);
+        }
+
+        try {
+            browserInstance = await puppeteer.launch(launchOptions);
+        } catch (error: any) {
+            const message = String(error?.message || error || 'Unknown Puppeteer launch error');
+            const guidance = 'Puppeteer could not start Chrome. In production, set PUPPETEER_EXECUTABLE_PATH (or GOOGLE_CHROME_BIN) to a valid Chrome binary, or install Chrome via your platform buildpack.';
+            throw new Error(`${message}. ${guidance}`);
+        }
+
         browserInstance.on('disconnected', () => {
             console.log('Puppeteer browser disconnected.');
             browserInstance = null;
