@@ -38,6 +38,7 @@ import protect from './middleware/authMiddleware'; // Import default export and 
 import { errorHandler } from './middleware/errorHandler';
 import { installExternalCallTracking } from './services/externalCallTracking';
 import { initializeScheduler } from './utils/scheduler';
+import { getAllowedFrontendOrigins } from './config/frontend';
 // Import providers to ensure they register themselves
 import './providers';
 
@@ -53,16 +54,7 @@ app.set('trust proxy', 1);
 // CORS Configuration
 // FRONTEND_URL may be a single origin or a comma-separated list of origins,
 // e.g. "https://vibehired.ganainy.dev,https://vibehired-ai.netlify.app"
-const rawOrigins = (process.env.FRONTEND_URL ?? '')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
-
-const allowedOrigins = [
-  ...rawOrigins,
-  'http://localhost:5173', // Local development
-  'http://localhost:3000', // Alternative local port
-].filter(Boolean) as string[]; // Remove undefined values
+const allowedOrigins = getAllowedFrontendOrigins();
 
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {

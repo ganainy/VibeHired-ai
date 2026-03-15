@@ -19,6 +19,7 @@ import authMiddleware from '../middleware/authMiddleware';
 import Profile from '../models/Profile';
 import User from '../models/User';
 import { env } from '../config/env';
+import { getPrimaryFrontendUrl } from '../config/frontend';
 import { encrypt } from '../utils/encryption';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ValidationError } from '../utils/errors/AppError';
@@ -94,7 +95,7 @@ router.get('/connect', authMiddleware, asyncHandler(async (req: Request, res: Re
 router.get('/callback', asyncHandler(async (req: Request, res: Response) => {
     const { code, state: userId, error } = req.query as Record<string, string>;
 
-    const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = getPrimaryFrontendUrl();
 
     if (error || !code || !userId) {
         return res.redirect(`${frontendUrl}/settings?googleCalendar=error&reason=${encodeURIComponent(error || 'missing_code')}`);
@@ -268,7 +269,7 @@ router.get('/login', asyncHandler(async (_req: Request, res: Response) => {
  */
 router.get('/auth-callback', asyncHandler(async (req: Request, res: Response) => {
     const { code, error } = req.query as Record<string, string>;
-    const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = getPrimaryFrontendUrl();
 
     if (error || !code) {
         return res.redirect(`${frontendUrl}/login?error=google_failed`);

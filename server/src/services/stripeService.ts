@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { env } from '../config/env';
+import { getPrimaryFrontendUrl } from '../config/frontend';
 import User from '../models/User';
 import { PlanType } from '../constants/plans';
 
@@ -117,7 +118,7 @@ export async function createCheckoutSession(userId: string, plan: PlanType): Pro
     if (!priceId) throw new Error('Invalid plan or price not configured');
 
     const customerId = await getOrCreateCustomer(userId);
-    const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = getPrimaryFrontendUrl();
 
     const session = await ensureStripe().checkout.sessions.create({
         customer: customerId,
@@ -145,7 +146,7 @@ export async function createCheckoutSession(userId: string, plan: PlanType): Pro
  */
 export async function createPortalSession(userId: string): Promise<string> {
     const customerId = await getOrCreateCustomer(userId);
-    const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = getPrimaryFrontendUrl();
 
     const session = await ensureStripe().billingPortal.sessions.create({
         customer: customerId,

@@ -9,6 +9,7 @@ import { registerBodySchema, loginBodySchema, forgotPasswordBodySchema, resetPas
 import { ValidatedRequest } from '../middleware/validateRequest';
 import authMiddleware from '../middleware/authMiddleware';
 import { env } from '../config/env';
+import { getPrimaryFrontendUrl } from '../config/frontend';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../utils/emailService';
 import * as MailChecker from 'mailchecker';
 import dns from 'dns/promises';
@@ -136,7 +137,7 @@ router.post('/register', authRateLimiter, validateRequest({ body: registerBodySc
         await newUser.save();
 
         // Send verification email
-        const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = getPrimaryFrontendUrl();
         const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
 
         let emailSendFailed = false;
@@ -299,7 +300,7 @@ router.post('/forgot-password', passwordResetLimiter, validateRequest({ body: fo
         user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
         await user.save({ validateBeforeSave: false });
 
-        const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = getPrimaryFrontendUrl();
         const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
 
         try {
@@ -420,7 +421,7 @@ router.post('/resend-verification', emailVerificationLimiter, async (req: Reques
         user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
         await user.save();
 
-        const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = getPrimaryFrontendUrl();
         const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
 
         await sendVerificationEmail(user.email, verificationUrl);
