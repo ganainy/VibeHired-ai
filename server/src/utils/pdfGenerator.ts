@@ -39,7 +39,12 @@ const KNOWN_CHROME_PATHS = [
 const resolveChromeExecutablePath = async (): Promise<string | undefined> => {
     const explicitPath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.GOOGLE_CHROME_BIN || process.env.CHROME_BIN;
     if (explicitPath) {
-        return explicitPath;
+        try {
+            await fs.access(explicitPath);
+            return explicitPath;
+        } catch {
+            console.warn(`Configured Chrome path does not exist: ${explicitPath}. Falling back to auto-detection.`);
+        }
     }
 
     for (const candidatePath of KNOWN_CHROME_PATHS) {
@@ -49,6 +54,16 @@ const resolveChromeExecutablePath = async (): Promise<string | undefined> => {
         } catch {
             continue;
         }
+    }
+
+    try {
+        const bundledPath = puppeteer.executablePath();
+        if (bundledPath) {
+            await fs.access(bundledPath);
+            return bundledPath;
+        }
+    } catch {
+        // Bundled Chromium may be unavailable in some production environments.
     }
 
     return undefined;
