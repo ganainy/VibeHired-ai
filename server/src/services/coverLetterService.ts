@@ -57,6 +57,12 @@ REQUIREMENTS FOR COVER LETTER:
 - NO header with contact info/date - start with the salutation
 - DO NOT INCLUDE THE FILENAME ANYWHERE IN THE TEXT (e.g. at the bottom)
 - Do not repeat the job description
+- Use clear paragraph structure with line breaks:
+    1) salutation on its own line
+    2) a short intro paragraph
+    3) one or two body paragraphs
+    4) closing phrase and name/signature on separate lines
+- Preserve paragraph breaks using newline characters (\\n) and blank lines between paragraphs (\\n\\n)
 
 OUTPUT FORMAT - Return ONLY a valid JSON object with this exact structure:
 {
@@ -125,6 +131,9 @@ Return ONLY the JSON object, no additional text or markdown.`;
             throw new Error('Generated cover letter text is too short or empty');
         }
 
+        // Normalize paragraph structure so the editor/PDF don't show one giant block.
+        coverLetterData.coverLetterText = normalizeCoverLetterFormatting(coverLetterData.coverLetterText, language);
+
         // Ensure fileName has proper format
         if (!coverLetterData.fileName || !coverLetterData.fileName.endsWith('.pdf')) {
             coverLetterData.fileName = `${firstName}_${lastName}_${suggestedDocLabel}_${sanitizeForFilename(jobTitle)}_${sanitizeForFilename(companyName)}.pdf`;
@@ -170,6 +179,8 @@ function parseFallbackResponse(
     if (clMatch && clMatch[1]) {
         coverLetterText = clMatch[1].trim();
     }
+
+    coverLetterText = normalizeCoverLetterFormatting(coverLetterText, language);
 
     return {
         coverLetterText,
@@ -222,4 +233,52 @@ function sanitizeForFilename(str: string): string {
         .replace(/_+/g, '_')
         .replace(/^_|_$/g, '')
         || 'Unknown';
+}
+
+function normalizeCoverLetterFormatting(text: string, language: 'en' | 'de'): string {
+    let normalized = String(text || '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\\n/g, '\n')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+    const salutationRegex = language === 'de'
+        ? /^(Sehr geehrte[^\n]*|Guten Tag[^\n]*),?/i
+        : /^(Dear[^\n]*),?/i;
+
+    const closingRegex = language === 'de'
+        ? /(Mit freundlichen Grüßen|Freundliche Grüße|Beste Grüße|Hochachtungsvoll)/i
+        : /(Best regards|Kind regards|Sincerely|Yours sincerely|Yours faithfully)/i;
+
+    // Ensure salutation is followed by a blank line.
+    const salutationMatch = normalized.match(salutationRegex);
+    if (salutationMatch) {
+        const salutation = salutationMatch[0].trim();
+        const rest = normalized.slice(salutation.length).trim();
+        normalized = `${salutation}\n\n${rest}`;
+    }
+
+    // Ensure closing starts on a new paragraph.
+    normalized = normalized.replace(closingRegex, '\n\n$1');
+    normalized = normalized.replace(/\n{3,}/g, '\n\n').trim();
+
+    // If still one block (or mostly one line), create paragraph breaks every ~2 sentences.
+    const lineCount = normalized.split('\n').filter(line => line.trim().length > 0).length;
+    if (lineCount <= 2) {
+        const sentences = normalized
+            .split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ])/)
+            .map(s => s.trim())
+            .filter(Boolean);
+
+        if (sentences.length >= 4) {
+            const paragraphs: string[] = [];
+            for (let index = 0; index < sentences.length; index += 2) {
+                paragraphs.push(sentences.slice(index, index + 2).join(' ').trim());
+            }
+            normalized = paragraphs.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
+        }
+    }
+
+    return normalized;
 }

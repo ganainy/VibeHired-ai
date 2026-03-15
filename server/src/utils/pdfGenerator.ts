@@ -28,6 +28,7 @@ const ensureDirExists = async (dirPath: string) => {
 let browserInstance: Browser | null = null;
 
 const KNOWN_CHROME_PATHS = [
+    '/app/.chrome-for-testing/chrome-linux64/chrome',
     '/app/.apt/usr/bin/google-chrome-stable',
     '/app/.apt/usr/bin/google-chrome',
     '/usr/bin/google-chrome-stable',
