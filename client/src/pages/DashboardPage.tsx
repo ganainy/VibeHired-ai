@@ -401,7 +401,7 @@ const DashboardPage: React.FC = () => {
     setFormData({
       jobTitle: '',
       companyName: '',
-      status: 'Not Applied',
+      status: (preExtractionStatus as JobApplication['status']) || 'Not Applied',
       jobUrl: '',
       notes: '',
       language: 'en',
@@ -421,6 +421,11 @@ const DashboardPage: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Keep selected status as default for future jobs across the dashboard flows.
+    if (name === 'status' && statusOptions.includes(value as JobApplication['status'])) {
+      setPreExtractionStatus(value);
+    }
   };
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
