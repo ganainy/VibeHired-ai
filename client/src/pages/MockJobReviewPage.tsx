@@ -286,7 +286,7 @@ const MockJobReviewPage: React.FC = () => {
                                         className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                                         style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
                                     >
-                                        sample
+                                        demo
                                     </span>
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pointer-events-none select-none">
@@ -352,7 +352,7 @@ const MockJobReviewPage: React.FC = () => {
                                         className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                                         style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
                                     >
-                                        sample
+                                        demo
                                     </span>
                                 </div>
                                 <div className="text-sm text-zinc-700 dark:text-zinc-300 space-y-4 leading-relaxed pointer-events-none select-none">
@@ -546,7 +546,7 @@ const MockJobReviewPage: React.FC = () => {
                                             className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                                             style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
                                         >
-                                            sample
+                                            demo
                                         </span>
                                     </div>
                                     <div className="p-6 space-y-4">
@@ -731,7 +731,7 @@ const MockJobReviewPage: React.FC = () => {
                                             className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                                             style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
                                         >
-                                            sample
+                                            demo
                                         </span>
                                     </div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Practise for Product Manager at Acme Corp</p>
@@ -804,7 +804,7 @@ const MockJobReviewPage: React.FC = () => {
                                         className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                                         style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
                                     >
-                                        sample
+                                        demo
                                     </span>
                                 </div>
                                 <button
@@ -872,7 +872,7 @@ const MockJobReviewPage: React.FC = () => {
                                         className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                                         style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
                                     >
-                                        sample
+                                        demo
                                     </span>
                                 </div>
                                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -920,6 +920,26 @@ const MockJobReviewPage: React.FC = () => {
 
                             {/* Material cards — MaterialCard style */}
                             <div className="space-y-2">
+                                <div
+                                    className="flex items-start gap-2.5 p-3 rounded-xl border"
+                                    style={{
+                                        backgroundColor: 'var(--accent-bg)',
+                                        borderColor: 'var(--accent-dim)',
+                                    }}
+                                >
+                                    <span className="material-symbols-outlined text-base mt-0.5" style={{ color: 'var(--accent)' }}>
+                                        info
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>
+                                            Demo Materials
+                                        </p>
+                                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                            These material cards are demo content to preview how this section looks with your data.
+                                        </p>
+                                    </div>
+                                </div>
+
                                 {/* Link */}
                                 <div
                                     className="group relative flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-200"
@@ -998,7 +1018,7 @@ const MockJobReviewPage: React.FC = () => {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
-                                                <p className="text-sm font-medium leading-snug truncate" style={{ color: 'var(--text-primary)' }}>Sample Interview Questions</p>
+                                                <p className="text-sm font-medium leading-snug truncate" style={{ color: 'var(--text-primary)' }}>Demo Interview Questions</p>
                                                 <div className="flex flex-wrap items-center gap-2 mt-1">
                                                     <span className="text-xs px-1.5 py-0.5 rounded-md capitalize font-medium" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>pdf</span>
                                                     <span className="text-xs" style={{ color: 'var(--text-muted)' }}>124 KB</span>

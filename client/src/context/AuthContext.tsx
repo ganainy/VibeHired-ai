@@ -1,5 +1,5 @@
 // client/src/context/AuthContext.tsx
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useEffect, ReactNode, useRef } from 'react';
 import { loginUser, registerUser, getCurrentUserProfile, RegisterResponse } from '../services/authApi';
 import { getUsage } from '../services/usageApi';
 import axios from 'axios'; // Import axios to set default header
@@ -43,6 +43,55 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const normalizeRequestPath = (url: string = ''): string => {
+  try {
+    if (/^https?:\/\//i.test(url)) {
+      return new URL(url).pathname.toLowerCase();
+    }
+  } catch {
+    // Fallback to raw URL parsing below
+  }
+
+  return url.split('?')[0].toLowerCase();
+};
+
+const METERED_REQUEST_PATTERNS: Array<{ method: string; pathRegex: RegExp }> = [
+  { method: 'post', pathRegex: /\/(?:api\/)?analysis\/analyze$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?analysis\/analyze-all-sections$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?analysis\/cv-section$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?analysis\/[^/]+\/improve(?:\/[^/]+)?$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?ats\/scan(?:\/[^/]+)?$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?auto-jobs\/trigger$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?chat\/[^/]+$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?email-suggestions\/poll$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?cvs\/upload$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?cvs\/upload-branch$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?cvs\/[^/]+\/restructure$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?cvs\/[^/]+\/improve-section-dynamic$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?interview\/[^/]+\/(questions|evaluate)$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?generator\/apply-ats-suggestion$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?generator\/improve-section$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?generator\/[^/]+\/generate-cv$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?job-applications\/recommendations\/regenerate$/ },
+  { method: 'patch', pathRegex: /\/(?:api\/)?job-applications\/[^/]+\/scrape$/ },
+  { method: 'patch', pathRegex: /\/(?:api\/)?job-applications\/[^/]+\/extract-from-text$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?job-applications\/create-from-url$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?job-applications\/create-from-text$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?work-tracker\/import-schedule\/parse$/ },
+  { method: 'post', pathRegex: /\/(?:api\/)?work-tracker\/parse-magic-prompt$/ },
+];
+
+const isMeteredRequest = (method?: string, url?: string): boolean => {
+  if (!method || !url) return false;
+
+  const normalizedMethod = method.toLowerCase();
+  const normalizedPath = normalizeRequestPath(url);
+
+  return METERED_REQUEST_PATTERNS.some(
+    ({ method: expectedMethod, pathRegex }) => expectedMethod === normalizedMethod && pathRegex.test(normalizedPath)
+  );
+};
+
 // Create the AuthProvider component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -50,6 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading initially
   const [error, setError] = useState<string | null>(null);
   const [showCreditLimitModal, setShowCreditLimitModal] = useState(false);
+  const refreshUsageInFlightRef = useRef<Promise<void> | null>(null);
 
   // Logout function
   const logout = React.useCallback(() => {
@@ -69,6 +119,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error("Failed to refresh usage:", err);
     }
   }, []);
+
+  const refreshUsageSafely = React.useCallback(async () => {
+    if (refreshUsageInFlightRef.current) {
+      return refreshUsageInFlightRef.current;
+    }
+
+    const inFlight = (async () => {
+      await refreshUsage();
+    })().finally(() => {
+      refreshUsageInFlightRef.current = null;
+    });
+
+    refreshUsageInFlightRef.current = inFlight;
+    return inFlight;
+  }, [refreshUsage]);
 
   const refreshProfile = React.useCallback(async () => {
     try {
@@ -153,7 +218,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Axios interceptor to handle 401 Unauthorized responses
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        if (isMeteredRequest(response.config?.method, response.config?.url)) {
+          void refreshUsageSafely();
+        }
+        return response;
+      },
       (error) => {
         if (error.response && error.response.status === 401) {
           // Only force a global logout when the user genuinely has an active
@@ -180,7 +250,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       axios.interceptors.response.eject(interceptor);
     };
-  }, [logout]);
+  }, [logout, refreshUsageSafely]);
 
   // Login function
   const login = React.useCallback(async (credentials: { email: string, password: string }) => {

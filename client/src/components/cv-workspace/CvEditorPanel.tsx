@@ -282,6 +282,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                 <FreeformCvEditor
                   value={data as Record<string, any>}
                   onChange={(next) => onChange(next as JsonResumeSchema)}
+                  cvId={cvId}
                 />
               )}
 

@@ -56,7 +56,7 @@ const CVManagementPage: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('german-latex');
-  const [creationMode, setCreationMode] = useState<'choose' | 'upload' | 'scratch'>('choose');
+  const [creationMode, setCreationMode] = useState<'choose' | 'upload' | 'scratch'>('upload');
 
   // Analysis state
   const [analyses, setAnalyses] = useState<Record<string, SectionAnalysisResult[]>>({});
@@ -935,6 +935,78 @@ const CVManagementPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 p-6 pt-10 gap-6 overflow-hidden">
+      {allCvs.length === 0 && !showMockTour && !isLoadingCv && !currentCvData ? (
+        /* ── Zero-CV hero ── */
+        <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
+          <div className="w-full max-w-lg px-6 py-12">
+            <div className="text-center mb-10">
+              <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, var(--accent-dim), var(--accent))' }}>
+                <svg className="w-8 h-8 text-ink-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                Add Your First CV
+              </h2>
+              <p className="text-base text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                Upload your existing CV and we'll extract it into a structured, editable format.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all ${isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'}`}
+              >
+                {isUploading ? (
+                  <p className="text-blue-600">Uploading...</p>
+                ) : (
+                  <>
+                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">Drag & Drop or Click to Upload</p>
+                    <input type="file" id="cvFileInput" onChange={handleFileChange} className="hidden" accept=".pdf,.docx,.rtf" />
+                    <label htmlFor="cvFileInput" className="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">Select File</label>
+                  </>
+                )}
+              </div>
+
+              {selectedFile && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex justify-between items-center text-sm">
+                  <span className="font-medium">{selectedFile.name}</span>
+                  <button onClick={() => setSelectedFile(null)} type="button" className="text-red-500 hover:text-red-700">Remove</button>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={!selectedFile || isUploading}
+                className="mt-6 w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isUploading ? 'Processing...' : 'Extract & Fill Form'}
+              </button>
+            </form>
+            {uploadError && <p className="mt-4 text-red-600 text-center">{uploadError}</p>}
+            <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+              Don't have a file?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  const emptyCvData: JsonResumeSchema = {
+                    basics: { name: '', label: '', email: '', phone: '', summary: '', location: { city: '', region: '', countryCode: '' }, profiles: [] },
+                    work: [], education: [], skills: [], projects: [], languages: [], certificates: [],
+                  };
+                  setCurrentCvData(emptyCvData);
+                }}
+                className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Start from scratch instead
+              </button>
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Left Sidebar */}
       {!isReplacing && (
         <Sidebar
@@ -944,7 +1016,7 @@ const CVManagementPage: React.FC = () => {
           onAddNewCv={() => {
             setIsReplacing(true);
             setSelectedFile(null);
-            setCreationMode('choose');
+            setCreationMode('upload');
           }}
           onReplaceCv={() => {
             setIsReplacing(true);
@@ -1100,7 +1172,7 @@ const CVManagementPage: React.FC = () => {
                   if (cvToSelect) {
                     setActiveCvId(cvToSelect._id);
                     setIsReplacing(false);
-                    setCreationMode('choose');
+                    setCreationMode('upload');
                   }
                 }}
                 className="mb-6 flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-all font-medium"
@@ -1110,58 +1182,6 @@ const CVManagementPage: React.FC = () => {
                 </svg>
                 Back to My CVs
               </button>
-            )}
-
-            {/* Choice Mode */}
-            {creationMode === 'choose' && (
-              <div className="max-w-3xl mx-auto mt-10">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-lg" style={{ background: 'linear-gradient(135deg, var(--accent-dim), var(--accent))' }}>
-                    <svg className="w-8 h-8 text-ink-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-                    {masterCv ? 'Update Your CV' : 'Create Your CV'}
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto text-lg">
-                    Choose how you'd like to {masterCv ? 'update' : 'create'} your professional CV
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <button
-                    onClick={() => {
-                      const emptyCvData: JsonResumeSchema = {
-                        basics: {
-                          name: '',
-                          label: '',
-                          email: '',
-                          phone: '',
-                          summary: '',
-                          location: { city: '', region: '', countryCode: '' },
-                          profiles: [],
-                        },
-                        work: [], education: [], skills: [], projects: [], languages: [], certificates: [],
-                      };
-                      setCurrentCvData(emptyCvData);
-                      setCreationMode('choose');
-                    }}
-                    className="group relative p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-500 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 text-left"
-                  >
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Create from Scratch</h3>
-                    <p className="text-gray-600 dark:text-gray-400">Start with a blank canvas.</p>
-                  </button>
-
-                  <button
-                    onClick={() => setCreationMode('upload')}
-                    className="group relative p-8 bg-gray-50 dark:bg-gray-900 rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 text-left"
-                  >
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Upload Existing CV</h3>
-                    <p className="text-gray-600 dark:text-gray-400">Import your existing PDF/RTF.</p>
-                  </button>
-                </div>
-              </div>
             )}
 
             {/* Upload Mode */}
@@ -1206,6 +1226,23 @@ const CVManagementPage: React.FC = () => {
                   </button>
                 </form>
                 {uploadError && <p className="mt-4 text-red-600 text-center">{uploadError}</p>}
+                <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Don't have a file?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const emptyCvData: JsonResumeSchema = {
+                        basics: { name: '', label: '', email: '', phone: '', summary: '', location: { city: '', region: '', countryCode: '' }, profiles: [] },
+                        work: [], education: [], skills: [], projects: [], languages: [], certificates: [],
+                      };
+                      setCurrentCvData(emptyCvData);
+                      setIsReplacing(false);
+                    }}
+                    className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  >
+                    Start from scratch instead
+                  </button>
+                </p>
               </div>
             )}
           </div>
@@ -1228,6 +1265,8 @@ const CVManagementPage: React.FC = () => {
           />
         )}
       </div>
+      </>
+      )}
 
       {/* Toast Notification */}
       {toast && (

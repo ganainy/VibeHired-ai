@@ -1,6 +1,7 @@
 // JobChatWindow component - floating chat window (not full modal)
 import React, { useState, useRef, useEffect } from 'react';
 import { postChatMessage, getChatHistory, ChatMessage } from '../../services/chatApi';
+import { useAuth } from '../../context/AuthContext';
 import Spinner from '../common/Spinner';
 import ErrorAlert from '../common/ErrorAlert';
 
@@ -17,6 +18,7 @@ const JobChatWindow: React.FC<JobChatWindowProps> = ({
     isOpen,
     onClose
 }) => {
+    const { refreshUsage } = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputText, setInputText] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -92,6 +94,11 @@ const JobChatWindow: React.FC<JobChatWindowProps> = ({
                 timestamp: new Date().toISOString()
             };
             setMessages(prev => [...prev, aiMessage]);
+            try {
+                await refreshUsage();
+            } catch (usageErr) {
+                console.error('Failed to refresh credits after chat message:', usageErr);
+            }
         } catch (err: any) {
             console.error('Error sending chat message:', err);
             setError(err.message || 'Failed to get AI response. Please try again.');
@@ -206,11 +213,17 @@ const JobChatWindow: React.FC<JobChatWindowProps> = ({
                     <button
                         type="submit"
                         disabled={!inputText.trim() || isLoading}
-                        className="btn-primary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 justify-center flex-shrink-0 px-3"
+                        className="btn-primary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 justify-center flex-shrink-0 px-3 min-w-[96px]"
                         title="Send message (1 credit)"
                     >
                         {isLoading ? (
-                            <Spinner size="sm" />
+                            <>
+                                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" className="opacity-30" />
+                                    <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="opacity-90" />
+                                </svg>
+                                <span className="text-xs font-medium">Sending…</span>
+                            </>
                         ) : (
                             <>
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

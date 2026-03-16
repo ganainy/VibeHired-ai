@@ -1,6 +1,7 @@
 // JobChatModal component for AI-powered job description Q&A
 import React, { useState, useRef, useEffect } from 'react';
 import { postChatMessage } from '../../services/chatApi';
+import { useAuth } from '../../context/AuthContext';
 import Spinner from '../common/Spinner';
 import ErrorAlert from '../common/ErrorAlert';
 
@@ -22,6 +23,7 @@ const JobChatModal: React.FC<JobChatModalProps> = ({
     isOpen,
     onClose
 }) => {
+    const { refreshUsage } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -71,6 +73,11 @@ const JobChatModal: React.FC<JobChatModalProps> = ({
             const response = await postChatMessage(jobId, userQuestion);
             const aiMessage: Message = { sender: 'ai', text: response.answer };
             setMessages(prev => [...prev, aiMessage]);
+            try {
+                await refreshUsage();
+            } catch (usageErr) {
+                console.error('Failed to refresh credits after chat message:', usageErr);
+            }
         } catch (err: any) {
             console.error('Error sending chat message:', err);
             setError(err.message || 'Failed to get AI response. Please try again.');
@@ -182,10 +189,16 @@ const JobChatModal: React.FC<JobChatModalProps> = ({
                         <button
                             type="submit"
                             disabled={!inputText.trim() || isLoading}
-                            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[80px]"
+                            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5 min-w-[108px]"
                         >
                             {isLoading ? (
-                                <Spinner size="sm" />
+                                <>
+                                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" className="opacity-30" />
+                                        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="opacity-90" />
+                                    </svg>
+                                    <span className="text-xs font-medium">Sending…</span>
+                                </>
                             ) : (
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

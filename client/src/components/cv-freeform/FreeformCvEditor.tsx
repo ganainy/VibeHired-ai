@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   addObjectField,
   appendArrayItem,
@@ -20,6 +20,8 @@ import {
 interface FreeformCvEditorProps {
   value: FreeformJsonObject;
   onChange: (next: FreeformJsonObject) => void;
+  /** Namespace the localStorage key so different CVs keep their own expand state */
+  cvId?: string;
 }
 
 interface NodeEditorProps {
@@ -28,14 +30,73 @@ interface NodeEditorProps {
   nodeKey?: string;
   depth: number;
   onChange: (next: FreeformJsonObject) => void;
+  /** Keys currently expanded (depth-0 sections only) */
+  expandedKeys?: Set<string>;
+  onToggleKey?: (key: string) => void;
 }
 
-const containerCardStyle = 'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900';
-const nestedCardStyle = 'rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/70';
-const inputStyle = 'w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100';
-const subtleButtonStyle = 'px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors';
-const destructiveButtonStyle = 'px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 text-xs font-semibold hover:bg-red-100 transition-colors';
-const primaryButtonStyle = 'px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors';
+const inputBase =
+  'w-full px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/30';
+
+/** Returns the first short string value inside an array item for a summary label */
+function getItemSummary(item: FreeformJsonValue): string {
+  if (!isPlainObject(item)) return '';
+  for (const [, v] of getVisibleEntries(item)) {
+    if (typeof v === 'string' && v.trim() && v.length < 80) return v.trim();
+  }
+  return '';
+}
+
+const RemoveButton: React.FC<{ onClick: () => void; label?: string }> = ({ onClick, label = 'Remove' }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors flex-shrink-0"
+    style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)' }}
+    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--rose, #f87171)')}
+    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+  >
+    {label}
+  </button>
+);
+
+const RemoveIconButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="mt-6 p-1.5 rounded-lg transition-colors flex-shrink-0"
+    style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)' }}
+    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--rose, #f87171)')}
+    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+    title="Remove field"
+  >
+    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  </button>
+);
+
+const AddDashedButton: React.FC<{ onClick: () => void; label: string }> = ({ onClick, label }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="flex items-center gap-2 w-full justify-center px-4 py-2.5 rounded-xl text-sm font-medium border-2 border-dashed transition-colors"
+    style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.borderColor = 'var(--accent)';
+      e.currentTarget.style.color = 'var(--accent)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.borderColor = 'var(--border)';
+      e.currentTarget.style.color = 'var(--text-muted)';
+    }}
+  >
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+    {label}
+  </button>
+);
 
 const PrimitiveEditor: React.FC<{
   label?: string;
@@ -45,7 +106,7 @@ const PrimitiveEditor: React.FC<{
 }> = ({ label, value, tag, onChange }) => {
   if (typeof value === 'boolean') {
     return (
-      <label className="flex items-center gap-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+      <label className="flex items-center gap-3 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
         {label && <span className="min-w-[120px]">{formatKeyLabel(label)}</span>}
         <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
       </label>
@@ -54,251 +115,313 @@ const PrimitiveEditor: React.FC<{
 
   if (typeof value === 'number') {
     return (
-      <label className="block space-y-2">
-        {label && <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{formatKeyLabel(label)}</span>}
+      <div className="flex flex-col gap-1.5">
+        {label && (
+          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+            {formatKeyLabel(label)}
+          </span>
+        )}
         <input
           type="number"
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className={inputStyle}
+          className={inputBase}
+          style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
         />
-      </label>
+      </div>
     );
   }
 
   const stringValue = value === null ? '' : String(value);
   const multiline = tag === 'paragraph' || stringValue.includes('\n') || stringValue.length > 120;
-  const inputType = tag === 'email' ? 'email' : tag === 'url' ? 'url' : tag === 'phone' ? 'tel' : tag === 'date' ? 'date' : 'text';
+  const inputType =
+    tag === 'email' ? 'email' :
+    tag === 'url' ? 'url' :
+    tag === 'phone' ? 'tel' :
+    tag === 'date' ? 'date' : 'text';
 
   return (
-    <label className="block space-y-2">
-      {label && <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{formatKeyLabel(label)}</span>}
+    <div className="flex flex-col gap-1.5">
+      {label && (
+        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+          {formatKeyLabel(label)}
+        </span>
+      )}
       {multiline ? (
         <textarea
           value={stringValue}
           onChange={(e) => onChange(e.target.value)}
-          rows={Math.min(Math.max(stringValue.split('\n').length + 1, 4), 12)}
-          className={`${inputStyle} leading-6`}
+          rows={Math.min(Math.max(stringValue.split('\n').length + 1, 3), 10)}
+          className={`${inputBase} leading-6 resize-none`}
+          style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
         />
       ) : (
         <input
           type={inputType}
           value={stringValue}
           onChange={(e) => onChange(e.target.value)}
-          className={inputStyle}
+          className={inputBase}
+          style={{ background: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
         />
       )}
-    </label>
+    </div>
   );
 };
 
-const NodeEditor: React.FC<NodeEditorProps> = ({ root, path, nodeKey, depth, onChange }) => {
+const NodeEditor: React.FC<NodeEditorProps> = ({ root, path, nodeKey, depth, onChange, expandedKeys, onToggleKey }) => {
   const node = getValueAtPath(root, path) as FreeformJsonValue;
 
+  // ── Depth-0 root object: render each key as a named section ──
   if (isPlainObject(node) && depth === 0 && !nodeKey) {
     const sections = getVisibleEntries(node);
 
     return (
-      <div className="divide-y divide-gray-100 dark:divide-gray-800 border-t border-gray-100 dark:border-gray-800">
-        {sections.map(([sectionKey, sectionValue]) => {
+      <div className="flex flex-col">
+        {sections.map(([sectionKey]) => {
           const sectionPath = [...path, sectionKey];
-          const sectionMeta = Array.isArray(sectionValue)
-            ? `${sectionValue.length} item${sectionValue.length === 1 ? '' : 's'}`
-            : isPlainObject(sectionValue)
-              ? `${getVisibleEntries(sectionValue).length} field${getVisibleEntries(sectionValue).length === 1 ? '' : 's'}`
-              : 'Text section';
+          const isExpanded = expandedKeys?.has(sectionKey) ?? false;
 
           return (
-            <section key={sectionKey} className="py-6 scroll-mt-28">
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <input
-                      type="text"
-                      value={sectionKey}
-                      onChange={(e) => onChange(renameObjectKeyAtPath(root, path, sectionKey, e.target.value))}
-                      className="min-w-[220px] rounded-lg border border-transparent bg-transparent px-0 py-0 text-lg font-bold tracking-tight text-gray-900 dark:text-white focus:border-gray-300 dark:focus:border-gray-700 focus:bg-white dark:focus:bg-gray-950 focus:px-3 focus:py-2"
-                    />
-                    <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                      {sectionMeta}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Edit this section while keeping the original freeform structure.</p>
-                </div>
+            <section key={sectionKey} className="border-b" style={{ borderColor: 'var(--border)' }}>
+              {/* Header — always visible */}
+              <div className="flex items-center gap-2 py-4">
+                <button
+                  type="button"
+                  onClick={() => onToggleKey?.(sectionKey)}
+                  className="flex-shrink-0 p-0.5 rounded transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+                  title={isExpanded ? 'Collapse' : 'Expand'}
+                >
+                  <svg
+                    className="w-4 h-4 transition-transform duration-200"
+                    style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <input
+                  type="text"
+                  value={sectionKey}
+                  onChange={(e) => onChange(renameObjectKeyAtPath(root, path, sectionKey, e.target.value))}
+                  className="text-base font-bold tracking-tight bg-transparent border-0 focus:outline-none focus:ring-0 p-0 flex-1"
+                  style={{ color: 'var(--text-primary)' }}
+                />
                 <button
                   type="button"
                   onClick={() => onChange(removeValueAtPath(root, sectionPath))}
-                  className={destructiveButtonStyle}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors flex-shrink-0"
+                  style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--rose, #f87171)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  Remove Section
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Remove
                 </button>
               </div>
 
-              <NodeEditor root={root} path={sectionPath} nodeKey={sectionKey} depth={depth + 1} onChange={onChange} />
+              {/* Collapsible body */}
+              {isExpanded && (
+                <div className="pb-5">
+                  <NodeEditor root={root} path={sectionPath} nodeKey={sectionKey} depth={depth + 1} onChange={onChange} />
+                </div>
+              )}
             </section>
           );
         })}
 
-        <div className="pt-6">
-          <button
-            type="button"
-            onClick={() => onChange(addObjectField(root, path, 'new_section'))}
-            className="flex items-center gap-2 w-full justify-center px-4 py-3 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors text-sm font-medium"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Section
-          </button>
+        <div className="pt-5">
+          <AddDashedButton onClick={() => onChange(addObjectField(root, path, 'new_section'))} label="Add Section" />
         </div>
       </div>
     );
   }
 
+  // ── Primitive ──
   if (!Array.isArray(node) && !isPlainObject(node)) {
     const fieldTag = getUiTagForPath(root, path);
     return (
-      <div className="space-y-2">
-        <PrimitiveEditor
-          label={nodeKey}
-          value={node as string | number | boolean | null}
-          tag={fieldTag}
-          onChange={(nextValue) => onChange(setValueAtPath(root, path, nextValue))}
-        />
-      </div>
+      <PrimitiveEditor
+        label={nodeKey}
+        value={node as string | number | boolean | null}
+        tag={fieldTag}
+        onChange={(nextValue) => onChange(setValueAtPath(root, path, nextValue))}
+      />
     );
   }
 
+  // ── Array ──
   if (Array.isArray(node)) {
     return (
-      <div className={`${nestedCardStyle} p-4 space-y-4`}>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            {nodeKey && <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatKeyLabel(nodeKey)}</h4>}
-            <p className="text-xs text-gray-500 dark:text-gray-400">Array with {node.length} item{node.length === 1 ? '' : 's'}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onChange(appendArrayItem(root, path, createDefaultArrayItem(node)))}
-              className={primaryButtonStyle}
-              style={{ background: 'var(--accent)', color: '#0e0e17' }}
-            >
-              Add Item
-            </button>
-            {nodeKey && (
-              <button
-                type="button"
-                onClick={() => onChange(removeValueAtPath(root, path))}
-                className={destructiveButtonStyle}
-              >
-                Remove
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {node.map((item, index) => (
-            <div key={index} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Item {index + 1}</span>
-                <button
-                  type="button"
-                  onClick={() => onChange(removeValueAtPath(root, [...path, index]))}
-                  className="text-xs font-semibold text-red-500"
+      <div className="flex flex-col gap-3">
+        {node.map((item, index) => (
+          <div
+            key={index}
+            className="rounded-xl border p-4"
+            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className="text-xs font-bold tabular-nums px-2 py-0.5 rounded-md flex-shrink-0"
+                  style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
                 >
-                  Delete
-                </button>
+                  #{index + 1}
+                </span>
+                {(() => {
+                  const summary = getItemSummary(item);
+                  return summary ? (
+                    <span className="text-xs font-medium truncate" style={{ color: 'var(--text-secondary)' }}>
+                      {summary}
+                    </span>
+                  ) : null;
+                })()}
               </div>
-              <NodeEditor root={root} path={[...path, index]} depth={depth + 1} onChange={onChange} />
+              <RemoveButton onClick={() => onChange(removeValueAtPath(root, [...path, index]))} label="Delete" />
             </div>
-          ))}
-        </div>
+            <NodeEditor root={root} path={[...path, index]} depth={depth + 1} onChange={onChange} />
+          </div>
+        ))}
+
+        <AddDashedButton
+          onClick={() => onChange(appendArrayItem(root, path, createDefaultArrayItem(node)))}
+          label="Add Item"
+        />
+
+        {nodeKey && (
+          <div className="flex justify-start">
+            <RemoveButton onClick={() => onChange(removeValueAtPath(root, path))} label="Remove Section" />
+          </div>
+        )}
       </div>
     );
   }
 
+  // ── Object (nested) ──
   const entries = getVisibleEntries(node);
 
   return (
-    <div className={`${depth <= 1 ? containerCardStyle : nestedCardStyle} p-4 space-y-4`}>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          {nodeKey && <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatKeyLabel(nodeKey)}</h4>}
-          <p className="text-xs text-gray-500 dark:text-gray-400">Object with {entries.length} field{entries.length === 1 ? '' : 's'}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onChange(addObjectField(root, path, depth === 0 ? 'new_section' : 'new_field'))}
-            className={depth <= 1 ? subtleButtonStyle : primaryButtonStyle}
-            style={depth <= 1 ? undefined : { background: 'var(--accent)', color: '#0e0e17' }}
-          >
-            {depth === 0 ? 'Add Section' : 'Add Field'}
-          </button>
-          {nodeKey && (
-            <button
-              type="button"
-              onClick={() => onChange(removeValueAtPath(root, path))}
-              className={destructiveButtonStyle}
-            >
-              Remove
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-4">
-          {entries.map(([childKey, childValue]) => {
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
+        {entries.map(([childKey, childValue]) => {
           if (isMetaKey(childKey)) return null;
           const childPath = [...path, childKey];
           const childTag = getUiTagForPath(root, childPath);
+          const isComplex = Array.isArray(childValue) || isPlainObject(childValue);
 
           return (
-            <div key={childKey} className="space-y-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm">
-              <div className="flex items-center gap-2 flex-wrap">
-                <input
-                  type="text"
-                  value={childKey}
-                  onChange={(e) => onChange(renameObjectKeyAtPath(root, path, childKey, e.target.value))}
-                  className="min-w-[180px] rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-3 py-2 text-sm font-semibold text-gray-800 dark:text-gray-100"
-                />
-                <button
-                  type="button"
-                  onClick={() => onChange(removeValueAtPath(root, childPath))}
-                  className="text-xs font-semibold text-red-500"
+            <div key={childKey}>
+              {isComplex ? (
+                <div
+                  className="rounded-xl border p-4"
+                  style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
                 >
-                  Delete
-                </button>
-              </div>
-              {Array.isArray(childValue) || isPlainObject(childValue) ? (
-                <NodeEditor root={root} path={childPath} nodeKey={childKey} depth={depth + 1} onChange={onChange} />
+                  <div className="flex items-center justify-between mb-3">
+                    <input
+                      type="text"
+                      value={childKey}
+                      onChange={(e) => onChange(renameObjectKeyAtPath(root, path, childKey, e.target.value))}
+                      className="text-sm font-semibold bg-transparent border-0 focus:outline-none focus:ring-0 p-0 flex-1"
+                      style={{ color: 'var(--text-primary)' }}
+                    />
+                    <RemoveButton onClick={() => onChange(removeValueAtPath(root, childPath))} />
+                  </div>
+                  <NodeEditor root={root} path={childPath} nodeKey={childKey} depth={depth + 1} onChange={onChange} />
+                </div>
               ) : (
-                <PrimitiveEditor
-                  value={childValue as string | number | boolean | null}
-                  tag={childTag}
-                  onChange={(nextValue) => onChange(setValueAtPath(root, childPath, nextValue))}
-                />
+                <div className="flex items-start gap-3">
+                  <div className="flex-1">
+                    <PrimitiveEditor
+                      label={childKey}
+                      value={childValue as string | number | boolean | null}
+                      tag={childTag}
+                      onChange={(nextValue) => onChange(setValueAtPath(root, childPath, nextValue))}
+                    />
+                  </div>
+                  <RemoveIconButton onClick={() => onChange(removeValueAtPath(root, childPath))} />
+                </div>
               )}
             </div>
           );
         })}
       </div>
+
+      <button
+        type="button"
+        onClick={() => onChange(addObjectField(root, path, 'new_field'))}
+        className="flex items-center gap-1.5 self-start px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+        style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = 'var(--accent)';
+          e.currentTarget.style.borderColor = 'var(--accent-dim)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'var(--text-muted)';
+          e.currentTarget.style.borderColor = 'var(--border)';
+        }}
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+        Add Field
+      </button>
     </div>
   );
 };
 
-const FreeformCvEditor: React.FC<FreeformCvEditorProps> = ({ value, onChange }) => {
+const STORAGE_KEY_PREFIX = 'freeform_expanded_';
+
+const FreeformCvEditor: React.FC<FreeformCvEditorProps> = ({ value, onChange, cvId }) => {
+  const storageKey = `${STORAGE_KEY_PREFIX}${cvId ?? 'default'}`;
+
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      return stored ? new Set<string>(JSON.parse(stored) as string[]) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
+
+  // Re-read from storage when the CV changes (different cvId)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      setExpandedKeys(stored ? new Set<string>(JSON.parse(stored) as string[]) : new Set<string>());
+    } catch {
+      setExpandedKeys(new Set<string>());
+    }
+  }, [storageKey]);
+
+  const toggleKey = useCallback((key: string) => {
+    setExpandedKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
+      } catch { /* quota exceeded — silently ignore */ }
+      return next;
+    });
+  }, [storageKey]);
+
   return (
-    <div className="space-y-5">
-      <div className="pb-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Freeform CV Sections</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Edit the CV exactly as stored from the original document structure.
-        </p>
-      </div>
-      <NodeEditor root={value} path={[]} depth={0} onChange={onChange} />
+    <div>
+      <NodeEditor
+        root={value}
+        path={[]}
+        depth={0}
+        onChange={onChange}
+        expandedKeys={expandedKeys}
+        onToggleKey={toggleKey}
+      />
     </div>
   );
 };

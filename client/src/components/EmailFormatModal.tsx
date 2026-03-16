@@ -103,8 +103,12 @@ const EmailFormatModal: React.FC<EmailFormatModalProps> = ({
         return bodyText;
     }, [providedEmailBody, coverLetterText, language]);
 
-    // Only show recipient if AI returned a specific value (not fallback)
-    const displayRecipient = providedEmailRecipient || null;
+    // Show AI recipient when available, otherwise fall back to extracted contact email.
+    const displayRecipient = (providedEmailRecipient && providedEmailRecipient.trim())
+        ? providedEmailRecipient.trim()
+        : (contactEmail && contactEmail.trim())
+            ? contactEmail.trim()
+            : null;
 
     const handleCopySubject = async () => {
         try {

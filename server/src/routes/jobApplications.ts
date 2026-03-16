@@ -260,6 +260,52 @@ const getPendingFollowUpsHandler: RequestHandler = async (req, res) => {
 };
 router.get('/follow-ups/pending', getPendingFollowUpsHandler);
 
+// --- Check for Duplicate Jobs ---
+// NOTE: This static route must be registered BEFORE '/:id' or it will be
+// captured by the generic id route and fail ObjectId validation.
+// GET /api/job-applications/check-duplicate?jobUrl=...&companyName=...&jobTitle=...
+async function checkDuplicateHandler(req: ValidatedRequest, res: Response): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ message: 'User not authenticated.' });
+    return;
+  }
+  const userId = req.user._id;
+  const { jobUrl, companyName, jobTitle } = req.query as { jobUrl?: string; companyName?: string; jobTitle?: string };
+
+  try {
+    const conditions: any[] = [];
+
+    if (jobUrl && jobUrl.trim()) {
+      const escaped = jobUrl.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      conditions.push({ jobUrl: { $regex: new RegExp(`^${escaped}$`, 'i') } });
+    }
+    if (companyName && jobTitle) {
+      const escapedCompany = companyName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      conditions.push({
+        companyName: { $regex: new RegExp(escapedCompany, 'i') },
+        jobTitle: { $regex: new RegExp(jobTitle.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+      });
+    }
+
+    if (conditions.length === 0) {
+      res.status(200).json({ duplicates: [] });
+      return;
+    }
+
+    const duplicates = await JobApplication.find({
+      userId,
+      showInDashboard: true,
+      $or: conditions,
+    }).select('_id jobTitle companyName status createdAt jobUrl').lean();
+
+    res.status(200).json({ duplicates });
+  } catch (error: any) {
+    console.error('Error checking for duplicate jobs:', error);
+    res.status(500).json({ message: 'Error checking for duplicate jobs.' });
+  }
+}
+router.get('/check-duplicate', checkDuplicateHandler);
+
 // GET /api/jobs/:id - Retrieve a single job application (ensure it belongs to user)
 const getJobByIdHandler: RequestHandler = async (req: ValidatedRequest, res) => {
   if (!req.user) {
@@ -768,51 +814,6 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
   }
 };
 router.post('/create-from-text', usageLimiter('jobExtraction'), validateRequest({ body: createJobFromTextBodySchema }), createJobFromTextHandler);
-
-
-// --- Check for Duplicate Jobs ---
-// GET /api/job-applications/check-duplicate?jobUrl=...&companyName=...&jobTitle=...
-const checkDuplicateHandler: RequestHandler = async (req: ValidatedRequest, res) => {
-  if (!req.user) {
-    res.status(401).json({ message: 'User not authenticated.' });
-    return;
-  }
-  const userId = req.user._id;
-  const { jobUrl, companyName, jobTitle } = req.query as { jobUrl?: string; companyName?: string; jobTitle?: string };
-
-  try {
-    const conditions: any[] = [];
-
-    if (jobUrl && jobUrl.trim()) {
-      const escaped = jobUrl.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      conditions.push({ jobUrl: { $regex: new RegExp(`^${escaped}$`, 'i') } });
-    }
-    if (companyName && jobTitle) {
-      const escapedCompany = companyName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      conditions.push({
-        companyName: { $regex: new RegExp(escapedCompany, 'i') },
-        jobTitle: { $regex: new RegExp(jobTitle.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
-      });
-    }
-
-    if (conditions.length === 0) {
-      res.status(200).json({ duplicates: [] });
-      return;
-    }
-
-    const duplicates = await JobApplication.find({
-      userId,
-      showInDashboard: true,
-      $or: conditions,
-    }).select('_id jobTitle companyName status createdAt jobUrl').lean();
-
-    res.status(200).json({ duplicates });
-  } catch (error: any) {
-    console.error('Error checking for duplicate jobs:', error);
-    res.status(500).json({ message: 'Error checking for duplicate jobs.' });
-  }
-};
-router.get('/check-duplicate', checkDuplicateHandler);
 
 
 // ---  Get Draft Data Endpoint ---

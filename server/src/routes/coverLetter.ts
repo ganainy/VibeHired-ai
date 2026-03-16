@@ -87,6 +87,13 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
             customPrompt
         );
 
+        const resolvedRecipient =
+            (coverLetterData.emailRecipient && coverLetterData.emailRecipient.trim())
+                ? coverLetterData.emailRecipient.trim()
+                : (job.contactEmail && job.contactEmail.trim())
+                    ? job.contactEmail.trim()
+                    : null;
+
         // 5. Update Job with all cover letter data
         await JobApplication.updateOne({ _id: jobId, userId: userId }, {
             $set: {
@@ -94,7 +101,7 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
                 coverLetterFileName: coverLetterData.fileName,
                 coverLetterEmailSubject: coverLetterData.emailSubject,
                 coverLetterEmailBody: coverLetterData.emailBody,
-                coverLetterEmailRecipient: coverLetterData.emailRecipient || null,
+                coverLetterEmailRecipient: resolvedRecipient,
                 suggestedCoverLetterFilename: coverLetterData.fileName // Keep for backward compatibility
             }
         });
@@ -106,7 +113,7 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
             fileName: coverLetterData.fileName,
             emailSubject: coverLetterData.emailSubject,
             emailBody: coverLetterData.emailBody,
-            emailRecipient: coverLetterData.emailRecipient,
+            emailRecipient: resolvedRecipient,
             // Keep for backward compatibility
             suggestedFilename: coverLetterData.fileName,
             language: requestedLanguage

@@ -76,8 +76,13 @@ OUTPUT FORMAT - Return ONLY a valid JSON object with this exact structure:
 IMPORTANT: For emailRecipient, return null if no real recipient name or email is provided in the job posting. Do NOT use generic placeholders like "Hiring Manager", "HR Team", or "Sehr geehrte Damen und Herren".
 
 EMAIL BODY REQUIREMENTS:
-- Start with a brief introduction mentioning the position
-- Include a note about attached documents (CV and certificates)
+- Write a genuinely persuasive outreach email, not just an attachment notice
+- 4-7 short sentences total (plus greeting/closing), concise but substantive
+- Mention the position and company naturally in the first sentence
+- Include 2-3 role-relevant strengths from the CV that match this specific job
+- Add one motivation sentence about why this company/role is a good fit
+- End with a polite call-to-action (e.g., invitation for interview / next steps)
+- Include a short note that CV and certificates are attached
 ${language === 'de' 
     ? '- End with "Mit freundlichen Grüßen" followed by placeholder for name'
     : '- End with "Best regards" followed by placeholder for name'}
@@ -197,31 +202,34 @@ function parseFallbackResponse(
  * Generate default email body from cover letter text
  */
 function generateDefaultEmailBody(coverLetterText: string, language: 'en' | 'de'): string {
-    const attachmentNote = language === 'de'
-        ? '\n\nIm Anhang finden Sie meinen Lebenslauf sowie meine Zeugnisse und Zertifikate.\n\nMit freundlichen Grüßen'
-        : '\n\nPlease find attached my CV along with my certificates.\n\nBest regards';
+    const compactCoverLetter = String(coverLetterText || '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\n{2,}/g, '\n')
+        .trim();
 
-    // Try to find closing and insert attachment note before it
-    const closingPatterns = language === 'de'
-        ? ['Mit freundlichen Grüßen', 'Freundliche Grüße', 'Beste Grüße', 'Hochachtungsvoll']
-        : ['Best regards', 'Sincerely', 'Yours sincerely', 'Kind regards', 'Yours faithfully'];
+    const sentences = compactCoverLetter
+        .split(/(?<=[.!?])\s+/)
+        .map(s => s.trim())
+        .filter(Boolean);
 
-    let bodyText = coverLetterText;
-    
-    for (const pattern of closingPatterns) {
-        const idx = bodyText.toLowerCase().indexOf(pattern.toLowerCase());
-        if (idx !== -1) {
-            const beforeClosing = bodyText.substring(0, idx).trim();
-            const closingAndAfter = bodyText.substring(idx);
-            const attachmentText = language === 'de'
-                ? '\n\nIm Anhang finden Sie meinen Lebenslauf sowie meine Zeugnisse und Zertifikate.\n\n'
-                : '\n\nPlease find attached my CV along with my certificates.\n\n';
-            return beforeClosing + attachmentText + closingAndAfter;
-        }
+    const summarySentences = sentences.slice(0, 3).join(' ');
+
+    if (language === 'de') {
+        const opening = 'Sehr geehrte Damen und Herren,';
+        const body = summarySentences || 'mit großem Interesse bewerbe ich mich auf die ausgeschriebene Position und bringe relevante praktische Erfahrung mit.';
+        const attachmentLine = 'Im Anhang finden Sie meinen Lebenslauf sowie meine Zeugnisse und Zertifikate.';
+        const cta = 'Ich freue mich über die Gelegenheit, Sie in einem persönlichen Gespräch von meiner Eignung zu überzeugen.';
+        const closing = 'Mit freundlichen Grüßen';
+        return `${opening}\n\n${body}\n\n${attachmentLine}\n${cta}\n\n${closing}`;
     }
 
-    // No closing found, append attachment note
-    return coverLetterText.trim() + attachmentNote;
+    const opening = 'Dear Hiring Team,';
+    const body = summarySentences || 'I am excited to apply for this role and bring relevant hands-on experience that aligns with your requirements.';
+    const attachmentLine = 'Please find attached my CV along with my certificates.';
+    const cta = 'I would welcome the opportunity to discuss how I can contribute to your team.';
+    const closing = 'Best regards';
+    return `${opening}\n\n${body}\n\n${attachmentLine}\n${cta}\n\n${closing}`;
+
 }
 
 /**
