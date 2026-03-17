@@ -5,6 +5,11 @@ const LOCAL_FRONTEND_ORIGINS = [
     'http://localhost:3000',
 ];
 
+const PRODUCTION_FRONTEND_ORIGINS = [
+    'https://vibehired.ganainy.dev',
+    'https://vibehired-ai.netlify.app',
+];
+
 function normalizeOrigin(origin: string): string {
     return origin.trim().replace(/\/+$/, '');
 }
@@ -20,6 +25,7 @@ export function getConfiguredFrontendOrigins(): string[] {
 export function getAllowedFrontendOrigins(): string[] {
     return dedupeOrigins([
         ...getConfiguredFrontendOrigins(),
+        ...PRODUCTION_FRONTEND_ORIGINS,
         ...LOCAL_FRONTEND_ORIGINS,
     ]);
 }
