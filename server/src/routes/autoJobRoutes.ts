@@ -3,11 +3,24 @@ import express, { RequestHandler } from 'express';
 import * as autoJobController from '../controllers/autoJobController';
 import authMiddleware from '../middleware/authMiddleware';
 import { usageLimiter } from '../middleware/usageLimiter';
+import { AUTO_JOBS_DISABLED_MESSAGE, AUTO_JOBS_ENABLED } from '../config/features';
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(authMiddleware);
+
+router.use(((req, res, next) => {
+	if (!AUTO_JOBS_ENABLED) {
+		return res.status(503).json({
+			message: AUTO_JOBS_DISABLED_MESSAGE,
+			feature: 'auto-jobs',
+			available: false,
+		});
+	}
+
+	next();
+}) as RequestHandler);
 
 // Workflow management
 router.post('/trigger', usageLimiter('autoJobsWorkflow'), autoJobController.triggerWorkflow as RequestHandler);

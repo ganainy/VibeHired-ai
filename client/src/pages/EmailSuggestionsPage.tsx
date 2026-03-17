@@ -717,10 +717,30 @@ const EmailSuggestionsPage: React.FC = () => {
                             >
                                 <InboxIcon />
                             </div>
-                            <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>All caught up</p>
-                            <p className="text-sm max-w-sm" style={{ color: 'var(--text-muted)' }}>
-                                No pending suggestions. Use the <strong>Scan inbox</strong> button above to check for new job emails.
-                            </p>
+                            {hasScope === false ? (
+                                <>
+                                    <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                                        Gmail account not connected
+                                    </p>
+                                    <p className="text-sm max-w-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+                                        Connect your Gmail account to use inbox scanning and get AI-detected application updates.
+                                    </p>
+                                    <button
+                                        onClick={handleConnectGmail}
+                                        className="btn-primary shrink-0 flex items-center gap-1.5"
+                                        style={{ fontSize: 12, padding: '6px 12px' }}
+                                    >
+                                        <LinkIcon /> Connect Google
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>All caught up</p>
+                                    <p className="text-sm max-w-sm" style={{ color: 'var(--text-muted)' }}>
+                                        No pending suggestions. Use the <strong>Scan inbox</strong> button above to check for new job emails.
+                                    </p>
+                                </>
+                            )}
                         </div>
                     )}
 
