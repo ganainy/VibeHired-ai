@@ -18,6 +18,8 @@ export interface IProject extends Document {
   isImported?: boolean;
   sourceType?: 'manual' | 'github' | 'external';
   sourceId?: string;
+  stars?: number;
+  forks?: number;
   isVisibleInPortfolio?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -81,6 +83,16 @@ const ProjectSchema: Schema = new Schema(
       default: 'manual',
     },
     sourceId: String,
+    stars: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    forks: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     isVisibleInPortfolio: {
       type: Boolean,
       default: true,

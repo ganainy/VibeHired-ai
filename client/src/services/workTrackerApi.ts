@@ -159,6 +159,8 @@ export interface ParsedScheduleEntry {
   date: string;       // 'YYYY-MM-DD'
   startTime: string;  // 'HH:MM'
   endTime: string;    // 'HH:MM'
+  startTimeInferred?: boolean;
+  endTimeInferred?: boolean;
   breakMinutes?: number;
   paidKilometers?: number;
   notes: string | null;

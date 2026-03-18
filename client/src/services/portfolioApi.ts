@@ -62,6 +62,8 @@ export interface Project {
   featured?: boolean;
   order?: number;
   sourceType?: 'manual' | 'github' | 'external';
+  stars?: number;
+  forks?: number;
   isVisibleInPortfolio?: boolean;
   createdAt?: string;
   updatedAt?: string;

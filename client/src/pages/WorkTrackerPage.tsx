@@ -22,6 +22,7 @@ import {
   Sparkles,
   FileText,
   Mic,
+  Info,
 } from 'lucide-react';
 import {
   getEntries,
@@ -43,7 +44,6 @@ import {
   WorkEntryType,
   WorkEntryStatus,
   CreateWorkEntryPayload,
-  parseMagicPrompt,
 } from '../services/workTrackerApi';
 import {
   getEmployers,
@@ -342,6 +342,8 @@ interface ReviewEntry {
   date: string;
   startTime: string;
   endTime: string;
+  startTimeInferred?: boolean;
+  endTimeInferred?: boolean;
   notes: string;
   type: WorkEntryType;
   selected: boolean;
@@ -355,25 +357,65 @@ interface ScheduleImportModalProps {
 
 const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, onClose, onDone }) => {
   const { refreshUsage } = useAuth();
+  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const VOICE_LANGUAGE_OPTIONS = [
+    { value: 'en-US', label: 'English (US)' },
+    { value: 'en-GB', label: 'English (UK)' },
+    { value: 'ar-EG', label: 'Arabic (Egypt)' },
+    { value: 'de-DE', label: 'German' },
+    { value: 'fr-FR', label: 'French' },
+    { value: 'es-ES', label: 'Spanish' },
+    { value: 'it-IT', label: 'Italian' },
+    { value: 'pt-PT', label: 'Portuguese' },
+    { value: 'nl-NL', label: 'Dutch' },
+    { value: 'tr-TR', label: 'Turkish' },
+  ] as const;
   const [step, setStep] = useState<ImportStep>('upload');
   const [employerId, setEmployerId] = useState(employers[0]?._id ?? '');
   const [subLocationId, setSubLocationId] = useState('');
-  const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
+  const [inputMode, setInputMode] = useState<'file' | 'text' | 'voice'>('file');
   const [file, setFile] = useState<File | null>(null);
   const [scheduleText, setScheduleText] = useState('');
-  const [defaultStart, setDefaultStart] = useState('09:00');
-  const [defaultEnd, setDefaultEnd] = useState('17:00');
+  const [voiceLanguage, setVoiceLanguage] = useState(() => {
+    const pageLanguage = document.documentElement.lang || 'en-US';
+    return VOICE_LANGUAGE_OPTIONS.some((option) => option.value === pageLanguage) ? pageLanguage : 'en-US';
+  });
+  const [inferredStartOverride, setInferredStartOverride] = useState('09:00');
+  const [inferredEndOverride, setInferredEndOverride] = useState('17:00');
   const [dragOver, setDragOver] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [importError, setImportError] = useState('');
   const [entries, setEntries] = useState<ReviewEntry[]>([]);
   const [savedCount, setSavedCount] = useState(0);
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
+  const [micLevel, setMicLevel] = useState(0);
+  const [micDetected, setMicDetected] = useState<boolean | null>(null);
+  const [showMicHint, setShowMicHint] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const voiceRecognitionRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const meterIntervalRef = useRef<number | null>(null);
+  const lowInputMsRef = useRef(0);
 
   const today = new Date().toISOString().split('T')[0];
   const selectedEmployerImport = employers.find((e) => e._id === employerId);
   const hasSubLocationsImport = (selectedEmployerImport?.subLocations?.length ?? 0) > 0;
   const selectedCount = entries.filter((e) => e.selected).length;
+  const hasInferredTimes = entries.some((entry) => entry.startTimeInferred || entry.endTimeInferred);
+
+  useEffect(() => {
+    if (!employerId && employers.length === 1) {
+      setEmployerId(employers[0]._id);
+      return;
+    }
+    if (employerId && !employers.some((employer) => employer._id === employerId)) {
+      setEmployerId(employers[0]?._id ?? '');
+      setSubLocationId('');
+    }
+  }, [employerId, employers]);
 
   const handleEmployerChangeImport = (id: string) => { setEmployerId(id); setSubLocationId(''); };
 
@@ -397,18 +439,146 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
     return Math.round((diff / 60) * 10) / 10;
   };
 
+  const cleanupVoiceMeter = () => {
+    if (meterIntervalRef.current) {
+      window.clearInterval(meterIntervalRef.current);
+      meterIntervalRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => undefined);
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    setMicLevel(0);
+  };
+
+  const stopVoiceRecording = () => {
+    if (voiceRecognitionRef.current) {
+      voiceRecognitionRef.current.stop();
+    }
+    setIsVoiceRecording(false);
+    cleanupVoiceMeter();
+  };
+
+  const startVoiceRecording = async () => {
+    if (!SpeechRecognition) {
+      setVoiceError('Voice capture is not supported in this browser. Use Chrome or Edge.');
+      return;
+    }
+
+    setInputMode('voice');
+    setVoiceError('');
+    setShowMicHint(false);
+    setMicDetected(null);
+    lowInputMsRef.current = 0;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      setMicDetected(true);
+
+      const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.85;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      const SpeechRecognitionClass = SpeechRecognition;
+      const recognition = new SpeechRecognitionClass();
+      recognition.lang = voiceLanguage;
+      recognition.interimResults = true;
+      recognition.continuous = true;
+
+      recognition.onstart = () => setIsVoiceRecording(true);
+      recognition.onresult = (event: any) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        const nextText = `${finalTranscript}${interimTranscript}`.trim();
+        if (nextText) {
+          setScheduleText(nextText);
+          setShowMicHint(false);
+          lowInputMsRef.current = 0;
+        }
+      };
+      recognition.onerror = (event: any) => {
+        setIsVoiceRecording(false);
+        cleanupVoiceMeter();
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setVoiceError('Microphone permission was denied. Allow mic access in Chrome site settings.');
+          setMicDetected(false);
+          setShowMicHint(true);
+        }
+      };
+      recognition.onend = () => {
+        setIsVoiceRecording(false);
+        cleanupVoiceMeter();
+      };
+
+      voiceRecognitionRef.current = recognition;
+      recognition.start();
+
+      meterIntervalRef.current = window.setInterval(() => {
+        if (!analyserRef.current) return;
+        const data = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteTimeDomainData(data);
+        let sumSquares = 0;
+        for (let i = 0; i < data.length; i++) {
+          const normalized = (data[i] - 128) / 128;
+          sumSquares += normalized * normalized;
+        }
+        const rms = Math.sqrt(sumSquares / data.length);
+        const level = Math.min(100, Math.round(rms * 300));
+        setMicLevel(level);
+
+        if (isVoiceRecording && level < 4) {
+          lowInputMsRef.current += 120;
+          if (lowInputMsRef.current >= 2500) {
+            setShowMicHint(true);
+          }
+        } else {
+          lowInputMsRef.current = 0;
+          setShowMicHint(false);
+        }
+      }, 120);
+    } catch {
+      setMicDetected(false);
+      setShowMicHint(true);
+      setVoiceError('No microphone input was detected. Check Chrome microphone settings and select the correct device.');
+      cleanupVoiceMeter();
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopVoiceRecording();
+    };
+  }, []);
+
   const handleParse = async () => {
     if (!employerId) return setImportError('Select an employer first.');
     if (inputMode === 'file' && !file) return setImportError('Upload a schedule file.');
-    if (inputMode === 'text' && !scheduleText.trim()) return setImportError('Paste or type the schedule text.');
+    if ((inputMode === 'text' || inputMode === 'voice') && !scheduleText.trim()) return setImportError('Provide schedule text before extracting.');
     setParsing(true);
     setImportError('');
     try {
       const fd = new FormData();
       if (inputMode === 'file' && file) fd.append('file', file);
-      if (inputMode === 'text') fd.append('text', scheduleText);
-      fd.append('defaultStartTime', defaultStart);
-      fd.append('defaultEndTime', defaultEnd);
+      if (inputMode === 'text' || inputMode === 'voice') fd.append('text', scheduleText);
       const result = await parseSchedule(fd);
       try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
       if (result.count === 0) {
@@ -421,6 +591,8 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
           date: e.date,
           startTime: e.startTime,
           endTime: e.endTime,
+          startTimeInferred: Boolean(e.startTimeInferred),
+          endTimeInferred: Boolean(e.endTimeInferred),
           notes: e.notes ?? '',
           type: 'shift' as WorkEntryType,
           selected: true,
@@ -528,23 +700,26 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
               </div>
 
               {/* Default times */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label-overline mb-2 block">Default start (if not in schedule)</label>
-                  <input type="time" className="input-base w-full" value={defaultStart} onChange={(e) => setDefaultStart(e.target.value)} />
-                </div>
-                <div>
-                  <label className="label-overline mb-2 block">Default end (if not in schedule)</label>
-                  <input type="time" className="input-base w-full" value={defaultEnd} onChange={(e) => setDefaultEnd(e.target.value)} />
-                </div>
+              <div className="rounded-lg p-3 text-xs flex items-start gap-2" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
+                <Info size={14} className="shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
+                <span>
+                  We will try to detect as much information as possible from your input. If anything is missing, you will be asked to provide it manually.
+                </span>
               </div>
 
               {/* Input mode toggle */}
               <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ background: 'var(--bg-raised)' }}>
-                {(['file', 'text'] as const).map((mode) => (
+                {(['file', 'text', 'voice'] as const).map((mode) => (
                   <button
                     key={mode}
-                    onClick={() => setInputMode(mode)}
+                    onClick={() => {
+                      setInputMode(mode);
+                      if (mode !== 'voice') {
+                        stopVoiceRecording();
+                        setVoiceError('');
+                        setShowMicHint(false);
+                      }
+                    }}
                     className="px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5"
                     style={{
                       background: inputMode === mode ? 'var(--bg-surface)' : 'transparent',
@@ -552,8 +727,8 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
                       border: inputMode === mode ? '1px solid var(--border)' : '1px solid transparent',
                     }}
                   >
-                    {mode === 'file' ? <Upload size={12} /> : <FileText size={12} />}
-                    {mode === 'file' ? 'Image / PDF' : 'Paste text'}
+                    {mode === 'file' ? <Upload size={12} /> : mode === 'text' ? <FileText size={12} /> : <Mic size={12} />}
+                    {mode === 'file' ? 'Image / PDF' : mode === 'text' ? 'Paste text' : 'Voice'}
                   </button>
                 ))}
               </div>
@@ -605,6 +780,77 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
                   style={{ resize: 'vertical', lineHeight: 1.6 }}
                 />
               )}
+
+              {/* Voice input */}
+              {inputMode === 'voice' && (
+                <div className="space-y-3">
+                  <div className="rounded-xl p-4" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
+                    <div className="mb-3">
+                      <label className="label-overline mb-2 block">Voice language</label>
+                      <select
+                        className="input-base w-full text-xs"
+                        value={voiceLanguage}
+                        onChange={(e) => setVoiceLanguage(e.target.value)}
+                        disabled={isVoiceRecording}
+                      >
+                        {VOICE_LANGUAGE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <button
+                        onClick={startVoiceRecording}
+                        disabled={isVoiceRecording}
+                        className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5 disabled:opacity-40"
+                      >
+                        <Mic size={13} /> Start recording
+                      </button>
+                      <button
+                        onClick={stopVoiceRecording}
+                        disabled={!isVoiceRecording}
+                        className="btn-secondary text-xs px-3 py-1.5 disabled:opacity-40"
+                      >
+                        Stop recording
+                      </button>
+                      <span className="text-xs font-medium" style={{ color: micDetected === false ? 'var(--rose)' : 'var(--text-secondary)' }}>
+                        {micDetected === false ? 'Microphone not detected' : micDetected === true ? 'Microphone detected' : 'Checking microphone…'}
+                      </span>
+                    </div>
+
+                    <div className="mb-2">
+                      <div className="w-full h-2 rounded-full" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${micLevel}%`,
+                            background: micLevel > 35 ? 'var(--jade)' : micLevel > 8 ? 'var(--accent)' : 'var(--text-muted)',
+                          }}
+                        />
+                      </div>
+                      <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                        Input level meter {isVoiceRecording ? '(listening now)' : '(start recording to test)'}
+                      </p>
+                    </div>
+
+                    {(showMicHint || voiceError) && (
+                      <div className="rounded-lg px-3 py-2 text-xs" style={{ background: 'var(--rose-bg)', border: '1px solid var(--rose-dim)', color: 'var(--rose)' }}>
+                        {voiceError || 'No microphone input detected. You may be using the wrong microphone. Check Chrome settings and choose the correct device.'}
+                      </div>
+                    )}
+                  </div>
+
+                  <textarea
+                    className="input-base w-full font-mono text-xs"
+                    rows={8}
+                    placeholder="Your transcribed schedule will appear here. You can edit it before extracting with AI."
+                    value={scheduleText}
+                    onChange={(e) => setScheduleText(e.target.value)}
+                    style={{ resize: 'vertical', lineHeight: 1.6 }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -614,6 +860,48 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
               {importError && (
                 <div className="flex items-start gap-2 p-3 rounded-lg text-sm" style={{ background: 'var(--rose-bg)', border: '1px solid var(--rose-dim)', color: 'var(--rose)' }}>
                   <AlertCircle size={16} className="shrink-0 mt-0.5" />{importError}
+                </div>
+              )}
+              {hasInferredTimes && (
+                <div className="rounded-lg p-3" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)' }}>
+                  <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                    Some entries are missing clear start/end times from your upload. Please confirm them.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-end">
+                    <div>
+                      <label className="label-overline mb-1 block">Default start (missing only)</label>
+                      <input
+                        type="time"
+                        className="input-base w-full"
+                        value={inferredStartOverride}
+                        onChange={(e) => setInferredStartOverride(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="label-overline mb-1 block">Default end (missing only)</label>
+                      <input
+                        type="time"
+                        className="input-base w-full"
+                        value={inferredEndOverride}
+                        onChange={(e) => setInferredEndOverride(e.target.value)}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-secondary text-xs px-3 py-2"
+                      onClick={() => {
+                        setEntries((prev) => prev.map((entry) => ({
+                          ...entry,
+                          startTime: entry.startTimeInferred ? inferredStartOverride : entry.startTime,
+                          endTime: entry.endTimeInferred ? inferredEndOverride : entry.endTime,
+                          startTimeInferred: false,
+                          endTimeInferred: false,
+                        })));
+                      }}
+                    >
+                      Apply to missing
+                    </button>
+                  </div>
                 </div>
               )}
               <div className="flex items-center justify-between">
@@ -656,8 +944,24 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
                             <input type="checkbox" checked={entry.selected} onChange={(e) => patchReviewEntry(entry.id, { selected: e.target.checked })} className="w-3.5 h-3.5 cursor-pointer" style={{ accentColor: 'var(--accent)' }} />
                           </td>
                           <td className="p-1.5"><input type="date" className="input-base text-xs p-1 h-7" value={entry.date} onChange={(e) => patchReviewEntry(entry.id, { date: e.target.value })} /></td>
-                          <td className="p-1.5"><input type="time" className="input-base text-xs p-1 h-7" value={entry.startTime} onChange={(e) => patchReviewEntry(entry.id, { startTime: e.target.value })} /></td>
-                          <td className="p-1.5"><input type="time" className="input-base text-xs p-1 h-7" value={entry.endTime} onChange={(e) => patchReviewEntry(entry.id, { endTime: e.target.value })} /></td>
+                          <td className="p-1.5">
+                            <input
+                              type="time"
+                              className="input-base text-xs p-1 h-7"
+                              style={entry.startTimeInferred ? { borderColor: 'var(--amber)', background: 'rgba(251,191,36,0.06)' } : undefined}
+                              value={entry.startTime}
+                              onChange={(e) => patchReviewEntry(entry.id, { startTime: e.target.value, startTimeInferred: false })}
+                            />
+                          </td>
+                          <td className="p-1.5">
+                            <input
+                              type="time"
+                              className="input-base text-xs p-1 h-7"
+                              style={entry.endTimeInferred ? { borderColor: 'var(--amber)', background: 'rgba(251,191,36,0.06)' } : undefined}
+                              value={entry.endTime}
+                              onChange={(e) => patchReviewEntry(entry.id, { endTime: e.target.value, endTimeInferred: false })}
+                            />
+                          </td>
                           <td className="p-2"><span className="font-mono font-bold" style={{ color: 'var(--accent)' }}>{hrs}h</span></td>
                           <td className="p-1.5">
                             <select className="input-base text-xs p-1 h-7" value={entry.type} onChange={(e) => patchReviewEntry(entry.id, { type: e.target.value as WorkEntryType })}>
@@ -799,6 +1103,18 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
 
   const selectedEmployer = employers.find((e) => e._id === employerId);
   const hasSubLocations = type === 'shift' && (selectedEmployer?.subLocations?.length ?? 0) > 0;
+
+  useEffect(() => {
+    if ((editEntry?.employerId?._id || preFilled?.employerId)) return;
+    if (!employerId && employers.length === 1) {
+      setEmployerId(employers[0]._id);
+      return;
+    }
+    if (employerId && !employers.some((employer) => employer._id === employerId)) {
+      setEmployerId(employers[0]?._id ?? '');
+      setSubLocationId('');
+    }
+  }, [editEntry?.employerId?._id, preFilled?.employerId, employerId, employers]);
 
   // Reset sub-location when employer changes
   const handleEmployerChange = (newId: string) => {
@@ -1494,7 +1810,7 @@ const WorkTrackerPage: React.FC = () => {
   const [showAppointmentTypeModal, setShowAppointmentTypeModal] = useState(false);
   const [editingAppointmentType, setEditingAppointmentType] = useState<PopulatedAppointmentType | null>(null);
 
-  // ── Entry form state (for voice command pre-filling) ────────────────────
+  // ── Entry form state ────────────────────
   const [entryType, setEntryType] = useState<WorkEntryType>('shift');
   const [entryEmployerId, setEntryEmployerId] = useState('');
   const [entryAppointmentTypeId, setEntryAppointmentTypeId] = useState('');
@@ -1510,15 +1826,42 @@ const WorkTrackerPage: React.FC = () => {
   const [deletingEmployerId, setDeletingEmployerId] = useState<string | null>(null);
   const [deletingAppointmentTypeId, setDeletingAppointmentTypeId] = useState<string | null>(null);
 
-  // ── Voice command state ───────────────────────────────────────────────────
-  const [isListening, setIsListening] = useState(false);
-  const [isMagicParsing, setIsMagicParsing] = useState(false);
-  const [voiceTranscript, setVoiceTranscript] = useState('');
-  const [showVoicePreview, setShowVoicePreview] = useState(false);
   const [remindLoadingId, setRemindLoadingId] = useState<string | null>(null);
+  const [reminderFeedback, setReminderFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string; showConnectAction?: boolean } | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [expandedEmployers, setExpandedEmployers] = useState<Set<string>>(new Set());
-  const voiceRecognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!entryEmployerId && employers.length === 1) {
+      setEntryEmployerId(employers[0]._id);
+      return;
+    }
+    if (entryEmployerId && !employers.some((employer) => employer._id === entryEmployerId)) {
+      setEntryEmployerId(employers[0]?._id ?? '');
+      setEntrySubLocationId('');
+    }
+  }, [entryEmployerId, employers]);
+
+  const getReminderErrorFeedback = (err: unknown): { message: string; showConnectAction: boolean } => {
+    const apiMessage = parseApiErrorMessage(err);
+    const normalized = apiMessage.toLowerCase();
+    const notConnected = normalized.includes('google calendar is not connected')
+      || normalized.includes('calendar is not connected')
+      || normalized.includes('reconnect')
+      || normalized.includes('oauth');
+
+    if (notConnected) {
+      return {
+        message: 'Google Calendar is not connected. Connect your account in Settings to add reminders.',
+        showConnectAction: true,
+      };
+    }
+
+    return {
+      message: apiMessage || 'Failed to manage reminder. Please try again.',
+      showConnectAction: false,
+    };
+  };
 
   // ── Fetch data ────────────────────────────────────────────────────────────
   const fetchEntries = useCallback(async () => {
@@ -1645,11 +1988,29 @@ const WorkTrackerPage: React.FC = () => {
 
   const handleCreateReminder = async (entry: WorkEntry) => {
     setRemindLoadingId(entry._id);
+    setReminderFeedback(null);
     try {
+      if (!calendarConnected && !loadingCalendarEvents) {
+        setReminderFeedback({
+          type: 'error',
+          message: 'Google Calendar is not connected. Connect your account in Settings to add reminders.',
+          showConnectAction: true,
+        });
+        return;
+      }
       await createReminder(entry._id);
       setEntries((prev) => prev.map((e) => e._id === entry._id ? { ...e, reminderCreated: true } : e));
+      setReminderFeedback({
+        type: 'success',
+        message: 'Reminder added to Google Calendar.',
+      });
     } catch (err: any) {
-      alert(err?.response?.data?.message ?? 'Failed to create reminder. Make sure Google Calendar is connected in Settings.');
+      const feedback = getReminderErrorFeedback(err);
+      setReminderFeedback({
+        type: 'error',
+        message: feedback.message,
+        showConnectAction: feedback.showConnectAction,
+      });
     } finally {
       setRemindLoadingId(null);
     }
@@ -1657,14 +2018,24 @@ const WorkTrackerPage: React.FC = () => {
 
   const handleRemoveReminder = async (entry: WorkEntry) => {
     setRemindLoadingId(entry._id);
+    setReminderFeedback(null);
     try {
       await deleteReminder(entry._id);
       setEntries((prev) => prev.map((e) => e._id === entry._id ? { ...e, reminderCreated: false, googleCalendarEventId: undefined } : e));
       if (entry.googleCalendarEventId) {
         setCalendarEvents((prev) => prev.filter((ev) => ev.id !== entry.googleCalendarEventId));
       }
+      setReminderFeedback({
+        type: 'info',
+        message: 'Reminder removed from Google Calendar.',
+      });
     } catch (err: any) {
-      alert(err?.response?.data?.message ?? 'Failed to remove reminder.');
+      const feedback = getReminderErrorFeedback(err);
+      setReminderFeedback({
+        type: 'error',
+        message: feedback.message,
+        showConnectAction: feedback.showConnectAction,
+      });
     } finally {
       setRemindLoadingId(null);
     }
@@ -1675,7 +2046,7 @@ const WorkTrackerPage: React.FC = () => {
     setEditingEntry(null);
     // Reset pre-filled values
     setEntryType('shift');
-    setEntryEmployerId('');
+    setEntryEmployerId(employers.length === 1 ? employers[0]._id : '');
     setEntryAppointmentTypeId('');
     setEntrySubLocationId('');
     setEntryTitle('');
@@ -1694,105 +2065,6 @@ const WorkTrackerPage: React.FC = () => {
       return prev;
     });
     fetchStats();
-  };
-
-  const handleVoiceCommand = () => {
-    // If already listening, stop it
-    if (isListening && voiceRecognitionRef.current) {
-      voiceRecognitionRef.current.stop();
-      setIsListening(false);
-      return;
-    }
-
-    // Don't start if parsing
-    if (isMagicParsing) return;
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return alert('Speech recognition is not supported in this browser. Please try Chrome or Edge.');
-
-    // Reset transcript and show preview
-    setVoiceTranscript('');
-    setShowVoicePreview(true);
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = document.documentElement.lang || 'en-US';
-    recognition.interimResults = true; // Enable interim results for live preview
-
-    recognition.onstart = () => setIsListening(true);
-
-    recognition.onresult = (event: any) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript + ' ';
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      // Update the transcript state with both final and interim results
-      setVoiceTranscript(finalTranscript + interimTranscript);
-    };
-
-    recognition.onerror = (e: any) => {
-      setIsListening(false);
-      if (e.error !== 'no-speech') console.error('Speech recognition error:', e.error);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    voiceRecognitionRef.current = recognition;
-    recognition.start();
-  };
-
-  const handleVoiceConfirm = async () => {
-    if (!voiceTranscript.trim()) return;
-
-    setIsListening(false);
-    setIsMagicParsing(true);
-    setShowVoicePreview(false);
-
-    try {
-      const parsed = await parseMagicPrompt({
-        text: voiceTranscript,
-        today: new Date().toISOString(),
-        employers: employers.map(e => ({ _id: e._id, name: e.name, subLocations: e.subLocations })),
-        appointmentTypes
-      });
-
-      // Open modal
-      setEditingEntry(null);
-      if (parsed.type) setEntryType(parsed.type === 'appointment' ? 'appointment' : 'shift');
-      setEntryEmployerId(parsed.employerId || '');
-      setEntryAppointmentTypeId(parsed.appointmentTypeId || '');
-      setEntrySubLocationId(parsed.subLocationId || '');
-      if (parsed.title) setEntryTitle(parsed.title);
-      if (parsed.date) setEntryDate(parsed.date);
-      if (parsed.startTime) setEntryStartTime(parsed.startTime);
-      if (parsed.endTime) setEntryEndTime(parsed.endTime);
-      if (parsed.notes) setEntryNotes(parsed.notes);
-      setShowEntryModal(true);
-    } catch (err: any) {
-      console.error(err);
-      alert(err.response?.data?.message || 'Failed to parse voice command.');
-    } finally {
-      setIsMagicParsing(false);
-      setVoiceTranscript('');
-    }
-  };
-
-  const handleVoiceCancel = () => {
-    if (voiceRecognitionRef.current) {
-      voiceRecognitionRef.current.stop();
-    }
-    setIsListening(false);
-    setShowVoicePreview(false);
-    setVoiceTranscript('');
   };
 
   // ── Employer actions ──────────────────────────────────────────────────────
@@ -2109,6 +2381,59 @@ const WorkTrackerPage: React.FC = () => {
         {activeTab === 'timelog' && (
           <div className="space-y-6">
 
+            {reminderFeedback && (
+              <div
+                className="rounded-xl px-4 py-3 flex items-start gap-3"
+                style={{
+                  background: reminderFeedback.type === 'success'
+                    ? 'rgba(45,212,160,0.10)'
+                    : reminderFeedback.type === 'info'
+                      ? 'rgba(99,102,241,0.10)'
+                      : 'rgba(239,68,68,0.10)',
+                  border: reminderFeedback.type === 'success'
+                    ? '1px solid rgba(45,212,160,0.30)'
+                    : reminderFeedback.type === 'info'
+                      ? '1px solid rgba(99,102,241,0.30)'
+                      : '1px solid rgba(239,68,68,0.30)',
+                }}
+              >
+                <AlertCircle
+                  size={16}
+                  style={{
+                    color: reminderFeedback.type === 'success'
+                      ? 'var(--jade)'
+                      : reminderFeedback.type === 'info'
+                        ? 'var(--accent)'
+                        : 'var(--rose)',
+                    marginTop: 1,
+                    flexShrink: 0,
+                  }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                    {reminderFeedback.message}
+                  </p>
+                  {reminderFeedback.showConnectAction && (
+                    <a
+                      href="/settings?googleCalendar"
+                      className="text-xs font-semibold underline mt-1 inline-block"
+                      style={{ color: 'var(--accent)' }}
+                    >
+                      Connect Google Calendar
+                    </a>
+                  )}
+                </div>
+                <button
+                  onClick={() => setReminderFeedback(null)}
+                  className="text-xs opacity-60 hover:opacity-100 transition-opacity"
+                  style={{ color: 'var(--text-muted)' }}
+                  aria-label="Dismiss reminder feedback"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             {/* Month navigator + Actions */}
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-2">
@@ -2133,21 +2458,6 @@ const WorkTrackerPage: React.FC = () => {
 
               <div className="flex items-center gap-2.5">
                 <button
-                  onClick={handleVoiceCommand}
-                  disabled={isMagicParsing}
-                  className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg transition-all"
-                  style={{
-                    background: isListening ? 'var(--rose-bg)' : isMagicParsing ? 'var(--amber-bg)' : 'var(--bg-elevated)',
-                    color: isListening ? 'var(--rose)' : isMagicParsing ? 'var(--amber)' : 'var(--text-primary)',
-                    border: '1px solid var(--border)'
-                  }}
-                  title={isListening ? 'Click to stop listening' : 'Use voice to add entry (1 credit)'}
-                >
-                  {isMagicParsing ? <span className="animate-spin"><Clock size={15} /></span> : <Mic size={15} className={isListening ? 'animate-pulse' : ''} />}
-                  <span className="hidden sm:inline">{isListening ? 'Stop' : isMagicParsing ? 'Parsing…' : 'AI Voice Add'}</span>
-                  {!isListening && !isMagicParsing && <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 cr</span>}
-                </button>
-                <button
                   onClick={() => setShowImportModal(true)}
                   className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg transition-all"
                   style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
@@ -2162,7 +2472,7 @@ const WorkTrackerPage: React.FC = () => {
                     setEditingEntry(null);
                     // Reset pre-filled values to defaults
                     setEntryType('shift');
-                    setEntryEmployerId('');
+                    setEntryEmployerId(employers.length === 1 ? employers[0]._id : '');
                     setEntryAppointmentTypeId('');
                     setEntrySubLocationId('');
                     setEntryTitle('');
@@ -2606,15 +2916,6 @@ const WorkTrackerPage: React.FC = () => {
         />
       )}
 
-      {showVoicePreview && (
-        <VoicePreviewModal
-          transcript={voiceTranscript}
-          isListening={isListening}
-          isParsing={isMagicParsing}
-          onConfirm={handleVoiceConfirm}
-          onCancel={handleVoiceCancel}
-        />
-      )}
     </div>
   );
 };
@@ -2678,105 +2979,6 @@ const AppointmentTypeModal: React.FC<AppointmentTypeModalProps> = ({ editAppoint
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  );
-};
-
-// ── VoicePreviewModal Component ────────────────────────────────────────────
-const VoicePreviewModal: React.FC<{
-  transcript: string;
-  isListening: boolean;
-  isParsing: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}> = ({ transcript, isListening, isParsing, onConfirm, onCancel }) => {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,14,23,0.82)', backdropFilter: 'blur(4px)' }}>
-      <div className="card-elevated w-full max-w-lg">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-3">
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: isListening ? 'var(--rose-bg)' : 'var(--accent-bg)',
-                border: `1px solid ${isListening ? 'var(--rose-dim)' : 'var(--accent-dim)'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: isListening ? 'var(--rose)' : 'var(--accent)',
-                flexShrink: 0,
-              }}
-            >
-              {isParsing ? <span className="animate-spin"><Clock size={20} /></span> : <Mic size={20} className={isListening ? 'animate-pulse' : ''} />}
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-                {isListening ? 'Listening...' : isParsing ? 'Processing...' : 'Voice Command'}
-              </h2>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                {isListening ? 'Speak your command' : isParsing ? 'AI is parsing your command' : 'Review and edit before sending'}
-              </p>
-            </div>
-          </div>
-          <button className="btn-ghost p-1.5 rounded-lg" onClick={onCancel} disabled={isParsing}>
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Transcript display */}
-        <div className="p-6">
-          <div
-            className="w-full p-4 rounded-lg min-h-[120px]"
-            style={{
-              background: 'var(--bg-raised)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-primary)',
-              fontSize: '1rem',
-              lineHeight: '1.6',
-            }}
-          >
-            {transcript || (
-              <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                {isListening ? 'Listening...' : 'No speech detected yet'}
-              </span>
-            )}
-          </div>
-          {isListening && (
-            <p className="text-xs mt-3 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
-              <span className="animate-pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
-              Speak now. The transcript will appear above.
-            </p>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex gap-3 px-6 pb-6 pt-2">
-          <button type="button" className="btn-secondary flex-1" onClick={onCancel} disabled={isParsing}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn-primary flex-1 flex items-center justify-center gap-2"
-            onClick={onConfirm}
-            disabled={isParsing || !transcript.trim()}
-          >
-            {isParsing ? (
-              <>
-                <span className="animate-spin"><Clock size={16} /></span>
-                Processing...
-              </>
-            ) : (
-              <>
-                <Sparkles size={16} />
-                Send to AI
-              </>
-            )}
-          </button>
-        </div>
       </div>
     </div>
   );

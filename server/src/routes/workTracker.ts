@@ -718,12 +718,18 @@ router.post(
     const TIME_RE = /^\d{2}:\d{2}$/;
     const entries = (Array.isArray(raw) ? raw : [])
       .filter((e: any) => e && DATE_RE.test(e.date))
-      .map((e: any) => ({
-        date: e.date as string,
-        startTime: TIME_RE.test(e.startTime) ? e.startTime : defaultStartTime,
-        endTime: TIME_RE.test(e.endTime) ? e.endTime : defaultEndTime,
-        notes: typeof e.notes === 'string' && e.notes ? e.notes : null,
-      }));
+      .map((e: any) => {
+        const startTimeDetected = TIME_RE.test(e.startTime);
+        const endTimeDetected = TIME_RE.test(e.endTime);
+        return {
+          date: e.date as string,
+          startTime: startTimeDetected ? e.startTime : defaultStartTime,
+          endTime: endTimeDetected ? e.endTime : defaultEndTime,
+          startTimeInferred: !startTimeDetected,
+          endTimeInferred: !endTimeDetected,
+          notes: typeof e.notes === 'string' && e.notes ? e.notes : null,
+        };
+      });
 
     res.json({ entries, count: entries.length });
   }),

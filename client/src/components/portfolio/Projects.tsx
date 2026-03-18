@@ -1,5 +1,6 @@
 // client/src/components/portfolio/Projects.tsx
 import React, { useState, useMemo } from 'react';
+import { GitFork, Star } from 'lucide-react';
 import { Project } from '../../services/portfolioApi';
 
 interface ProjectsProps {
@@ -240,6 +241,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
   const placeholderStyle = getPlaceholderStyle(index);
   const mainLanguage = getMainLanguage(project.technologies);
   const languageLogoUrl = getLanguageLogoUrl(mainLanguage);
+  const stars = Number(project.stars ?? 0);
+  const forks = Number(project.forks ?? 0);
 
   return (
     <div
@@ -299,6 +302,20 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
             ))}
             {project.technologies.length > 4 && (
               <span className="badge badge-ink text-xs">+{project.technologies.length - 4}</span>
+            )}
+          </div>
+        )}
+        {(stars > 0 || forks > 0) && (
+          <div className="mt-3 flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+            {stars > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <Star size={13} /> {stars}
+              </span>
+            )}
+            {forks > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <GitFork size={13} /> {forks}
+              </span>
             )}
           </div>
         )}

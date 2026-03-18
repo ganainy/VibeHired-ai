@@ -88,6 +88,8 @@ export const importGitHubProjects = asyncHandler(
             githubUrl: projectData.repoUrl,
             projectUrl: projectData.liveUrl,
             videoUrl: projectData.videoUrl || undefined,
+            stars: projectData.stars,
+            forks: projectData.forks,
             sourceType: 'github',
             isImported: true,
             isVisibleInPortfolio: true,

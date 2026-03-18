@@ -96,11 +96,11 @@ const About: React.FC<AboutProps> = ({ profile }) => {
         <section className="py-16 md:py-24" id="experience">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12" style={{ fontFamily: 'var(--font-display)' }}>Work Experience</h2>
-            <div className="relative pl-8 space-y-12" style={{ borderLeft: '2px solid var(--border)' }}>
+            <div className="relative space-y-12" style={{ borderLeft: '2px solid var(--border)' }}>
               {linkedInExperience.map((exp: any, index: number) => (
-                <div key={`exp-${index}`} className="relative transition-all duration-300 hover:translate-x-1 group">
+                <div key={`exp-${index}`} className="relative pl-8 transition-all duration-300 hover:translate-x-1 group">
                   <div
-                    className="absolute -left-[34px] top-1 h-4 w-4 rounded-full transition-all duration-300 group-hover:scale-125"
+                    className="absolute left-0 -translate-x-1/2 top-1 h-4 w-4 rounded-full transition-all duration-300 group-hover:scale-125"
                     style={{ background: 'var(--accent)', boxShadow: '0 0 0 4px var(--bg-base)' }}
                   />
                   <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
