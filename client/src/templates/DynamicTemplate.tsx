@@ -92,18 +92,18 @@ function ContactBlock({ descriptor, data, theme }: { descriptor: CvSectionDescri
     <header className="mb-4 text-center">
       {name && <h1 className="text-[16pt] font-bold text-gray-900 mb-0.5">{name}</h1>}
       {label && <div className="text-[10pt] font-semibold mb-1.5 uppercase tracking-wide" style={{ color: theme.hex }}>{label}</div>}
-      <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-[8.5pt] text-gray-600">
+      <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-[8.5pt] text-gray-600 break-all">
         {email && <span>✉ {email}</span>}
         {phone && <span>☎ {phone}</span>}
         {city && <span>📍 {city}</span>}
-        {url && <a href={url} className="hover:underline" style={{ color: theme.hex }}>{url.replace(/^https?:\/\//, '')}</a>}
+        {url && <a href={url} className="hover:underline break-normal" style={{ color: theme.hex }}>{url.replace(/^https?:\/\//, '')}</a>}
         {linkedin?.url && (
-          <a href={linkedin.url} className="hover:underline" style={{ color: theme.hex }}>
+          <a href={linkedin.url} className="hover:underline break-normal" style={{ color: theme.hex }}>
             LinkedIn: {(linkedin.username || linkedin.url).replace(/^https?:\/\/(www\.)?/, '')}
           </a>
         )}
         {github?.url && (
-          <a href={github.url} className="hover:underline" style={{ color: theme.hex }}>
+          <a href={github.url} className="hover:underline break-normal" style={{ color: theme.hex }}>
             GitHub: {(github.username || github.url).replace(/^https?:\/\/(www\.)?/, '')}
           </a>
         )}

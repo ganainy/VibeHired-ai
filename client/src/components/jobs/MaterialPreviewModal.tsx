@@ -17,6 +17,10 @@ function toInlineCloudinaryUrl(url: string): string {
     return url.replace('/upload/', '/upload/fl_attachment:false/');
 }
 
+function toDownloadCloudinaryUrl(url: string): string {
+    return url.replace('/upload/', '/upload/fl_attachment/');
+}
+
 /**
  * Build the actual URL to display in the iframe / img tag:
  * - images  → Cloudinary inline URL
@@ -123,6 +127,39 @@ const MaterialPreviewModal: React.FC<Props> = ({ material, onClose }) => {
                     </div>
 
                     <div className="flex items-center gap-1 flex-shrink-0">
+                        {/* Download */}
+                        {material.type !== 'link' && (
+                            <button
+                                onClick={() => {
+                                    if (material.type === 'text' || material.type === 'markdown') {
+                                        const blob = new Blob([material.content || ''], { type: 'text/plain' });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `${material.title}.${material.type === 'markdown' ? 'md' : 'txt'}`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        window.URL.revokeObjectURL(url);
+                                        document.body.removeChild(a);
+                                    } else if (material.cloudinaryUrl) {
+                                        const downloadUrl = toDownloadCloudinaryUrl(material.cloudinaryUrl);
+                                        const a = document.createElement('a');
+                                        a.href = downloadUrl;
+                                        a.download = material.originalFilename || material.title;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        document.body.removeChild(a);
+                                    }
+                                }}
+                                title="Download"
+                                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border transition-colors hover:text-green-500"
+                                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-surface)' }}
+                            >
+                                <span className="material-symbols-outlined text-sm">download</span>
+                                Download
+                            </button>
+                        )}
+
                         {/* Open externally — link directly to the Cloudinary inline URL, not the GDocs viewer */}
                         {material.type !== 'text' && material.type !== 'markdown' && material.cloudinaryUrl && (
                             <a

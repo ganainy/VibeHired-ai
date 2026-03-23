@@ -221,8 +221,8 @@ export const ApplicationsOverTimeChart: React.FC<ApplicationsOverTimeChartProps>
             </div>
 
             {/* Chart */}
-            <div className={`flex-1 min-h-0 w-full min-h-[300px] overflow-hidden ${!selectedMonth && onMonthClick ? 'cursor-pointer' : ''}`}>
-                <ResponsiveContainer width="100%" height="100%">
+            <div className={`flex-1 min-h-0 w-full min-h-[250px] md:min-h-[300px] overflow-x-auto overflow-y-hidden ${!selectedMonth && onMonthClick ? 'cursor-pointer' : ''}`}>
+                <ResponsiveContainer width="100%" height="100%" minWidth="600px">
                     <LineChart
                         data={chartData}
                         margin={{ top: 10, right: 10, left: 0, bottom: 50 }}

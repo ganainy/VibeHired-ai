@@ -46,6 +46,10 @@ function colorForType(type: MaterialType): string {
     }
 }
 
+function toDownloadCloudinaryUrl(url: string): string {
+    return url.replace('/upload/', '/upload/fl_attachment/');
+}
+
 function getJobRef(material: InterviewMaterial): MaterialJobRef | null {
     if (!material.jobApplicationId) return null;
     if (typeof material.jobApplicationId === 'string') return null;
@@ -137,6 +141,38 @@ const GlobalMaterialCard: React.FC<{
             // onEdit throws on failure — keep edit mode open
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleDownload = (e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        if (material.type === 'link') {
+            if (material.url) window.open(material.url, '_blank', 'noopener,noreferrer');
+            return;
+        }
+
+        if (material.type === 'text' || material.type === 'markdown') {
+            const blob = new Blob([material.content || ''], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${material.title}.${material.type === 'markdown' ? 'md' : 'txt'}`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            return;
+        }
+
+        if (material.cloudinaryUrl) {
+            const downloadUrl = toDownloadCloudinaryUrl(material.cloudinaryUrl);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = material.originalFilename || material.title;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
     };
 
@@ -250,7 +286,7 @@ const GlobalMaterialCard: React.FC<{
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2 overflow-x-auto">
                     <div className="min-w-0 flex-1">
                         {/* Title */}
                         <p className="text-sm font-medium leading-snug" style={{ color: 'var(--text-primary)' }}>
@@ -307,7 +343,7 @@ const GlobalMaterialCard: React.FC<{
                     </div>
 
                         {/* Right: favourite star + hover actions */}
-                        <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start gap-0.5 pt-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                             {/* Favourite star — always visible */}
                             <button
                                 onClick={() => onToggleFavorite(material._id)}
@@ -339,12 +375,22 @@ const GlobalMaterialCard: React.FC<{
                                         <span className="material-symbols-outlined text-base">edit</span>
                                     </button>
                                 )}
-                                    {material.cloudinaryUrl && (
+                                 {material.type !== 'link' && (
+                                    <button
+                                        onClick={handleDownload}
+                                        title="Download"
+                                        className="p-1.5 rounded-lg transition-colors hover:text-green-500"
+                                        style={{ color: 'var(--text-muted)' }}
+                                    >
+                                        <span className="material-symbols-outlined text-base">download</span>
+                                    </button>
+                                )}
+                                {material.cloudinaryUrl && (
                                     <a
                                         href={material.cloudinaryUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        title="Open / download"
+                                        title="Open file"
                                         className="p-1.5 rounded-lg transition-colors"
                                         style={{ color: 'var(--text-muted)' }}
                                     >
@@ -952,7 +998,7 @@ const InterviewMaterialsPage: React.FC = () => {
                             </div>
                             {/* Info */}
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-start justify-between gap-2 overflow-x-auto">
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm font-medium leading-snug" style={{ color: 'var(--text-primary)' }}>
                                             {MOCK_MATERIAL.title}
@@ -972,7 +1018,7 @@ const InterviewMaterialsPage: React.FC = () => {
                                         )}
                                     </div>
                                     {/* Favourite star (filled) */}
-                                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                                    <div className="flex items-start gap-0.5 pt-0.5 flex-shrink-0">
                                         <span
                                             className="p-1.5 material-symbols-outlined text-base"
                                             style={{ color: 'var(--accent)', fontVariationSettings: "'FILL' 1" }}

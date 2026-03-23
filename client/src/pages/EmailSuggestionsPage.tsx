@@ -370,7 +370,13 @@ const EmailSuggestionsPage: React.FC = () => {
             showToast(buildPollToast(result));
             try { await refreshUsage(); } catch { /* non-fatal */ }
         } catch (err: any) {
-            setActionError(parseApiError(err));
+            const parsed = parseApiError(err);
+            if (parsed.code === 'GMAIL_AUTH_EXPIRED') {
+                setHasScope(false);
+                setActionError({ message: parsed.message });
+            } else {
+                setActionError(parsed);
+            }
         } finally {
             setPolling(false);
         }

@@ -57,7 +57,7 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
         <div className="flex-1 overflow-auto bg-white dark:bg-gray-800 p-0">
           <div
             ref={ref as React.RefObject<HTMLDivElement>}
-            className="bg-white mx-auto w-full"
+            className="bg-white mx-auto w-[210mm] shrink-0"
             id="cv-preview-container"
           >
             <DynamicTemplate
@@ -88,7 +88,7 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
     return (
       <div className={`flex flex-col h-full ${className}`}>
         <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6">
-          <div id="cv-preview-container">
+          <div id="cv-preview-container" className="mx-auto w-[210mm] shrink-0">
             <FreeformCvRenderer
               ref={ref as React.RefObject<HTMLDivElement>}
               value={data as Record<string, any>}
@@ -114,7 +114,7 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
       <div className="flex-1 overflow-auto bg-white dark:bg-gray-800 p-0">
         <div
           ref={ref as React.RefObject<HTMLDivElement>}
-          className="bg-white dark:bg-gray-800 mx-auto w-full"
+          className="bg-white dark:bg-gray-800 mx-auto w-[210mm] shrink-0"
           id="cv-preview-container"
         >
           <div ref={previewRef} className="cv-preview-container">

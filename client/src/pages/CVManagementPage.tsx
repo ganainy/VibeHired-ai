@@ -1107,12 +1107,12 @@ const CVManagementPage: React.FC = () => {
                 </div>
                 {/* Right â€“ CV preview */}
                 <div className="flex-1 min-w-0 overflow-y-auto p-6 flex items-start justify-center" style={{ background: 'var(--bg-base)' }}>
-                  <div className="w-full max-w-[520px] rounded-xl border p-7 flex flex-col gap-5 shadow-sm" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                  <div className="w-[210mm] max-w-full rounded-xl border p-7 flex flex-col gap-5 shadow-sm shrink-0" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                     {/* Header */}
                     <div className="text-center flex flex-col items-center gap-1 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
                       <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Alex Johnson</h2>
                       <p className="text-sm font-medium" style={{ color: 'var(--accent)' }}>Senior Frontend Developer</p>
-                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>alex@example.com Â· +49 170 123 4567 Â· Berlin, Germany</p>
+                      <p className="text-xs mt-1 flex flex-wrap justify-center gap-1 break-all" style={{ color: 'var(--text-muted)' }}>alex@example.com Â· +49 170 123 4567 Â· Berlin, Germany</p>
                     </div>
                     {/* Summary */}
                     <div className="flex flex-col gap-1.5">

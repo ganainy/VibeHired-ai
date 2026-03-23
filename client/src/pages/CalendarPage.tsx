@@ -198,7 +198,7 @@ const EventRow: React.FC<EventRowProps> = ({ event, onEdit, onDelete }) => (
         </div>
 
         {/* Actions - always visible */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        <div className="absolute right-3 top-3 flex items-center gap-1">
             <button
                 onClick={() => onEdit(event)}
                 className="p-1.5 rounded-lg hover:bg-elevated transition-colors"
@@ -491,7 +491,13 @@ const CalendarPage: React.FC = () => {
             });
             setEvents(data);
         } catch (err: any) {
+            const status = err?.response?.status;
             const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to load events.';
+            if (status === 401 || status === 403) {
+                setConnected(false);
+                setConnectedEmail(null);
+                setEvents([]);
+            }
             setError(msg);
         } finally {
             setLoading(false);
@@ -740,7 +746,7 @@ const CalendarPage: React.FC = () => {
                 <div className="space-y-6">
                     {/* Connection status bar */}
                     <div
-                        className="flex items-center justify-between gap-4 px-5 py-3.5 rounded-xl"
+                        className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 rounded-xl"
                         style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
                     >
                         <div className="flex items-center gap-3">
@@ -763,7 +769,7 @@ const CalendarPage: React.FC = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                             <button
                                 onClick={() => loadEvents(activeFilter)}
                                 disabled={loading}
@@ -841,7 +847,7 @@ const CalendarPage: React.FC = () => {
                                             </p>
                                         </div>
                                         {/* Actions (visual only) */}
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                        <div className="absolute right-3 top-3 flex items-center gap-1">
                                             <button className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}>
                                                 <Pencil size={14} />
                                             </button>

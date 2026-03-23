@@ -283,14 +283,56 @@ router.post(
         else if (!autoPollApplications && autoPollJobLeads) category = 'job_offer';
         // else: both enabled → no filter
 
-        const result = await pollEmailsForUser(userId, limit, category);
-        res.json({
-            message: `Poll complete. ${result.created} new suggestion(s) created.`,
-            count: result.created,
-            scanned: result.scanned,
-            applicationResponses: result.applicationResponses,
-            jobLeads: result.jobLeads,
-        });
+        // Keep-alive setup for long-running Heroku requests
+        let headersSent = false;
+        const keepAliveInterval = setInterval(() => {
+            if (!headersSent) {
+                res.setHeader('Content-Type', 'application/json');
+                res.status(200);
+                headersSent = true;
+            }
+            res.write(' ');
+        }, 15000); // 15 seconds
+
+        try {
+            const result = await pollEmailsForUser(userId, limit, category);
+            clearInterval(keepAliveInterval);
+            
+            const payload = {
+                message: `Poll complete. ${result.created} new suggestion(s) created.`,
+                count: result.created,
+                scanned: result.scanned,
+                applicationResponses: result.applicationResponses,
+                jobLeads: result.jobLeads,
+            };
+
+            if (!headersSent) {
+                res.json(payload);
+            } else {
+                res.write(JSON.stringify(payload));
+                res.end();
+            }
+        } catch (err: any) {
+            clearInterval(keepAliveInterval);
+            
+            if (headersSent) {
+                // If headers already sent as 200, we just write the error in the body
+                // The frontend won't easily catch it as a 4xx/5xx, but it prevents a crash/CORS error
+                res.write(JSON.stringify({ error: err.message || 'Failed to poll Gmail' }));
+                res.end();
+                return;
+            }
+
+            if (err?.code === 'GMAIL_AUTH_EXPIRED') {
+                res.status(401).json({
+                    message: err.message || 'Gmail authorization expired. Please reconnect your account.',
+                    code: 'GMAIL_AUTH_EXPIRED',
+                });
+                return;
+            }
+            // fallback: generic error
+            res.status(500).json({ message: err?.message || 'Failed to poll Gmail.' });
+        }
     })
 );
 

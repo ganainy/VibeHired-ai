@@ -136,7 +136,7 @@ const MaterialCard: React.FC<{
             <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                        <p className="text-sm font-medium leading-snug truncate" style={{ color: 'var(--text-primary)' }}>
+                        <p className="text-sm font-semibold leading-snug break-words" style={{ color: 'var(--text-primary)' }}>
                             {material.title}
                         </p>
 
@@ -177,9 +177,11 @@ const MaterialCard: React.FC<{
 
                         {/* Content preview for text/markdown */}
                         {(material.type === 'text' || material.type === 'markdown') && material.content && (
-                            <p className="text-xs mt-1 line-clamp-3 font-mono whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
-                                {material.content}
-                            </p>
+                            <div className="mt-2 p-2 rounded bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800">
+                                <p className="text-xs line-clamp-4 font-mono whitespace-pre-wrap overflow-hidden" style={{ color: 'var(--text-secondary)' }}>
+                                    {material.content}
+                                </p>
+                            </div>
                         )}
                     </div>
 
@@ -511,7 +513,7 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
     return (
         <div className="space-y-5">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined" style={{ color: 'var(--accent)' }}>
                         library_books
@@ -528,7 +530,7 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                         </span>
                     )}
                 </div>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                <p className="text-xs sm:text-right max-w-md" style={{ color: 'var(--text-muted)' }}>
                     Upload PDFs, images, notes, or links to use when preparing for this interview
                 </p>
             </div>
@@ -553,7 +555,7 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                         onDragLeave={() => setIsDragOver(false)}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        className="relative flex flex-col items-center justify-center gap-2 p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200"
+                        className="relative flex flex-col items-center justify-center gap-2 p-6 md:p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200"
                         style={{
                             borderColor: isDragOver ? 'var(--accent)' : 'var(--border)',
                             backgroundColor: isDragOver ? 'var(--accent-bg)' : 'var(--bg-elevated)',
@@ -565,13 +567,12 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                         >
                             cloud_upload
                         </span>
-                        <p className="text-sm font-medium" style={{ color: isDragOver ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                        <p className="text-sm font-medium text-center" style={{ color: isDragOver ? 'var(--accent)' : 'var(--text-secondary)' }}>
                             Drag & drop files, or click to browse
                         </p>
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
                             PDF, DOCX, PNG, JPG, TXT, MD — up to 30 MB each
                         </p>
-                        {/* Input covers the entire zone — stopPropagation prevents the div's onClick from firing a second dialog */}
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -584,10 +585,10 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                     </div>
 
                     {/* Quick add buttons */}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2">
                         <button
                             onClick={() => setAddMode('text')}
-                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
+                            className="flex items-center justify-center sm:justify-start gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
                             style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-elevated)' }}
                         >
                             <span className="material-symbols-outlined text-sm text-green-500">article</span>
@@ -595,7 +596,7 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                         </button>
                         <button
                             onClick={() => setAddMode('markdown')}
-                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
+                            className="flex items-center justify-center sm:justify-start gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
                             style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-elevated)' }}
                         >
                             <span className="material-symbols-outlined text-sm text-cyan-500">code</span>
@@ -603,7 +604,7 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                         </button>
                         <button
                             onClick={() => setAddMode('link')}
-                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
+                            className="flex items-center justify-center sm:justify-start gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
                             style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-elevated)' }}
                         >
                             <span className="material-symbols-outlined text-sm text-amber-500">link</span>

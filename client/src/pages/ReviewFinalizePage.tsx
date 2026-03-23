@@ -2131,235 +2131,213 @@ const ReviewFinalizePage: React.FC = () => {
 
             <div className="p-6 lg:p-8">
                 {/* Page Header */}
-                <div className="flex items-start justify-between gap-4 mb-6">
+                <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-6 mb-6">
                     {/* Left: Job Info */}
-                    <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                    <div className="flex-1 min-w-0 w-full">
+                        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-zinc-100 break-words leading-tight">
                             {jobApplication.jobTitle}
                         </h1>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">
-                            <span className="inline-flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400 mt-2">
+                            <span className="inline-flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/50 px-2.5 py-1 rounded-md">
                                 <span className="material-symbols-outlined text-[18px]">apartment</span>
-                                {jobApplication.companyName}
+                                <span className="font-medium">{jobApplication.companyName}</span>
                             </span>
-                            <span className="inline-flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[18px]">schedule</span>
+                            <span className="inline-flex items-center gap-1.5 px-1">
+                                <span className="material-symbols-outlined text-[18px] opacity-70">schedule</span>
                                 Created: {formatDate(jobApplication.createdAt)}
                             </span>
                         </div>
                     </div>
 
                     {/* Right: Status & Match Info */}
-                    <div className="flex items-start gap-6 flex-shrink-0">
+                    <div className="flex flex-wrap items-center md:items-start gap-3 md:gap-5 w-full md:w-auto mt-2 md:mt-0 flex-shrink-0">
                         {/* Status Column */}
-                        <div className="text-center">
-                            <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Status</p>
+                        <div className="flex-1 sm:flex-initial min-w-[100px] text-center bg-white dark:bg-zinc-900 md:bg-transparent dark:md:bg-transparent p-2 md:p-0 rounded-xl border border-zinc-100 dark:border-zinc-800 md:border-0 shadow-sm md:shadow-none">
+                            <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Status</p>
                             <JobStatusBadge type="application" status={jobApplication.status} />
                         </div>
 
-                        {/* Match Column - Clickable or Calculate Button */}
-                        {recommendation && recommendation.score !== null && recommendation.score !== undefined ? (
+                        {/* Match Column */}
+                        <div className="flex-1 sm:flex-initial min-w-[100px] text-center bg-white dark:bg-zinc-900 md:bg-transparent dark:md:bg-transparent p-2 md:p-0 rounded-xl border border-zinc-100 dark:border-zinc-800 md:border-0 shadow-sm md:shadow-none">
+                            {recommendation && recommendation.score !== null && recommendation.score !== undefined ? (
+                                <button
+                                    onClick={() => setIsRecommendationModalOpen(true)}
+                                    className="w-full text-center cursor-pointer hover:opacity-80 transition-opacity"
+                                    title="Click to view AI Application Advice"
+                                >
+                                    <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Match</p>
+                                    <p className={`text-sm font-bold ${recommendation.shouldApply
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : 'text-amber-600 dark:text-amber-400'
+                                        }`}>
+                                        {`${recommendation.score}%`}
+                                    </p>
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleCalculateMatch}
+                                    disabled={isLoadingRecommendation || !jobApplication?.jobDescriptionText}
+                                    className="w-full text-center cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title={!jobApplication?.jobDescriptionText ? "Add job description first" : "Click to calculate match (2 credits)"}
+                                >
+                                    <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Match</p>
+                                    {isLoadingRecommendation ? (
+                                        <span className="inline-flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                                            Calc
+                                            <span className="bg-amber-400 text-zinc-950 px-1 rounded-sm text-[8px]">2cr</span>
+                                        </span>
+                                    )}
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Action Buttons Group */}
+                        <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                            {/* Open Job Link Button */}
+                            {jobApplication.jobUrl && parseMultipleUrls(jobApplication.jobUrl || '').length > 0 && (
+                                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                                    {parseMultipleUrls(jobApplication.jobUrl || '').slice(0, 1).map((url, idx) => (
+                                        <a
+                                            key={idx}
+                                            href={url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex-1 sm:flex-none p-3 rounded-xl shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95"
+                                            style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                                            title={`View Job Posting: ${url}`}
+                                        >
+                                            <span className="material-symbols-outlined text-[20px]">open_in_new</span>
+                                            <span className="ml-2 sm:hidden text-xs font-semibold">Open Post</span>
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Mark as Applied Button */}
+                            {jobApplication.status === 'Not Applied' && (
+                                <button
+                                    onClick={handleMarkAsApplied}
+                                    className="flex-1 sm:flex-none px-4 py-3 text-xs font-bold text-white bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 hover:scale-105 active:scale-95"
+                                    title="Mark this job as Applied"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                    <span>Applied</span>
+                                </button>
+                            )}
+
+                            {/* Delete Job Button */}
                             <button
-                                onClick={() => setIsRecommendationModalOpen(true)}
-                                className="text-center cursor-pointer hover:opacity-80 transition-opacity"
-                                title="Click to view AI Application Advice"
+                                onClick={handleDeleteJob}
+                                className="p-3 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-xl shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95"
+                                title="Delete this job application"
                             >
-                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
-                                <p className={`text-sm font-semibold ${recommendation.shouldApply
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : 'text-amber-600 dark:text-amber-400'
-                                    }`}>
-                                    {`${recommendation.score}%`}
-                                </p>
+                                <span className="material-symbols-outlined text-[20px]">delete</span>
                             </button>
-                        ) : (
-                            <button
-                                onClick={handleCalculateMatch}
-                                disabled={isLoadingRecommendation || !jobApplication?.jobDescriptionText}
-                                className="text-center cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                                title={!jobApplication?.jobDescriptionText ? "Add job description first" : "Click to calculate match (2 credits)"}
-                            >
-                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
-                                {isLoadingRecommendation ? (
-                                    <span className="inline-flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                                    </span>
-                                ) : recommendation?.error ? (
-                                    <span className="text-xs px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
-                                        Retry
-                                    </span>
-                                ) : (
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>
-                                        Calculate
-                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 cr</span>
-                                    </span>
-                                )}
-                            </button>
-                        )}
-
-
-                        {/* Open Job Link Button */}
-                        {jobApplication.jobUrl && parseMultipleUrls(jobApplication.jobUrl || '').length > 0 && (
-                            <div className="flex items-center gap-1">
-                                {parseMultipleUrls(jobApplication.jobUrl || '').slice(0, 3).map((url, idx) => (
-                                    <a
-                                        key={idx}
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-3 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
-                                        style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-                                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-bg-hover,rgba(232,184,68,0.14))')}
-                                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent-bg)')}
-                                        title={`View Job Posting ${parseMultipleUrls(jobApplication.jobUrl || '').length > 1 ? `(${idx + 1})` : ''}: ${url}`}
-                                    >
-                                        <span className="material-symbols-outlined text-[20px]">open_in_new</span>
-                                        {parseMultipleUrls(jobApplication.jobUrl || '').length > 1 && (
-                                            <span className="text-xs ml-0.5">{idx + 1}</span>
-                                        )}
-                                    </a>
-                                ))}
-                                {parseMultipleUrls(jobApplication.jobUrl || '').length > 3 && (
-                                    <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-1" title={parseMultipleUrls(jobApplication.jobUrl || '').slice(3).join('\n')}>
-                                        +{parseMultipleUrls(jobApplication.jobUrl || '').length - 3} more
-                                    </span>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Mark as Applied Button */}
-                        {jobApplication.status === 'Not Applied' && (
-                            <button
-                                onClick={handleMarkAsApplied}
-                                className="px-4 py-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 rounded-lg shadow-sm transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 self-stretch"
-                                title="Mark this job as Applied"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                                <span>Mark as Applied</span>
-                            </button>
-                        )}
-
-                        {/* Delete Job Button */}
-                        <button
-                            onClick={handleDeleteJob}
-                            className="p-3 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
-                            title="Delete this job application"
-                        >
-                            <span className="material-symbols-outlined text-[20px]">delete</span>
-                        </button>
+                        </div>
                     </div>
                 </div>
 
 
 
-                {/* Tabs Navigation with Integrated Progress Indicators */}
-                <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-4">
-                    <div className="relative flex items-center justify-between w-full max-w-4xl mx-auto">
-                        <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-600 -z-10 transform -translate-y-1/2"></div>
+                {/* Tabs Navigation */}
+                <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden relative">
+                    <div className="overflow-x-auto no-scrollbar scroll-smooth">
+                        <div className="flex items-center justify-between min-w-[580px] w-full p-4 relative h-20">
+                            {/* Connecting line */}
+                            <div className="absolute left-10 right-10 top-[34px] h-0.5 bg-zinc-100 dark:bg-zinc-800 -z-0"></div>
 
-                        {/* Tab 1: Job Details */}
-                        <button
-                            onClick={() => handleTabChange('job-description')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'job-description'
-                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">check</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'job-description'
-                                ? 'text-primary font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Job Details</span>
-                        </button>
+                            {/* Tab 1: Job Details */}
+                            <button
+                                onClick={() => handleTabChange('job-description')}
+                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
+                            >
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'job-description'
+                                    ? 'bg-primary text-black shadow-lg scale-110'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
+                                    }`}>
+                                    <span className="material-symbols-outlined text-[18px]">info</span>
+                                </div>
+                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'job-description' ? 'text-primary' : 'text-zinc-500'}`}>Details</span>
+                            </button>
 
-                        {/* Tab 2: CV Generated */}
-                        <button
-                            onClick={() => handleTabChange('cv')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'cv'
-                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">article</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'cv'
-                                ? 'text-primary font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Tailored CV</span>
-                        </button>
+                            {/* Tab 2: CV */}
+                            <button
+                                onClick={() => handleTabChange('cv')}
+                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
+                            >
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'cv'
+                                    ? 'bg-primary text-black shadow-lg scale-110'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
+                                    }`}>
+                                    <span className="material-symbols-outlined text-[18px]">article</span>
+                                </div>
+                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'cv' ? 'text-primary' : 'text-zinc-500'}`}>CV</span>
+                            </button>
 
-                        {/* Tab 3: Cover Letter */}
-                        <button
-                            onClick={() => handleTabChange('cover-letter')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'cover-letter'
-                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">mail</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'cover-letter'
-                                ? 'text-primary font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Cover Letter</span>
-                        </button>
+                            {/* Tab 3: Cover Letter */}
+                            <button
+                                onClick={() => handleTabChange('cover-letter')}
+                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
+                            >
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'cover-letter'
+                                    ? 'bg-primary text-black shadow-lg scale-110'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
+                                    }`}>
+                                    <span className="material-symbols-outlined text-[18px]">mail</span>
+                                </div>
+                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'cover-letter' ? 'text-primary' : 'text-zinc-500'}`}>Letter</span>
+                            </button>
 
-                        {/* Tab 4: Mock Interview */}
-                        <button
-                            onClick={() => handleTabChange('mock-interview')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'mock-interview'
-                                ? 'bg-gold-500 text-ink-950 shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">mic</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'mock-interview'
-                                ? 'text-gold-600 dark:text-gold-400 font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Interview</span>
-                        </button>
+                            {/* Tab 4: Interview */}
+                            <button
+                                onClick={() => handleTabChange('mock-interview')}
+                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
+                            >
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'mock-interview'
+                                    ? 'bg-gold-500 text-black shadow-lg scale-110'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
+                                    }`}>
+                                    <span className="material-symbols-outlined text-[18px]">mic</span>
+                                </div>
+                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'mock-interview' ? 'text-gold-500' : 'text-zinc-500'}`}>AI Buddy</span>
+                            </button>
 
-                        {/* Tab 5: Reminders */}
-                        <button
-                            onClick={() => handleTabChange('reminders')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'reminders'
-                                ? 'bg-amber-500 text-white shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">notifications</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'reminders'
-                                ? 'text-amber-600 dark:text-amber-400 font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Reminders{reminders.length > 0 && ` (${reminders.length})`}</span>
-                        </button>
+                            {/* Tab 5: Reminders */}
+                            <button
+                                onClick={() => handleTabChange('reminders')}
+                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
+                            >
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'reminders'
+                                    ? 'bg-amber-500 text-white shadow-lg scale-110'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
+                                    }`}>
+                                    <span className="material-symbols-outlined text-[18px]">notifications</span>
+                                </div>
+                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'reminders' ? 'text-amber-500' : 'text-zinc-500'}`}>Reminders</span>
+                            </button>
 
-                        {/* Tab 6: Prep Materials */}
-                        <button
-                            onClick={() => handleTabChange('materials')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'materials'
-                                ? 'bg-emerald-500 text-white shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">library_books</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'materials'
-                                ? 'text-emerald-600 dark:text-emerald-400 font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Materials</span>
-                        </button>
-
+                            {/* Tab 6: Materials */}
+                            <button
+                                onClick={() => handleTabChange('materials')}
+                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
+                            >
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'materials'
+                                    ? 'bg-emerald-500 text-white shadow-lg scale-110'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
+                                    }`}>
+                                    <span className="material-symbols-outlined text-[18px]">library_books</span>
+                                </div>
+                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'materials' ? 'text-emerald-500' : 'text-zinc-500'}`}>Prep</span>
+                            </button>
+                        </div>
                     </div>
+                    {/* Shadow indicators for scrolling */}
+                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-zinc-900 to-transparent pointer-events-none md:hidden"></div>
+                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-zinc-900 to-transparent pointer-events-none md:hidden"></div>
                 </div>      {/* Tab Content */}
                 <div className="px-0 py-6">
 

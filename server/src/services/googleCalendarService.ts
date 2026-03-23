@@ -4,7 +4,7 @@ import Profile from '../models/Profile';
 import { encrypt, decrypt } from '../utils/encryption';
 import { env } from '../config/env';
 import { IReminder } from '../models/JobApplication';
-import { AuthorizationError } from '../utils/errors/AppError';
+import { AuthorizationError, AuthenticationError } from '../utils/errors/AppError';
 
 export interface CalendarEventItem {
     id: string;
@@ -25,14 +25,14 @@ async function getOAuth2Client(userId: string) {
     const googleIntegration = profile?.integrations?.google;
 
     if (!googleIntegration?.enabled || !googleIntegration?.accessToken) {
-        throw new Error('Google Calendar is not connected for this account.');
+        throw new AuthenticationError('Google Calendar is not connected for this account.');
     }
 
     const accessToken = decrypt(googleIntegration.accessToken);
     const refreshToken = googleIntegration.refreshToken ? decrypt(googleIntegration.refreshToken) : null;
 
     if (!accessToken) {
-        throw new Error('Failed to decrypt Google access token.');
+        throw new AuthenticationError('Google Calendar credentials are invalid. Please reconnect your Google account.');
     }
 
     const oauth2Client = new google.auth.OAuth2(
@@ -246,28 +246,56 @@ export async function listUpcomingEvents(
     const auth = await getOAuth2Client(userId);
     const calendar = google.calendar({ version: 'v3', auth });
 
-    const response = await calendar.events.list({
-        calendarId: 'primary',
-        timeMin: options.timeMin || new Date().toISOString(),
-        timeMax: options.timeMax || undefined,
-        maxResults: options.maxResults || 50,
-        singleEvents: true,
-        orderBy: 'startTime',
-    });
+    try {
+        const response = await calendar.events.list({
+            calendarId: 'primary',
+            timeMin: options.timeMin || new Date().toISOString(),
+            timeMax: options.timeMax || undefined,
+            maxResults: options.maxResults || 50,
+            singleEvents: true,
+            orderBy: 'startTime',
+        });
 
-    const items = response.data.items ?? [];
-    return items.map((item) => ({
-        id: item.id ?? '',
-        summary: item.summary ?? '(No title)',
-        start: {
-            dateTime: item.start?.dateTime ?? undefined,
-            date: item.start?.date ?? undefined,
-        },
-        end: {
-            dateTime: item.end?.dateTime ?? undefined,
-            date: item.end?.date ?? undefined,
-        },
-        location: item.location ?? undefined,
-        description: item.description ?? undefined,
-    }));
+        const items = response.data.items ?? [];
+        return items.map((item) => ({
+            id: item.id ?? '',
+            summary: item.summary ?? '(No title)',
+            start: {
+                dateTime: item.start?.dateTime ?? undefined,
+                date: item.start?.date ?? undefined,
+            },
+            end: {
+                dateTime: item.end?.dateTime ?? undefined,
+                date: item.end?.date ?? undefined,
+            },
+            location: item.location ?? undefined,
+            description: item.description ?? undefined,
+        }));
+    } catch (err: any) {
+        const status = err?.code ?? err?.status ?? err?.response?.status;
+        const message = String(err?.message ?? err?.response?.data?.error?.message ?? '').toLowerCase();
+        const isAuthFailure =
+            status === 401 ||
+            status === 403 ||
+            message.includes('invalid credentials') ||
+            message.includes('invalid_grant') ||
+            message.includes('login required') ||
+            message.includes('unauthorized');
+
+        if (isAuthFailure) {
+            await Profile.updateOne(
+                { userId },
+                {
+                    $set: {
+                        'integrations.google.accessToken': null,
+                        'integrations.google.refreshToken': null,
+                        'integrations.google.enabled': false,
+                    },
+                }
+            );
+            throw new AuthenticationError('Google Calendar connection expired. Please reconnect your Google account.');
+        }
+
+        throw err;
+    }
 }

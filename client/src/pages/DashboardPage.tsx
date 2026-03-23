@@ -834,7 +834,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex flex-col gap-4">
             <form onSubmit={handleCreateFromTextSubmit} className="w-full">
               {/* Pre-Extraction Form Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 {/* CV Selection or Upload */}
                 <div>
                   <label htmlFor="cvBranch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -1153,10 +1153,10 @@ const DashboardPage: React.FC = () => {
               </div>
 
               {/* Toggle pills */}
-              <div className="flex items-end gap-2 pb-0">
+              <div className="flex flex-wrap items-end gap-3 pb-0">
                 <div>
                   <label className="block text-xs font-medium mb-1.5 label-overline">Quick filters</label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => setFilterFavorite(!filterFavorite)}
                       className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-sm font-medium transition-all ${filterFavorite

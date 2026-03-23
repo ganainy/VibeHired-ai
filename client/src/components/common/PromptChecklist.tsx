@@ -54,6 +54,7 @@ interface PromptChecklistProps {
 const PromptChecklist: React.FC<PromptChecklistProps> = ({ type, onChange }) => {
     const [items, setItems] = useState<PromptChecklistItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const [newItemText, setNewItemText] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -172,16 +173,24 @@ const PromptChecklist: React.FC<PromptChecklistProps> = ({ type, onChange }) => 
         <div className="space-y-3">
             {/* Header row */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    onClick={() => setIsExpanded(prev => !prev)}
+                    className="inline-flex items-center gap-2 text-left"
+                    aria-expanded={isExpanded}
+                >
+                    <span className="material-symbols-outlined text-base text-gray-500 dark:text-gray-400">
+                        {isExpanded ? 'expand_less' : 'expand_more'}
+                    </span>
                     <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                         Custom Instructions
                     </span>
                     <span className="text-xs text-gray-400 dark:text-gray-500">
                         ({enabledCount} of {items.length} active)
                     </span>
-                </div>
+                </button>
                 <div className="flex items-center gap-2">
-                    {saveStatus === 'saving' && (
+                    {isExpanded && saveStatus === 'saving' && (
                         <span className="text-xs text-gray-400 flex items-center gap-1">
                             <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -190,132 +199,138 @@ const PromptChecklist: React.FC<PromptChecklistProps> = ({ type, onChange }) => 
                             Saving…
                         </span>
                     )}
-                    {saveStatus === 'saved' && (
+                    {isExpanded && saveStatus === 'saved' && (
                         <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
                             <span className="material-symbols-outlined text-sm">check</span>
                             Saved
                         </span>
                     )}
-                    {saveStatus === 'error' && (
+                    {isExpanded && saveStatus === 'error' && (
                         <span className="text-xs text-red-500">Save failed</span>
                     )}
-                    <button
-                        type="button"
-                        onClick={resetToDefaults}
-                        className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors underline underline-offset-2"
-                        title="Reset to default instructions"
-                    >
-                        Reset defaults
-                    </button>
+                    {isExpanded && (
+                        <button
+                            type="button"
+                            onClick={resetToDefaults}
+                            className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors underline underline-offset-2"
+                            title="Reset to default instructions"
+                        >
+                            Reset defaults
+                        </button>
+                    )}
                 </div>
             </div>
 
             {/* Checklist */}
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700/60 overflow-hidden">
-                {items.map(item => (
-                    <div
-                        key={item.id}
-                        className={`flex items-start gap-3 px-4 py-3 transition-colors ${
-                            item.enabled
-                                ? 'bg-white dark:bg-gray-800'
-                                : 'bg-gray-50 dark:bg-gray-800/40'
-                        }`}
-                    >
-                        {/* Checkbox */}
-                        <button
-                            type="button"
-                            onClick={() => toggleItem(item.id)}
-                            className={`mt-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
-                                item.enabled
-                                    ? 'text-ink-950 border-transparent'
-                                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                            }`}
-                            style={item.enabled ? {background:'var(--accent)'} : {}}
-                            aria-checked={item.enabled}
-                            role="checkbox"
-                        >
-                            {item.enabled && (
-                                <span className="material-symbols-outlined text-[13px]">check</span>
-                            )}
-                        </button>
-
-                        {/* Text — viewing or editing */}
-                        <div className="flex-1 min-w-0">
-                            {editingId === item.id ? (
-                                <textarea
-                                    ref={editInputRef}
-                                    value={editingText}
-                                    onChange={e => setEditingText(e.target.value)}
-                                    onBlur={commitEdit}
-                                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit(); } if (e.key === 'Escape') { setEditingId(null); } }}
-                                    rows={2}
-                                    className="w-full text-sm rounded-lg px-2 py-1 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-gold-500/30 border" style={{background:'var(--accent-bg)', borderColor:'var(--accent-dim)'}}
-                                />
-                            ) : (
-                                <span
-                                    className={`text-sm cursor-text select-none block ${
-                                        item.enabled
-                                            ? 'text-gray-800 dark:text-gray-200'
-                                            : 'text-gray-400 dark:text-gray-500 line-through'
-                                    }`}
-                                    onClick={() => startEdit(item)}
-                                    title="Click to edit"
-                                >
-                                    {item.text}
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Edit / Delete actions */}
-                        <div className="shrink-0 flex items-center gap-1 ml-1">
-                            {editingId !== item.id && (
+            {isExpanded && (
+                <>
+                    <div className="rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700/60 overflow-hidden">
+                        {items.map(item => (
+                            <div
+                                key={item.id}
+                                className={`flex items-start gap-3 px-4 py-3 transition-colors ${
+                                    item.enabled
+                                        ? 'bg-white dark:bg-gray-800'
+                                        : 'bg-gray-50 dark:bg-gray-800/40'
+                                }`}
+                            >
+                                {/* Checkbox */}
                                 <button
                                     type="button"
-                                    onClick={() => startEdit(item)}
-                                    className="p-1 text-gray-400 hover:text-gold-600 dark:hover:text-gold-400 transition-colors rounded"
-                                    title="Edit"
+                                    onClick={() => toggleItem(item.id)}
+                                    className={`mt-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
+                                        item.enabled
+                                            ? 'text-ink-950 border-transparent'
+                                            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                                    }`}
+                                    style={item.enabled ? { background: 'var(--accent)' } : {}}
+                                    aria-checked={item.enabled}
+                                    role="checkbox"
                                 >
-                                    <span className="material-symbols-outlined text-base">edit</span>
+                                    {item.enabled && (
+                                        <span className="material-symbols-outlined text-[13px]">check</span>
+                                    )}
+                                </button>
+
+                                {/* Text — viewing or editing */}
+                                <div className="flex-1 min-w-0">
+                                    {editingId === item.id ? (
+                                        <textarea
+                                            ref={editInputRef}
+                                            value={editingText}
+                                            onChange={e => setEditingText(e.target.value)}
+                                            onBlur={commitEdit}
+                                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit(); } if (e.key === 'Escape') { setEditingId(null); } }}
+                                            rows={2}
+                                            className="w-full text-sm rounded-lg px-2 py-1 text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-gold-500/30 border" style={{ background: 'var(--accent-bg)', borderColor: 'var(--accent-dim)' }}
+                                        />
+                                    ) : (
+                                        <span
+                                            className={`text-sm cursor-text select-none block ${
+                                                item.enabled
+                                                    ? 'text-gray-800 dark:text-gray-200'
+                                                    : 'text-gray-400 dark:text-gray-500 line-through'
+                                            }`}
+                                            onClick={() => startEdit(item)}
+                                            title="Click to edit"
+                                        >
+                                            {item.text}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Edit / Delete actions */}
+                                <div className="shrink-0 flex items-center gap-1 ml-1">
+                                    {editingId !== item.id && (
+                                        <button
+                                            type="button"
+                                            onClick={() => startEdit(item)}
+                                            className="p-1 text-gray-400 hover:text-gold-600 dark:hover:text-gold-400 transition-colors rounded"
+                                            title="Edit"
+                                        >
+                                            <span className="material-symbols-outlined text-base">edit</span>
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => deleteItem(item.id)}
+                                        className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded"
+                                        title="Remove instruction"
+                                    >
+                                        <span className="material-symbols-outlined text-base">close</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Add new item row */}
+                        <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-800/60">
+                            <span className="material-symbols-outlined text-base text-gray-400 shrink-0">add</span>
+                            <input
+                                type="text"
+                                value={newItemText}
+                                onChange={e => setNewItemText(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
+                                placeholder="Add a custom instruction…"
+                                className="flex-1 text-sm bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500"
+                            />
+                            {newItemText.trim() && (
+                                <button
+                                    type="button"
+                                    onClick={addItem}
+                                    className="text-xs font-medium text-gold-600 dark:text-gold-400 hover:text-gold-800 dark:hover:text-gold-300 transition-colors whitespace-nowrap"
+                                >
+                                    Add
                                 </button>
                             )}
-                            <button
-                                type="button"
-                                onClick={() => deleteItem(item.id)}
-                                className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded"
-                                title="Remove instruction"
-                            >
-                                <span className="material-symbols-outlined text-base">close</span>
-                            </button>
                         </div>
                     </div>
-                ))}
 
-                {/* Add new item row */}
-                <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-800/60">
-                    <span className="material-symbols-outlined text-base text-gray-400 shrink-0">add</span>
-                    <input
-                        type="text"
-                        value={newItemText}
-                        onChange={e => setNewItemText(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }}
-                        placeholder="Add a custom instruction…"
-                        className="flex-1 text-sm bg-transparent border-none outline-none text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500"
-                    />
-                    {newItemText.trim() && (
-                        <button
-                            type="button"
-                            onClick={addItem}
-                            className="text-xs font-medium text-gold-600 dark:text-gold-400 hover:text-gold-800 dark:hover:text-gold-300 transition-colors whitespace-nowrap"
-                        >
-                            Add
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            <p className="text-xs text-gray-400 dark:text-gray-500">
-                Check items to include them in the AI prompt. Click any item to edit its text. Changes are saved automatically.
-            </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                        Check items to include them in the AI prompt. Click any item to edit its text. Changes are saved automatically.
+                    </p>
+                </>
+            )}
         </div>
     );
 };

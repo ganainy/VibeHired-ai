@@ -77,6 +77,39 @@ const TimeTrackerIcon = () => (
     </svg>
 );
 
+const PrepLibraryIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+        <path d="M9 7h6M9 11h6M9 15h4" />
+    </svg>
+);
+
+const CalendarIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+);
+
+const CreditCardIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+);
+
+const InterviewBuddyIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a3 3 0 013 3v5a3 3 0 01-6 0V5a3 3 0 013-3z" />
+        <path d="M19 10a7 7 0 01-14 0" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+);
+
 const SunIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="4" />
@@ -139,20 +172,32 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
         { path: '/manage-cv', label: 'Manage CV', icon: WorkIcon },
         { path: '/email-suggestions', label: 'Inbox', icon: InboxIconMobile, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
         { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon, disabled: true },
+        { path: '/interview-materials', label: 'Prep Library', icon: PrepLibraryIcon },
+        { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
+        { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
         { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
         { path: '/portfolio-setup', label: 'Portfolio', icon: PortfolioIcon },
         { path: '/settings', label: 'Settings', icon: SettingsIcon },
-        { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
+        { path: '/subscriptions', label: 'Subscription', icon: CreditCardIcon },
+    ];
+
+    const adminNavItems = [
+        { path: '/admin', label: 'Admin Dashboard', icon: AnalyticsIcon },
+        { path: '/admin/users', label: 'User Management', icon: PortfolioIcon },
+        { path: '/interview-buddy', label: 'Interview Buddy', icon: InterviewBuddyIcon },
     ];
 
     const mobileOnboardingNavByPath: Record<string, string> = {
         '/dashboard': 'mobile-nav-dashboard',
         '/manage-cv': 'mobile-nav-manage-cv',
         '/email-suggestions': 'mobile-nav-email-suggestions',
+        '/interview-materials': 'mobile-nav-interview-materials',
+        '/work-tracker': 'mobile-nav-work-tracker',
+        '/calendar': 'mobile-nav-calendar',
         '/analytics': 'mobile-nav-analytics',
         '/portfolio-setup': 'mobile-nav-portfolio-setup',
         '/settings': 'mobile-nav-settings',
-        '/work-tracker': 'mobile-nav-work-tracker',
+        '/subscriptions': 'mobile-nav-subscriptions',
     };
 
     const userInitial = user?.email ? user.email.charAt(0).toUpperCase() : 'U';
@@ -208,29 +253,29 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
                         className="md:hidden fixed top-14 left-0 right-0 bottom-0 z-50 overflow-y-auto flex flex-col"
                         style={{ backgroundColor: 'var(--bg-surface)' }}
                     >
-                        {/* User chip */}
+                        {/* User Profile Header */}
                         <div
-                            className="flex items-center gap-3 px-5 py-4 border-b"
-                            style={{ borderColor: 'var(--border)' }}
+                            className="flex items-center gap-4 px-6 py-6 border-b"
+                            style={{ borderColor: 'var(--border)', background: 'linear-gradient(to bottom, var(--bg-surface), var(--bg-elevated))' }}
                         >
                             <div
-                                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold font-mono shrink-0"
+                                className="w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold font-mono shrink-0 shadow-sm"
                                 style={{
                                     backgroundColor: 'var(--accent-bg, rgba(232,184,68,0.12))',
                                     color: 'var(--accent)',
-                                    border: '1px solid rgba(232,184,68,0.25)'
+                                    border: '1px solid rgba(232,184,68,0.3)'
                                 }}
                             >
                                 {userInitial}
                             </div>
-                            <div>
-                                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{userLabel}</p>
-                                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{user?.email}</p>
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>{userLabel}</p>
+                                <p className="text-xs opacity-70 truncate" style={{ color: 'var(--text-muted)' }}>{user?.email}</p>
                             </div>
                         </div>
 
                         {/* Nav items */}
-                        <nav className="flex-1 px-3 py-4 space-y-1">
+                        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
                             {navItems.map((item, i) => {
                                 const isActive = isActiveRoute(item.path);
                                 const isDisabled = !!(item as any).disabled;
@@ -239,16 +284,18 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
                                     return (
                                         <div
                                             key={item.path}
-                                            className="flex items-center gap-3.5 px-4 py-3.5 rounded-lg text-[0.9375rem] font-medium cursor-not-allowed select-none"
-                                            style={{ opacity: 0.45, color: 'var(--text-muted)' }}
+                                            className="flex items-center gap-4 px-4 py-3.5 rounded-xl text-[0.9375rem] font-medium cursor-not-allowed select-none opacity-40"
+                                            style={{ color: 'var(--text-muted)' }}
                                         >
-                                            <item.icon />
+                                            <div className="w-5 h-5 flex items-center justify-center">
+                                                <item.icon />
+                                            </div>
                                             {item.label}
                                             <span
-                                                className="ml-auto text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded"
-                                                style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)' }}
+                                                className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800"
+                                                style={{ color: 'var(--text-muted)' }}
                                             >
-                                                Soon
+                                                Coming Soon
                                             </span>
                                         </div>
                                     );
@@ -259,55 +306,98 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
                                         key={item.path}
                                         to={item.path}
                                         data-onboarding={mobileOnboardingNavByPath[item.path]}
-                                        className="flex items-center gap-3.5 px-4 py-3.5 rounded-lg text-[0.9375rem] font-medium transition-all"
+                                        className="flex items-center gap-4 px-4 py-3.5 rounded-xl text-[0.9375rem] font-semibold transition-all duration-200 active:scale-95"
                                         style={{
-                                            backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.09))' : 'transparent',
+                                            backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.12))' : 'transparent',
                                             color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                                            animationDelay: `${i * 40}ms`,
                                         }}
                                     >
-                                        <item.icon />
+                                        <div className={`w-5 h-5 flex items-center justify-center transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
+                                            <item.icon />
+                                        </div>
                                         {item.label}
                                         {(item as any).badge ? (
                                             <span
-                                                className="ml-auto min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold px-1"
+                                                className="ml-auto min-w-[20px] h-[20px] rounded-full flex items-center justify-center text-[10px] font-black px-1.5 shadow-sm"
                                                 style={{ backgroundColor: 'var(--accent)', color: '#000' }}
                                             >
                                                 {(item as any).badge > 9 ? '9+' : (item as any).badge}
                                             </span>
                                         ) : isActive ? (
                                             <span
-                                                className="ml-auto w-1.5 h-1.5 rounded-full"
+                                                className="ml-auto w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(232,184,68,0.6)]"
                                                 style={{ backgroundColor: 'var(--accent)' }}
                                             />
                                         ) : null}
                                     </Link>
                                 );
                             })}
+
+                            {/* Admin Section */}
+                            {(user?.role === 'admin' || user?.role === 'owner') && (
+                                <div className="mt-8 pt-5" style={{ borderTop: '1px solid var(--border)' }}>
+                                    <p className="px-4 mb-3 text-[10px] font-black uppercase tracking-[0.15em] opacity-50" style={{ color: 'var(--text-muted)' }}>Admin Controls</p>
+                                    <div className="space-y-1">
+                                        {adminNavItems.map((item, i) => {
+                                            const isActive = isActiveRoute(item.path);
+                                            return (
+                                                <Link
+                                                    key={item.path}
+                                                    to={item.path}
+                                                    className="flex items-center gap-4 px-4 py-3.5 rounded-xl text-[0.9375rem] font-semibold transition-all duration-200 active:scale-95"
+                                                    style={{
+                                                        backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.12))' : 'transparent',
+                                                        color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                                                    }}
+                                                >
+                                                    <div className={`w-5 h-5 flex items-center justify-center transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
+                                                        <item.icon />
+                                                    </div>
+                                                    {item.label}
+                                                    {isActive && (
+                                                        <span
+                                                            className="ml-auto w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(232,184,68,0.6)]"
+                                                            style={{ backgroundColor: 'var(--accent)' }}
+                                                        />
+                                                    )}
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </nav>
 
-                        {/* Footer */}
+                        {/* Bottom Actions Area */}
                         <div
-                            className="px-5 py-5 border-t flex items-center justify-between"
-                            style={{ borderColor: 'var(--border)' }}
+                            className="px-6 py-6 border-t flex flex-col gap-3"
+                            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}
                         >
-                            <button
-                                onClick={toggleTheme}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                                style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
-                            >
-                                {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-                                <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={toggleTheme}
+                                    className="flex-1 flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
+                                    style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+                                >
+                                    <div className="text-accent">
+                                        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                                    </div>
+                                    <span>{theme === 'dark' ? 'Light Appearance' : 'Dark Appearance'}</span>
+                                </button>
+                            </div>
 
                             <button
                                 onClick={handleLogout}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                                style={{ backgroundColor: 'rgba(244,100,100,0.08)', color: 'var(--rose, #f46464)', border: '1px solid rgba(244,100,100,0.2)' }}
+                                className="flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm"
+                                style={{ backgroundColor: 'rgba(244,100,100,0.1)', color: 'var(--rose, #f46464)', border: '1px solid rgba(244,100,100,0.2)' }}
                             >
                                 <LogoutIcon />
-                                <span>Sign out</span>
+                                <span>Sign Out</span>
                             </button>
+                            
+                            <p className="text-[10px] text-center mt-2 opacity-40 font-medium" style={{ color: 'var(--text-muted)' }}>
+                                VibeHired Assistant v1.2.0
+                            </p>
                         </div>
                     </div>
                 </>

@@ -228,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {onCreateBranch && (
                                 <button
                                     onClick={onCreateBranch}
-                                    className="flex flex-col items-center justify-center gap-2 w-32 rounded-xl border-2 border-dashed transition-all group pb-2.5"
+                                    className="flex flex-col items-center justify-center gap-2 w-32 rounded-xl border-2 border-dashed transition-all group pt-2.5 pb-2.5"
                                     style={{borderColor:'var(--accent-dim)', background:'var(--accent-bg)', color:'var(--accent)'}}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.background='var(--accent-bg-hover,rgba(232,184,68,0.14))'; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor='var(--accent-dim)'; e.currentTarget.style.background='var(--accent-bg)'; }}

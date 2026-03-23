@@ -17,10 +17,12 @@
     --text-primary: #18181b;
     --text-secondary: #52525b;
     --text-muted: #a1a1aa;
-    --accent: #c89a2a;
-    --accent-hover: #b08020;
-    --accent-text: #7a5810;
-    --accent-dim: #deb84a;
+    --accent: #d97706;
+    --accent-hover: #c26505;
+    --accent-text: #78350f;
+    --accent-dim: #f59e0b;
+    --accent-bg: rgba(217, 119, 6, 0.1);
+    --accent-bg-hover: rgba(217, 119, 6, 0.18);
     --jade: #16a34a;
     --rose: #dc2626;
     --ember: #ea580c;
@@ -40,11 +42,11 @@
     --text-primary: #eeeef8;
     --text-secondary: #9090b4;
     --text-muted: #585878;
-    --accent: #f2c24e;
-    --accent-hover: #f7d468;
-    --accent-dim: #d8a832;
-    --accent-bg: rgba(242, 194, 78, 0.09);
-    --accent-bg-hover: rgba(242, 194, 78, 0.16);
+    --accent: #d97706;
+    --accent-hover: #f59e0b;
+    --accent-dim: #f59e0b;
+    --accent-bg: rgba(217, 119, 6, 0.12);
+    --accent-bg-hover: rgba(217, 119, 6, 0.2);
     --jade: #2dd4a0;
     --jade-bg: rgba(45, 212, 160, 0.08);
     --rose: #f46464;
@@ -164,7 +166,7 @@
 
   .input-base:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-bg, rgba(242, 194, 78, 0.1));
+    box-shadow: 0 0 0 3px var(--accent-bg, rgba(217, 119, 6, 0.1));
   }
 
   /* Legacy compat */
@@ -201,12 +203,12 @@
     background-color: var(--accent);
     color: #0e0e17;
     font-weight: 600;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 2px 8px rgba(242, 194, 78, 0.28);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 2px 8px rgba(217, 119, 6, 0.28);
   }
 
   .btn-primary:hover:not(:disabled) {
     background-color: var(--accent-hover);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 4px 16px rgba(242, 194, 78, 0.4);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 4px 16px rgba(217, 119, 6, 0.4);
     transform: translateY(-1px);
   }
 
@@ -283,9 +285,9 @@
   }
 
   .badge-gold {
-    background-color: var(--accent-bg, rgba(242, 194, 78, 0.1));
-    color: var(--accent, #f2c24e);
-    border: 1px solid rgba(242, 194, 78, 0.2);
+    background-color: var(--accent-bg, rgba(217, 119, 6, 0.1));
+    color: var(--accent, #d97706);
+    border: 1px solid rgba(217, 119, 6, 0.2);
   }
 
   .badge-jade {
@@ -450,9 +452,9 @@
   }
 
   .alert-info {
-    background-color: var(--accent-bg, rgba(242, 194, 78, 0.08));
-    border: 1px solid rgba(242, 194, 78, 0.2);
-    color: var(--accent, #f2c24e);
+    background-color: var(--accent-bg, rgba(217, 119, 6, 0.08));
+    border: 1px solid rgba(217, 119, 6, 0.2);
+    color: var(--accent, #d97706);
     border-radius: 0.625rem;
     padding: 0.75rem 1rem;
   }
@@ -690,12 +692,12 @@
 
   .bg-purple-50,
   .bg-purple-100 {
-    background-color: var(--accent-bg, rgba(242, 194, 78, 0.08)) !important;
+    background-color: var(--accent-bg, rgba(217, 119, 6, 0.08)) !important;
   }
 
   .bg-purple-900\/20,
   .bg-purple-900\/30 {
-    background-color: var(--accent-bg, rgba(242, 194, 78, 0.08)) !important;
+    background-color: var(--accent-bg, rgba(217, 119, 6, 0.08)) !important;
   }
 
   .border-purple-600 {
@@ -703,7 +705,7 @@
   }
 
   .border-purple-300 {
-    border-color: rgba(242, 194, 78, 0.3) !important;
+    border-color: rgba(217, 119, 6, 0.3) !important;
   }
 
   .ring-purple-500,
@@ -739,23 +741,23 @@
   }
 
   .text-purple-600 {
-    color: #c8962a !important;
+    color: #d97706 !important;
   }
 
   .text-purple-700 {
-    color: #b07820 !important;
+    color: #b45309 !important;
   }
 
   .bg-purple-600 {
-    background-color: #c8962a !important;
+    background-color: #d97706 !important;
   }
 
   .bg-purple-50 {
-    background-color: #fdf5e0 !important;
+    background-color: #fffbeb !important;
   }
 
   .border-purple-300 {
-    border-color: #deb84a !important;
+    border-color: #f59e0b !important;
   }
 }
 

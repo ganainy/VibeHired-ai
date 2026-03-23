@@ -2324,7 +2324,7 @@ const WorkTrackerPage: React.FC = () => {
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-1 p-1 rounded-xl self-start sm:self-auto" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+          <div className="flex flex-wrap items-center gap-1 p-1 rounded-xl self-start sm:self-auto" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
             {[
               { key: 'timelog', label: 'Time Log', icon: <Clock size={15} /> },
               { key: 'employers', label: 'Employers', icon: <Building2 size={15} /> },
@@ -2456,7 +2456,7 @@ const WorkTrackerPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <button
                   onClick={() => setShowImportModal(true)}
                   className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg transition-all"
