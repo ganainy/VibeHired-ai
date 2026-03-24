@@ -233,6 +233,11 @@ function buildFollowUpPrompt(job: IJobApplication, senderName?: string): string 
     ? `- End with "Best regards," and then sign with exactly this sender name: ${senderName}.`
     : '- End with "Best regards," but do not add a made-up personal name.';
 
+  const language = job.language?.trim() || 'en';
+  const languageInstruction = language !== 'en'
+    ? `- Write the email in ${language} language (the language of the job posting).`
+    : '';
+
   return `You are writing a concise professional follow-up email for a job application.
 
 Context:
@@ -243,6 +248,7 @@ Context:
 - Application date: ${appliedDate}
 - Time since application: ${elapsedTime}
 - Candidate notes (optional): ${notes || 'N/A'}
+- Job language: ${language}
 
 Requirements:
 - Keep tone warm, confident, and professional.
@@ -252,6 +258,7 @@ Requirements:
 - Avoid placeholders like [Your Name].
 - Do not invent names (sender or recipient).
 ${signatureInstruction}
+${languageInstruction}
 - Return JSON only.
 
 Return this exact JSON shape:

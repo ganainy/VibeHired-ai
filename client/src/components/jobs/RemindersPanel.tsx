@@ -22,6 +22,7 @@ interface RemindersPanelProps {
     language?: string;
     onRemindersChange: (reminders: IReminder[]) => void;
     onToast?: (message: string, type: 'success' | 'error' | 'info') => void;
+    hideFollowUpCard?: boolean;
 }
 
 const CalendarIcon = () => (
@@ -82,6 +83,7 @@ const RemindersPanel: React.FC<RemindersPanelProps> = ({
     language,
     onRemindersChange,
     onToast,
+    hideFollowUpCard = false,
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -252,17 +254,19 @@ const RemindersPanel: React.FC<RemindersPanelProps> = ({
                     <Spinner size="sm" />
                     <span>Checking follow-up suggestion...</span>
                 </div>
-            ) : canShowFollowUpCard && followUpSuggestion && (
+            ) : !hideFollowUpCard && (
                 <div className="rounded-xl border border-blue-200 dark:border-blue-800/40 bg-blue-50/70 dark:bg-blue-900/20 p-4 space-y-3">
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">No response follow-up</p>
+                            <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">Follow-up Email</p>
                             <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-                                {followUpSuggestion.isDue
-                                    ? `It has been ${followUpSuggestion.daysWithoutResponse} days since this application. Suggested follow-up starts at day 14.`
-                                    : `Follow-up reminder will trigger on ${formatDateTime(followUpSuggestion.dueDateISO)}.`}
+                                {followUpSuggestion?.isDue
+                                    ? `It has been ${followUpSuggestion?.daysWithoutResponse} days since this application. Suggested follow-up starts at day 14.`
+                                    : followUpSuggestion?.dueDateISO
+                                        ? `Follow-up reminder will trigger on ${formatDateTime(followUpSuggestion.dueDateISO)}.`
+                                        : 'Send a follow-up email to check on your application status.'}
                             </p>
-                            {followUpSuggestion.recipientEmail && (
+                            {followUpSuggestion?.recipientEmail && (
                                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                                     To:{' '}
                                     <a
@@ -280,15 +284,17 @@ const RemindersPanel: React.FC<RemindersPanelProps> = ({
                                     </a>
                                 </p>
                             )}
-                            {followUpSuggestion.status === 'snoozed' && followUpSuggestion.snoozedUntil && (
+                            {followUpSuggestion?.status === 'snoozed' && followUpSuggestion.snoozedUntil && (
                                 <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                                     Snoozed until {formatDateTime(followUpSuggestion.snoozedUntil)}
                                 </p>
                             )}
                         </div>
-                        <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700">
-                            AI Suggestion
-                        </span>
+                        {followUpSuggestion?.status === 'suggested' || followUpSuggestion?.status === 'snoozed' || followUpSuggestion?.isDue ? (
+                            <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700">
+                                AI Suggestion
+                            </span>
+                        ) : null}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -299,30 +305,34 @@ const RemindersPanel: React.FC<RemindersPanelProps> = ({
                         >
                             {isGeneratingFollowUpDraft ? 'Generating...' : 'Generate AI Email'}
                         </button>
-                        <button
-                            onClick={handleSnoozeOneWeek}
-                            disabled={isGeneratingFollowUpDraft || followUpAction !== null}
-                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 disabled:opacity-60"
-                        >
-                            {followUpAction === 'snooze' ? 'Snoozing...' : 'Snooze 1 Week'}
-                        </button>
-                        <button
-                            onClick={handleMarkFollowUpSent}
-                            disabled={isGeneratingFollowUpDraft || followUpAction !== null}
-                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60"
-                        >
-                            {followUpAction === 'sent' ? 'Saving...' : 'Mark Sent'}
-                        </button>
-                        <button
-                            onClick={handleDismissFollowUp}
-                            disabled={isGeneratingFollowUpDraft || followUpAction !== null}
-                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-transparent border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 disabled:opacity-60"
-                        >
-                            {followUpAction === 'dismiss' ? 'Dismissing...' : 'Dismiss'}
-                        </button>
+                        {followUpSuggestion?.status === 'suggested' || followUpSuggestion?.status === 'snoozed' || followUpSuggestion?.isDue ? (
+                            <>
+                                <button
+                                    onClick={handleSnoozeOneWeek}
+                                    disabled={isGeneratingFollowUpDraft || followUpAction !== null}
+                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 disabled:opacity-60"
+                                >
+                                    {followUpAction === 'snooze' ? 'Snoozing...' : 'Snooze 1 Week'}
+                                </button>
+                                <button
+                                    onClick={handleMarkFollowUpSent}
+                                    disabled={isGeneratingFollowUpDraft || followUpAction !== null}
+                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60"
+                                >
+                                    {followUpAction === 'sent' ? 'Saving...' : 'Mark Sent'}
+                                </button>
+                                <button
+                                    onClick={handleDismissFollowUp}
+                                    disabled={isGeneratingFollowUpDraft || followUpAction !== null}
+                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-transparent border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 disabled:opacity-60"
+                                >
+                                    {followUpAction === 'dismiss' ? 'Dismissing...' : 'Dismiss'}
+                                </button>
+                            </>
+                        ) : null}
                     </div>
 
-                    {followUpSuggestion.draftBody && (
+                    {followUpSuggestion?.draftBody && (
                         <div className="rounded-lg border border-blue-200 dark:border-blue-800/50 bg-white/80 dark:bg-gray-900/50 p-3 space-y-2">
                             <p className="text-xs font-semibold text-blue-900 dark:text-blue-200">
                                 Subject: {followUpSuggestion.draftSubject || 'Follow-up on my application'}

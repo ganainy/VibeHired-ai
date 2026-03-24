@@ -4142,7 +4142,7 @@ const ReviewFinalizePage: React.FC = () => {
 
                     {/* Tab 6: Reminders */}
                     {activeTab === 'reminders' && jobApplication && (
-                        <div className="max-w-2xl mx-auto">
+                        <div className="max-w-2xl mx-auto space-y-4">
                             <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-5">
                                 <RemindersPanel
                                     jobId={jobId!}
