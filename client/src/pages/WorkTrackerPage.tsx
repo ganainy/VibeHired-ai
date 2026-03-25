@@ -351,11 +351,12 @@ interface ReviewEntry {
 
 interface ScheduleImportModalProps {
   employers: Employer[];
+  appointmentTypes: PopulatedAppointmentType[];
   onClose: () => void;
   onDone: () => void;
 }
 
-const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, onClose, onDone }) => {
+const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, appointmentTypes, onClose, onDone }) => {
   const { refreshUsage } = useAuth();
   const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   const VOICE_LANGUAGE_OPTIONS = [
@@ -371,7 +372,9 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
     { value: 'tr-TR', label: 'Turkish' },
   ] as const;
   const [step, setStep] = useState<ImportStep>('upload');
+  const [importMode, setImportMode] = useState<'shift' | 'appointment' | 'auto'>('shift');
   const [employerId, setEmployerId] = useState(employers[0]?._id ?? '');
+  const [appointmentTypeId, setAppointmentTypeId] = useState(appointmentTypes[0]?._id ?? '');
   const [subLocationId, setSubLocationId] = useState('');
   const [inputMode, setInputMode] = useState<'file' | 'text' | 'voice'>('file');
   const [file, setFile] = useState<File | null>(null);
@@ -402,6 +405,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
 
   const today = new Date().toISOString().split('T')[0];
   const selectedEmployerImport = employers.find((e) => e._id === employerId);
+  const selectedAppointmentTypeImport = appointmentTypes.find((t) => t._id === appointmentTypeId);
   const hasSubLocationsImport = (selectedEmployerImport?.subLocations?.length ?? 0) > 0;
   const selectedCount = entries.filter((e) => e.selected).length;
   const hasInferredTimes = entries.some((entry) => entry.startTimeInferred || entry.endTimeInferred);
@@ -417,7 +421,18 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
     }
   }, [employerId, employers]);
 
+  useEffect(() => {
+    if (!appointmentTypeId && appointmentTypes.length === 1) {
+      setAppointmentTypeId(appointmentTypes[0]._id);
+      return;
+    }
+    if (appointmentTypeId && !appointmentTypes.some((type) => type._id === appointmentTypeId)) {
+      setAppointmentTypeId(appointmentTypes[0]?._id ?? '');
+    }
+  }, [appointmentTypeId, appointmentTypes]);
+
   const handleEmployerChangeImport = (id: string) => { setEmployerId(id); setSubLocationId(''); };
+  const handleAppointmentTypeChangeImport = (id: string) => { setAppointmentTypeId(id); };
 
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -570,7 +585,12 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
   }, []);
 
   const handleParse = async () => {
-    if (!employerId) return setImportError('Select an employer first.');
+    // Validate based on import mode
+    if (importMode === 'shift' && !employerId) return setImportError('Select an employer first.');
+    if (importMode === 'appointment' && !appointmentTypeId) return setImportError('Select an appointment type first.');
+    if (importMode === 'auto' && !employerId && !appointmentTypeId) {
+      return setImportError('Select at least an employer or appointment type for auto-detect mode.');
+    }
     if (inputMode === 'file' && !file) return setImportError('Upload a schedule file.');
     if ((inputMode === 'text' || inputMode === 'voice') && !scheduleText.trim()) return setImportError('Provide schedule text before extracting.');
     setParsing(true);
@@ -579,7 +599,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
       const fd = new FormData();
       if (inputMode === 'file' && file) fd.append('file', file);
       if (inputMode === 'text' || inputMode === 'voice') fd.append('text', scheduleText);
-      const result = await parseSchedule(fd);
+      const result = await parseSchedule(fd, importMode);
       try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
       if (result.count === 0) {
         setImportError('No entries found. Try pasting the text directly, or check the file content.');
@@ -594,7 +614,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
           startTimeInferred: Boolean(e.startTimeInferred),
           endTimeInferred: Boolean(e.endTimeInferred),
           notes: e.notes ?? '',
-          type: 'shift' as WorkEntryType,
+          type: e.type || importMode, // Use AI-detected type or fallback to importMode
           selected: true,
         })),
       );
@@ -611,9 +631,10 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
     if (toSave.length === 0) return setImportError('Select at least one entry.');
     setStep('saving');
     try {
-      const result = await confirmScheduleImport(
-        employerId,
-        toSave.map((e) => ({
+      const result = await confirmScheduleImport({
+        employerId: employerId || undefined,
+        appointmentTypeId: appointmentTypeId || undefined,
+        entries: toSave.map((e) => ({
           date: e.date,
           startTime: e.startTime,
           endTime: e.endTime,
@@ -621,7 +642,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
           notes: e.notes || null,
           subLocationId: subLocationId || undefined,
         })),
-      );
+      });
       setSavedCount(result.count);
       setStep('done');
     } catch (err: any) {
@@ -672,32 +693,99 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, on
                 </div>
               )}
 
-              {/* Employer + sub-location selectors */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="label-overline mb-2 block">Employer *</label>
-                  {employers.length === 0 ? (
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No employers yet. Add one in the Employers tab.</p>
-                  ) : (
-                    <EmployerSelect
-                      employers={employers}
-                      value={employerId}
-                      onChange={(id) => handleEmployerChangeImport(id)}
-                    />
-                  )}
+              {/* Import mode selector */}
+              <div>
+                <label className="label-overline mb-2 block">Import as *</label>
+                <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ background: 'var(--bg-raised)' }}>
+                  {(['shift', 'appointment', 'auto'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setImportMode(mode)}
+                      className="px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5"
+                      style={{
+                        background: importMode === mode ? 'var(--bg-surface)' : 'transparent',
+                        color: importMode === mode ? 'var(--text-primary)' : 'var(--text-muted)',
+                        border: importMode === mode ? '1px solid var(--border)' : '1px solid transparent',
+                      }}
+                    >
+                      {mode === 'shift' ? <Briefcase size={12} /> : mode === 'appointment' ? <CalendarDays size={12} /> : <Sparkles size={12} />}
+                      {mode === 'shift' ? 'Shifts' : mode === 'appointment' ? 'Appointments' : 'Auto-detect'}
+                    </button>
+                  ))}
                 </div>
-                {hasSubLocationsImport && (
+                <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                  {importMode === 'shift' && 'All entries will be created as work shifts.'}
+                  {importMode === 'appointment' && 'All entries will be created as appointments.'}
+                  {importMode === 'auto' && 'AI will automatically detect whether each entry is a shift or appointment.'}
+                </p>
+              </div>
+
+              {/* Employer selector - show for shift or auto modes */}
+              {(importMode === 'shift' || importMode === 'auto') && (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label className="label-overline mb-2 block">
-                      <MapPin size={10} className="inline mr-1" />Sub-location (optional)
+                      {importMode === 'shift' ? 'Employer *' : 'Default Employer'}
+                      {importMode === 'auto' && ' (for shifts)'}
                     </label>
-                    <select className="input-base w-full" value={subLocationId} onChange={(e) => setSubLocationId(e.target.value)}>
-                      <option value="">None — general</option>
-                      {selectedEmployerImport!.subLocations.map((sl) => <option key={sl._id} value={sl._id}>{sl.name}</option>)}
-                    </select>
+                    {employers.length === 0 ? (
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No employers yet. Add one in the Employers tab.</p>
+                    ) : (
+                      <EmployerSelect
+                        employers={employers}
+                        value={employerId}
+                        onChange={(id) => handleEmployerChangeImport(id)}
+                      />
+                    )}
                   </div>
-                )}
-              </div>
+                  {hasSubLocationsImport && (
+                    <div>
+                      <label className="label-overline mb-2 block">
+                        <MapPin size={10} className="inline mr-1" />Sub-location (optional)
+                      </label>
+                      <select className="input-base w-full" value={subLocationId} onChange={(e) => setSubLocationId(e.target.value)}>
+                        <option value="">None — general</option>
+                        {selectedEmployerImport!.subLocations.map((sl) => (
+                          <option key={sl._id} value={sl._id}>{sl.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Appointment type selector - show for appointment or auto modes */}
+              {(importMode === 'appointment' || importMode === 'auto') && (
+                <div>
+                  <label className="label-overline mb-2 block">
+                    {importMode === 'appointment' ? 'Appointment Type *' : 'Default Appointment Type'}
+                    {importMode === 'auto' && ' (for appointments)'}
+                  </label>
+                  {appointmentTypes.length === 0 ? (
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No appointment types yet. Add one in the Appointments tab.</p>
+                  ) : (
+                    <select
+                      className="input-base w-full"
+                      value={appointmentTypeId}
+                      onChange={(e) => handleAppointmentTypeChangeImport(e.target.value)}
+                    >
+                      {appointmentTypes.map((apt) => (
+                        <option key={apt._id} value={apt._id}>{apt.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {/* Validation message */}
+              {((importMode === 'shift' && !employerId) || (importMode === 'appointment' && !appointmentTypeId)) && (
+                <div className="rounded-lg p-3 text-xs flex items-start gap-2" style={{ background: 'var(--rose-bg)', border: '1px solid var(--rose-dim)', color: 'var(--rose)' }}>
+                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <span>
+                    {importMode === 'shift' ? 'Please select an employer to continue.' : 'Please select an appointment type to continue.'}
+                  </span>
+                </div>
+              )}
 
               {/* Default times */}
               <div className="rounded-lg p-3 text-xs flex items-start gap-2" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
@@ -2874,6 +2962,7 @@ const WorkTrackerPage: React.FC = () => {
       {showImportModal && (
         <ScheduleImportModal
           employers={employers}
+          appointmentTypes={appointmentTypes}
           onClose={() => setShowImportModal(false)}
           onDone={() => { setShowImportModal(false); fetchEntries(); fetchStats(); setActiveTab('timelog'); }}
         />

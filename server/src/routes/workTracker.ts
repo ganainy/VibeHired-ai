@@ -657,7 +657,7 @@ router.post(
   usageLimiter('jobExtraction'),
   asyncHandler(async (req: Request, res: Response) => {
     const userId = String(req.user!._id);
-    const { text, defaultStartTime = '09:00', defaultEndTime = '17:00' } = req.body;
+    const { text, defaultStartTime = '09:00', defaultEndTime = '17:00', importMode = 'shift' } = req.body;
 
     if (!req.file && !String(text ?? '').trim()) {
       throw new ValidationError('Provide a file (image or PDF) or paste schedule text.');
@@ -668,6 +668,16 @@ router.post(
     const model = genAI.getGenerativeModel({ model: GEMINI_FLASH });
 
     const today = new Date().toISOString().split('T')[0];
+
+    // Build prompt based on import mode
+    const shouldDetectType = importMode === 'auto';
+    const typeInstructions = shouldDetectType
+      ? `  "type": "shift" or "appointment" — distinguish based on context:\n` +
+        `    - Use "appointment" for: interviews, doctor visits, meetings, consultations, exams, etc.\n` +
+        `    - Use "shift" for: work shifts, jobs, employment schedules, etc.\n` +
+        `    - Default to "shift" when ambiguous\n`
+      : `  "type": "${importMode}" (all entries are ${importMode}s)\n`;
+
     const systemPrompt =
       `You are a work-schedule parser. Extract every individual work shift or appointment.\n` +
       `Return ONLY a valid JSON array — no markdown, no explanation.\n` +
@@ -676,8 +686,9 @@ router.post(
       `  "startTime": "HH:MM" 24h (use "${defaultStartTime}" when not shown)\n` +
       `  "endTime": "HH:MM" 24h (use "${defaultEndTime}" when not shown)\n` +
       `  "notes": brief context string or null\n` +
+      typeInstructions +
       `Today is ${today}. Infer the year when only month/day is given (nearest future).\n` +
-      `Example: [{"date":"2026-03-01","startTime":"09:00","endTime":"17:00","notes":null}]`;
+      `Example: [{"date":"2026-03-01","startTime":"09:00","endTime":"17:00","notes":null,"type":"shift"}]`;
 
     let responseText: string;
 
@@ -721,6 +732,10 @@ router.post(
       .map((e: any) => {
         const startTimeDetected = TIME_RE.test(e.startTime);
         const endTimeDetected = TIME_RE.test(e.endTime);
+        // Determine type: use AI's detection in auto mode, otherwise use importMode
+        const detectedType = shouldDetectType && e.type && ['shift', 'appointment'].includes(e.type)
+          ? e.type
+          : importMode;
         return {
           date: e.date as string,
           startTime: startTimeDetected ? e.startTime : defaultStartTime,
@@ -728,6 +743,7 @@ router.post(
           startTimeInferred: !startTimeDetected,
           endTimeInferred: !endTimeDetected,
           notes: typeof e.notes === 'string' && e.notes ? e.notes : null,
+          type: detectedType as 'shift' | 'appointment',
         };
       });
 
@@ -741,36 +757,78 @@ router.post(
  */
 router.post('/import-schedule/confirm', asyncHandler(async (req: Request, res: Response) => {
   const userId = String(req.user!._id);
-  const { entries, employerId } = req.body;
+  const { entries, employerId, appointmentTypeId } = req.body;
 
-  if (!employerId) throw new ValidationError('employerId is required.');
   if (!Array.isArray(entries) || entries.length === 0) {
     throw new ValidationError('entries array must not be empty.');
   }
 
-  const employer = await Employer.findOne({ _id: employerId, userId });
-  if (!employer) throw new NotFoundError('Employer not found.');
+  // Validate that we have at least one entity ID
+  if (!employerId && !appointmentTypeId) {
+    throw new ValidationError('employerId or appointmentTypeId is required.');
+  }
+
+  // Fetch employer if provided
+  let employer: any = null;
+  if (employerId) {
+    employer = await Employer.findOne({ _id: employerId, userId });
+    if (!employer) throw new NotFoundError('Employer not found.');
+  }
+
+  // Fetch appointment type if provided
+  let appointmentType;
+  if (appointmentTypeId) {
+    appointmentType = await AppointmentType.findOne({ _id: appointmentTypeId, userId });
+    if (!appointmentType) throw new NotFoundError('Appointment type not found.');
+  }
 
   const today = new Date().toISOString().split('T')[0];
 
   const created = await Promise.all(
     entries.map(async (e: any) => {
+      const entryType = e.type || 'shift';
       const status: 'planned' | 'done' = e.date <= today ? 'done' : 'planned';
 
+      // Determine which IDs to use based on entry type
+      let entryEmployerId: string | undefined;
+      let entryAppointmentTypeId: string | undefined;
       let subLocationName: string | undefined;
       let resolvedSubId: string | undefined;
-      if (e.subLocationId) {
-        const sub = employer.subLocations.find((s: any) => String(s._id) === e.subLocationId);
-        if (sub) { subLocationName = sub.name; resolvedSubId = e.subLocationId; }
+
+      if (entryType === 'shift') {
+        // Shifts require an employer
+        if (!employerId) {
+          throw new ValidationError('employerId is required for shift entries.');
+        }
+        entryEmployerId = employerId;
+
+        // Handle sub-location for shifts
+        if (e.subLocationId && employer) {
+          const sub = (employer as any).subLocations?.find((s: any) => String(s._id) === e.subLocationId);
+          if (sub) { subLocationName = sub.name; resolvedSubId = e.subLocationId; }
+        }
+      } else {
+        // Appointments use appointmentTypeId if provided, otherwise can use employerId
+        if (appointmentTypeId) {
+          entryAppointmentTypeId = appointmentTypeId;
+        }
+        if (employerId) {
+          entryEmployerId = employerId;
+        }
+        // Appointments need at least one of the two
+        if (!entryAppointmentTypeId && !entryEmployerId) {
+          throw new ValidationError('appointmentTypeId or employerId is required for appointment entries.');
+        }
       }
 
       const doc = await WorkEntry.create({
         userId,
-        employerId,
+        employerId: entryEmployerId,
+        appointmentTypeId: entryAppointmentTypeId,
         subLocationId: resolvedSubId,
         subLocationName,
         title: e.title || undefined,
-        type: e.type || 'shift',
+        type: entryType,
         date: e.date,
         startTime: e.startTime,
         endTime: e.endTime,

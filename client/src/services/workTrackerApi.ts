@@ -164,6 +164,7 @@ export interface ParsedScheduleEntry {
   breakMinutes?: number;
   paidKilometers?: number;
   notes: string | null;
+  type?: WorkEntryType; // 'shift' | 'appointment'
 }
 
 /** Response from the parse endpoint. */
@@ -178,7 +179,12 @@ export interface ParseScheduleResponse {
  */
 export const parseSchedule = async (
   formData: FormData,
+  importMode?: 'shift' | 'appointment' | 'auto',
 ): Promise<ParseScheduleResponse> => {
+  // Add importMode to form data if provided
+  if (importMode) {
+    formData.append('importMode', importMode);
+  }
   const res = await axios.post<ParseScheduleResponse>(
     `${API_BASE_URL}/work-tracker/import-schedule/parse`,
     formData,
@@ -194,19 +200,22 @@ export interface ConfirmScheduleEntry {
   endTime: string;
   breakMinutes?: number;
   paidKilometers?: number;
-  type?: WorkEntryType;
+  type: WorkEntryType; // Required: 'shift' | 'appointment'
   notes?: string | null;
   subLocationId?: string;
 }
 
 /** Bulk-create confirmed entries. */
 export const confirmScheduleImport = async (
-  employerId: string,
-  entries: ConfirmScheduleEntry[],
-): Promise<{ message: string; count: number }> => {
-  const res = await axios.post<{ message: string; count: number }>(
+  payload: {
+    employerId?: string;
+    appointmentTypeId?: string;
+    entries: ConfirmScheduleEntry[];
+  },
+): Promise<{ message: string; count: number; ids: string[] }> => {
+  const res = await axios.post<{ message: string; count: number; ids: string[] }>(
     `${API_BASE_URL}/work-tracker/import-schedule/confirm`,
-    { employerId, entries },
+    payload,
   );
   return res.data;
 };
