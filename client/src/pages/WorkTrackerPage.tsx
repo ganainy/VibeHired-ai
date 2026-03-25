@@ -2030,15 +2030,6 @@ const WorkTrackerPage: React.FC = () => {
   useEffect(() => { fetchCalendarEvents(); }, [fetchCalendarEvents]);
   useEffect(() => { fetchEmployers(); }, [fetchEmployers]);
 
-  // Refresh entries + calendar events when window gains focus (e.g., after switching from Calendar page)
-  useEffect(() => {
-    const handleFocus = () => {
-      fetchEntries();
-      fetchCalendarEvents();
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [fetchEntries, fetchCalendarEvents]);
   useEffect(() => { fetchAppointmentTypes(); }, [fetchAppointmentTypes]);
   useEffect(() => { fetchStats(); }, [fetchStats]);
 

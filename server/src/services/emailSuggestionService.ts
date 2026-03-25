@@ -159,16 +159,13 @@ function normalize(s: string): string {
     return s.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
 }
 
-async function matchJobApplication(
-    userId: string,
+type JobMatch = { id: string; companyName: string; jobTitle: string };
+
+function matchJobApplication(
+    jobs: Array<{ _id: any; companyName?: string; jobTitle?: string }>,
     extractedCompany: string | null,
     extractedRole: string | null
-): Promise<{ id: string; companyName: string; jobTitle: string } | null> {
-    // Fetch all active jobs for the user (exclude soft-deleted)
-    const jobs = await JobApplication.find({ userId, deletedAt: { $exists: false } })
-        .select('_id companyName jobTitle')
-        .lean();
-
+): JobMatch | null {
     if (jobs.length === 0) return null;
 
     const normCompany = normalize(extractedCompany ?? '');
@@ -195,7 +192,7 @@ async function matchJobApplication(
     // Require at least a company name match
     if (bestScore < 3 || !best) return null;
 
-    return { id: String(best._id), companyName: best.companyName, jobTitle: best.jobTitle };
+    return { id: String(best._id), companyName: best.companyName ?? '', jobTitle: best.jobTitle ?? '' };
 }
 
 // ── Core polling function ─────────────────────────────────────────────────────
@@ -250,6 +247,13 @@ export async function pollEmailsForUser(userId: string, limit?: number, category
         console.log(`[EmailSuggestionService] ── pollEmailsForUser END — all duplicates, ${Date.now() - tPoll}ms ──\n`);
         return { ...ZERO_RESULT, scanned };
     }
+
+    // ── 1.5. Fetch user's jobs once (cached for all match operations) ────────
+    const tJobs = Date.now();
+    const userJobs = await JobApplication.find({ userId, deletedAt: { $exists: false } })
+        .select('_id companyName jobTitle')
+        .lean();
+    console.log(`[EmailSuggestionService] Fetched ${userJobs.length} job(s) in ${Date.now() - tJobs}ms`);
 
     // ── 2. Two-pass AI classification ────────────────────────────────────────
     //   Pass 1 — title screening (subjects + sender domains only, very fast)
@@ -367,7 +371,7 @@ export async function pollEmailsForUser(userId: string, limit?: number, category
         }
 
         const tMatch = Date.now();
-        const match = await matchJobApplication(userId, cls.extractedCompany, cls.extractedRole);
+        const match = matchJobApplication(userJobs, cls.extractedCompany, cls.extractedRole);
         console.log(`[EmailSuggestionService] ${label} job match: ${Date.now() - tMatch}ms — ${match ? `matched "${match.companyName}"` : 'no match'}`);
 
         // If this looks like a response to an existing application, record the latest response time.

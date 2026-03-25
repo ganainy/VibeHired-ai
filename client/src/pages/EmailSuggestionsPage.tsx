@@ -246,11 +246,10 @@ const EmailSuggestionsPage: React.FC = () => {
     const [hasScope, setHasScope] = useState<boolean | null>(null);
     const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
     const [actionError, setActionError] = useState<{ message: string; upgrade?: boolean } | null>(null);
-    const [scanLimit, setScanLimit] = useState(50);
+    const [scanLimit, setScanLimit] = useState(25);
     const [autoPollApplications, setAutoPollApplications] = useState(true);
     const [autoPollJobLeads, setAutoPollJobLeads] = useState(true);
     const [calendarUnchecked, setCalendarUnchecked] = useState<Set<string>>(new Set());
-    const [emailLinkDisabled, setEmailLinkDisabled] = useState<Set<string>>(new Set());
     const [noteAddedLocally, setNoteAddedLocally] = useState<Set<string>>(new Set());
     const [editingSuggestion, setEditingSuggestion] = useState<EmailSuggestion | null>(null);
     const [howItWorksOpen, setHowItWorksOpen] = useState<boolean>(() => {
@@ -290,7 +289,7 @@ const EmailSuggestionsPage: React.FC = () => {
             ]);
             setSuggestions(data);
             setHasScope(scopeResult.hasScope);
-            setScanLimit(prefs.scanLimit ?? 50);
+            setScanLimit(prefs.scanLimit ?? 25);
             setAutoPollApplications(prefs.autoPollApplications ?? true);
             setAutoPollJobLeads(prefs.autoPollJobLeads ?? true);
             setNoteAddedLocally(new Set(data.filter((s) => s.noteAdded).map((s) => s._id)));
@@ -307,8 +306,7 @@ const EmailSuggestionsPage: React.FC = () => {
         setActionIds((prev) => new Set(prev).add(s._id));
         try {
             const includeCalendarEvent = !calendarUnchecked.has(s._id);
-            const includeEmailLink = !emailLinkDisabled.has(s._id);
-            const result = await acceptSuggestion(s._id, { includeCalendarEvent, includeEmailLink });
+            const result = await acceptSuggestion(s._id, { includeCalendarEvent, includeEmailLink: true });
             setSuggestions((prev) => prev.filter((x) => x._id !== s._id));
             if (result.calendarWarning) {
                 showToast(result.calendarWarning, 'err');
@@ -333,8 +331,7 @@ const EmailSuggestionsPage: React.FC = () => {
     const handleAddNote = async (s: EmailSuggestion) => {
         setActionIds((prev) => new Set(prev).add(`note-${s._id}`));
         try {
-            const includeEmailLink = !emailLinkDisabled.has(s._id);
-            await addNoteSuggestion(s._id, { includeEmailLink });
+            await addNoteSuggestion(s._id, { includeEmailLink: true });
             setNoteAddedLocally((prev) => new Set(prev).add(s._id));
             showToast(`Note added to ${s.matchedCompanyName ?? 'job'}.`);
         } catch (err: any) {
@@ -468,7 +465,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                     className="btn-primary flex items-center gap-2"
                                 >
                                     <RefreshIcon spinning={polling} />
-                                    {polling ? 'Scanning…' : 'Scan inbox'}
+                                    {polling ? `Scanning last ${scanLimit} emails…` : 'Scan inbox'}
                                     {!polling && <span className="text-[10px] font-bold ml-0.5 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 cr</span>}
                                 </button>
                             </div>
@@ -770,7 +767,6 @@ const EmailSuggestionsPage: React.FC = () => {
                                 const job = s.jobApplicationId as any;
                                 const isCalChecked = !calendarUnchecked.has(s._id);
                                 const hasCalEvent = !!(s.suggestedCalendarEvent?.dateTimeISO);
-                                const emailLinkOn = !emailLinkDisabled.has(s._id);
                                 const companyInitial = (s.matchedCompanyName || s.senderName || '?')[0].toUpperCase();
 
                                 return (
@@ -948,44 +944,6 @@ const EmailSuggestionsPage: React.FC = () => {
                                                     </div>
                                                 )}
                                                 {s.emailCategory === 'job_offer' && <div className="flex-1" />}
-
-                                                {/* Email link toggle — single, consolidated in footer */}
-                                                {job && (
-                                                    <label
-                                                        className="flex items-center gap-1.5 cursor-pointer select-none shrink-0"
-                                                        title="Attach original email link when saving"
-                                                    >
-                                                        <button
-                                                            role="switch"
-                                                            aria-checked={emailLinkOn}
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                setEmailLinkDisabled((prev) => {
-                                                                    const next = new Set(prev);
-                                                                    if (next.has(s._id)) next.delete(s._id); else next.add(s._id);
-                                                                    return next;
-                                                                });
-                                                            }}
-                                                            className="relative shrink-0 transition-colors"
-                                                            style={{
-                                                                width: 28, height: 16, borderRadius: 99,
-                                                                background: emailLinkOn ? 'var(--accent)' : 'var(--bg-elevated)',
-                                                                border: `1px solid ${emailLinkOn ? 'var(--accent)' : 'var(--border)'}`,
-                                                            }}
-                                                        >
-                                                            <span
-                                                                style={{
-                                                                    position: 'absolute', top: 1,
-                                                                    left: emailLinkOn ? 13 : 1,
-                                                                    width: 12, height: 12, borderRadius: '50%',
-                                                                    background: emailLinkOn ? '#000' : 'var(--text-muted)',
-                                                                    transition: 'left 150ms',
-                                                                }}
-                                                            />
-                                                        </button>
-                                                        <span className="text-[10.5px]" style={{ color: 'var(--text-muted)' }}>Email link</span>
-                                                    </label>
-                                                )}
 
                                                 {/* Action buttons */}
                                                 <div className="flex gap-1.5 shrink-0">
