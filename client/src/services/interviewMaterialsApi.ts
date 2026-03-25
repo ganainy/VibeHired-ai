@@ -117,3 +117,32 @@ export async function generateMaterialTitle(
     const data = await handleResponse<{ title: string }>(res);
     return data;
 }
+
+/** Share a material - generates a public link */
+export async function shareMaterial(materialId: string): Promise<{ material: InterviewMaterial; shareUrl: string; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/interview-materials/${materialId}/share`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+    });
+    const data = await handleResponse<{ material: InterviewMaterial; shareUrl: string; message: string }>(res);
+    return data;
+}
+
+/** Unshare a material - revokes public access */
+export async function unshareMaterial(materialId: string): Promise<{ material: InterviewMaterial; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/interview-materials/${materialId}/share`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+    });
+    const data = await handleResponse<{ material: InterviewMaterial; message: string }>(res);
+    return data;
+}
+
+/** Fetch a shared material by token (public, no auth required) */
+export async function getSharedMaterial(token: string): Promise<InterviewMaterial> {
+    const res = await fetch(`${API_BASE_URL}/shared/${token}`, {
+        headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await handleResponse<{ material: InterviewMaterial }>(res);
+    return data.material;
+}

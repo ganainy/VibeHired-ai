@@ -25,6 +25,7 @@ import autoJobRoutes from './routes/autoJobRoutes';
 import chatRoutes from './routes/chat';
 import interviewRoutes from './routes/interview';
 import interviewMaterialsRoutes from './routes/interviewMaterials';
+import sharedMaterialsRoutes from './routes/sharedMaterials';
 import googleAuthRoutes from './routes/googleAuth';
 import emailSuggestionsRoutes from './routes/emailSuggestions';
 import employersRoutes from './routes/employers';
@@ -121,6 +122,7 @@ app.use('/api/auto-jobs', autoJobRoutes); // Auto-jobs routes (protected)
 app.use('/api/chat', protect, chatRoutes); // Chat routes (protected)
 app.use('/api/interview', protect, interviewRoutes); // Mock interview routes (protected)
 app.use('/api/interview-materials', protect, interviewMaterialsRoutes); // Interview prep materials (protected)
+app.use('/api/shared', sharedMaterialsRoutes); // Public shared materials
 app.use('/api/auth/google', googleAuthRoutes); // Google OAuth routes (callback is public, others are protected internally)
 app.use('/api/email-suggestions', protect, emailSuggestionsRoutes); // Email suggestion routes (protected)
 app.use('/api/employers', employersRoutes); // Employer management (protected internally)

@@ -1,7 +1,7 @@
 // client/src/pages/InterviewMaterialsPage.tsx
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { getGlobalMaterials, deleteMaterial, updateMaterial, createMaterial, generateMaterialTitle } from '../services/interviewMaterialsApi';
+import { getGlobalMaterials, deleteMaterial, updateMaterial, createMaterial, generateMaterialTitle, shareMaterial, unshareMaterial } from '../services/interviewMaterialsApi';
 import { InterviewMaterial, MaterialJobRef, MaterialType } from '../types/interviewMaterial';
 import MaterialPreviewModal, { canPreviewInline } from '../components/jobs/MaterialPreviewModal';
 import TourBanner from '../components/onboarding/TourBanner';
@@ -84,8 +84,10 @@ const GlobalMaterialCard: React.FC<{
     onPreview: (m: InterviewMaterial) => void;
     onToggleFavorite: (id: string) => void;
     onEdit: (id: string, payload: import('../types/interviewMaterial').UpdateMaterialPayload) => Promise<void>;
+    onShare: (id: string) => void;
+    onShowShare: (m: InterviewMaterial) => void;
     isUpdating: boolean;
-}> = ({ material, showJobChip = false, isAssignedToJob = false, onRemoveGlobal, onDelete, onPreview, onToggleFavorite, onEdit, isUpdating }) => {
+}> = ({ material, showJobChip = false, isAssignedToJob = false, onRemoveGlobal, onDelete, onPreview, onToggleFavorite, onEdit, onShare, onShowShare, isUpdating }) => {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [editForm, setEditForm] = useState({
@@ -397,6 +399,26 @@ const GlobalMaterialCard: React.FC<{
                                         <span className="material-symbols-outlined text-base">open_in_new</span>
                                     </a>
                                 )}
+                                {material.shareToken ? (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onShowShare(material); }}
+                                        title="Sharing is on - click to manage"
+                                        className="p-1.5 rounded-lg transition-colors"
+                                        style={{ color: 'var(--accent)' }}
+                                    >
+                                        <span className="material-symbols-outlined text-base">link</span>
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onShare(material._id); }}
+                                        title="Share"
+                                        disabled={isUpdating}
+                                        className="p-1.5 rounded-lg transition-colors hover:text-blue-500 disabled:opacity-50"
+                                        style={{ color: 'var(--text-muted)' }}
+                                    >
+                                        <span className="material-symbols-outlined text-base">share</span>
+                                    </button>
+                                )}
                                 {isAssignedToJob && (
                                     <Link
                                         to={`/jobs/${jobId}/review/materials`}
@@ -495,8 +517,10 @@ const GroupedView: React.FC<{
     onPreview: (m: InterviewMaterial) => void;
     onToggleFavorite: (id: string) => void;
     onEdit: (id: string, payload: import('../types/interviewMaterial').UpdateMaterialPayload) => Promise<void>;
+    onShare: (id: string) => void;
+    onShowShare: (m: InterviewMaterial) => void;
     updatingIds: Set<string>;
-}> = ({ groups, onRemoveGlobal, onDelete, onPreview, onToggleFavorite, onEdit, updatingIds }) => {
+}> = ({ groups, onRemoveGlobal, onDelete, onPreview, onToggleFavorite, onEdit, onShare, onShowShare, updatingIds }) => {
     const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
         const saved = loadOpenGroups();
         // Keep only groups that still exist
@@ -582,6 +606,8 @@ const GroupedView: React.FC<{
                                     onPreview={onPreview}
                                     onToggleFavorite={onToggleFavorite}
                                     onEdit={onEdit}
+                                    onShare={onShare}
+                                    onShowShare={onShowShare}
                                     isUpdating={updatingIds.has(m._id)}
                                 />
                             ))}
@@ -749,6 +775,50 @@ const InterviewMaterialsPage: React.FC = () => {
         } catch (e: any) {
             setError(e.message ?? 'Failed to save changes');
             throw e; // keeps edit mode open in the card
+        } finally {
+            setUpdating(materialId, false);
+        }
+    };
+
+    const [shareModal, setShareModal] = useState<{ material: InterviewMaterial; shareUrl: string } | null>(null);
+    const [copied, setCopied] = useState(false);
+    const [toast, setToast] = useState<string | null>(null);
+
+    const handleShare = async (materialId: string) => {
+        setUpdating(materialId, true);
+        try {
+            const result = await shareMaterial(materialId);
+            setMaterials(prev => prev.map(m => m._id === materialId ? { ...m, shareToken: result.material.shareToken } : m));
+            const baseUrl = window.location.origin;
+            setShareModal({ 
+                material: materials.find(m => m._id === materialId) || materials[0], 
+                shareUrl: `${baseUrl}/shared/${result.material.shareToken}` 
+            });
+        } catch (e: any) {
+            setError(e.message ?? 'Failed to share material');
+        } finally {
+            setUpdating(materialId, false);
+        }
+    };
+
+    const handleShowShare = (material: InterviewMaterial) => {
+        if (material.shareToken) {
+            const baseUrl = window.location.origin;
+            setShareModal({ 
+                material, 
+                shareUrl: `${baseUrl}/shared/${material.shareToken}` 
+            });
+        }
+    };
+
+    const handleUnshare = async (materialId: string) => {
+        setUpdating(materialId, true);
+        try {
+            await unshareMaterial(materialId);
+            setMaterials(prev => prev.map(m => m._id === materialId ? { ...m, shareToken: undefined } : m));
+            setShareModal(null);
+        } catch (e: any) {
+            setError(e.message ?? 'Failed to unshare material');
         } finally {
             setUpdating(materialId, false);
         }
@@ -1374,6 +1444,8 @@ const InterviewMaterialsPage: React.FC = () => {
                     onPreview={setPreviewMaterial}
                     onToggleFavorite={handleToggleFavorite}
                     onEdit={handleEdit}
+                    onShare={handleShare}
+                    onShowShare={handleShowShare}
                     updatingIds={updatingIds}
                 />
             ) : (
@@ -1389,6 +1461,8 @@ const InterviewMaterialsPage: React.FC = () => {
                             onPreview={setPreviewMaterial}
                             onToggleFavorite={handleToggleFavorite}
                             onEdit={handleEdit}
+                            onShare={handleShare}
+                            onShowShare={handleShowShare}
                             isUpdating={updatingIds.has(m._id)}
                         />
                     ))}
@@ -1401,6 +1475,89 @@ const InterviewMaterialsPage: React.FC = () => {
                     material={previewMaterial}
                     onClose={() => setPreviewMaterial(null)}
                 />
+            )}
+
+            {/* Toast notification */}
+            {toast && (
+                <div 
+                    className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg shadow-lg text-sm font-medium"
+                    style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg-base)' }}
+                >
+                    {toast}
+                </div>
+            )}
+
+            {/* Share modal */}
+            {shareModal && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                    onClick={() => { setShareModal(null); setCopied(false); setToast(null); }}
+                >
+                    <div 
+                        className="w-full max-w-md rounded-xl p-6 shadow-xl"
+                        style={{ backgroundColor: 'var(--bg-elevated)' }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                Share Material
+                            </h3>
+                            <button 
+                                onClick={() => { setShareModal(null); setCopied(false); setToast(null); }}
+                                className="p-1 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                                style={{ color: 'var(--text-muted)' }}
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        
+                        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                            Anyone with the link below can view this material:
+                        </p>
+
+                        <div className="flex items-center gap-2 mb-4">
+                            <input
+                                type="text"
+                                readOnly
+                                value={shareModal.shareUrl}
+                                className="flex-1 px-3 py-2 text-sm rounded-lg border"
+                                style={{ 
+                                    backgroundColor: 'var(--bg-surface)', 
+                                    borderColor: 'var(--border)', 
+                                    color: 'var(--text-primary)' 
+                                }}
+                                onClick={e => (e.target as HTMLInputElement).select()}
+                            />
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(shareModal.shareUrl);
+                                    setCopied(true);
+                                    setToast('Link copied to clipboard');
+                                    setTimeout(() => setCopied(false), 2000);
+                                }}
+                                className="px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+                                style={{ 
+                                    backgroundColor: copied ? 'var(--bg-surface)' : 'var(--accent)', 
+                                    color: copied ? 'var(--text-muted)' : 'var(--bg-base)',
+                                    borderColor: copied ? 'var(--border)' : 'transparent',
+                                    border: copied ? '1px solid' : 'none'
+                                }}
+                            >
+                                {copied ? 'Copied' : 'Copy'}
+                            </button>
+                        </div>
+
+                        <div className="flex justify-end">
+                            <button
+                                onClick={() => handleUnshare(shareModal.material._id)}
+                                className="text-sm text-red-500 hover:text-red-600 transition-colors"
+                            >
+                                Stop sharing
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

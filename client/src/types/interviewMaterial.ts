@@ -30,6 +30,7 @@ export interface InterviewMaterial {
 
     isGlobal: boolean;
     isFavorite?: boolean;
+    shareToken?: string;
     createdAt: string;
     updatedAt: string;
 }

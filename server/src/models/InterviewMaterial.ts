@@ -30,6 +30,9 @@ export interface IInterviewMaterial extends Document {
     /** User has starred/favourited this material for quick access */
     isFavorite: boolean;
 
+    /** Token for public sharing (anyone with the link can view) */
+    shareToken?: string;
+
     createdAt: Date;
     updatedAt: Date;
 }
@@ -57,6 +60,7 @@ const InterviewMaterialSchema = new Schema<IInterviewMaterial>(
 
         isGlobal: { type: Boolean, default: false },
         isFavorite: { type: Boolean, default: false },
+        shareToken: { type: String, unique: true, sparse: true, index: true },
     },
     { timestamps: true }
 );

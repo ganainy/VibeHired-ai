@@ -30,6 +30,7 @@ import AdminUsersPage from './pages/AdminUsersPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import InterviewBuddyPage from './pages/InterviewBuddyPage';
+import SharedMaterialPage from './pages/SharedMaterialPage';
 import AdminRoute from './components/auth/AdminRoute';
 
 function App() {
@@ -37,13 +38,15 @@ function App() {
   const { theme } = useTheme();
   const location = useLocation();
 
-  // Check if current route is a public portfolio route
+  // Check if current route is a public portfolio or shared material route
   const isPortfolioRoute = location.pathname.startsWith('/portfolio/');
+  const isSharedRoute = location.pathname.startsWith('/shared/');
 
-  if (isPortfolioRoute) {
+  if (isPortfolioRoute || isSharedRoute) {
     return (
       <Routes>
         <Route path="/portfolio/:username" element={<PortfolioPage />} />
+        <Route path="/shared/:token" element={<SharedMaterialPage />} />
       </Routes>
     );
   }

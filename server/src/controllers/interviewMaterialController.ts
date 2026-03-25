@@ -8,6 +8,8 @@ import {
     createMaterial,
     updateMaterial,
     deleteMaterial,
+    shareMaterial as shareMaterialService,
+    unshareMaterial as unshareMaterialService,
     CreateMaterialDto,
     UpdateMaterialDto,
 } from '../services/interviewMaterialService';
@@ -149,4 +151,40 @@ Return ONLY the title as a plain string, no quotes, no markdown formatting.`;
     } catch (e: any) {
         res.status(500).json({ message: `Failed to generate title: ${e.message}` });
     }
+};
+
+/**
+ * POST /api/interview-materials/:id/share
+ * Generate a share token for a material, making it publicly accessible.
+ */
+export const shareMaterial = async (req: ValidatedRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new AuthorizationError('User not authenticated');
+
+    const { id } = req.params;
+
+    const material = await shareMaterialService(userId, id);
+    const shareUrl = `/shared/${material.shareToken}`;
+    res.json({ 
+        material,
+        shareUrl,
+        message: 'Material is now shared. Anyone with the link can view it.'
+    });
+};
+
+/**
+ * DELETE /api/interview-materials/:id/share
+ * Remove the share token, revoking public access.
+ */
+export const unshareMaterial = async (req: ValidatedRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new AuthorizationError('User not authenticated');
+
+    const { id } = req.params;
+
+    const material = await unshareMaterialService(userId, id);
+    res.json({ 
+        material,
+        message: 'Sharing has been revoked. The material is no longer publicly accessible.'
+    });
 };

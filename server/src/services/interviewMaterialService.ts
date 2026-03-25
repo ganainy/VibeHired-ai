@@ -206,3 +206,39 @@ export async function deleteMaterial(userId: string, materialId: string): Promis
 
     await material.deleteOne();
 }
+
+/**
+ * Generate a share token for a material (makes it publicly accessible via link)
+ */
+export async function shareMaterial(userId: string, materialId: string): Promise<IInterviewMaterial> {
+    const material = await InterviewMaterial.findById(materialId);
+    if (!material) throw new NotFoundError('Material not found');
+    if (material.userId.toString() !== userId) throw new AuthorizationError('Forbidden');
+
+    // Generate a unique token if not already shared
+    if (!material.shareToken) {
+        const crypto = await import('crypto');
+        material.shareToken = crypto.randomBytes(16).toString('hex');
+    }
+
+    return material.save();
+}
+
+/**
+ * Remove the share token from a material (revokes public access)
+ */
+export async function unshareMaterial(userId: string, materialId: string): Promise<IInterviewMaterial> {
+    const material = await InterviewMaterial.findById(materialId);
+    if (!material) throw new NotFoundError('Material not found');
+    if (material.userId.toString() !== userId) throw new AuthorizationError('Forbidden');
+
+    material.shareToken = undefined;
+    return material.save();
+}
+
+/**
+ * Get a material by share token (public access, no auth required)
+ */
+export async function getMaterialByShareToken(shareToken: string): Promise<IInterviewMaterial | null> {
+    return InterviewMaterial.findOne({ shareToken }).populate('userId', 'name');
+}

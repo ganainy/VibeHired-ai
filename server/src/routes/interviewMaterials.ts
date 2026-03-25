@@ -3,7 +3,7 @@ import express, { Router } from 'express';
 import multer from 'multer';
 import authMiddleware from '../middleware/authMiddleware';
 import { asyncHandler } from '../utils/asyncHandler';
-import { listByJob, listGlobal, create, update, remove, generateTitle } from '../controllers/interviewMaterialController';
+import { listByJob, listGlobal, create, update, remove, generateTitle, shareMaterial, unshareMaterial } from '../controllers/interviewMaterialController';
 
 const router: Router = express.Router();
 
@@ -65,5 +65,11 @@ router.delete('/:id', asyncHandler(remove));
 
 // POST /api/interview-materials/generate-title
 router.post('/generate-title', asyncHandler(generateTitle));
+
+// POST /api/interview-materials/:id/share - Generate share token
+router.post('/:id/share', asyncHandler(shareMaterial));
+
+// DELETE /api/interview-materials/:id/share - Remove share token
+router.delete('/:id/share', asyncHandler(unshareMaterial));
 
 export default router;
