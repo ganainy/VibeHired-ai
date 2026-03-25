@@ -19,32 +19,42 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
   onClear,
 }) => {
   const displayText = transcript || interimTranscript;
-  const activePointerIdRef = useRef<number | null>(null);
+  const isPressedRef = useRef(false);
 
-  const handlePointerDown = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.button !== 0 || activePointerIdRef.current !== null) return;
-
+  // Mouse event handlers for desktop
+  const handleMouseDown = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    if (event.button !== 0 || isPressedRef.current) return; // Left click only
     event.preventDefault();
-    activePointerIdRef.current = event.pointerId;
-    event.currentTarget.setPointerCapture(event.pointerId);
+    isPressedRef.current = true;
     onPushStart();
   }, [onPushStart]);
 
-  const stopActivePointer = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (activePointerIdRef.current !== event.pointerId) return;
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    activePointerIdRef.current = null;
+  const handleMouseUp = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isPressedRef.current) return;
+    event.preventDefault();
+    isPressedRef.current = false;
     onPushStop();
   }, [onPushStop]);
 
-  const handlePointerCancel = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
-    if (activePointerIdRef.current !== event.pointerId) return;
+  const handleMouseLeave = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isPressedRef.current) return;
+    event.preventDefault();
+    isPressedRef.current = false;
+    onPushStop();
+  }, [onPushStop]);
 
-    activePointerIdRef.current = null;
+  // Touch event handlers for mobile/touch devices
+  const handleTouchStart = useCallback((event: React.TouchEvent<HTMLButtonElement>) => {
+    if (isPressedRef.current) return;
+    event.preventDefault(); // Prevent scroll/zoom
+    isPressedRef.current = true;
+    onPushStart();
+  }, [onPushStart]);
+
+  const handleTouchEnd = useCallback((event: React.TouchEvent<HTMLButtonElement>) => {
+    if (!isPressedRef.current) return;
+    event.preventDefault();
+    isPressedRef.current = false;
     onPushStop();
   }, [onPushStop]);
 
@@ -62,10 +72,11 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
       {/* ── Push-to-talk mic button ── */}
       <button
         className="no-drag"
-        onPointerDown={handlePointerDown}
-        onPointerUp={stopActivePointer}
-        onPointerCancel={handlePointerCancel}
-        onLostPointerCapture={handlePointerCancel}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         title={isListening ? 'Release to generate answer' : 'Hold to record question'}
         style={{
           width: 40,
@@ -84,7 +95,8 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
           position: 'relative',
           userSelect: 'none',
           gap: 2,
-          touchAction: 'none',
+          outline: 'none',
+          WebkitAppRegion: 'no-drag',
           WebkitUserSelect: 'none' as React.CSSProperties['WebkitUserSelect'],
         }}
       >
