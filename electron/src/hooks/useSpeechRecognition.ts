@@ -44,7 +44,7 @@ declare const SpeechRecognition: { new (): ISpeechRecognition } | undefined;
 // ────────────────────────────────────────────────────────────────────────────
 
 interface UseSpeechRecognitionReturn {
-  startListening: (lang?: string) => void;
+  startListening: (lang?: string) => Promise<void>;
   stopListening: () => void;
   transcript: string;
   interimTranscript: string;
@@ -95,10 +95,52 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     };
   }, [detachRecognition, stopRecognition]);
 
-  const startListening = useCallback((lang = 'en-US') => {
+  const startListening = useCallback(async (lang = 'en-US') => {
     console.log('[useSpeechRecognition] startListening called, lang:', lang);
     if (!SpeechRecognitionAPI) {
       console.log('[useSpeechRecognition] SpeechRecognitionAPI not available');
+      setRecognitionError('Speech recognition is not supported in this browser.');
+      return;
+    }
+
+    // Log diagnostic info
+    console.log('[useSpeechRecognition] User Agent:', navigator.userAgent);
+    console.log('[useSpeechRecognition] Platform:', navigator.platform);
+    console.log('[useSpeechRecognition] Language:', navigator.language);
+
+    // Check microphone permission
+    try {
+      console.log('[useSpeechRecognition] Checking microphone permission...');
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      console.log('[useSpeechRecognition] Microphone permission:', permissionStatus.state);
+
+      if (permissionStatus.state === 'denied') {
+        setRecognitionError('Microphone permission denied. Please allow microphone access in your system settings.');
+        return;
+      }
+
+      if (permissionStatus.state === 'prompt') {
+        setRecognitionError('Microphone permission required. Please allow microphone access when prompted.');
+        return;
+      }
+    } catch (e) {
+      console.log('[useSpeechRecognition] Could not check microphone permission:', e);
+      // Permission API might not be available, continue anyway
+    }
+
+    // Try to enumerate media devices to verify microphone access
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter(d => d.kind === 'audioinput');
+      console.log('[useSpeechRecognition] Found', audioInputs.length, 'microphone(s):', audioInputs.map(d => d.label || 'unnamed'));
+
+      if (audioInputs.length === 0) {
+        setRecognitionError('No microphone found. Please connect a microphone and try again.');
+        return;
+      }
+    } catch (e) {
+      console.error('[useSpeechRecognition] Could not enumerate devices:', e);
+      setRecognitionError('Could not access microphone. Please check your microphone settings.');
       return;
     }
 
@@ -116,6 +158,14 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = lang;
+    recognition.maxAlternatives = 1;
+
+    console.log('[useSpeechRecognition] Recognition config:', {
+      continuous: recognition.continuous,
+      interimResults: recognition.interimResults,
+      lang: recognition.lang,
+      service: 'Google Web Speech API (requires internet)',
+    });
 
     recognition.onstart = () => {
       console.log('[useSpeechRecognition] onstart fired, sessionId:', sessionId, 'current:', recognitionSessionRef.current);
