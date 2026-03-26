@@ -2,6 +2,7 @@
 import React from 'react';
 import { JobApplication } from '../../services/jobApi';
 import { Link } from 'react-router-dom';
+import { TableOrCards, ColumnDef, CardConfig } from '../common/TableOrCards';
 
 interface RecentActivityWidgetProps {
     jobs: JobApplication[];
@@ -44,6 +45,63 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ jobs
             .slice(0, 5);
     }, [jobs]);
 
+    const columns: ColumnDef<JobApplication>[] = [
+        {
+            key: 'companyName',
+            label: 'Company',
+            render: (job) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded flex items-center justify-center font-bold text-xs uppercase" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
+                        {job.companyName.substring(0, 1)}
+                    </div>
+                    <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{job.companyName}</span>
+                </div>
+            ),
+        },
+        {
+            key: 'jobTitle',
+            label: 'Role',
+            mobileHidden: true,
+            render: (job) => <span style={{ color: 'var(--text-secondary)' }}>{job.jobTitle}</span>,
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            render: (job) => (
+                <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${statusColors[job.status] || statusColors['Not Applied']}`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-60"></span>
+                    {job.status}
+                </span>
+            ),
+        },
+        {
+            key: 'updatedAt',
+            label: 'Updated',
+            align: 'right',
+            render: (job) => <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{formatTimeAgo(job.updatedAt)}</span>,
+        },
+    ];
+
+    const cardConfig: CardConfig<JobApplication> = {
+        title: (job) => job.companyName,
+        subtitle: (job) => job.jobTitle,
+        avatar: (job) => ({ letter: job.companyName.substring(0, 1).toUpperCase() }),
+        fields: [
+            {
+                value: (job) => (
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${statusColors[job.status] || statusColors['Not Applied']}`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-60"></span>
+                        {job.status}
+                    </span>
+                ),
+            },
+            {
+                value: (job) => formatTimeAgo(job.updatedAt),
+                icon: <span className="text-xs">🕐</span>,
+            },
+        ],
+    };
+
     return (
         <div className="p-6 rounded-lg border h-full transition-all duration-300" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
             <div className="flex justify-between items-center mb-6">
@@ -53,52 +111,13 @@ export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ jobs
                 </Link>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="text-xs font-semibold uppercase tracking-wider border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>
-                            <th className="pb-3 pl-2">Company</th>
-                            <th className="pb-3 hidden sm:table-cell">Role</th>
-                            <th className="pb-3">Status</th>
-                            <th className="pb-3 text-right pr-2">Updated</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
-                        {recentJobs.length > 0 ? (
-                            recentJobs.map(job => (
-                                <tr key={job._id} className="group transition-colors" style={{ borderBottomColor: 'var(--border)' }}>
-                                    <td className="py-3 pl-2">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded flex items-center justify-center font-bold text-xs uppercase transition-colors" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
-                                                {job.companyName.substring(0, 1)}
-                                            </div>
-                                            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{job.companyName}</span>
-                                        </div>
-                                    </td>
-                                    <td className="py-3 text-sm hidden sm:table-cell" style={{ color: 'var(--text-secondary)' }}>
-                                        {job.jobTitle}
-                                    </td>
-                                    <td className="py-3">
-                                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${statusColors[job.status] || statusColors['Not Applied']}`}>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-60"></span>
-                                            {job.status}
-                                        </span>
-                                    </td>
-                                    <td className="py-3 text-right text-xs pr-2" style={{ color: 'var(--text-muted)' }}>
-                                        {formatTimeAgo(job.updatedAt)}
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={4} className="py-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-                                    No recent activity found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+            <TableOrCards
+                data={recentJobs}
+                columns={columns}
+                cardConfig={cardConfig}
+                emptyMessage="No recent activity found."
+                mobileBreakpoint="sm"
+            />
         </div>
     );
 };

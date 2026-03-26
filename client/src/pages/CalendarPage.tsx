@@ -672,7 +672,7 @@ const CalendarPage: React.FC = () => {
                 /* ── NOT CONNECTED ─────────────────────────────────────────── */
                 <div className="flex items-center justify-center py-10">
                     <div
-                        className="card p-10 flex flex-col items-center text-center gap-6"
+                        className="card p-6 sm:p-10 flex flex-col items-center text-center gap-6"
                         style={{ maxWidth: 460 }}
                     >
                         {/* Icon */}

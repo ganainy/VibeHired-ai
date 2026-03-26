@@ -256,7 +256,7 @@ const PortfolioLayout: React.FC<PortfolioLayoutProps> = ({
                   href={profile.socialLinks.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="card w-40 p-5 text-center hover:-translate-y-2 transition-all duration-300 hover:shadow-xl"
+                  className="card w-40 p-3 sm:p-5 text-center hover:-translate-y-2 transition-all duration-300 hover:shadow-xl"
                   style={{ border: '1px solid var(--border)', textDecoration: 'none' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
@@ -273,7 +273,7 @@ const PortfolioLayout: React.FC<PortfolioLayoutProps> = ({
                   href={profile.socialLinks.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="card w-40 p-5 text-center hover:-translate-y-2 transition-all duration-300 hover:shadow-xl"
+                  className="card w-40 p-3 sm:p-5 text-center hover:-translate-y-2 transition-all duration-300 hover:shadow-xl"
                   style={{ border: '1px solid var(--border)', textDecoration: 'none' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
@@ -290,7 +290,7 @@ const PortfolioLayout: React.FC<PortfolioLayoutProps> = ({
                   href={profile.socialLinks.twitter}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="card w-40 p-5 text-center hover:-translate-y-2 transition-all duration-300 hover:shadow-xl"
+                  className="card w-40 p-3 sm:p-5 text-center hover:-translate-y-2 transition-all duration-300 hover:shadow-xl"
                   style={{ border: '1px solid var(--border)', textDecoration: 'none' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
@@ -307,7 +307,7 @@ const PortfolioLayout: React.FC<PortfolioLayoutProps> = ({
                   href={profile.socialLinks.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="card w-40 p-5 text-center hover:-translate-y-2 transition-all duration-300 hover:shadow-xl"
+                  className="card w-40 p-3 sm:p-5 text-center hover:-translate-y-2 transition-all duration-300 hover:shadow-xl"
                   style={{ border: '1px solid var(--border)', textDecoration: 'none' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
@@ -322,7 +322,7 @@ const PortfolioLayout: React.FC<PortfolioLayoutProps> = ({
               {email && (
                 <a
                   href={`mailto:${email}`}
-                  className="card w-40 p-5 text-center hover:-translate-y-2 transition-all duration-300 hover:shadow-xl"
+                  className="card w-40 p-3 sm:p-5 text-center hover:-translate-y-2 transition-all duration-300 hover:shadow-xl"
                   style={{ border: '1px solid var(--border)', textDecoration: 'none' }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}

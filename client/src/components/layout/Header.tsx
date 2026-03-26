@@ -207,37 +207,34 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
         <>
             {/* ── Mobile Top Bar (md:hidden) ── */}
             <header
-                className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-14 px-4 border-b"
+                className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center h-14 px-4 border-b"
                 style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
             >
-                {/* Brand */}
-                <Link to="/dashboard" className="flex items-center gap-2">
-                    <span style={{ color: 'var(--accent)' }}>
-                        <Logo />
-                    </span>
-                    <VibeHiredLogo size={18} className="px-0" />
+                {/* Left: Menu button */}
+                <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    data-onboarding="mobile-menu-button"
+                    className="p-2 rounded-lg transition-colors -ml-2"
+                    style={{ color: 'var(--text-primary)' }}
+                    aria-label="Toggle menu"
+                >
+                    {isMenuOpen ? <CloseIcon /> : <HamburgerIcon />}
+                </button>
+
+                {/* Center: Brand logo only (no image) */}
+                <Link to="/dashboard" className="flex-1 flex justify-center">
+                    <VibeHiredLogo size={24} className="px-0" />
                 </Link>
 
-                {/* Right actions */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={toggleTheme}
-                        className="p-2 rounded-lg transition-colors"
-                        style={{ color: 'var(--text-secondary)' }}
-                        aria-label="Toggle theme"
-                    >
-                        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-                    </button>
-                    <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        data-onboarding="mobile-menu-button"
-                        className="p-2 rounded-lg transition-colors"
-                        style={{ color: 'var(--text-primary)' }}
-                        aria-label="Toggle menu"
-                    >
-                        {isMenuOpen ? <CloseIcon /> : <HamburgerIcon />}
-                    </button>
-                </div>
+                {/* Right: Theme toggle */}
+                <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-lg transition-colors -mr-2"
+                    style={{ color: 'var(--text-secondary)' }}
+                    aria-label="Toggle theme"
+                >
+                    {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                </button>
             </header>
 
             {/* ── Mobile Drawer Menu ── */}
@@ -275,7 +272,7 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
                         </div>
 
                         {/* Nav items */}
-                        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+                        <nav className="flex-1 px-4 py-6 space-y-1.5">
                             {navItems.map((item, i) => {
                                 const isActive = isActiveRoute(item.path);
                                 const isDisabled = !!(item as any).disabled;

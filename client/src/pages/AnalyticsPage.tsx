@@ -293,7 +293,7 @@ const AnalyticsPage: React.FC = () => {
                         </div>
 
                         {selectedMonth !== 'today' && (
-                            <div className="md:col-span-3 card p-4 md:p-6 flex flex-col h-[450px] md:h-[400px] min-w-0 overflow-hidden">
+                            <div className="md:col-span-3 card p-3 md:p-4 lg:p-6 flex flex-col h-[450px] md:h-[400px] min-w-0 overflow-hidden">
                                 <div className="flex items-center gap-2 mb-6">
                                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-bg-dim)' }}>
                                         <span className="material-symbols-outlined text-[20px]" style={{ color: 'var(--accent)' }}>trending_up</span>
@@ -314,7 +314,7 @@ const AnalyticsPage: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="card p-6 overflow-hidden shadow-sm">
+                    <div className="card p-3 sm:p-6 overflow-hidden shadow-sm">
                         <RecentActivityWidget jobs={displayJobs} />
                     </div>
 
@@ -338,7 +338,7 @@ const AnalyticsPage: React.FC = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                         {/* Daily Hours Chart */}
-                        <div className="md:col-span-2 card p-4 md:p-6 overflow-hidden h-[400px] md:h-[450px]">
+                        <div className="md:col-span-2 card p-3 md:p-4 lg:p-6 overflow-hidden h-[400px] md:h-[450px]">
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-bg-dim)' }}>
@@ -353,7 +353,7 @@ const AnalyticsPage: React.FC = () => {
                         </div>
 
                         {/* Employer Distribution Chart */}
-                        <div className="md:col-span-1 card p-4 md:p-6 overflow-hidden h-[400px] md:h-[450px]">
+                        <div className="md:col-span-1 card p-3 md:p-4 lg:p-6 overflow-hidden h-[400px] md:h-[450px]">
                             <div className="flex items-center gap-2 mb-6">
                                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-bg-dim)' }}>
                                     <span className="material-symbols-outlined text-[20px]" style={{ color: 'var(--accent)' }}>pie_chart</span>

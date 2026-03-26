@@ -734,7 +734,7 @@ const AutoJobsPage: React.FC = () => {
                 )}
 
                 {/* Configuration Card */}
-                <div className="card p-6">
+                <div className="card p-3 sm:p-6">
                     <h2 className="text-xl font-bold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Configuration</h2>
 
                     <div className="space-y-4">
@@ -941,7 +941,7 @@ const AutoJobsPage: React.FC = () => {
 
                 {/* Workflow Progress Section - Inline on page */}
                 {workflowProgress && (
-                    <div className="card p-8 relative overflow-hidden">
+                    <div className="card p-4 sm:p-8 relative overflow-hidden">
                         {/* Top Progress Bar */}
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-200 dark:bg-gray-600">
                             <div

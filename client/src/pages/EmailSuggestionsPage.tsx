@@ -477,7 +477,7 @@ const EmailSuggestionsPage: React.FC = () => {
 
                     {/* ── Settings panel ── */}
                     {settingsOpen && (
-                        <div className="card px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-3">
+                        <div className="card px-3 py-2 sm:px-4 sm:py-3 flex flex-wrap items-center gap-x-5 gap-y-3">
                             <div className="flex items-center gap-2">
                                 <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Scan</span>
                                 <select
@@ -564,7 +564,7 @@ const EmailSuggestionsPage: React.FC = () => {
                             {howItWorksOpen ? 'Hide' : 'How does this work?'}
                         </button>
                         {howItWorksOpen && (
-                            <div className="card mt-3 p-5">
+                            <div className="card mt-3 p-3 sm:p-5">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {HOW_IT_WORKS.map((step, i) => (
                                         <div key={i} className="flex gap-3">
@@ -692,7 +692,7 @@ const EmailSuggestionsPage: React.FC = () => {
                     {loading && (
                         <div className="space-y-3">
                             {[0, 1, 2].map((i) => (
-                                <div key={i} className="card p-4 space-y-3" style={{ opacity: 1 - i * 0.25 }}>
+                                <div key={i} className="card p-3 sm:p-4 space-y-3" style={{ opacity: 1 - i * 0.25 }}>
                                     <div className="flex items-center gap-3">
                                         <div className="w-9 h-9 rounded-xl shrink-0" style={{ background: 'var(--bg-elevated)' }} />
                                         <div className="space-y-1.5 flex-1">
@@ -713,7 +713,7 @@ const EmailSuggestionsPage: React.FC = () => {
 
                     {/* ── Empty state (no suggestions at all) ── */}
                     {!loading && suggestions.length === 0 && (
-                        <div className="card p-10 flex flex-col items-center text-center">
+                        <div className="card p-6 sm:p-10 flex flex-col items-center text-center">
                             <div
                                 className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
                                 style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
@@ -749,7 +749,7 @@ const EmailSuggestionsPage: React.FC = () => {
 
                     {/* ── Empty current tab (but other tab has items) ── */}
                     {!loading && suggestions.length > 0 && suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length === 0 && (
-                        <div className="card p-8 text-center">
+                        <div className="card p-6 sm:p-8 text-center">
                             <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                                 No {activeTab === 'job_offer' ? 'job lead' : 'application'} emails pending
                             </p>

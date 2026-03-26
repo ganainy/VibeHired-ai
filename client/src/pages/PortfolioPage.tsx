@@ -113,7 +113,7 @@ const PortfolioPage: React.FC = () => {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
         <div className="container mx-auto px-4 py-8 w-full">
-          <div className="card rounded-xl p-8 text-center max-w-md mx-auto mt-16" style={{ border: '1px solid var(--border)' }}>
+          <div className="card rounded-xl p-6 sm:p-8 text-center max-w-md mx-auto mt-16" style={{ border: '1px solid var(--border)' }}>
             <div
               className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
               style={{ background: 'var(--bg-elevated)' }}

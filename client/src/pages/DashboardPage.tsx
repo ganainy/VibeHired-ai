@@ -23,6 +23,7 @@ import stepstoneLogo from '../assets/stepstone-svgrepo-com.svg';
 import Spinner from '../components/common/Spinner';
 import SimpleLoader from '../components/common/SimpleLoader';
 import Toast from '../components/common/Toast';
+import { TableOrCards, ColumnDef, CardConfig } from '../components/common/TableOrCards';
 import DuplicateJobWarningModal from '../components/jobs/DuplicateJobWarningModal';
 import TourBanner from '../components/onboarding/TourBanner';
 import { usePageTour } from '../hooks/usePageTour';
@@ -761,6 +762,241 @@ const DashboardPage: React.FC = () => {
     </svg>
   );
 
+  // --- TableOrCards Configuration ---
+
+  const jobColumns: ColumnDef<JobApplication>[] = [
+    {
+      key: 'jobTitle',
+      label: 'Job Title',
+      sortable: true,
+      onSort: () => handleSort('jobTitle'),
+      sortDirection: sortKey === 'jobTitle' ? sortDirection : null,
+      render: (job) => (
+        <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+          {job.jobTitle}
+        </span>
+      ),
+    },
+    {
+      key: 'companyName',
+      label: 'Company',
+      render: (job) => (
+        <div className="flex items-center gap-2">
+          {job.jobUrl && (() => {
+            const urls = parseMultipleUrls(job.jobUrl);
+            const platform = urls.length > 0 ? getJobPlatform(urls[0]) : null;
+            return platform ? (
+              <span className="flex-shrink-0" title={platform.charAt(0).toUpperCase() + platform.slice(1)}>
+                <PlatformIcon platform={platform} className="w-4 h-4" />
+              </span>
+            ) : null;
+          })()}
+          <span style={{ color: 'var(--text-secondary)' }}>{job.companyName}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (job) => <StatusDropdown job={job} />,
+    },
+    {
+      key: 'createdAt',
+      label: 'Date Added',
+      sortable: true,
+      onSort: () => handleSort('createdAt'),
+      sortDirection: sortKey === 'createdAt' ? sortDirection : null,
+      render: (job) => (
+        <div className="flex flex-col" style={{ color: 'var(--text-secondary)' }}>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            {new Date(job.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          <span>
+            {new Date(job.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'jobType',
+      label: 'Type',
+      sortable: true,
+      onSort: () => handleSort('jobType'),
+      sortDirection: sortKey === 'jobType' ? sortDirection : null,
+      mobileHidden: true,
+      render: (job) => (
+        <span style={{ color: 'var(--text-secondary)' }}>
+          {job.jobType ? (
+            <>
+              {job.jobType === 'full-time' && 'Full-time'}
+              {job.jobType === 'part-time' && 'Part-time'}
+              {job.jobType === 'working-student' && 'Working Student'}
+              {job.jobType === 'internship' && 'Internship'}
+              {job.jobType === 'contract' && 'Contract'}
+              {job.jobType === 'freelance' && 'Freelance'}
+            </>
+          ) : (
+            <span style={{ color: 'var(--text-muted)' }}>-</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'salary',
+      label: 'Salary',
+      sortable: true,
+      onSort: () => handleSort('salary'),
+      sortDirection: sortKey === 'salary' ? sortDirection : null,
+      mobileHidden: true,
+      render: (job) => {
+        const displaySalary = job.salary || job.extractedData?.salaryRaw || job.extractedData?.estimatedSalary;
+        if (!displaySalary) return <span style={{ color: 'var(--text-muted)' }}>-</span>;
+        const isEstimate = !job.salary && !job.extractedData?.salaryRaw && job.extractedData?.salaryIsEstimate;
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs font-medium">{displaySalary}</span>
+            {isEstimate && <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">AI Est.</span>}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'contact',
+      label: 'Contact',
+      mobileHidden: true,
+      render: (job) => {
+        const hasStructuredContact = job.contactEmail || job.contactPhone || job.hiringManagerName;
+        return (
+          <div className="text-slate-600 dark:text-slate-400 max-w-[120px]" onClick={(e) => e.stopPropagation()}>
+            {hasStructuredContact ? (
+              <div className="flex flex-col gap-0.5 text-xs">
+                {job.contactEmail && (
+                  <a href={`mailto:${job.contactEmail}`} className="hover:underline truncate block" style={{ color: 'var(--accent)' }} title={`Email: ${job.contactEmail}`}>
+                    📧 {job.contactEmail.length > 12 ? job.contactEmail.substring(0, 12) + '...' : job.contactEmail}
+                  </a>
+                )}
+                {job.contactPhone && (
+                  <span className="truncate block" title={`Phone: ${job.contactPhone}`}>
+                    📞 {job.contactPhone.length > 12 ? job.contactPhone.substring(0, 12) + '...' : job.contactPhone}
+                  </span>
+                )}
+                {job.hiringManagerName && (
+                  <span className="truncate block text-slate-500 dark:text-slate-400" title={`Contact: ${job.hiringManagerName}`}>
+                    👤 {job.hiringManagerName.length > 12 ? job.hiringManagerName.substring(0, 12) + '...' : job.hiringManagerName}
+                  </span>
+                )}
+              </div>
+            ) : job.contact ? (
+              job.contact.includes('@') ? (
+                <a href={`mailto:${job.contact}`} className="hover:underline truncate block" style={{ color: 'var(--accent)' }} title={`Email ${job.contact}`}>
+                  {job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}
+                </a>
+              ) : job.contact.startsWith('http') ? (
+                <a href={job.contact} target="_blank" rel="noopener noreferrer" className="hover:underline truncate block" style={{ color: 'var(--accent)' }} title={job.contact}>
+                  {job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}
+                </a>
+              ) : (
+                <span className="truncate block" title={job.contact}>{job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}</span>
+              )
+            ) : '-'}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      align: 'right',
+      render: (job) => (
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          {job.notes && job.notes.trim() && (
+            <span className="flex items-center justify-center w-8 h-8 text-blue-500 dark:text-blue-400" title={`Note: ${job.notes.length > 100 ? job.notes.substring(0, 100) + '...' : job.notes}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </span>
+          )}
+          {job.jobUrl && parseMultipleUrls(job.jobUrl).slice(0, 2).map((url, idx, arr) => (
+            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors" style={{ color: 'var(--accent)' }} title={`Open: ${url}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              {arr.length > 1 && <span className="text-xs ml-0.5">{idx + 1}</span>}
+            </a>
+          ))}
+          {job.jobUrl && parseMultipleUrls(job.jobUrl).length > 2 && (
+            <span className="text-xs text-slate-500 dark:text-slate-400 px-1" title={parseMultipleUrls(job.jobUrl).slice(2).join('\n')}>
+              +{parseMultipleUrls(job.jobUrl).length - 2}
+            </span>
+          )}
+          <button onClick={(e) => handleToggleFavorite(job, e)} className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${job.isFavorite ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70' : 'text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50'}`} title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'}>
+            <StarIcon filled={!!job.isFavorite} />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/review/reminders`); }} className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60' : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'}>
+            <FollowUpIcon />
+          </button>
+          <button onClick={(e) => handleDeleteClick(job, e)} className="flex items-center justify-center w-8 h-8 rounded-md text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors" title="Delete">
+            <DeleteIcon />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  const jobCardConfig: CardConfig<JobApplication> = {
+    title: (job) => job.jobTitle,
+    subtitle: (job) => job.companyName,
+    avatar: (job) => ({
+      letter: job.companyName.substring(0, 1).toUpperCase(),
+    }),
+    fields: [
+      {
+        label: 'Status',
+        value: (job) => (
+          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${statusColors[job.status]?.dot + ' ' + statusColors[job.status]?.text || 'bg-gray-100 text-gray-600'}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-60"></span>
+            {job.status}
+          </span>
+        ),
+      },
+      {
+        label: 'Date',
+        value: (job) => new Date(job.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      },
+      {
+        label: 'Type',
+        value: (job) =>
+          job.jobType === 'full-time' ? 'Full-time' :
+          job.jobType === 'part-time' ? 'Part-time' :
+          job.jobType === 'working-student' ? 'Working Student' :
+          job.jobType === 'internship' ? 'Internship' :
+          job.jobType === 'contract' ? 'Contract' :
+          job.jobType === 'freelance' ? 'Freelance' : '-',
+      },
+      {
+        label: 'Salary',
+        value: (job) => job.salary || job.extractedData?.salaryRaw || job.extractedData?.estimatedSalary || '-',
+      },
+    ],
+    actions: (job) => (
+      <>
+        {job.jobUrl && parseMultipleUrls(job.jobUrl).slice(0, 2).map((url, idx) => (
+          <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors" style={{ color: 'var(--accent)' }}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        ))}
+        <button onClick={(e) => { e.stopPropagation(); handleToggleFavorite(job, e as any); }} className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${job.isFavorite ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50' : 'text-slate-400 dark:text-slate-500 hover:text-amber-500'}`}>
+          <StarIcon filled={!!job.isFavorite} />
+        </button>
+        <button onClick={(e) => handleDeleteClick(job, e as any)} className="flex items-center justify-center w-8 h-8 rounded-md text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
+          <DeleteIcon />
+        </button>
+      </>
+    ),
+  };
+
   // --- Render Loading State ---
   if (isLoading) {
     return (
@@ -794,7 +1030,7 @@ const DashboardPage: React.FC = () => {
     <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-950">
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
@@ -830,7 +1066,7 @@ const DashboardPage: React.FC = () => {
 
 
         {/* Add Job Section */}
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-6">
+        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-4 sm:space-y-6">
           <div className="flex flex-col gap-4">
             <form onSubmit={handleCreateFromTextSubmit} className="w-full">
               {/* Pre-Extraction Form Fields */}
@@ -1215,7 +1451,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto border-t border-slate-200 dark:border-slate-700">
+            <div className="overflow-x-auto sm:border-t border-slate-200 dark:border-slate-700">
               {displayedJobs.length === 0 ? (
                 <div className="text-center py-12 px-4">
                   {jobs.length > 0 ? (
@@ -1315,220 +1551,12 @@ const DashboardPage: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr>
-                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Job Title</th>
-                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Company</th>
-                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Status</th>
-                        <th
-                          onClick={() => handleSort('createdAt')}
-                          className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
-                        >
-                          <div className="flex items-center gap-1">
-                            <span>Date Added</span>
-                            <ArrowDownIcon className={sortKey === 'createdAt' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'} />
-                          </div>
-                        </th>
-                        <th
-                          onClick={() => handleSort('jobType')}
-                          className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
-                        >
-                          <div className="flex items-center gap-1">
-                            <span>Type</span>
-                            <ArrowDownIcon className={sortKey === 'jobType' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'} />
-                          </div>
-                        </th>
-                        <th
-                          onClick={() => handleSort('salary')}
-                          className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
-                        >
-                          <div className="flex items-center gap-1">
-                            <span>Salary</span>
-                            <ArrowDownIcon className={sortKey === 'salary' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'} />
-                          </div>
-                        </th>
-                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400">Contact</th>
-                        <th className="p-4 text-sm font-semibold text-slate-500 dark:text-slate-400 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedJobs.map((job) => (
-                        <tr
-                          key={job._id}
-                          onClick={() => handleRowClick(job._id)}
-                          className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-medium text-slate-800 dark:text-slate-100">{job.jobTitle}</td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400">
-                            <div className="flex items-center gap-2">
-                              {job.jobUrl && (() => {
-                                const urls = parseMultipleUrls(job.jobUrl);
-                                const platform = urls.length > 0 ? getJobPlatform(urls[0]) : null;
-                                return platform ? (
-                                  <span className="flex-shrink-0" title={platform.charAt(0).toUpperCase() + platform.slice(1)}>
-                                    <PlatformIcon platform={platform} className="w-4 h-4" />
-                                  </span>
-                                ) : null;
-                              })()}
-                              <span>{job.companyName}</span>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <StatusDropdown job={job} />
-                          </td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400">
-                            <div className="flex flex-col">
-                              <span className="text-xs text-slate-400 dark:text-slate-500">
-                                {new Date(job.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                              <span>
-                                {new Date(job.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400">
-                            {job.jobType ? (
-                              <span>
-                                {job.jobType === 'full-time' && 'Full-time'}
-                                {job.jobType === 'part-time' && 'Part-time'}
-                                {job.jobType === 'working-student' && 'Working Student'}
-                                {job.jobType === 'internship' && 'Internship'}
-                                {job.jobType === 'contract' && 'Contract'}
-                                {job.jobType === 'freelance' && 'Freelance'}
-                              </span>
-                            ) : (
-                              <span className="text-slate-400 dark:text-slate-500">-</span>
-                            )}
-                          </td>
-                          {/* Salary column */}
-                          <td className="p-4 text-slate-600 dark:text-slate-400">
-                            {(() => {
-                              const displaySalary = job.salary || job.extractedData?.salaryRaw || job.extractedData?.estimatedSalary;
-                              if (!displaySalary) return <span className="text-slate-400 dark:text-slate-500">-</span>;
-                              const isUserEntered = !!job.salary;
-                              const isFromPosting = !job.salary && !!job.extractedData?.salaryRaw;
-                              const isEstimate = !job.salary && !job.extractedData?.salaryRaw && job.extractedData?.salaryIsEstimate;
-                              return (
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="text-xs font-medium">{displaySalary}</span>
-                                  {isEstimate && (
-                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">AI Est.</span>
-                                  )}
-                                  {isFromPosting && (
-                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-green-600 dark:text-green-400">Posting</span>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                          </td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400 max-w-[120px]" onClick={(e) => e.stopPropagation()}>
-                            {/* Display structured contact info if available, otherwise fall back to legacy contact field */}
-                            {job.contactEmail || job.contactPhone || job.hiringManagerName ? (
-                              <div className="flex flex-col gap-0.5 text-xs">
-                                {job.contactEmail && (
-                                  <a href={`mailto:${job.contactEmail}`} className="hover:underline truncate block" style={{ color: 'var(--accent)' }} title={`Email: ${job.contactEmail}`}>
-                                    📧 {job.contactEmail.length > 12 ? job.contactEmail.substring(0, 12) + '...' : job.contactEmail}
-                                  </a>
-                                )}
-                                {job.contactPhone && (
-                                  <span className="truncate block" title={`Phone: ${job.contactPhone}`}>
-                                    📞 {job.contactPhone.length > 12 ? job.contactPhone.substring(0, 12) + '...' : job.contactPhone}
-                                  </span>
-                                )}
-                                {job.hiringManagerName && (
-                                  <span className="truncate block text-slate-500 dark:text-slate-400" title={`Contact: ${job.hiringManagerName}`}>
-                                    👤 {job.hiringManagerName.length > 12 ? job.hiringManagerName.substring(0, 12) + '...' : job.hiringManagerName}
-                                  </span>
-                                )}
-                              </div>
-                            ) : job.contact ? (
-                              // Legacy contact field fallback
-                              job.contact.includes('@') ? (
-                                <a href={`mailto:${job.contact}`} className="hover:underline truncate block" style={{ color: 'var(--accent)' }} title={`Email ${job.contact}`}>
-                                  {job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}
-                                </a>
-                              ) : job.contact.startsWith('http') ? (
-                                <a href={job.contact} target="_blank" rel="noopener noreferrer" className="hover:underline truncate block" style={{ color: 'var(--accent)' }} title={job.contact}>
-                                  {job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}
-                                </a>
-                              ) : (
-                                <span className="truncate block" title={job.contact}>{job.contact.length > 14 ? job.contact.substring(0, 14) + '...' : job.contact}</span>
-                              )
-                            ) : '-'}
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                              {/* Note indicator */}
-                              {job.notes && job.notes.trim() && (
-                                <span
-                                  className="flex items-center justify-center w-8 h-8 text-blue-500 dark:text-blue-400"
-                                  title={`Note: ${job.notes.length > 100 ? job.notes.substring(0, 100) + '...' : job.notes}`}
-                                >
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </span>
-                              )}
-                              {/* Link icons */}
-                              {job.jobUrl && parseMultipleUrls(job.jobUrl).slice(0, 2).map((url, idx, arr) => (
-                                <a
-                                  key={idx}
-                                  href={url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors" style={{ color: 'var(--accent)' }}
-                                  title={`Open: ${url}`}
-                                >
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                  </svg>
-                                  {arr.length > 1 && <span className="text-xs ml-0.5">{idx + 1}</span>}
-                                </a>
-                              ))}
-                              {job.jobUrl && parseMultipleUrls(job.jobUrl).length > 2 && (
-                                <span className="text-xs text-slate-500 dark:text-slate-400 px-1" title={parseMultipleUrls(job.jobUrl).slice(2).join('\n')}>
-                                  +{parseMultipleUrls(job.jobUrl).length - 2}
-                                </span>
-                              )}
-                              {/* Favorite button */}
-                              <button
-                                onClick={(e) => handleToggleFavorite(job, e)}
-                                className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${job.isFavorite
-                                  ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70'
-                                  : 'text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50'
-                                  }`}
-                                title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                              >
-                                <StarIcon filled={!!job.isFavorite} />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/jobs/${job._id}/review/reminders`);
-                                }}
-                                className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id)
-                                  ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60'
-                                  : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'
-                                  }`}
-                                title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'}
-                              >
-                                <FollowUpIcon />
-                              </button>
-                              {/* Delete button */}
-                              <button
-                                onClick={(e) => handleDeleteClick(job, e)}
-                                className="flex items-center justify-center w-8 h-8 rounded-md text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-                                title="Delete"
-                              >
-                                <DeleteIcon />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <TableOrCards
+                    data={paginatedJobs}
+                    columns={jobColumns}
+                    cardConfig={jobCardConfig}
+                    onRowClick={(job) => handleRowClick(job._id)}
+                  />
                   {/* Pagination */}
                   <div className="flex items-center justify-between pt-4">
                     <p className="text-sm text-slate-500 dark:text-slate-400">

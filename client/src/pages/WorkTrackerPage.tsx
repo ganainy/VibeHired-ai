@@ -304,7 +304,7 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ label, value, sub, icon, accent }) => (
   <div
-    className="card flex items-start gap-4 p-5"
+    className="card flex items-start gap-4 p-3 sm:p-5"
     style={{ flex: '1 1 160px' }}
   >
     <div
@@ -1564,7 +1564,7 @@ const EmployerCard: React.FC<EmployerCardProps> = ({ emp, deletingEmployerId, on
   };
 
   return (
-    <div className="card-elevated p-5 flex flex-col gap-4 group">
+    <div className="card-elevated p-3 sm:p-5 flex flex-col gap-4 group">
       {/* Top row: avatar + name + actions */}
       <div className="flex items-start gap-3">
         <EmployerAvatar employer={emp} size={48} />
