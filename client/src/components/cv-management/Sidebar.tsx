@@ -113,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div
                 onClick={() => onSelectCv(cv._id)}
                 style={isActive ? {background:'var(--bg-surface)', borderColor:'var(--accent)', boxShadow:'0 0 0 1px rgba(232,184,68,0.2)'} : {background:'var(--bg-surface)', borderColor:'var(--border)'}}
-                className={`group relative p-3 rounded-xl border transition-all duration-200 w-64 flex-shrink-0 hover:border-opacity-70 overflow-hidden ${isMock ? 'pointer-events-none select-none opacity-70' : 'cursor-pointer'}`}
+                className={`group relative p-3 rounded-xl border transition-all duration-200 w-56 sm:w-64 flex-shrink-0 snap-start hover:border-opacity-70 overflow-hidden ${isMock ? 'pointer-events-none select-none opacity-70' : 'cursor-pointer'}`}
             >
                 {isActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{background:'var(--accent)'}} />
@@ -196,39 +196,37 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     return (
         <div className={`flex flex-col rounded-xl overflow-hidden ${className}`} style={{background:'var(--bg-surface)', border:'1px solid var(--border)', boxShadow:'0 2px 8px rgba(0,0,0,0.3)'}}>
-            <div className="flex flex-col gap-4 p-4 border-b" style={{borderColor:'var(--border)'}}>
-                {/* Row 1: Title & Filter */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <h2 className="text-sm font-extrabold uppercase tracking-widest label-overline" style={{color:'var(--text-primary)'}}>My Documents</h2>
+            <div className="flex flex-col gap-2 p-3 border-b" style={{borderColor:'var(--border)'}}>
+                {/* Row 1: Title & Filter - stack on mobile */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <h2 className="text-sm font-extrabold uppercase tracking-widest label-overline" style={{color:'var(--text-primary)'}}>My Documents</h2>
 
-                        <div className="relative w-48 flex-shrink-0">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-gray-400">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </span>
-                            <input
-                                type="text"
-                                placeholder="Filter CVs..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="input-base w-full py-1.5 pl-8 pr-3 text-[11px] font-medium focus:ring-gold-500/30"
-                            />
-                        </div>
+                    <div className="relative w-full sm:w-48 flex-shrink-0">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-gray-400">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Filter CVs..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="input-base w-full py-1.5 pl-8 pr-3 text-[11px] font-medium focus:ring-gold-500/30"
+                        />
                     </div>
                 </div>
 
-                {/* Row 2: Cards Only */}
+                {/* Row 2: Cards - horizontal scroll on mobile */}
                 <div className="flex items-center">
-                    {/* Scrollable Cards */}
-                    <div className="flex-1 overflow-x-auto custom-scrollbar">
-                        <div className="flex items-stretch gap-3 py-1 min-w-max px-1">
+                    {/* Scrollable Cards - full viewport width on mobile */}
+                    <div className="flex-1 overflow-x-auto custom-scrollbar snap-x snap-mandatory">
+                        <div className="flex items-stretch gap-2 py-1">
                             {/* Create Branch Card */}
                             {onCreateBranch && (
                                 <button
                                     onClick={onCreateBranch}
-                                    className="flex flex-col items-center justify-center gap-2 w-32 rounded-xl border-2 border-dashed transition-all group pt-2.5 pb-2.5"
+                                    className="flex flex-col items-center justify-center gap-2 w-28 sm:w-32 flex-shrink-0 snap-start rounded-xl border-2 border-dashed transition-all group pt-2.5 pb-2.5"
                                     style={{borderColor:'var(--accent-dim)', background:'var(--accent-bg)', color:'var(--accent)'}}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.background='var(--accent-bg-hover,rgba(232,184,68,0.14))'; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor='var(--accent-dim)'; e.currentTarget.style.background='var(--accent-bg)'; }}

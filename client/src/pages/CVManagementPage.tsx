@@ -934,11 +934,11 @@ const CVManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 p-6 pt-10 gap-6 overflow-hidden">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 pt-8 sm:pt-10 pb-6 gap-4 sm:gap-6 overflow-hidden">
       {allCvs.length === 0 && !showMockTour && !isLoadingCv && !currentCvData ? (
         /* ── Zero-CV hero ── */
         <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
-          <div className="w-full max-w-lg px-6 py-12">
+          <div className="w-full max-w-lg px-4 sm:px-6 py-8 sm:py-12">
             <div className="text-center mb-10">
               <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, var(--accent-dim), var(--accent))' }}>
                 <svg className="w-8 h-8 text-ink-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -958,7 +958,7 @@ const CVManagementPage: React.FC = () => {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all ${isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'}`}
+                className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transition-all ${isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'}`}
               >
                 {isUploading ? (
                   <p className="text-blue-600">Uploading...</p>
@@ -1162,8 +1162,8 @@ const CVManagementPage: React.FC = () => {
             </div>
           </div>
         ) : (!currentCvData || isReplacing) && !isLoadingCv ? (
-          /* â”€â”€ Upload / Create Overlay â”€â”€ */
-          <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-8">
+          /* â"€â"€ Upload / Create Overlay â"€â"€ */
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
             {allCvs.length > 0 && (
               <button
                 onClick={() => {
@@ -1175,20 +1175,21 @@ const CVManagementPage: React.FC = () => {
                     setCreationMode('upload');
                   }
                 }}
-                className="mb-6 flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-all font-medium"
+                className="mb-4 sm:mb-6 flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-all font-medium"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Back to My CVs
+                <span className="hidden sm:inline">Back to My CVs</span>
+                <span className="sm:hidden">Back</span>
               </button>
             )}
 
             {/* Upload Mode */}
             {creationMode === 'upload' && (
-              <div className="max-w-2xl mx-auto mt-10">
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Import Your CV</h2>
+              <div className="max-w-2xl mx-auto mt-6 sm:mt-10">
+                <div className="text-center mb-6 sm:mb-8">
+                  <h2 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Import Your CV</h2>
                   <p className="text-gray-600 dark:text-gray-400">Upload a PDF, DOCX, or RTF file.</p>
                 </div>
 
@@ -1197,13 +1198,13 @@ const CVManagementPage: React.FC = () => {
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                    className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transition-all ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
                   >
                     {isUploading ? (
                       <p className="text-blue-600">Uploading...</p>
                     ) : (
                       <>
-                        <p className="text-lg font-medium text-gray-900 dark:text-gray-100">Drag & Drop or Click to Upload</p>
+                        <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100">Drag & Drop or Click to Upload</p>
                         <input type="file" id="cvFileInput" onChange={handleFileChange} className="hidden" accept=".pdf,.docx,.rtf" />
                         <label htmlFor="cvFileInput" className="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">Select File</label>
                       </>

@@ -42,6 +42,36 @@ const ApplicationPipelineKanban: React.FC<ApplicationPipelineKanbanProps> = ({
   const [draggedJob, setDraggedJob] = useState<JobApplication | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<KanbanColumn | null>(null);
 
+  // Helper to check if job has email contact
+  const getRecipientEmail = (job: JobApplication): string | null => {
+    const direct = job.contactEmail?.trim();
+    if (direct) return direct;
+    const legacy = job.contact?.trim();
+    if (!legacy) return null;
+    const match = legacy.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    return match?.[0] ?? null;
+  };
+
+  // Helper to check if job is older than two weeks
+  const isOlderThanTwoWeeks = (job: JobApplication): boolean => {
+    const anchor = job.dateApplied || job.createdAt;
+    if (!anchor) return false;
+    const appliedAt = new Date(anchor).getTime();
+    if (Number.isNaN(appliedAt)) return false;
+    const daysElapsed = Math.floor((Date.now() - appliedAt) / (1000 * 60 * 60 * 24));
+    return daysElapsed > 14;
+  };
+
+  // Calculate which jobs need follow-up
+  const needsFollowUpJobIdSet = useMemo(
+    () => new Set(
+      jobs
+        .filter((job) => job.status === 'Applied' && Boolean(getRecipientEmail(job)) && isOlderThanTwoWeeks(job))
+        .map((job) => job._id)
+    ),
+    [jobs]
+  );
+
   // Group jobs by Kanban column
   const jobsByColumn = useMemo(() => {
     const grouped: Record<KanbanColumn, JobApplication[]> = {
@@ -197,6 +227,7 @@ const ApplicationPipelineKanban: React.FC<ApplicationPipelineKanbanProps> = ({
                     onCardClick={onCardClick}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
+                    needsFollowUp={needsFollowUpJobIdSet.has(job._id)}
                   />
                 ))
               )}

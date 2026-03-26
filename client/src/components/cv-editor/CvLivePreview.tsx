@@ -57,7 +57,7 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
         <div className="flex-1 overflow-auto bg-white dark:bg-gray-800 p-0">
           <div
             ref={ref as React.RefObject<HTMLDivElement>}
-            className="bg-white mx-auto w-[210mm] shrink-0"
+            className="bg-white mx-auto w-full max-w-[210mm] shrink-0"
             id="cv-preview-container"
           >
             <DynamicTemplate
@@ -76,7 +76,7 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
   // ── Legacy path (JsonResume → TemplateWrapper) ─────────────────────────────
   if (!data) {
     return (
-      <div className={`flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg ${className}`}>
+      <div className={`flex items-center justify-center p-4 sm:p-8 bg-gray-50 dark:bg-gray-900 rounded-lg ${className}`}>
         <div className="text-center">
           <p className="text-gray-500 dark:text-gray-400">No CV data available for preview</p>
         </div>
@@ -87,8 +87,8 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
   if (!isJsonResumeLike(data)) {
     return (
       <div className={`flex flex-col h-full ${className}`}>
-        <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-6">
-          <div id="cv-preview-container" className="mx-auto w-[210mm] shrink-0">
+        <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-3 sm:p-6">
+          <div id="cv-preview-container" className="mx-auto w-full max-w-[210mm] shrink-0">
             <FreeformCvRenderer
               ref={ref as React.RefObject<HTMLDivElement>}
               value={data as Record<string, any>}
@@ -101,7 +101,7 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
 
   if (!selectedTemplate) {
     return (
-      <div className={`flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900 rounded-lg ${className}`}>
+      <div className={`flex items-center justify-center p-4 sm:p-8 bg-gray-50 dark:bg-gray-900 rounded-lg ${className}`}>
         <div className="text-center">
           <p className="text-gray-500 dark:text-gray-400">Template not found</p>
         </div>
@@ -114,7 +114,7 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
       <div className="flex-1 overflow-auto bg-white dark:bg-gray-800 p-0">
         <div
           ref={ref as React.RefObject<HTMLDivElement>}
-          className="bg-white dark:bg-gray-800 mx-auto w-[210mm] shrink-0"
+          className="bg-white dark:bg-gray-800 mx-auto w-full max-w-[210mm] shrink-0"
           id="cv-preview-container"
         >
           <div ref={previewRef} className="cv-preview-container">
