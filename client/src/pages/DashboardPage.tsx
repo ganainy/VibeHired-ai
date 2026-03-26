@@ -785,8 +785,9 @@ const DashboardPage: React.FC = () => {
       sortable: true,
       onSort: () => handleSort('jobTitle'),
       sortDirection: sortKey === 'jobTitle' ? sortDirection : null,
+      className: 'max-w-[200px]',
       render: (job) => (
-        <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+        <span className="font-medium truncate block" style={{ color: 'var(--text-primary)' }} title={job.jobTitle}>
           {job.jobTitle}
         </span>
       ),
@@ -794,6 +795,7 @@ const DashboardPage: React.FC = () => {
     {
       key: 'companyName',
       label: 'Company',
+      className: 'max-w-[180px]',
       render: (job) => (
         <div className="flex items-center gap-2">
           {job.jobUrl && (() => {
@@ -805,7 +807,7 @@ const DashboardPage: React.FC = () => {
               </span>
             ) : null;
           })()}
-          <span style={{ color: 'var(--text-secondary)' }}>{job.companyName}</span>
+          <span className="truncate" style={{ color: 'var(--text-secondary)' }} title={job.companyName}>{job.companyName}</span>
         </div>
       ),
     },
