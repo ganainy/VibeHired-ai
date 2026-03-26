@@ -1529,7 +1529,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto sm:border-t border-slate-200 dark:border-slate-700">
+            <div className="overflow-x-auto">
               {displayedJobs.length === 0 ? (
                 <div className="text-center py-12 px-4">
                   {jobs.length > 0 ? (
