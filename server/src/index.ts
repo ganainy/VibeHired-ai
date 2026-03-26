@@ -34,6 +34,7 @@ import usageRoutes from './routes/usage';
 import subscriptionRoutes from './routes/subscription';
 import adminRoutes from './routes/admin';
 import errorRoutes from './routes/errors';
+import transcriptionRoutes from './routes/transcription';
 import { handleStripeWebhook } from './controllers/webhookController';
 // Correct the import for the default export
 import protect from './middleware/authMiddleware'; // Import default export and alias it as 'protect'
@@ -133,6 +134,7 @@ app.use('/api/usage', usageRoutes); // Credit usage tracking (protected)
 app.use('/api/subscriptions', protect, subscriptionRoutes); // Subscription management (protected)
 app.use('/api/admin', adminRoutes); // Admin management (protected)
 app.use('/api/errors', errorRoutes); // Public error reporting
+app.use('/api/transcribe', protect, transcriptionRoutes); // Audio transcription (protected)
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

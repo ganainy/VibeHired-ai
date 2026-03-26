@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AuthPayload } from './electron.d';
 import { AnswerResult, fetchAnswer } from './services/api';
-import { useSpeechRecognition } from './hooks/useSpeechRecognition';
+import { useAudioRecording } from './hooks/useAudioRecording';
 import TranscriptBar from './components/TranscriptBar';
 import OverlayPanel from './components/OverlayPanel';
 
@@ -18,15 +18,13 @@ const App: React.FC = () => {
   const prevIsListeningRef = useRef(false);
 
   const {
-    startListening,
-    stopListening,
+    startRecording: startAudioRecording,
+    stopRecording: stopAudioRecording,
     transcript,
-    interimTranscript,
-    resetTranscript,
-    isListening,
+    isRecording,
+    error: recordingError,
     isSupported,
-    recognitionError,
-  } = useSpeechRecognition();
+  } = useAudioRecording();
 
   // Keep refs in sync
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
@@ -41,21 +39,24 @@ const App: React.FC = () => {
       setAuth(payload);
       setAnswer(null);
       setError(null);
-      resetTranscript();
+      setTranscriptState('');
     });
 
-    window.electronAPI.onHotkey((action) => {
+    window.electronAPI.onHotkey(async (action) => {
       if (action === 'push-to-talk-start') {
         const currentAuth = authRef.current;
         if (currentAuth && !isListeningRef.current) {
           setAnswer(null);
           setError(null);
-          resetTranscript();
-          startListening('en-US');
+          setTranscript('');
+          startAudioRecording(currentAuth, 'en');
         }
       } else if (action === 'push-to-talk-stop') {
         if (isListeningRef.current) {
-          stopListening();
+          const result = await stopAudioRecording();
+          if (result && result.length > 2) {
+            triggerAnswer(authRef.current!, result);
+          }
         }
       } else if (action === 'clear-answer') {
         clearAll();
@@ -66,23 +67,7 @@ const App: React.FC = () => {
 
   // Keep a ref so the IPC handler above can read current isListening without re-registering
   const isListeningRef = useRef(false);
-  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
-
-  // ── Auto-generate when recognition ends (push-to-talk release or natural end)
-  useEffect(() => {
-    const wasListening = prevIsListeningRef.current;
-    prevIsListeningRef.current = isListening;
-
-    if (wasListening && !isListening) {
-      // Recognition just stopped — generate answer if there's content
-      const captured = transcriptRef.current.trim();
-      const currentAuth = authRef.current;
-      if (captured.length > 2 && currentAuth && !loading) {
-        triggerAnswer(currentAuth, captured);
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isListening]);
+  useEffect(() => { isListeningRef.current = isRecording; }, [isRecording]);
 
   const triggerAnswer = useCallback(
     async (currentAuth: AuthPayload, question: string) => {
@@ -106,36 +91,37 @@ const App: React.FC = () => {
   );
 
   // ── Push-to-talk: hold button / shortcut ─────────────────────────────────
+  const setTranscriptState = useCallback((text: string) => {
+    setTranscript(text);
+    // Update the ref too for immediate access
+    transcriptRef.current = text;
+  }, []);
+
   const startRecording = useCallback(() => {
-    console.log('[App] startRecording called, isListeningRef.current:', isListeningRef.current);
-    if (isListeningRef.current) {
-      console.log('[App] startRecording: already listening, returning');
-      return;
-    }
+    console.log('[App] startRecording called');
+    if (!auth || isListeningRef.current) return;
     setAnswer(null);
     setError(null);
-    resetTranscript();
-    console.log('[App] calling startListening');
-    startListening('en-US');
-  }, [startListening, resetTranscript]);
+    setTranscriptState('');
+    startAudioRecording(auth, 'en');
+  }, [auth, startAudioRecording, setTranscriptState]);
 
-  const stopRecording = useCallback(() => {
-    console.log('[App] stopRecording called, isListeningRef.current:', isListeningRef.current);
-    if (!isListeningRef.current) {
-      console.log('[App] stopRecording: not listening, returning');
-      return;
+  const stopRecording = useCallback(async () => {
+    console.log('[App] stopRecording called');
+    if (!isListeningRef.current) return;
+
+    const result = await stopAudioRecording();
+    if (result && result.trim().length > 2) {
+      triggerAnswer(auth!, result.trim());
     }
-    console.log('[App] calling stopListening');
-    stopListening(); // isListening effect above will trigger answer generation
-  }, [stopListening]);
+  }, [stopAudioRecording, auth]);
 
   const clearAll = useCallback(() => {
-    stopListening();
-    resetTranscript();
+    setTranscriptState('');
     setAnswer(null);
     setError(null);
-    transcriptRef.current = '';
-  }, [stopListening, resetTranscript]);
+    // Recording error will clear on next recording
+  }, [setTranscriptState]);
 
   // ── Waiting for deep-link auth ───────────────────────────────────────────
   if (!auth) {
@@ -257,13 +243,13 @@ const App: React.FC = () => {
 
       {/* ── Transcript bar ── */}
       <TranscriptBar
-        isListening={isListening}
+        isListening={isRecording}
         transcript={transcript}
-        interimTranscript={interimTranscript}
+        interimTranscript={''}
         onPushStart={startRecording}
         onPushStop={stopRecording}
         onClear={clearAll}
-        recognitionError={recognitionError}
+        recognitionError={recordingError}
       />
 
       {/* ── Answer panel ── */}
