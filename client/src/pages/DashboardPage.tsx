@@ -1408,7 +1408,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Job List Section */}
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-6">
+        <div className="space-y-6">
           {/* Filter Controls */}
           <div>
             <div className="flex flex-wrap items-end gap-3 mb-4">
