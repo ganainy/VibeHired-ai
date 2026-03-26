@@ -146,6 +146,25 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
       return;
     }
 
+    // Test connectivity to Google (speech API uses Google servers)
+    console.log('[useSpeechRecognition] Testing connectivity to Google...');
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      const response = await fetch('https://www.google.com', {
+        method: 'HEAD',
+        signal: controller.signal,
+        mode: 'no-cors', // This will work even with CORS
+      });
+      clearTimeout(timeoutId);
+      console.log('[useSpeechRecognition] Google connectivity: OK (or blocked by CORS, but server is reachable)');
+    } catch (e) {
+      console.error('[useSpeechRecognition] Google connectivity test failed:', e);
+      setRecognitionError('Cannot reach Google servers. Speech recognition requires access to Google\'s speech API. Check if your network/firewall is blocking Google services.');
+      return;
+    }
+
     // Clear any previous error
     setRecognitionError(null);
 
