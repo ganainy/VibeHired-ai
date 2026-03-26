@@ -614,7 +614,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
           startTimeInferred: Boolean(e.startTimeInferred),
           endTimeInferred: Boolean(e.endTimeInferred),
           notes: e.notes ?? '',
-          type: e.type || importMode, // Use AI-detected type or fallback to importMode
+          type: e.type || (importMode === 'auto' ? 'shift' : importMode), // Use AI-detected type or fallback to importMode (auto defaults to shift)
           selected: true,
         })),
       );
