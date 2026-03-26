@@ -24,9 +24,11 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
   // Mouse event handlers for desktop - using document-level tracking to avoid
   // mouseleave issues when component re-renders or cursor moves slightly
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    console.log('[TranscriptBar] handleMouseDown, isPressedRef:', isPressedRef.current);
     if (event.button !== 0 || isPressedRef.current) return; // Left click only
     event.preventDefault();
     isPressedRef.current = true;
+    console.log('[TranscriptBar] calling onPushStart');
     onPushStart();
   }, [onPushStart]);
 
@@ -34,8 +36,10 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
   // cases where user drags outside button before releasing
   useEffect(() => {
     const handleGlobalMouseUp = () => {
+      console.log('[TranscriptBar] handleGlobalMouseUp, isPressedRef:', isPressedRef.current);
       if (isPressedRef.current) {
         isPressedRef.current = false;
+        console.log('[TranscriptBar] calling onPushStop');
         onPushStop();
       }
     };

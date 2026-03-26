@@ -106,15 +106,25 @@ const App: React.FC = () => {
 
   // ── Push-to-talk: hold button / shortcut ─────────────────────────────────
   const startRecording = useCallback(() => {
-    if (isListeningRef.current) return;
+    console.log('[App] startRecording called, isListeningRef.current:', isListeningRef.current);
+    if (isListeningRef.current) {
+      console.log('[App] startRecording: already listening, returning');
+      return;
+    }
     setAnswer(null);
     setError(null);
     resetTranscript();
+    console.log('[App] calling startListening');
     startListening('en-US');
   }, [startListening, resetTranscript]);
 
   const stopRecording = useCallback(() => {
-    if (!isListeningRef.current) return;
+    console.log('[App] stopRecording called, isListeningRef.current:', isListeningRef.current);
+    if (!isListeningRef.current) {
+      console.log('[App] stopRecording: not listening, returning');
+      return;
+    }
+    console.log('[App] calling stopListening');
     stopListening(); // isListening effect above will trigger answer generation
   }, [stopListening]);
 

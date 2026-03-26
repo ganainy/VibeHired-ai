@@ -94,7 +94,11 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   }, [detachRecognition, stopRecognition]);
 
   const startListening = useCallback((lang = 'en-US') => {
-    if (!SpeechRecognitionAPI) return;
+    console.log('[useSpeechRecognition] startListening called, lang:', lang);
+    if (!SpeechRecognitionAPI) {
+      console.log('[useSpeechRecognition] SpeechRecognitionAPI not available');
+      return;
+    }
 
     const previousRecognition = recognitionRef.current;
     detachRecognition(previousRecognition);
@@ -109,13 +113,23 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     recognition.lang = lang;
 
     recognition.onstart = () => {
-      if (recognitionSessionRef.current !== sessionId) return;
+      console.log('[useSpeechRecognition] onstart fired, sessionId:', sessionId, 'current:', recognitionSessionRef.current);
+      if (recognitionSessionRef.current !== sessionId) {
+        console.log('[useSpeechRecognition] onstart: session mismatch, ignoring');
+        return;
+      }
+      console.log('[useSpeechRecognition] setting isListening to true');
       setIsListening(true);
     };
     recognition.onend = () => {
-      if (recognitionSessionRef.current !== sessionId) return;
+      console.log('[useSpeechRecognition] onend fired, sessionId:', sessionId, 'current:', recognitionSessionRef.current);
+      if (recognitionSessionRef.current !== sessionId) {
+        console.log('[useSpeechRecognition] onend: session mismatch, ignoring');
+        return;
+      }
 
       recognitionRef.current = null;
+      console.log('[useSpeechRecognition] setting isListening to false');
       setIsListening(false);
     };
 
