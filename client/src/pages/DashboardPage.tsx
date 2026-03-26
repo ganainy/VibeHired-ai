@@ -1030,6 +1030,9 @@ const DashboardPage: React.FC = () => {
         <button onClick={(e) => { e.stopPropagation(); handleToggleFavorite(job, e as any); }} className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${job.isFavorite ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50' : 'text-slate-400 dark:text-slate-500 hover:text-amber-500'}`}>
           <StarIcon filled={!!job.isFavorite} />
         </button>
+        <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/review/reminders`); }} className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60' : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'}>
+          <FollowUpIcon />
+        </button>
         <button onClick={(e) => handleDeleteClick(job, e as any)} className="flex items-center justify-center w-8 h-8 rounded-md text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
           <DeleteIcon />
         </button>
