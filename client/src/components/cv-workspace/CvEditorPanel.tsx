@@ -163,8 +163,8 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
       {/* ── Split view: editor left, preview right ────────────────────────── */}
       <div className="flex-1 min-h-0 flex flex-col">
         {/* Unified Toolbar inside the card */}
-        <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="flex-shrink-0 px-3 sm:px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <button
               type="button"
               onClick={() => setShowEditorPanel((prev) => !prev)}
@@ -181,7 +181,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                 value={templateId}
                 onChange={(e) => onTemplateChange(e.target.value)}
                 disabled={isFreeformJson}
-                className="input-base px-3 py-1.5 text-sm min-w-[160px] focus:ring-gold-500/50"
+                className="input-base px-3 py-1.5 text-sm min-w-[140px] sm:min-w-[160px] focus:ring-gold-500/50"
               >
                 {availableTemplates.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
@@ -199,14 +199,14 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Save button */}
             <button
               onClick={onSave}
               disabled={!hasUnsavedChanges || saveStatus === 'saving'}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${hasUnsavedChanges && saveStatus !== 'saving'
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${hasUnsavedChanges && saveStatus !== 'saving'
                 ? 'btn-primary hover:bg-primaryLight'
-                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed rounded-lg px-4 py-1.5 text-sm font-semibold'
+                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed rounded-lg px-3 sm:px-4 py-1.5 text-sm font-semibold'
                 }`}
             >
               {saveStatus === 'saving' ? (
@@ -219,19 +219,19 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
               )}
-              {saveStatus === 'saving' ? 'Saving…' : 'Save'}
+              <span className="hidden sm:inline">{saveStatus === 'saving' ? 'Saving…' : 'Save'}</span>
             </button>
 
             {/* Download PDF button */}
             <button
               onClick={() => handlePrint()}
               disabled={false}
-              className="btn-primary flex items-center gap-2 px-4 py-1.5 text-sm"
+              className="btn-primary flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 text-sm"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Download PDF
+              <span className="hidden sm:inline">Download PDF</span>
             </button>
 
             {/* Delete button (Tailored CVs only) */}
@@ -240,23 +240,23 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" />
                 <button
                   onClick={onDelete}
-                  className="flex items-center gap-2 px-4 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-all border border-red-100 dark:border-red-900/30"
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-all border border-red-100 dark:border-red-900/30"
                   title="Delete this tailored CV to regenerate with new instructions"
                 >
                   <span className="material-symbols-outlined text-[18px]">delete</span>
-                  Delete
+                  <span className="hidden sm:inline">Delete</span>
                 </button>
               </>
             )}
           </div>
         </div>
 
-        <div className={`grid ${showEditorPanel ? 'grid-cols-1 lg:grid-cols-2 divide-x divide-gray-200 dark:divide-gray-700' : 'grid-cols-1'} flex-1 min-h-0`}>
+        <div className={`grid ${showEditorPanel ? 'grid-cols-1' : 'grid-cols-1'} flex-1 min-h-0`}>
 
           {/* Editor pane */}
           {showEditorPanel && (
-          <div className="h-full overflow-y-auto p-6">
-            <div className="w-full pb-6">
+          <div className="h-full overflow-y-auto p-3 sm:p-6">
+            <div className="w-full max-w-full pb-6">
               {/* Dynamic AI-driven editor */}
               {isDynamic && cvId && cvData && cvDescriptor && onDynamicChange && (
                 <DynamicCvForm
@@ -297,7 +297,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
           )}
 
           {/* Preview / ATS pane */}
-          <div className="h-full overflow-y-auto" style={{ minHeight: '800px' }}>
+          <div className="h-full overflow-y-auto overflow-x-hidden" style={{ minHeight: '800px' }}>
             {rightView === 'ats' && atsPanel ? (
               <div className="h-full">{atsPanel}</div>
             ) : (
