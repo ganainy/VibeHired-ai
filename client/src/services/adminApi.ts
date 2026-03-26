@@ -50,6 +50,7 @@ export interface AdminStats {
             durationMs: number;
             errorMessage?: string;
             createdAt: string;
+            userId?: string;
             userEmail?: string;
         }>;
     };

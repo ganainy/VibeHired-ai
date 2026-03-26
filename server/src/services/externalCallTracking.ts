@@ -1,5 +1,7 @@
 import axios from 'axios';
+import mongoose from 'mongoose';
 import ExternalCallLog, { ExternalCallCategory } from '../models/ExternalCallLog';
+import { getUserId, getUserEmail } from './requestContext';
 
 type TrackedProvider = 'gemini' | 'openrouter' | 'ollama' | 'openai' | 'anthropic' | 'apify';
 
@@ -18,6 +20,8 @@ interface TrackedCallLog {
   durationMs: number;
   modelName?: string;
   errorMessage?: string;
+  userId?: string;
+  userEmail?: string;
 }
 
 interface AxiosTrackingMeta {
@@ -122,9 +126,18 @@ function truncateErrorMessage(message: unknown): string | undefined {
 
 function persistLog(log: TrackedCallLog): void {
   const parsed = safeParseUrl(log.url);
+  console.log('[ExternalCallTracking] persistLog called, url:', log.url, 'parsed:', parsed ? 'yes' : 'no');
   if (!parsed) return;
 
-  const doc = {
+  const contextUserId = getUserId();
+  const contextUserEmail = getUserEmail();
+  
+  const userId = log.userId || contextUserId;
+  const userEmail = log.userEmail || contextUserEmail;
+
+  console.log('[ExternalCallTracking] userId:', userId, 'userEmail:', userEmail);
+
+  const doc: any = {
     category: log.category,
     provider: log.provider,
     host: parsed.hostname,
@@ -136,6 +149,15 @@ function persistLog(log: TrackedCallLog): void {
     modelName: log.modelName,
     errorMessage: truncateErrorMessage(log.errorMessage),
   };
+
+  if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+    doc.userId = new mongoose.Types.ObjectId(userId);
+  }
+  if (userEmail) {
+    doc.userEmail = userEmail;
+  }
+
+  console.log('[ExternalCallTracking] Saving log with userId:', userId, 'userEmail:', userEmail);
 
   void ExternalCallLog.create(doc).catch((error) => {
     console.error('[ExternalCallTracking] Failed to persist call log:', error);
@@ -149,6 +171,15 @@ function installFetchTracking(): void {
   const originalFetch = globalThis.fetch.bind(globalThis);
 
   globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const userId = getUserId();
+    const userEmail = getUserEmail();
+    
+    if (userId) {
+      console.log('[ExternalCallTracking] Fetch - User found:', userId, userEmail);
+    } else {
+      console.log('[ExternalCallTracking] Fetch - No user in context for URL:', typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url);
+    }
+    
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     const target = getTrackedTarget(url);
 
@@ -172,6 +203,8 @@ function installFetchTracking(): void {
         success: response.ok,
         durationMs: Date.now() - startedAt,
         modelName,
+        userId,
+        userEmail,
       });
 
       return response;
@@ -185,6 +218,8 @@ function installFetchTracking(): void {
         durationMs: Date.now() - startedAt,
         modelName,
         errorMessage: error?.message || String(error),
+        userId,
+        userEmail,
       });
       throw error;
     }
@@ -196,9 +231,33 @@ function installAxiosTracking(): void {
   axiosTrackingInstalled = true;
 
   axios.interceptors.request.use((config) => {
+    // Try to get user info from async context first
+    let userId = getUserId();
+    let userEmail = getUserEmail();
+    
+    // If not in async context, check if it was set on a previous interceptor
+    if (!userId) {
+      userId = (config as any).__userId;
+    }
+    if (!userEmail) {
+      userEmail = (config as any).__userEmail;
+    }
+    
+    // Always set user info on config for response interceptor to use
+    (config as any).__userId = userId;
+    (config as any).__userEmail = userEmail;
+
     const rawUrl = config.url || '';
     const absoluteUrl = config.baseURL ? new URL(rawUrl, config.baseURL).toString() : rawUrl;
     const target = getTrackedTarget(absoluteUrl);
+    
+    if (target && !userId) {
+      console.log('[ExternalCallTracking] Axios - No user in context for tracked URL:', absoluteUrl);
+    }
+
+    if (target && userId) {
+      console.log('[ExternalCallTracking] Axios - User found for tracked call:', userId, userEmail);
+    }
 
     if (!target) return config;
 
@@ -216,6 +275,8 @@ function installAxiosTracking(): void {
   axios.interceptors.response.use(
     (response) => {
       const meta = (response.config as any).__externalTrackingMeta as AxiosTrackingMeta | undefined;
+      const userId = (response.config as any).__userId;
+      const userEmail = (response.config as any).__userEmail;
       if (meta) {
         persistLog({
           category: meta.target.category,
@@ -226,6 +287,8 @@ function installAxiosTracking(): void {
           success: response.status >= 200 && response.status < 400,
           durationMs: Date.now() - meta.startedAt,
           modelName: meta.modelName,
+          userId,
+          userEmail,
         });
       }
       return response;
@@ -233,6 +296,8 @@ function installAxiosTracking(): void {
     (error) => {
       const config = error?.config as any;
       const meta = config?.__externalTrackingMeta as AxiosTrackingMeta | undefined;
+      const userId = config?.__userId;
+      const userEmail = config?.__userEmail;
       if (meta) {
         persistLog({
           category: meta.target.category,
@@ -244,6 +309,8 @@ function installAxiosTracking(): void {
           durationMs: Date.now() - meta.startedAt,
           modelName: meta.modelName,
           errorMessage: error?.message || String(error),
+          userId,
+          userEmail,
         });
       }
       return Promise.reject(error);

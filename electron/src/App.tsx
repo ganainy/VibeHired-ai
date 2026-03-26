@@ -25,6 +25,7 @@ const App: React.FC = () => {
     resetTranscript,
     isListening,
     isSupported,
+    recognitionError,
   } = useSpeechRecognition();
 
   // Keep refs in sync
@@ -262,6 +263,7 @@ const App: React.FC = () => {
         onPushStart={startRecording}
         onPushStop={stopRecording}
         onClear={clearAll}
+        recognitionError={recognitionError}
       />
 
       {/* ── Answer panel ── */}

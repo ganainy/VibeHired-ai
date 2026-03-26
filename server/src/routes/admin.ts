@@ -2,6 +2,7 @@ import express, { Router, RequestHandler } from 'express';
 import authMiddleware from '../middleware/authMiddleware';
 import { isAdmin } from '../middleware/adminMiddleware';
 import * as adminController from '../controllers/adminController';
+import * as errorLogController from '../controllers/errorLogController';
 
 const router: Router = express.Router();
 
@@ -56,5 +57,41 @@ router.patch('/users/:userId', adminController.setUserBlocked as RequestHandler)
  * Cancel a user's Stripe subscription and revert them to free plan
  */
 router.delete('/users/:userId/subscription', adminController.cancelUserSubscription as RequestHandler);
+
+/**
+ * GET /api/admin/errors/stats
+ * Get error statistics
+ */
+router.get('/errors/stats', errorLogController.getErrorStats as RequestHandler);
+
+/**
+ * GET /api/admin/errors
+ * List error logs with pagination and filters
+ */
+router.get('/errors', errorLogController.getErrorLogs as RequestHandler);
+
+/**
+ * GET /api/admin/errors/:errorId
+ * Get specific error log
+ */
+router.get('/errors/:errorId', errorLogController.getErrorLogById as RequestHandler);
+
+/**
+ * PATCH /api/admin/errors/:errorId/resolve
+ * Resolve an error
+ */
+router.patch('/errors/:errorId/resolve', errorLogController.resolveErrorLog as RequestHandler);
+
+/**
+ * POST /api/admin/errors/bulk-resolve
+ * Bulk resolve errors
+ */
+router.post('/errors/bulk-resolve', errorLogController.bulkResolveErrors as RequestHandler);
+
+/**
+ * DELETE /api/admin/errors/:errorId
+ * Delete an error log
+ */
+router.delete('/errors/:errorId', errorLogController.deleteErrorLog as RequestHandler);
 
 export default router;

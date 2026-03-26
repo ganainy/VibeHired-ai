@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Read(//c/Users/amrmo/.claude/**)",
+      "Read(//c/Users/amrmo/.config/claude/**)",
+      "Read(//c/Users/amrmo/.config/**)",
+      "Bash(/dev/null -name *mcp* -type f)",
+      "mcp__stitch__create_project",
+      "mcp__stitch__create_design_system",
+      "mcp__stitch__list_projects",
+      "mcp__stitch__list_design_systems",
+      "mcp__stitch__get_project",
+      "mcp__stitch__generate_screen_from_text",
+      "mcp__stitch__list_screens"
+    ]
+  }
+}

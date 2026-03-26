@@ -15,6 +15,7 @@ export interface IExternalCallLog extends Document {
   requestPath?: string;
   requestMethod?: string;
   userId?: mongoose.Types.ObjectId;
+  userEmail?: string;
   errorMessage?: string;
   metadata?: Record<string, any>;
   createdAt: Date;
@@ -74,6 +75,9 @@ const ExternalCallLogSchema = new Schema<IExternalCallLog>(
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+    },
+    userEmail: {
+      type: String,
     },
     errorMessage: {
       type: String,

@@ -35,12 +35,15 @@ async function getOwnedJob(jobId: string, userId: string) {
 }
 
 /**
- * Generate 6-8 interview questions tailored to the job description.
+ * Generate interview questions tailored to the job description.
  * Questions are produced in the same language as the job posting.
+ * Supports different interview levels: 'first' (general/behavioral) or 'second' (technical).
  */
 export async function generateQuestions(
     userId: string,
-    jobId: string
+    jobId: string,
+    level: 'first' | 'second' = 'first',
+    questionCount: number = 5
 ): Promise<string[]> {
     const job = await getOwnedJob(jobId, userId);
 
@@ -58,14 +61,19 @@ export async function generateQuestions(
         .filter(Boolean)
         .join('\n\n');
 
-    const prompt = `You are an expert interviewer preparing a mock interview for a candidate applying to the following position.
+    let prompt: string;
+
+    if (level === 'first') {
+        prompt = `You are an experienced HR interviewer conducting a FIRST-ROUND interview with me.
+Conduct a first-round interview focused on general fit, motivation and soft skills.
 
 ${jobContext}
 
-Generate exactly 7 interview questions that cover a mix of:
-- Behavioral questions (e.g. "Tell me about a time when...")
-- Technical / role-specific questions based on the job requirements
-- Situational / motivational questions
+Generate exactly ${questionCount} tailored questions covering:
+- Self-introduction / background (1 question)
+- Motivation & company fit — "Why this role / company?" (2 questions)
+- Behavioural — "Tell me about a time when…" using the STAR method (2 questions)
+- Teamwork, communication, and working style
 
 Rules:
 1. All questions MUST be written entirely in ${languageName} — no other language.
@@ -75,8 +83,31 @@ Rules:
 
 Respond with a JSON object matching this exact schema:
 {
-  "questions": ["question 1", "question 2", "question 3", "question 4", "question 5", "question 6", "question 7"]
+  "questions": ["question 1", "question 2", "question 3", "question 4", "question 5"]
 }`;
+    } else {
+        prompt = `You are a senior technical interviewer conducting a SECOND-ROUND deep-dive interview with me.
+Conduct a second-round interview focused on technical depth and problem-solving ability.
+
+${jobContext}
+
+Generate exactly ${questionCount} technically rigorous questions covering:
+- Core technical / domain knowledge specific to the role requirements (2 questions)
+- System design, architecture or process thinking relevant to the role (1 question)
+- Past technical project deep-dive — specific accomplishments from my CV (1 question)
+- Problem-solving scenario — a realistic challenge they would face on the job (1 question)
+
+Rules:
+1. All questions MUST be written entirely in ${languageName} — no other language.
+2. Questions should be relevant to the specific role and company described above.
+3. Questions should be open-ended and encourage detailed answers.
+4. Do NOT include any numbering, prefixes, or labels — just the question text.
+
+Respond with a JSON object matching this exact schema:
+{
+  "questions": ["question 1", "question 2", "question 3", "question 4", "question 5"]
+}`;
+    }
 
     const result = await generateStructuredResponse<InterviewQuestionsResponse>(userId, prompt);
     if (!Array.isArray(result?.questions) || result.questions.length === 0) {

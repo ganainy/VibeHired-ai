@@ -5,13 +5,13 @@ import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
 
-// Map app language codes to BCP-47 speech API codes
 function toSpeechLang(lang?: string): string {
     if (lang === 'de') return 'de-DE';
     return 'en-US';
 }
 
-type Phase = 'idle' | 'loading' | 'question' | 'evaluating' | 'result' | 'finished';
+type Phase = 'select-level' | 'resume' | 'loading' | 'question' | 'evaluating' | 'result' | 'finished';
+type InterviewLevel = 'first' | 'second';
 
 interface QuestionResult {
     question: string;
@@ -24,9 +24,10 @@ interface Props {
     jobId: string;
     cvData?: JsonResumeSchema | null;
     coverLetterText?: string | null;
+    showResumeOption?: boolean;
+    showCopyPromptsDuringInterview?: boolean;
 }
 
-// ── CV → readable text ────────────────────────────────────────────────────────
 function cvToText(cv: JsonResumeSchema): string {
     const lines: string[] = [];
 
@@ -115,12 +116,13 @@ const ScoreBadge: React.FC<{ score: number }> = ({ score }) => {
     );
 };
 
-const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, coverLetterText }) => {
+const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, coverLetterText, showResumeOption = true, showCopyPromptsDuringInterview = true }) => {
     const speechLang = toSpeechLang(jobApplication.language);
     const tts = useSpeechSynthesis();
     const stt = useSpeechRecognition();
 
-    const [phase, setPhase] = useState<Phase>('idle');
+    const [phase, setPhase] = useState<Phase>('select-level');
+    const [level, setLevel] = useState<InterviewLevel>('first');
     const [error, setError] = useState<string | null>(null);
     const [questions, setQuestions] = useState<string[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -128,18 +130,19 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
     const [currentEvaluation, setCurrentEvaluation] = useState<EvaluationResult | null>(null);
     const [results, setResults] = useState<QuestionResult[]>([]);
     const [copiedKey, setCopiedKey] = useState<'first' | 'second' | null>(null);
+    const [showReview, setShowReview] = useState(false);
+    const [showCopyPrompts, setShowCopyPrompts] = useState(true);
 
     const currentQuestion = questions[currentIndex] ?? '';
     const totalQuestions = questions.length;
+    const isEnglish = jobApplication.language !== 'de';
 
-    // Keep textarea in sync with speech-to-text transcript
     useEffect(() => {
         if (stt.transcript) {
             setAnswer(stt.transcript);
         }
     }, [stt.transcript]);
 
-    // Shared context block used by both prompts
     const buildContextBlock = useCallback((): string[] => {
         const lang = jobApplication.language !== 'de' ? 'English' : 'German';
         const lines: string[] = [];
@@ -176,7 +179,6 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
         return lines;
     }, [jobApplication, cvData, coverLetterText]);
 
-    /** First interview — general / cultural-fit / behavioural round */
     const buildFirstInterviewPrompt = useCallback((): string => {
         const lang = jobApplication.language !== 'de' ? 'English' : 'German';
         const lines: string[] = [];
@@ -211,7 +213,6 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
         return lines.join('\n');
     }, [jobApplication, buildContextBlock]);
 
-    /** Second interview — technical / deep-dive round */
     const buildSecondInterviewPrompt = useCallback((): string => {
         const lang = jobApplication.language !== 'de' ? 'English' : 'German';
         const lines: string[] = [];
@@ -264,22 +265,65 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
         setTimeout(() => setCopiedKey(null), 2500);
     }, []);
 
-    const startInterview = useCallback(async () => {
+    const fetchQuestions = useCallback(async (count: number = 5, isAdditional: boolean = false) => {
         setError(null);
         setPhase('loading');
-        setResults([]);
-        setCurrentIndex(0);
-        setAnswer('');
-        setCurrentEvaluation(null);
         try {
-            const qs = await generateInterviewQuestions(jobId);
-            setQuestions(qs);
+            const qs = await generateInterviewQuestions(jobId, level, count);
+            if (isAdditional) {
+                setQuestions(prev => [...prev, ...qs]);
+            } else {
+                setQuestions(qs);
+                setCurrentIndex(0);
+                setResults([]);
+                setAnswer('');
+                setCurrentEvaluation(null);
+            }
             setPhase('question');
         } catch (e: any) {
             setError(e.message ?? 'Failed to generate questions');
-            setPhase('idle');
+            setPhase('select-level');
         }
-    }, [jobId]);
+    }, [jobId, level]);
+
+    const startInterview = useCallback(async () => {
+        await fetchQuestions(5, false);
+    }, [fetchQuestions]);
+
+    const addMoreQuestions = useCallback(async () => {
+        await fetchQuestions(3, true);
+    }, [fetchQuestions]);
+
+    const endInterview = useCallback(() => {
+        if (showResumeOption && (results.length > 0 || questions.length > 0)) {
+            setPhase('resume');
+        } else {
+            setQuestions([]);
+            setCurrentIndex(0);
+            setResults([]);
+            setAnswer('');
+            setCurrentEvaluation(null);
+            setPhase('select-level');
+        }
+    }, [results, questions, showResumeOption]);
+
+    const continueInterview = useCallback(() => {
+        if (results.length > 0) {
+            setPhase('question');
+        } else if (questions.length > 0) {
+            setCurrentIndex(0);
+            setPhase('question');
+        }
+    }, [results, questions]);
+
+    const regenerateInterview = useCallback(() => {
+        setQuestions([]);
+        setCurrentIndex(0);
+        setResults([]);
+        setAnswer('');
+        setCurrentEvaluation(null);
+        setPhase('select-level');
+    }, []);
 
     const handleReadAloud = useCallback(() => {
         if (tts.isSpeaking) {
@@ -343,7 +387,6 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
             ? Math.round(results.reduce((sum, r) => sum + r.evaluation.score, 0) / results.length)
             : 0;
 
-    const isEnglish = jobApplication.language !== 'de';
     const labels = {
         title: isEnglish ? 'Mock Interview' : 'Mock-Interview',
         subtitle: isEnglish
@@ -363,23 +406,38 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
         score: isEnglish ? 'Score' : 'Punktzahl',
         overallScore: isEnglish ? 'Overall Score' : 'Gesamtpunktzahl',
         interviewComplete: isEnglish ? 'Interview Complete' : 'Interview abgeschlossen',
-        retake: isEnglish ? 'Retake Interview' : 'Interview wiederholen',
+        retake: isEnglish ? 'Start New Interview' : 'Neues Interview starten',
         micStart: isEnglish ? 'Speak your answer' : 'Antwort sprechen',
         micStop: isEnglish ? 'Stop recording' : 'Aufnahme stoppen',
         listening: isEnglish ? 'Listening…' : 'Aufnehme…',
         copyPromptTip: isEnglish
             ? 'Copy a ready-made prompt and paste it into ChatGPT, Claude, or any AI.'
             : 'Kopiiere einen fertigen Prompt und füge ihn in ChatGPT, Claude oder eine andere KI ein.',
-        firstInterviewLabel: isEnglish ? '1st Interview' : '1. Interview',
+        firstInterviewLabel: isEnglish ? 'Start 1st Round Interview' : '1. Interview-Runde starten',
         firstInterviewDesc: isEnglish ? 'General · Behavioural · Culture fit' : 'Allgemein · Verhalten · Kulturfit',
-        secondInterviewLabel: isEnglish ? '2nd Interview' : '2. Interview',
+        secondInterviewLabel: isEnglish ? 'Start 2nd Round Interview' : '2. Interview-Runde starten',
         secondInterviewDesc: isEnglish ? 'Technical · Deep-dive · Problem-solving' : 'Technisch · Vertiefung · Problemlösung',
         copied: isEnglish ? 'Copied!' : 'Kopiert!',
+        selectLevel: isEnglish ? 'Select Interview Level' : 'Interview-Level auswählen',
+        firstLevelDesc: isEnglish ? 'General questions about your background, motivation, and soft skills' : 'Allgemeine Fragen zu deinem Hintergrund, Motivation und Soft Skills',
+        secondLevelDesc: isEnglish ? 'Technical questions about your expertise and problem-solving abilities' : 'Technische Fragen zu deinem Fachwissen und Problemlösungsfähigkeiten',
+        review: isEnglish ? 'Review Answers' : 'Antworten überprüfen',
+        addMore: isEnglish ? 'Add More Questions' : 'Weitere Fragen hinzufügen',
+        questionCount: isEnglish ? '5 questions' : '5 Fragen',
+        credits: isEnglish ? '5 cr' : '5 cr',
+        generating: isEnglish ? 'Generating your interview questions…' : 'Interviewfragen werden generiert…',
+        evaluating: isEnglish ? 'Evaluating your answer…' : 'Antwort wird bewertet…',
+        endInterview: isEnglish ? 'End Interview' : 'Interview beenden',
+        continueInterview: isEnglish ? 'Continue Interview' : 'Interview fortsetzen',
+        regenerateInterview: isEnglish ? 'Start New Interview' : 'Neues Interview starten',
+        resumeTitle: isEnglish ? 'Continue where you left off' : 'Fortsetzen wo du aufgehört hast',
+        resumeDesc: isEnglish ? 'You have an ongoing interview in progress' : 'Du hast ein laufendes Interview',
+        questionProgress: isEnglish ? 'Question {n} of {total}' : 'Frage {n} von {total}',
+        answeredProgress: isEnglish ? '{n} answered' : '{n} beantwortet',
     };
 
     return (
         <div className="w-full max-w-3xl mx-auto space-y-6">
-            {/* Header */}
             <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl text-ink-950 shadow-sm" style={{background:"var(--accent)"}}>
                     <span className="material-symbols-outlined text-[22px]">mic</span>
@@ -390,7 +448,6 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                 </div>
             </div>
 
-            {/* Error banner */}
             {error && (
                 <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
                     <span className="material-symbols-outlined text-base shrink-0 mt-0.5">error</span>
@@ -401,8 +458,8 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                 </div>
             )}
 
-            {/* ── IDLE ── */}
-            {phase === 'idle' && (
+            {/* ── SELECT LEVEL ── */}
+            {phase === 'select-level' && (
                 <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 p-8 text-center space-y-6 shadow-sm">
                     <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
                         <span className="material-symbols-outlined text-4xl" style={{color:"var(--accent)"}}>record_voice_over</span>
@@ -410,89 +467,88 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                     <div>
                         <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed max-w-md mx-auto">
                             {isEnglish
-                                ? 'The AI will generate 7 tailored interview questions based on the job description. Answer each one — by typing or using your microphone — and get instant feedback.'
-                                : 'Die KI erstellt 7 passende Interviewfragen basierend auf der Stellenbeschreibung. Beantworte jede Frage – per Tippen oder Mikrofon – und erhalte sofortiges Feedback.'}
+                                ? <>The AI will generate tailored interview questions based on your <strong>CV</strong> and the <strong>job description</strong>. Answer each one and get instant feedback.</>
+                                : <>Die KI erstellt passende Interviewfragen basierend auf deinem <strong>Lebenslauf</strong> und der <strong>Stellenbeschreibung</strong>. Beantworte jede Frage und erhalte sofortiges Feedback.</>}
                         </p>
-                        {!tts.isSupported && (
-                            <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
-                                {isEnglish
-                                    ? 'Text-to-speech is not supported in your browser — questions will be shown as text only.'
-                                    : 'Text-zu-Sprache wird in deinem Browser nicht unterstützt – Fragen werden nur als Text angezeigt.'}
-                            </p>
-                        )}
-                        {!stt.isSupported && (
-                            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                                {isEnglish
-                                    ? 'Speech-to-text is not supported in your browser — you can still type your answers.'
-                                    : 'Sprache-zu-Text wird in deinem Browser nicht unterstützt – du kannst Antworten weiterhin eintippen.'}
-                            </p>
-                        )}
                     </div>
-                    <div className="flex flex-col items-center gap-3">
+
+                    <div className="space-y-3">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{labels.selectLevel}</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                onClick={() => { setLevel('first'); startInterview(); }}
+                                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all relative ${level === 'first' ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20' : 'border-zinc-200 dark:border-slate-700 hover:border-gold-300'}`}
+                            >
+                                <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gold-500 text-ink-950">{labels.credits}</span>
+                                <span className="material-symbols-outlined text-2xl" style={{color: 'var(--jade)'}}>waving_hand</span>
+                                <span className="font-semibold text-sm">{labels.firstInterviewLabel}</span>
+                                <span className="text-xs text-center text-gray-500 dark:text-gray-400">{labels.firstLevelDesc}</span>
+                            </button>
+                            <button
+                                onClick={() => { setLevel('second'); startInterview(); }}
+                                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all relative ${level === 'second' ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20' : 'border-zinc-200 dark:border-slate-700 hover:border-gold-300'}`}
+                            >
+                                <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gold-500 text-ink-950">{labels.credits}</span>
+                                <span className="material-symbols-outlined text-2xl" style={{color: 'var(--rose)'}}>terminal</span>
+                                <span className="font-semibold text-sm">{labels.secondInterviewLabel}</span>
+                                <span className="text-xs text-center text-gray-500 dark:text-gray-400">{labels.secondLevelDesc}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-zinc-100 dark:border-slate-800 pt-4">
+                        <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-3">
+                            <span className="material-symbols-outlined text-sm">content_copy</span>
+                            <span>{isEnglish ? 'Or use with ChatGPT / Claude' : 'Oder mit ChatGPT / Claude verwenden'}</span>
+                        </div>
+                        <div className="flex gap-2 justify-center">
+                            <button
+                                onClick={() => copyToClipboard(buildFirstInterviewPrompt(), 'first')}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                            >
+                                {copiedKey === 'first' ? labels.copied : (isEnglish ? 'Copy 1st level prompt' : '1. Runde Prompt kopieren')}
+                            </button>
+                            <button
+                                onClick={() => copyToClipboard(buildSecondInterviewPrompt(), 'second')}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                            >
+                                {copiedKey === 'second' ? labels.copied : (isEnglish ? 'Copy 2nd level prompt' : '2. Runde Prompt kopieren')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── RESUME INTERVIEW ── */}
+            {phase === 'resume' && (
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 p-8 text-center space-y-6 shadow-sm">
+                    <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
+                        <span className="material-symbols-outlined text-4xl" style={{color:"var(--accent)"}}>play_circle</span>
+                    </div>
+                    <div>
+                        <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{labels.resumeTitle}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{labels.resumeDesc}</p>
+                        <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium">
+                            <span className="material-symbols-outlined text-sm">info</span>
+                            {level === 'first' ? labels.firstInterviewLabel : labels.secondInterviewLabel} · {results.length} / {questions.length} {isEnglish ? 'answered' : 'beantwortet'}
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
                         <button
-                            onClick={startInterview}
-                            className="btn-primary font-semibold rounded-xl shadow-md hover:shadow-lg"
+                            onClick={continueInterview}
+                            className="w-full btn-primary font-semibold rounded-xl"
                         >
                             <span className="material-symbols-outlined text-base">play_arrow</span>
-                            {labels.startBtn}
-                            <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>3 cr</span>
+                            {labels.continueInterview}
                         </button>
-
-                        {/* ── Copy prompts for external AI ── */}
-                        <div className="w-full border-t border-zinc-100 dark:border-slate-800 pt-4 mt-1 space-y-3">
-                            <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-                                {labels.copyPromptTip}
-                            </p>
-                            <div className="grid grid-cols-2 gap-2.5">
-                                {/* First interview prompt */}
-                                <button
-                                    onClick={() => copyToClipboard(buildFirstInterviewPrompt(), 'first')}
-                                    className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl text-sm font-medium border transition-all duration-150"
-                                    style={{
-                                        borderColor: copiedKey === 'first' ? 'var(--accent)' : 'var(--border)',
-                                        color: copiedKey === 'first' ? 'var(--accent)' : 'var(--text-secondary)',
-                                        background: copiedKey === 'first' ? 'var(--accent-bg)' : 'var(--bg-elevated)',
-                                    }}
-                                >
-                                    <span
-                                        className="material-symbols-outlined text-xl"
-                                        style={{ color: copiedKey === 'first' ? 'var(--accent)' : 'var(--jade)' }}
-                                    >
-                                        {copiedKey === 'first' ? 'check_circle' : 'waving_hand'}
-                                    </span>
-                                    <span className="font-semibold text-xs">
-                                        {copiedKey === 'first' ? labels.copied : labels.firstInterviewLabel}
-                                    </span>
-                                    <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--text-muted)' }}>
-                                        {labels.firstInterviewDesc}
-                                    </span>
-                                </button>
-
-                                {/* Second interview prompt */}
-                                <button
-                                    onClick={() => copyToClipboard(buildSecondInterviewPrompt(), 'second')}
-                                    className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl text-sm font-medium border transition-all duration-150"
-                                    style={{
-                                        borderColor: copiedKey === 'second' ? 'var(--accent)' : 'var(--border)',
-                                        color: copiedKey === 'second' ? 'var(--accent)' : 'var(--text-secondary)',
-                                        background: copiedKey === 'second' ? 'var(--accent-bg)' : 'var(--bg-elevated)',
-                                    }}
-                                >
-                                    <span
-                                        className="material-symbols-outlined text-xl"
-                                        style={{ color: copiedKey === 'second' ? 'var(--accent)' : 'var(--rose)' }}
-                                    >
-                                        {copiedKey === 'second' ? 'check_circle' : 'terminal'}
-                                    </span>
-                                    <span className="font-semibold text-xs">
-                                        {copiedKey === 'second' ? labels.copied : labels.secondInterviewLabel}
-                                    </span>
-                                    <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--text-muted)' }}>
-                                        {labels.secondInterviewDesc}
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
+                        <button
+                            onClick={regenerateInterview}
+                            className="w-full px-4 py-2.5 rounded-xl text-sm font-medium border border-zinc-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all"
+                        >
+                            <span className="material-symbols-outlined text-base mr-1">refresh</span>
+                            {labels.regenerateInterview}
+                        </button>
                     </div>
                 </div>
             )}
@@ -503,61 +559,62 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                     <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
                         <span className="material-symbols-outlined text-3xl animate-pulse" style={{color:"var(--accent)"}}>auto_awesome</span>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                        {isEnglish ? 'Generating your interview questions…' : 'Interviewfragen werden generiert…'}
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">{labels.generating}</p>
                 </div>
             )}
 
             {/* ── QUESTION ── */}
-            {phase === 'question' && (
+            {(phase === 'question' || phase === 'evaluating' || phase === 'result') && (
                 <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm overflow-hidden">
-                    {/* Progress bar */}
                     <div className="w-full bg-gray-100 dark:bg-slate-800 h-1.5">
-                        <div
-                            className="h-1.5 transition-all duration-500" style={{ width: `${((currentIndex) / totalQuestions) * 100}%` }}
-                        />
+                        <div className="h-1.5 transition-all duration-500" style={{ width: `${((currentIndex) / totalQuestions) * 100}%`, background: 'var(--accent)' }} />
                     </div>
 
                     <div className="p-6 space-y-5">
-                        {/* Question header */}
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold uppercase tracking-wider" style={{color:"var(--accent)"}}>
-                                {isEnglish
-                                    ? `Question ${currentIndex + 1} of ${totalQuestions}`
-                                    : `Frage ${currentIndex + 1} von ${totalQuestions}`}
+                                {isEnglish ? `Question ${currentIndex + 1} of ${totalQuestions}` : `Frage ${currentIndex + 1} von ${totalQuestions}`}
                             </span>
-                            {tts.isSupported && (
+                            <div className="flex items-center gap-2">
                                 <button
-                                    onClick={handleReadAloud}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${tts.isSpeaking ? 'text-ink-950' /* style set inline */
-                                        : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gold-50 dark:hover:bg-gold-900/20 hover:text-gold-700 dark:hover:text-gold-300'
-                                    }`}
-                                    title={tts.isSpeaking ? labels.stop : labels.readAloud}
+                                    onClick={() => setShowReview(!showReview)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gold-50 dark:hover:bg-gold-900/20"
                                 >
-                                    <span className="material-symbols-outlined text-base">
-                                        {tts.isSpeaking ? 'stop_circle' : 'volume_up'}
-                                    </span>
-                                    {tts.isSpeaking ? labels.stop : labels.readAloud}
+                                    <span className="material-symbols-outlined text-base">list</span>
+                                    {labels.review}
                                 </button>
-                            )}
+                                <button
+                                    onClick={endInterview}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
+                                >
+                                    <span className="material-symbols-outlined text-base">stop</span>
+                                    {labels.endInterview}
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Question text */}
                         <p className="text-gray-900 dark:text-gray-100 text-lg font-medium leading-relaxed">
                             {currentQuestion}
                         </p>
 
-                        {/* Answer area */}
+                        {tts.isSupported && (
+                            <button
+                                onClick={handleReadAloud}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${tts.isSpeaking ? 'text-ink-950' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gold-50 dark:hover:bg-gold-900/20 hover:text-gold-700'}`}
+                            >
+                                <span className="material-symbols-outlined text-base">{tts.isSpeaking ? 'stop_circle' : 'volume_up'}</span>
+                                {tts.isSpeaking ? labels.stop : labels.readAloud}
+                            </button>
+                        )}
+
                         <div className="relative">
                             <textarea
                                 value={answer}
-                                onChange={(e) => {
-                                    setAnswer(e.target.value);
-                                }}
+                                onChange={(e) => setAnswer(e.target.value)}
                                 rows={5}
                                 placeholder={labels.typeAnswer}
                                 className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-800 dark:text-gray-200 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-gold-500/30 focus:border-gold-500 transition-all"
+                                disabled={phase === 'evaluating' || phase === 'result'}
                             />
                             {stt.isListening && (
                                 <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-red-500 text-white text-xs font-medium px-2 py-1 rounded-full animate-pulse">
@@ -567,32 +624,28 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                             )}
                         </div>
 
-                        {/* Actions */}
                         <div className="flex items-center justify-between gap-3">
                             {stt.isSupported ? (
                                 <button
                                     onClick={toggleMic}
-                                    title={stt.isListening ? labels.micStop : labels.micStart}
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${stt.isListening
-                                        ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30'
-                                        : 'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-300 hover:bg-gold-50 dark:hover:bg-gold-900/20 hover:border-gold-300 hover:text-gold-600 dark:hover:text-gold-400'
-                                    }`}
+                                    disabled={phase === 'evaluating' || phase === 'result'}
+                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${stt.isListening ? 'bg-red-50 dark:bg-red-900/20 border-red-300 text-red-600' : 'bg-gray-50 dark:bg-slate-700 border-gray-200 text-gray-600'}`}
                                 >
-                                    <span className="material-symbols-outlined text-base">
-                                        {stt.isListening ? 'mic_off' : 'mic'}
-                                    </span>
+                                    <span className="material-symbols-outlined text-base">{stt.isListening ? 'mic_off' : 'mic'}</span>
                                     {stt.isListening ? labels.micStop : labels.micStart}
                                 </button>
                             ) : <div />}
 
-                            <button
-                                onClick={submitAnswer}
-                                disabled={!answer.trim()}
-                                className="btn-primary text-sm rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                <span className="material-symbols-outlined text-base">send</span>
-                                {labels.submit}
-                            </button>
+                            {phase === 'question' && (
+                                <button
+                                    onClick={submitAnswer}
+                                    disabled={!answer.trim()}
+                                    className="btn-primary text-sm rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <span className="material-symbols-outlined text-base">send</span>
+                                    {labels.submit}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -604,41 +657,31 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                     <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
                         <span className="material-symbols-outlined text-3xl animate-spin" style={{color:"var(--accent)"}}>progress_activity</span>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                        {isEnglish ? 'Evaluating your answer…' : 'Antwort wird bewertet…'}
-                    </p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">{labels.evaluating}</p>
                 </div>
             )}
 
             {/* ── RESULT ── */}
             {phase === 'result' && currentEvaluation && (
                 <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm overflow-hidden">
-                    {/* Progress bar */}
                     <div className="w-full bg-gray-100 dark:bg-slate-800 h-1.5">
-                        <div
-                            className="h-1.5 transition-all duration-500" style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
-                        />
+                        <div className="h-1.5 transition-all duration-500" style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%`, background: 'var(--accent)' }} />
                     </div>
 
                     <div className="p-6 space-y-5">
-                        {/* Score + question */}
                         <div className="flex items-start justify-between gap-4">
-                            <p className="text-gray-700 dark:text-gray-300 text-sm italic leading-relaxed flex-1">
-                                "{currentQuestion}"
-                            </p>
+                            <p className="text-gray-700 dark:text-gray-300 text-sm italic leading-relaxed flex-1">"{currentQuestion}"</p>
                             <div className="shrink-0 flex flex-col items-end gap-1">
                                 <span className="text-xs text-gray-400">{labels.score}</span>
                                 <ScoreBadge score={currentEvaluation.score} />
                             </div>
                         </div>
 
-                        {/* Your answer */}
                         <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
                             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">{labels.yourAnswer}</p>
                             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{answer}</p>
                         </div>
 
-                        {/* Strengths */}
                         {currentEvaluation.strengths.length > 0 && (
                             <div>
                                 <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider mb-2 flex items-center gap-1">
@@ -656,7 +699,6 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                             </div>
                         )}
 
-                        {/* Improvements */}
                         {currentEvaluation.improvements.length > 0 && (
                             <div>
                                 <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1">
@@ -674,7 +716,6 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                             </div>
                         )}
 
-                        {/* Model answer */}
                         <div className="p-4 rounded-xl border" style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)"}}>
                             <p className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1" style={{color:"var(--accent)"}}>
                                 <span className="material-symbols-outlined text-sm">stars</span>
@@ -683,12 +724,8 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{currentEvaluation.modelAnswer}</p>
                         </div>
 
-                        {/* Next / Finish */}
                         <div className="flex justify-end">
-                            <button
-                                onClick={handleNext}
-                                className="btn-primary text-sm rounded-xl"
-                            >
+                            <button onClick={handleNext} className="btn-primary text-sm rounded-xl">
                                 <span className="material-symbols-outlined text-base">
                                     {currentIndex + 1 >= totalQuestions ? 'flag' : 'arrow_forward'}
                                 </span>
@@ -702,7 +739,6 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
             {/* ── FINISHED ── */}
             {phase === 'finished' && (
                 <div className="space-y-6">
-                    {/* Overall score card */}
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm p-8 text-center space-y-4">
                         <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{labels.interviewComplete}</p>
                         <div className="flex flex-col items-center gap-2">
@@ -711,74 +747,108 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                                 {overallScore}<span className="text-2xl text-gray-400 dark:text-gray-500">/10</span>
                             </div>
                         </div>
-                        <button
-                            onClick={startInterview}
-                            className="btn-primary rounded-xl"
-                        >
+                        <button onClick={() => setPhase('select-level')} className="btn-primary rounded-xl">
                             <span className="material-symbols-outlined text-base">replay</span>
                             {labels.retake}
-                            <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>3 cr</span>
+                            <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>{labels.credits}</span>
                         </button>
                     </div>
 
-                    {/* Per-question summary */}
-                    <div className="space-y-4">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-slate-800 shadow-sm p-4">
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{labels.review}</p>
+                        <div className="space-y-4">
+                            {results.map((r, idx) => (
+                                <details key={idx} className="bg-gray-50 dark:bg-slate-800 rounded-lg overflow-hidden">
+                                    <summary className="flex items-center justify-between gap-4 cursor-pointer px-4 py-3 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <span className="shrink-0 text-xs font-bold text-gray-400 dark:text-gray-500 w-5 text-center">{idx + 1}</span>
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 truncate">{r.question}</p>
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <ScoreBadge score={r.evaluation.score} />
+                                        </div>
+                                    </summary>
+                                    <div className="px-4 pb-4 space-y-3 border-t border-slate-200 dark:border-slate-700">
+                                        <div className="pt-3">
+                                            <p className="text-xs font-semibold text-gray-400 mb-1.5 uppercase">{labels.yourAnswer}</p>
+                                            <p className="text-sm text-gray-700 dark:text-gray-300">{r.answer}</p>
+                                        </div>
+                                        <div className="p-3 rounded-lg border" style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)"}}>
+                                            <p className="text-xs font-semibold uppercase mb-1.5" style={{color:"var(--accent)"}}>{labels.modelAnswer}</p>
+                                            <p className="text-sm text-gray-700 dark:text-gray-300">{r.evaluation.modelAnswer}</p>
+                                        </div>
+                                    </div>
+                                </details>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── REVIEW PANEL (During Interview) ── */}
+            {showReview && results.length > 0 && (phase === 'question' || phase === 'result') && (
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm p-4 space-y-3">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{labels.review}</p>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
                         {results.map((r, idx) => (
-                            <details key={idx} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-slate-800 shadow-sm overflow-hidden group">
-                                <summary className="flex items-center justify-between gap-4 cursor-pointer px-5 py-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <span className="shrink-0 text-xs font-bold text-gray-400 dark:text-gray-500 w-5 text-center">{idx + 1}</span>
-                                        <p className="text-sm text-gray-700 dark:text-gray-300 truncate">{r.question}</p>
-                                    </div>
-                                    <div className="flex items-center gap-3 shrink-0">
-                                        <ScoreBadge score={r.evaluation.score} />
-                                        <span className="text-slate-400 group-open:rotate-180 transition-transform duration-200">
-                                            <span className="material-symbols-outlined text-[20px]">expand_more</span>
-                                        </span>
-                                    </div>
-                                </summary>
-                                <div className="px-5 pb-5 pt-2 space-y-4 border-t border-slate-100 dark:border-slate-800">
-                                    {/* Your answer */}
-                                    <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
-                                        <p className="text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">{labels.yourAnswer}</p>
-                                        <p className="text-sm text-gray-700 dark:text-gray-300">{r.answer}</p>
-                                    </div>
-                                    {/* Strengths */}
-                                    {r.evaluation.strengths.length > 0 && (
-                                        <div>
-                                            <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider mb-1.5">{labels.strengths}</p>
-                                            <ul className="space-y-1">
-                                                {r.evaluation.strengths.map((s, i) => (
-                                                    <li key={i} className="text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2">
-                                                        <span className="text-green-500 mt-0.5 shrink-0">•</span>{s}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                    {/* Improvements */}
-                                    {r.evaluation.improvements.length > 0 && (
-                                        <div>
-                                            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1.5">{labels.improvements}</p>
-                                            <ul className="space-y-1">
-                                                {r.evaluation.improvements.map((imp, i) => (
-                                                    <li key={i} className="text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2">
-                                                        <span className="text-amber-500 mt-0.5 shrink-0">•</span>{imp}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                    {/* Model answer */}
-                                    <div className="p-3 rounded-lg border" style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)"}}>
-                                        <p className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{color:"var(--accent)"}}>{labels.modelAnswer}</p>
-                                        <p className="text-sm text-gray-700 dark:text-gray-300">{r.evaluation.modelAnswer}</p>
-                                    </div>
+                            <div key={idx} className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-medium text-gray-500">{idx + 1}. {r.question.slice(0, 50)}...</span>
+                                    <ScoreBadge score={r.evaluation.score} />
                                 </div>
-                            </details>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{r.answer}</p>
+                            </div>
                         ))}
                     </div>
                 </div>
+            )}
+
+            {/* ── COPY PROMPTS (Always Visible when not select-level) ── */}
+            {showCopyPromptsDuringInterview && phase !== 'select-level' && (
+                <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-base text-slate-500">smart_toy</span>
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{isEnglish ? 'Copy prompts for ChatGPT / Claude' : 'Prompts für ChatGPT / Claude kopieren'}</span>
+                        </div>
+                        <button
+                            onClick={() => setShowCopyPrompts(!showCopyPrompts)}
+                            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        >
+                            {showCopyPrompts ? (isEnglish ? 'Hide' : 'Ausblenden') : (isEnglish ? 'Show' : 'Einblenden')}
+                        </button>
+                    </div>
+                    {showCopyPrompts && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => copyToClipboard(buildFirstInterviewPrompt(), 'first')}
+                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all"
+                            >
+                                <span className="material-symbols-outlined text-sm" style={{color: 'var(--jade)'}}>
+                                    {copiedKey === 'first' ? 'check' : 'person'}
+                                </span>
+                                {copiedKey === 'first' ? labels.copied : (isEnglish ? '1st Round' : '1. Runde')}
+                            </button>
+                            <button
+                                onClick={() => copyToClipboard(buildSecondInterviewPrompt(), 'second')}
+                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all"
+                            >
+                                <span className="material-symbols-outlined text-sm" style={{color: 'var(--rose)'}}>
+                                    {copiedKey === 'second' ? 'check' : 'code'}
+                                </span>
+                                {copiedKey === 'second' ? labels.copied : (isEnglish ? '2nd Round' : '2. Runde')}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── ADD MORE QUESTIONS BUTTON ── */}
+            {phase === 'finished' && (
+                <button onClick={addMoreQuestions} className="w-full btn-secondary rounded-xl py-3">
+                    <span className="material-symbols-outlined text-base">add</span>
+                    {labels.addMore}
+                </button>
             )}
         </div>
     );

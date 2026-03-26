@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getAdminStats, AdminStats } from '../services/adminApi';
+import { getErrorStats, ErrorStats } from '../services/errorApi';
 import Spinner from '../components/common/Spinner';
 import Toast from '../components/common/Toast';
 
 const AdminDashboardPage: React.FC = () => {
     const [stats, setStats] = useState<AdminStats | null>(null);
+    const [errorStats, setErrorStats] = useState<ErrorStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const data = await getAdminStats();
-                setStats(data);
+                const [adminData, errorData] = await Promise.all([
+                    getAdminStats(),
+                    getErrorStats(),
+                ]);
+                setStats(adminData);
+                setErrorStats(errorData);
             } catch (err: any) {
                 setToast({ message: err.message || 'Failed to load admin stats', type: 'error' });
             } finally {
@@ -45,6 +52,30 @@ const AdminDashboardPage: React.FC = () => {
                 <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-display">Admin Dashboard</h1>
                 <p className="text-zinc-500 mt-1">System-wide overview and performance metrics.</p>
             </div>
+
+            {/* Error Stats Banner */}
+            {errorStats && errorStats.unresolved > 0 && (
+                <Link
+                    to="/admin/errors"
+                    className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg">
+                            <AlertIcon />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-red-900 dark:text-red-200">
+                                {errorStats.unresolved} unresolved error{errorStats.unresolved !== 1 ? 's' : ''}
+                            </p>
+                            <p className="text-sm text-red-700 dark:text-red-300">
+                                {errorStats.critical > 0 && `${errorStats.critical} critical • `}
+                                Click to view details
+                            </p>
+                        </div>
+                    </div>
+                    <ChevronRightIcon />
+                </Link>
+            )}
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -350,6 +381,11 @@ const AlertIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
         <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+);
+const ChevronRightIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 18l6-6-6-6" />
     </svg>
 );
 

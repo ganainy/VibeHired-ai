@@ -51,6 +51,7 @@ interface UseSpeechRecognitionReturn {
   resetTranscript: () => void;
   isListening: boolean;
   isSupported: boolean;
+  recognitionError: string | null;
 }
 
 const SpeechRecognitionAPI: ({ new (): ISpeechRecognition } | undefined) =
@@ -61,6 +62,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [recognitionError, setRecognitionError] = useState<string | null>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const recognitionSessionRef = useRef(0);
 
@@ -99,6 +101,9 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
       console.log('[useSpeechRecognition] SpeechRecognitionAPI not available');
       return;
     }
+
+    // Clear any previous error
+    setRecognitionError(null);
 
     const previousRecognition = recognitionRef.current;
     detachRecognition(previousRecognition);
@@ -157,10 +162,24 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       if (recognitionSessionRef.current !== sessionId) return;
 
-      console.error('Speech recognition error:', event.error);
+      const errorDesc = getErrorDescription(event.error);
+      console.error('Speech recognition error:', event.error, '-', errorDesc);
+      setRecognitionError(errorDesc);
       recognitionRef.current = null;
       setIsListening(false);
     };
+
+    // Helper to describe errors
+    function getErrorDescription(error: string): string {
+      const errorMap: Record<string, string> = {
+        'network': 'Cannot reach speech recognition servers. Check your internet connection.',
+        'not-allowed': 'Microphone permission denied. Allow microphone access in your browser.',
+        'no-speech': 'No speech detected. Try speaking louder or closer to the microphone.',
+        'audio-capture': 'No microphone found or it is being used by another application.',
+        'aborted': 'Speech recognition was stopped.',
+      };
+      return errorMap[error] || 'Unknown error occurred.';
+    }
 
     recognitionRef.current = recognition;
     recognition.start();
@@ -180,6 +199,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const resetTranscript = useCallback(() => {
     setTranscript('');
     setInterimTranscript('');
+    setRecognitionError(null);
   }, []);
 
   return {
@@ -190,5 +210,6 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     resetTranscript,
     isListening,
     isSupported,
+    recognitionError,
   };
 }

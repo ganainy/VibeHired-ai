@@ -33,11 +33,13 @@ import workTrackerRoutes from './routes/workTracker';
 import usageRoutes from './routes/usage';
 import subscriptionRoutes from './routes/subscription';
 import adminRoutes from './routes/admin';
+import errorRoutes from './routes/errors';
 import { handleStripeWebhook } from './controllers/webhookController';
 // Correct the import for the default export
 import protect from './middleware/authMiddleware'; // Import default export and alias it as 'protect'
 import { errorHandler } from './middleware/errorHandler';
 import { installExternalCallTracking } from './services/externalCallTracking';
+import { createRequestContextMiddleware } from './services/requestContext';
 import { initializeScheduler } from './utils/scheduler';
 import { getAllowedFrontendOrigins } from './config/frontend';
 // Import providers to ensure they register themselves
@@ -130,6 +132,7 @@ app.use('/api/work-tracker', workTrackerRoutes); // Work time tracker (protected
 app.use('/api/usage', usageRoutes); // Credit usage tracking (protected)
 app.use('/api/subscriptions', protect, subscriptionRoutes); // Subscription management (protected)
 app.use('/api/admin', adminRoutes); // Admin management (protected)
+app.use('/api/errors', errorRoutes); // Public error reporting
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

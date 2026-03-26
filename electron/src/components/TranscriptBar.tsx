@@ -8,6 +8,7 @@ interface TranscriptBarProps {
   onPushStart: () => void;   // mousedown / touchstart → start recording
   onPushStop: () => void;    // mouseup / touchend → stop + generate
   onClear: () => void;
+  recognitionError: string | null;
 }
 
 const TranscriptBar: React.FC<TranscriptBarProps> = ({
@@ -17,6 +18,7 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
   onPushStart,
   onPushStop,
   onClear,
+  recognitionError,
 }) => {
   const displayText = transcript || interimTranscript;
   const isPressedRef = useRef(false);
@@ -127,6 +129,29 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
           {isListening ? 'REC' : 'HOLD'}
         </span>
       </button>
+
+      {/* ── Speech recognition error ── */}
+      {recognitionError && !displayText && (
+        <div style={{
+          flex: 1,
+          padding: '8px 10px',
+          borderRadius: 8,
+          background: 'var(--rose-bg)',
+          border: '1px solid rgba(244,100,100,0.2)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--rose)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p style={{ fontSize: 11, color: 'var(--rose)', lineHeight: 1.5, margin: 0 }}>
+            {recognitionError}
+          </p>
+        </div>
+      )}
 
       {/* ── Transcript text ── */}
       <div style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>

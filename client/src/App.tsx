@@ -27,6 +27,7 @@ import WorkTrackerPage from './pages/WorkTrackerPage';
 import CalendarPage from './pages/CalendarPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import AdminErrorsPage from './pages/AdminErrorsPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import InterviewBuddyPage from './pages/InterviewBuddyPage';
@@ -140,6 +141,7 @@ function App() {
         />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute><AdminUsersPage /></ProtectedRoute>} />
+        <Route path="/admin/errors" element={<ProtectedRoute><AdminRoute><AdminErrorsPage /></AdminRoute></ProtectedRoute>} />
         <Route path="/interview-buddy" element={<ProtectedRoute><AdminRoute><InterviewBuddyPage /></AdminRoute></ProtectedRoute>} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
 

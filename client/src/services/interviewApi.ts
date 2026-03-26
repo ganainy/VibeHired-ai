@@ -9,10 +9,17 @@ export interface EvaluationResult {
     modelAnswer: string;
 }
 
-/** Generate 6-8 interview questions for a job */
-export async function generateInterviewQuestions(jobId: string): Promise<string[]> {
+/** Generate interview questions for a job */
+export async function generateInterviewQuestions(
+    jobId: string,
+    level: 'first' | 'second' = 'first',
+    questionCount: number = 5
+): Promise<string[]> {
     try {
-        const { data } = await axios.post<{ questions: string[] }>(`${API_BASE_URL}/interview/${jobId}/questions`);
+        const { data } = await axios.post<{ questions: string[] }>(
+            `${API_BASE_URL}/interview/${jobId}/questions`,
+            { level, questionCount }
+        );
         return data.questions;
     } catch (error: any) {
         throw new Error(error?.response?.data?.message || 'Failed to generate interview questions');

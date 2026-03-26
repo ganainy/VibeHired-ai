@@ -221,7 +221,13 @@ export async function getAdminStats(req: Request, res: Response) {
                                 durationMs: 1,
                                 errorMessage: 1,
                                 createdAt: 1,
-                                userEmail: { $arrayElemAt: ['$userInfo.email', 0] },
+                                userId: 1,
+                                userEmail: {
+                                    $ifNull: [
+                                        '$userEmail',
+                                        { $arrayElemAt: ['$userInfo.email', 0] }
+                                    ]
+                                },
                             }
                         }
                     ]

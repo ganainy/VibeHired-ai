@@ -164,7 +164,7 @@ const SettingsPage: React.FC = () => {
     { label: 'CV Generation', cost: '3 cr', count: getActionCount('cvGeneration') },
     { label: 'AI Chat Messages', cost: '1 cr', count: getActionCount('chatMessages', 'chatMessage') },
     { label: 'Job Extractions', cost: '1 cr', count: getActionCount('jobExtractions', 'jobExtraction') },
-    { label: 'Interview Prep', cost: '3 cr', count: getActionCount('interview') },
+    { label: 'Interview Prep', cost: '5 cr', count: getActionCount('interview') },
     { label: 'Cover Letters', cost: '3 cr', count: getActionCount('coverLetter') },
     { label: 'ATS Scoring', cost: '2 cr', count: getActionCount('atsScoring') },
     { label: 'CV Parsing', cost: '2 cr', count: getActionCount('cvParsing') },

@@ -2303,7 +2303,7 @@ const ReviewFinalizePage: React.FC = () => {
                                     }`}>
                                     <span className="material-symbols-outlined text-[18px]">mic</span>
                                 </div>
-                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'mock-interview' ? 'text-gold-500' : 'text-zinc-500'}`}>AI Buddy</span>
+                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'mock-interview' ? 'text-gold-500' : 'text-zinc-500'}`}>Mock Interview</span>
                             </button>
 
                             {/* Tab 5: Reminders */}
@@ -4137,7 +4137,7 @@ const ReviewFinalizePage: React.FC = () => {
 
                     {/* Tab 5: Mock Interview */}
                     {activeTab === 'mock-interview' && jobApplication && (
-                        <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} coverLetterText={coverLetterText} />
+                        <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} coverLetterText={coverLetterText} showResumeOption={false} showCopyPromptsDuringInterview={false} />
                     )}
 
                     {/* Tab 6: Reminders */}

@@ -6,13 +6,15 @@ import { generateQuestions, evaluateAnswer, generateAnswer } from '../services/i
 /**
  * POST /api/interview/:jobId/questions
  * Generate mock interview questions for a job application.
+ * Accepts optional 'level' parameter: 'first' | 'second'
  */
 export const generateInterviewQuestions = async (req: ValidatedRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new AuthorizationError('User not authenticated');
 
     const { jobId } = req.params;
-    const questions = await generateQuestions(userId, jobId);
+    const { level, questionCount } = req.body as { level?: 'first' | 'second'; questionCount?: number };
+    const questions = await generateQuestions(userId, jobId, level, questionCount);
 
     res.json({ questions });
 };

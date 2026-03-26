@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User'; // Import User model
 import { AuthenticationError, InternalServerError } from '../utils/errors/AppError';
+import { asyncLocalStorage } from '../services/requestContext';
 
 // Define the structure of the decoded JWT payload
 interface JwtPayload {
@@ -53,8 +54,14 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
     // 5. Attach user to the request object
     req.user = user;
 
-    // 6. Call next middleware or route handler
-    next();
+    // 6. Run remaining middleware with user context
+    const userId = (user._id as any).toString();
+    const userEmail = user.email;
+    console.log('[AuthMiddleware] Setting up user context:', userId, userEmail);
+    
+    asyncLocalStorage.run({ userId, userEmail }, () => {
+      next();
+    });
   } catch (error) {
     // Pass error to errorHandler middleware
     next(error);

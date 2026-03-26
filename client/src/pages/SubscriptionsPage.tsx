@@ -20,7 +20,7 @@ const PLANS = [
             '20 credits to try everything',
             'Targeted CV generation (3 cr each)',
             'CV analysis & ATS scoring (2 cr each)',
-            'Cover letters & interview sim (3 cr each)',
+            'Cover letters & interview sim (5 cr each)',
             'Chat, email scan & job extraction (1 cr each)',
         ],
         popular: false,
@@ -378,7 +378,7 @@ const SubscriptionsPage: React.FC = () => {
                     />
                     <FAQItem
                         question="What do credits cost, and what do they cover?"
-                        answer="Credits power every AI action: chat messages and email scans (1 cr), CV analysis and ATS scoring (2 cr each), targeted CV generation, cover letter generation, and interview simulations (3 cr each). Job board searches cost 3 cr base + 0.25 cr per result."
+                        answer="Credits power every AI action: chat messages and email scans (1 cr), CV analysis and ATS scoring (2 cr each), targeted CV generation, cover letter generation, and interview simulations (5 cr each). Job board searches cost 3 cr base + 0.25 cr per result."
                     />
                     <FAQItem
                         question="Do unused credits roll over?"

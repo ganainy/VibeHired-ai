@@ -744,7 +744,7 @@ const MockJobReviewPage: React.FC = () => {
                                     <span className="material-symbols-outlined text-4xl" style={{ color: 'var(--accent)' }}>record_voice_over</span>
                                 </div>
                                 <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed max-w-md mx-auto">
-                                    The AI will generate 7 tailored interview questions based on the job description. Answer each one — by typing or using your microphone — and get instant feedback.
+                                    The AI will generate tailored interview questions based on the job description. Answer each one — by typing or using your microphone — and get instant feedback.
                                 </p>
                                 <div className="flex flex-col items-center gap-3">
                                     <button
@@ -753,7 +753,7 @@ const MockJobReviewPage: React.FC = () => {
                                     >
                                         <span className="material-symbols-outlined text-base">play_arrow</span>
                                         Start Interview
-                                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>3 cr</span>
+                                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>5 cr</span>
                                     </button>
 
                                     {/* Copy prompts for external AI */}

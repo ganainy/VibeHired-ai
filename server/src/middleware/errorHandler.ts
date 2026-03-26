@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { AppError, ValidationError } from '../utils/errors/AppError';
 import { GoogleGenerativeAIError } from '@google/generative-ai';
+import { logBackendError } from '../services/errorLogger';
 
 /**
  * Centralized error handling middleware
@@ -116,6 +117,26 @@ export const errorHandler = (
       statusCode,
       path: req.path,
       method: req.method,
+    });
+
+    // Log to ErrorLog collection for persistent storage
+    const userId = (req as any).user?._id?.toString();
+    const userEmail = (req as any).user?.email;
+    
+    logBackendError(
+      `${req.method} ${req.path} - ${message}`,
+      err.stack,
+      userId,
+      userEmail,
+      {
+        statusCode,
+        method: req.method,
+        endpoint: req.path,
+        query: req.query,
+        body: req.body ? '[FILTERED]' : undefined,
+      }
+    ).catch((logErr) => {
+      console.error('Failed to log error to ErrorLog:', logErr);
     });
   } else {
     // Log client errors with less detail
