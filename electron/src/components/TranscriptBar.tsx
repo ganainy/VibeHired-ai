@@ -1,12 +1,12 @@
 // electron/src/components/TranscriptBar.tsx
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 
 interface TranscriptBarProps {
   isListening: boolean;
   transcript: string;
   interimTranscript: string;
   onPushStart: () => void;   // mousedown / touchstart → start recording
-  onPushStop: () => void;    // mouseup / touchend / mouseleave → stop + generate
+  onPushStop: () => void;    // mouseup / touchend → stop + generate
   onClear: () => void;
 }
 
@@ -21,7 +21,8 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
   const displayText = transcript || interimTranscript;
   const isPressedRef = useRef(false);
 
-  // Mouse event handlers for desktop
+  // Mouse event handlers for desktop - using document-level tracking to avoid
+  // mouseleave issues when component re-renders or cursor moves slightly
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     if (event.button !== 0 || isPressedRef.current) return; // Left click only
     event.preventDefault();
@@ -29,18 +30,18 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
     onPushStart();
   }, [onPushStart]);
 
-  const handleMouseUp = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    if (!isPressedRef.current) return;
-    event.preventDefault();
-    isPressedRef.current = false;
-    onPushStop();
-  }, [onPushStop]);
+  // Track mouse up anywhere on document (not just button) to handle
+  // cases where user drags outside button before releasing
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isPressedRef.current) {
+        isPressedRef.current = false;
+        onPushStop();
+      }
+    };
 
-  const handleMouseLeave = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    if (!isPressedRef.current) return;
-    event.preventDefault();
-    isPressedRef.current = false;
-    onPushStop();
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
   }, [onPushStop]);
 
   // Touch event handlers for mobile/touch devices
@@ -73,8 +74,6 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
       <button
         className="no-drag"
         onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         title={isListening ? 'Release to generate answer' : 'Hold to record question'}
