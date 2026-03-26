@@ -1,6 +1,5 @@
 // server/src/services/transcriptionService.ts
 // Speech-to-text using OpenAI Whisper API
-import FormData from 'form-data';
 
 export interface TranscriptionResult {
   text: string;
