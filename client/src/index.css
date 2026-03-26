@@ -154,7 +154,7 @@
     border-radius: 0.625rem;
     color: var(--text-primary);
     font-family: 'Outfit', sans-serif;
-    font-size: 0.9375rem;
+    font-size: 1rem; /* 16px - prevents auto-zoom on mobile browsers */
     padding: 0.625rem 0.875rem;
     transition: border-color 0.15s, box-shadow 0.15s;
     outline: none;
