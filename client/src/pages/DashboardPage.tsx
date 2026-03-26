@@ -641,6 +641,17 @@ const DashboardPage: React.FC = () => {
     'Offer': { dot: 'bg-emerald-400', text: 'text-emerald-700 dark:text-emerald-300' },
   };
 
+  // Status hex colors for pill styling (matches inbox card style)
+  const STATUS_COLORS: Record<JobApplication['status'], string> = {
+    'Not Applied': '#64748b',
+    'Applied': '#22c55e',
+    'Interview': '#eab308',
+    'Assessment': '#f59e0b',
+    'Rejected': '#ef4444',
+    'Closed': '#6b7280',
+    'Offer': '#10b981',
+  };
+
   // Handle status change
   const handleStatusChange = async (jobId: string, newStatus: JobApplication['status']) => {
     try {
@@ -952,12 +963,19 @@ const DashboardPage: React.FC = () => {
     fields: [
       {
         label: 'Status',
-        value: (job) => (
-          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${statusColors[job.status]?.dot + ' ' + statusColors[job.status]?.text || 'bg-gray-100 text-gray-600'}`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-60"></span>
-            {job.status}
-          </span>
-        ),
+        value: (job) => {
+          const color = STATUS_COLORS[job.status] || 'var(--text-muted)';
+          return (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center',
+              padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700,
+              color, backgroundColor: `${color}15`, border: `1px solid ${color}35`,
+              letterSpacing: '0.02em',
+            }}>
+              {job.status}
+            </span>
+          );
+        },
       },
       {
         label: 'Date',
@@ -976,6 +994,33 @@ const DashboardPage: React.FC = () => {
       {
         label: 'Salary',
         value: (job) => job.salary || job.extractedData?.salaryRaw || job.extractedData?.estimatedSalary || '-',
+      },
+      {
+        value: (job) => {
+          const hasNotes = job.notes && job.notes.trim();
+          const needsFollowUp = needsFollowUpJobIdSet.has(job._id);
+          if (!hasNotes && !needsFollowUp) return null;
+          return (
+            <div className="flex flex-wrap gap-1.5">
+              {hasNotes && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Note
+                </span>
+              )}
+              {needsFollowUp && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 4.26a2.25 2.25 0 002.22 0L21 8M5.25 19.5h13.5A2.25 2.25 0 0021 17.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
+                  </svg>
+                  Follow-up
+                </span>
+              )}
+            </div>
+          );
+        },
       },
     ],
     actions: (job) => (

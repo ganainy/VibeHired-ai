@@ -76,35 +76,32 @@ function MobileCard<T>({
     <div
       onClick={onClick}
       className={`
-        p-3 sm:p-4 rounded-lg border transition-all duration-200
+        card p-4 rounded-2xl overflow-hidden
+        transition-all duration-200
         ${onClick ? 'cursor-pointer hover:shadow-md active:scale-[0.99]' : ''}
         ${className}
       `}
-      style={{
-        background: 'var(--bg-surface)',
-        borderColor: 'var(--border)',
-      }}
     >
       {/* Header: Avatar, Title, Badge */}
       <div className="flex items-start gap-3 mb-3">
         {avatar && (
           <div
-            className={`
-              w-10 h-10 rounded flex items-center justify-center
-              font-bold text-sm uppercase shrink-0
-              ${avatar.className || ''}
-            `}
-            style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}
+            className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm uppercase shrink-0"
+            style={{
+              background: 'var(--accent-bg)',
+              color: 'var(--accent)',
+              border: '1px solid var(--accent-dim)',
+            }}
           >
             {avatar.letter}
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+          <div className="text-[14px] font-semibold leading-tight truncate" style={{ color: 'var(--text-primary)' }}>
             {config.title(item)}
           </div>
           {config.subtitle && (
-            <div className="text-sm truncate" style={{ color: 'var(--text-muted)' }}>
+            <div className="text-[12px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
               {config.subtitle(item)}
             </div>
           )}
@@ -117,7 +114,7 @@ function MobileCard<T>({
       </div>
 
       {/* Fields */}
-      <div className="space-y-2 mb-3">
+      <div className="space-y-2.5 mb-3">
         {config.fields.slice(0, 4).map((field, idx) => {
           const value = field.value(item);
           if (!value) return null;
@@ -130,11 +127,11 @@ function MobileCard<T>({
               )}
               <div className="min-w-0 flex-1">
                 {field.label && (
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <span className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: 'var(--text-muted)' }}>
                     {field.label}:{' '}
                   </span>
                 )}
-                <span style={{ color: 'var(--text-secondary)' }}>{value}</span>
+                <span className="text-[12.5px]" style={{ color: 'var(--text-secondary)' }}>{value}</span>
               </div>
             </div>
           );
@@ -143,7 +140,7 @@ function MobileCard<T>({
 
       {/* Actions */}
       {config.actions && (
-        <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-dim)' }}>
+        <div className="flex items-center justify-end gap-1.5 pt-2 border-t" style={{ borderColor: 'var(--border-dim)' }}>
           {config.actions(item)}
         </div>
       )}
