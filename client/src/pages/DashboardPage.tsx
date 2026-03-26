@@ -966,12 +966,7 @@ const DashboardPage: React.FC = () => {
         value: (job) => {
           const color = STATUS_COLORS[job.status] || 'var(--text-muted)';
           return (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center',
-              padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700,
-              color, backgroundColor: `${color}15`, border: `1px solid ${color}35`,
-              letterSpacing: '0.02em',
-            }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color, letterSpacing: '0.02em' }}>
               {job.status}
             </span>
           );
