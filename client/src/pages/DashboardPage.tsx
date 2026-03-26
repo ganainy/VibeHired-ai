@@ -785,6 +785,7 @@ const DashboardPage: React.FC = () => {
       sortable: true,
       onSort: () => handleSort('jobTitle'),
       sortDirection: sortKey === 'jobTitle' ? sortDirection : null,
+      wrap: true,
       className: 'max-w-[200px]',
       render: (job) => (
         <span className="font-medium line-clamp-2 block" style={{ color: 'var(--text-primary)' }} title={job.jobTitle}>
@@ -795,6 +796,7 @@ const DashboardPage: React.FC = () => {
     {
       key: 'companyName',
       label: 'Company',
+      wrap: true,
       className: 'max-w-[180px]',
       render: (job) => (
         <div className="flex items-center gap-2">
@@ -864,6 +866,7 @@ const DashboardPage: React.FC = () => {
       onSort: () => handleSort('salary'),
       sortDirection: sortKey === 'salary' ? sortDirection : null,
       mobileHidden: true,
+      wrap: true,
       render: (job) => {
         const displaySalary = job.salary || job.extractedData?.salaryRaw || job.extractedData?.estimatedSalary;
         if (!displaySalary) return <span style={{ color: 'var(--text-muted)' }}>-</span>;

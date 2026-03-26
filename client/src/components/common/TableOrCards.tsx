@@ -14,6 +14,7 @@ export interface ColumnDef<T> {
   className?: string;
   headerClassName?: string;
   mobileHidden?: boolean; // Hide this column on mobile (card view)
+  wrap?: boolean; // Allow text wrapping in table cell
   render?: (item: T) => React.ReactNode; // Custom cell renderer for table
 }
 
@@ -240,7 +241,7 @@ export function TableOrCards<T extends Record<string, any>>({
               {columns.map((col) => (
                 <td
                   key={String(col.key)}
-                  className={`p-4 whitespace-nowrap ${getAlignClass(col.align)} ${col.className || ''}`}
+                  className={`p-4 ${col.wrap ? 'whitespace-normal' : 'whitespace-nowrap'} ${getAlignClass(col.align)} ${col.className || ''}`}
                 >
                   {col.render ? col.render(item) : (item[col.key as keyof T] as React.ReactNode)}
                 </td>
