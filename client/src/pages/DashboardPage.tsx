@@ -787,7 +787,7 @@ const DashboardPage: React.FC = () => {
       sortDirection: sortKey === 'jobTitle' ? sortDirection : null,
       className: 'max-w-[200px]',
       render: (job) => (
-        <span className="font-medium truncate block" style={{ color: 'var(--text-primary)' }} title={job.jobTitle}>
+        <span className="font-medium line-clamp-2 block" style={{ color: 'var(--text-primary)' }} title={job.jobTitle}>
           {job.jobTitle}
         </span>
       ),
@@ -807,7 +807,7 @@ const DashboardPage: React.FC = () => {
               </span>
             ) : null;
           })()}
-          <span className="truncate" style={{ color: 'var(--text-secondary)' }} title={job.companyName}>{job.companyName}</span>
+          <span className="line-clamp-2" style={{ color: 'var(--text-secondary)' }} title={job.companyName}>{job.companyName}</span>
         </div>
       ),
     },
@@ -870,7 +870,7 @@ const DashboardPage: React.FC = () => {
         const isEstimate = !job.salary && !job.extractedData?.salaryRaw && job.extractedData?.salaryIsEstimate;
         return (
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium">{displaySalary}</span>
+            <span className="text-xs font-medium line-clamp-2" title={displaySalary}>{displaySalary}</span>
             {isEstimate && <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">AI Est.</span>}
           </div>
         );
