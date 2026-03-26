@@ -4,7 +4,7 @@
   "description": "Stealth AI interview assistant overlay — invisible to Zoom & Teams screen share",
   "main": "dist/main.js",
   "scripts": {
-    "dev": "concurrently \"vite --config vite.renderer.config.ts --port 5174\" \"wait-on http://localhost:5174 && tsc -p tsconfig.main.json && electron .\"",
+    "dev": "concurrently \"vite --config vite.renderer.config.ts --port 5174 --host 127.0.0.1\" \"wait-on http://127.0.0.1:5174 && tsc -p tsconfig.main.json && electron . --disable-http-cache\"",
     "build:renderer": "vite build --config vite.renderer.config.ts",
     "build:main": "tsc -p tsconfig.main.json",
     "build": "npm run build:renderer && npm run build:main",

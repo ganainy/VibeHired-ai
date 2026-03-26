@@ -85,7 +85,8 @@ function createWindow() {
 
   const isDev = !app.isPackaged;
   if (isDev) {
-    win.loadURL('http://localhost:5174');
+    // Use 127.0.0.1 instead of localhost to avoid CORS issues with Speech API
+    win.loadURL('http://127.0.0.1:5174');
     // Open DevTools for debugging
     win.webContents.openDevTools({ mode: 'detach' });
   } else {
