@@ -65,6 +65,8 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const [recognitionError, setRecognitionError] = useState<string | null>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const recognitionSessionRef = useRef(0);
+  const retryCountRef = useRef(0);
+  const maxRetries = 2;
 
   const isSupported = !!SpeechRecognitionAPI;
 
@@ -155,7 +157,8 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     const sessionId = recognitionSessionRef.current + 1;
     recognitionSessionRef.current = sessionId;
 
-    recognition.continuous = true;
+    // Workaround: Try without continuous first, as it can sometimes cause network errors
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = lang;
     recognition.maxAlternatives = 1;
@@ -165,6 +168,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
       interimResults: recognition.interimResults,
       lang: recognition.lang,
       service: 'Google Web Speech API (requires internet)',
+      note: 'continuous=false is a workaround for network errors',
     });
 
     recognition.onstart = () => {
@@ -214,6 +218,32 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
 
       const errorDesc = getErrorDescription(event.error);
       console.error('Speech recognition error:', event.error, '-', errorDesc);
+
+      // Auto-retry for network errors
+      if (event.error === 'network' && retryCountRef.current < maxRetries) {
+        retryCountRef.current++;
+        console.log('[useSpeechRecognition] Retrying... Attempt', retryCountRef.current, 'of', maxRetries);
+
+        // Wait a bit before retrying
+        setTimeout(() => {
+          if (recognitionSessionRef.current === sessionId) {
+            // Only retry if we're still on the same session
+            try {
+              recognition.start();
+            } catch (e) {
+              console.error('[useSpeechRecognition] Retry failed:', e);
+              setRecognitionError(errorDesc);
+              recognitionRef.current = null;
+              setIsListening(false);
+            }
+          }
+        }, 500);
+
+        return;
+      }
+
+      // Reset retry count for next time
+      retryCountRef.current = 0;
       setRecognitionError(errorDesc);
       recognitionRef.current = null;
       setIsListening(false);
