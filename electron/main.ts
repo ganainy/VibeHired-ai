@@ -86,6 +86,8 @@ function createWindow() {
   const isDev = !app.isPackaged;
   if (isDev) {
     win.loadURL('http://localhost:5174');
+    // Open DevTools for debugging
+    win.webContents.openDevTools({ mode: 'detach' });
   } else {
     win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   }
