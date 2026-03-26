@@ -1020,6 +1020,13 @@ const DashboardPage: React.FC = () => {
     ],
     actions: (job) => (
       <>
+        {job.notes && job.notes.trim() && (
+          <span className="flex items-center justify-center w-8 h-8 text-blue-500 dark:text-blue-400" title={`Note: ${job.notes.length > 100 ? job.notes.substring(0, 100) + '...' : job.notes}`}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </span>
+        )}
         {job.jobUrl && parseMultipleUrls(job.jobUrl).slice(0, 2).map((url, idx) => (
           <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors" style={{ color: 'var(--accent)' }}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
