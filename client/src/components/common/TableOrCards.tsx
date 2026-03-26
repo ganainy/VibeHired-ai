@@ -200,7 +200,7 @@ export function TableOrCards<T extends Record<string, any>>({
 
   // Desktop: Table View
   return (
-    <div className={`overflow-x-auto rounded-xl border ${className}`} style={{ borderColor: 'var(--border)' }}>
+    <div className={`overflow-x-auto border ${className}`} style={{ borderColor: 'var(--border)' }}>
       <table className="w-full text-left">
         <thead>
           <tr>
