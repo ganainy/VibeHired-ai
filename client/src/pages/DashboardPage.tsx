@@ -1239,7 +1239,8 @@ const DashboardPage: React.FC = () => {
               const todayCount = jobs.filter(job => {
                 const jobDate = new Date(job.createdAt);
                 const today = new Date();
-                return jobDate.getDate() === today.getDate() &&
+                return job.status === 'Applied' &&
+                  jobDate.getDate() === today.getDate() &&
                   jobDate.getMonth() === today.getMonth() &&
                   jobDate.getFullYear() === today.getFullYear();
               }).length;
