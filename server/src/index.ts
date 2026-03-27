@@ -101,7 +101,9 @@ app.use((req, res, next) => {
 });
 
 // Request Context - MUST be before protected routes to capture user info
-app.use(createRequestContextMiddleware());
+// NOTE: Disabled because authMiddleware already handles context setup for protected routes.
+// Having both creates potential conflicts with async local storage nesting.
+// app.use(createRequestContextMiddleware());
 
 // --- Mount Routes ---
 // Public route (example)

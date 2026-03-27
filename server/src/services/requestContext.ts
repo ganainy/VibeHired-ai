@@ -7,14 +7,26 @@ interface RequestContext {
 
 export const asyncLocalStorage = new AsyncLocalStorage<RequestContext>();
 
+// Fallback storage for when async context is lost (e.g., in SDK callbacks)
+let currentUserId: string | undefined = undefined;
+let currentUserEmail: string | undefined = undefined;
+
 export function getUserId(): string | undefined {
+  // First try async local storage
   const store = asyncLocalStorage.getStore();
-  return store?.userId;
+  if (store?.userId) return store.userId;
+
+  // Fallback to module-level variable
+  return currentUserId;
 }
 
 export function getUserEmail(): string | undefined {
+  // First try async local storage
   const store = asyncLocalStorage.getStore();
-  return store?.userEmail;
+  if (store?.userEmail) return store.userEmail;
+
+  // Fallback to module-level variable
+  return currentUserEmail;
 }
 
 export function getRequestContext(): RequestContext | undefined {
@@ -26,6 +38,22 @@ export function setUserId(userId: string): void {
   if (store) {
     store.userId = userId;
   }
+  // Also set fallback
+  currentUserId = userId;
+}
+
+export function setUserEmail(email: string): void {
+  const store = asyncLocalStorage.getStore();
+  if (store) {
+    store.userEmail = email;
+  }
+  // Also set fallback
+  currentUserEmail = email;
+}
+
+export function clearFallbackContext(): void {
+  currentUserId = undefined;
+  currentUserEmail = undefined;
 }
 
 export function runWithContext<T>(callback: () => Promise<T>): Promise<T> {
@@ -40,8 +68,19 @@ export function createRequestContextMiddleware() {
   return (req: any, res: any, next: any) => {
     const userId = req.user?._id?.toString();
     const userEmail = req.user?.email;
+
+    // Set fallback context for SDK callbacks
+    currentUserId = userId;
+    currentUserEmail = userEmail;
+
     asyncLocalStorage.run({ userId, userEmail }, () => {
       next();
+
+      // Clear fallback after response finishes
+      res.on('finish', () => {
+        currentUserId = undefined;
+        currentUserEmail = undefined;
+      });
     });
   };
 }

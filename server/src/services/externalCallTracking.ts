@@ -131,11 +131,14 @@ function persistLog(log: TrackedCallLog): void {
 
   const contextUserId = getUserId();
   const contextUserEmail = getUserEmail();
-  
+
+  console.log('[ExternalCallTracking] Context from asyncLocalStorage:', { contextUserId, contextUserEmail });
+  console.log('[ExternalCallTracking] Log object userId/userEmail:', { logUserId: log.userId, logUserEmail: log.userEmail });
+
   const userId = log.userId || contextUserId;
   const userEmail = log.userEmail || contextUserEmail;
 
-  console.log('[ExternalCallTracking] userId:', userId, 'userEmail:', userEmail);
+  console.log('[ExternalCallTracking] Final userId:', userId, 'userEmail:', userEmail);
 
   const doc: any = {
     category: log.category,
@@ -148,6 +151,8 @@ function persistLog(log: TrackedCallLog): void {
     durationMs: Math.max(0, Math.round(log.durationMs)),
     modelName: log.modelName,
     errorMessage: truncateErrorMessage(log.errorMessage),
+    requestPath: parsed.pathname,
+    requestMethod: (log.method || 'GET').toUpperCase(),
   };
 
   if (userId && mongoose.Types.ObjectId.isValid(userId)) {

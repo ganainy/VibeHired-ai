@@ -14,7 +14,7 @@ interface StatsCache {
     expiresAt: number;
 }
 let statsCache: StatsCache | null = null;
-const STATS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const STATS_CACHE_TTL_MS = 30 * 1000; // 30 seconds - more responsive for admin dashboard
 
 /**
  * Get all users with their current usage overview.
