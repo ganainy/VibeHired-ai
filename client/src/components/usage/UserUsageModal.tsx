@@ -25,21 +25,6 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
         return () => document.removeEventListener('keydown', handleEsc);
     }, [onClose]);
 
-interface UserUsageModalProps {
-    userId: string;
-    onClose: () => void;
-    onUpdate: () => void;
-}
-
-const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpdate }) => {
-    const [data, setData] = useState<(AdminUser & { usage: UserUsageDetail }) | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [grantAmount, setGrantAmount] = useState(10);
-    const [grantReason, setGrantReason] = useState('Bonus credits');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isCancelling, setIsCancelling] = useState(false);
-    const [isBlocking, setIsBlocking] = useState(false);
-
     useEffect(() => {
         const fetchDetail = async () => {
             try {

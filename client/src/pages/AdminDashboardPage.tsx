@@ -4,6 +4,7 @@ import { getAdminStats, AdminStats } from '../services/adminApi';
 import { getErrorStats, ErrorStats } from '../services/errorApi';
 import Spinner from '../components/common/Spinner';
 import Toast from '../components/common/Toast';
+import { TableOrCards } from '../components/common/TableOrCards';
 
 const AdminDashboardPage: React.FC = () => {
     const [stats, setStats] = useState<AdminStats | null>(null);
@@ -46,18 +47,18 @@ const AdminDashboardPage: React.FC = () => {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4 md:space-y-8">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-display">Admin Dashboard</h1>
-                <p className="text-zinc-500 mt-1">System-wide overview and performance metrics.</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-display">Admin Dashboard</h1>
+                <p className="text-zinc-500 mt-1 text-sm md:text-base">System-wide overview and performance metrics.</p>
             </div>
 
             {/* Error Stats Banner */}
             {errorStats && errorStats.unresolved > 0 && (
                 <Link
                     to="/admin/errors"
-                    className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                    className="flex items-center justify-between p-3 md:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
                 >
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg">
@@ -78,7 +79,7 @@ const AdminDashboardPage: React.FC = () => {
             )}
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                 <StatCard
                     label="Total Users"
                     value={stats.totalUsers}
@@ -107,7 +108,7 @@ const AdminDashboardPage: React.FC = () => {
 
             {stats.externalCalls && (
                 <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                         <StatCard
                             label="AI Calls (Total)"
                             value={stats.externalCalls.totals.ai}
@@ -134,9 +135,9 @@ const AdminDashboardPage: React.FC = () => {
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-                            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                            <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                                 <ActivityIcon /> Calls by Provider
                             </h3>
                             <div className="space-y-3">
@@ -152,8 +153,8 @@ const AdminDashboardPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-                            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                            <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                                 <PieChartIcon /> Top AI Models
                             </h3>
                             <div className="space-y-3">
@@ -169,8 +170,8 @@ const AdminDashboardPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-                            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                            <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                                 <TrendingUpIcon /> Call Health
                             </h3>
                             <div className="space-y-3 text-sm">
@@ -194,53 +195,67 @@ const AdminDashboardPage: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm overflow-hidden">
-                        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                        <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                             <ClockIcon /> Recent AI & Apify Calls
                         </h3>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="text-zinc-500 text-xs uppercase tracking-wider border-b border-zinc-100 dark:border-zinc-800">
-                                        <th className="pb-3 font-semibold">Provider</th>
-                                        <th className="pb-3 font-semibold">Type</th>
-                                        <th className="pb-3 font-semibold">Model</th>
-                                        <th className="pb-3 font-semibold">User</th>
-                                        <th className="pb-3 font-semibold">Status</th>
-                                        <th className="pb-3 font-semibold">Latency</th>
-                                        <th className="pb-3 font-semibold">Time</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
-                                    {stats.externalCalls.recentCalls.map((call) => (
-                                        <tr key={call._id} className="text-sm">
-                                            <td className="py-4 font-medium capitalize">{call.provider}</td>
-                                            <td className="py-4 uppercase text-xs tracking-wide">{call.category}</td>
-                                            <td className="py-4 text-zinc-500">{call.modelName || '-'}</td>
-                                            <td className="py-4 text-zinc-500">{call.userEmail || '-'}</td>
-                                            <td className="py-4">
-                                                <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${call.success ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30'}`}>
-                                                    {call.statusCode || (call.success ? 'OK' : 'ERR')}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 text-zinc-500">{call.durationMs} ms</td>
-                                            <td className="py-4 text-zinc-500">{new Date(call.createdAt).toLocaleString()}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {stats.externalCalls.recentCalls.length === 0 && (
-                                <p className="text-center py-8 text-zinc-500 italic">No AI or Apify calls recorded yet.</p>
-                            )}
-                        </div>
+                        <TableOrCards
+                            data={stats.externalCalls.recentCalls}
+                            columns={[
+                                { key: 'provider', label: 'Provider', className: 'capitalize' },
+                                {
+                                    key: 'service',
+                                    label: 'Service',
+                                    render: (c: any) => {
+                                        if (!c.requestPath) return '-';
+                                        const parts = c.requestPath.split('/').filter(Boolean);
+                                        return parts.length > 1 ? parts.slice(1).join(' ') : c.requestPath;
+                                    }
+                                },
+                                { key: 'modelName', label: 'Model', render: (c: any) => c.modelName || '-', mobileHidden: true },
+                                { key: 'userEmail', label: 'User', render: (c: any) => c.userEmail || '-', mobileHidden: true },
+                                {
+                                    key: 'status',
+                                    label: 'Status',
+                                    render: (c: any) => (
+                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${c.success ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30'}`}>
+                                            {c.statusCode || (c.success ? 'OK' : 'ERR')}
+                                        </span>
+                                    )
+                                },
+                                { key: 'durationMs', label: 'Latency', render: (c: any) => `${c.durationMs} ms` },
+                                { key: 'createdAt', label: 'Time', render: (c: any) => new Date(c.createdAt).toLocaleString(), mobileHidden: true },
+                            ]}
+                            cardConfig={{
+                                title: (c: any) => c.provider,
+                                subtitle: (c: any) => {
+                                    if (!c.requestPath) return c.modelName || 'No model';
+                                    const parts = c.requestPath.split('/').filter(Boolean);
+                                    return parts.length > 1 ? parts.slice(1).join(' ') : c.requestPath;
+                                },
+                                badge: (c: any) => ({
+                                    text: c.statusCode || (c.success ? 'OK' : 'ERR'),
+                                    className: c.success
+                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30'
+                                        : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30'
+                                }),
+                                fields: [
+                                    { label: 'Model', value: (c: any) => c.modelName || '-' },
+                                    { label: 'User', value: (c: any) => c.userEmail || '-' },
+                                    { label: 'Latency', value: (c: any) => `${c.durationMs} ms` },
+                                    { label: 'Time', value: (c: any) => new Date(c.createdAt).toLocaleString() },
+                                ],
+                            }}
+                            emptyMessage="No AI or Apify calls recorded yet."
+                        />
                     </div>
                 </>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
                 {/* Tier Distribution */}
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                    <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                         <PieChartIcon /> User Tiers
                     </h3>
                     <div className="space-y-4">
@@ -265,46 +280,45 @@ const AdminDashboardPage: React.FC = () => {
                 </div>
 
                 {/* Recent Payments */}
-                <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm overflow-hidden">
-                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                    <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                         <ClockIcon /> Recent Payments
                     </h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="text-zinc-500 text-xs uppercase tracking-wider border-b border-zinc-100 dark:border-zinc-800">
-                                    <th className="pb-3 font-semibold">User</th>
-                                    <th className="pb-3 font-semibold">Amount</th>
-                                    <th className="pb-3 font-semibold">Status</th>
-                                    <th className="pb-3 font-semibold">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800">
-                                {stats.recentPayments.map((payment) => (
-                                    <tr key={payment.id} className="text-sm">
-                                        <td className="py-4">
-                                            <span className="font-medium">{payment.customerEmail}</span>
-                                        </td>
-                                        <td className="py-4">
-                                            {payment.currency.toUpperCase()} {(payment.amount / 100).toFixed(2)}
-                                        </td>
-                                        <td className="py-4">
-                                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${payment.status === 'succeeded' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' : 'bg-zinc-100 text-zinc-600'
-                                                }`}>
-                                                {payment.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 text-zinc-500">
-                                            {new Date(payment.createdAt).toLocaleDateString()}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {stats.recentPayments.length === 0 && (
-                            <p className="text-center py-8 text-zinc-500 italic">No recent payments recorded.</p>
-                        )}
-                    </div>
+                    <TableOrCards
+                        data={stats.recentPayments}
+                        columns={[
+                            { key: 'customerEmail', label: 'User' },
+                            {
+                                key: 'amount',
+                                label: 'Amount',
+                                render: (p: any) => `${p.currency.toUpperCase()} ${(p.amount / 100).toFixed(2)}`
+                            },
+                            {
+                                key: 'status',
+                                label: 'Status',
+                                render: (p: any) => (
+                                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${p.status === 'succeeded' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' : 'bg-zinc-100 text-zinc-600'}`}>
+                                        {p.status}
+                                    </span>
+                                )
+                            },
+                            { key: 'createdAt', label: 'Date', render: (p: any) => new Date(p.createdAt).toLocaleDateString() },
+                        ]}
+                        cardConfig={{
+                            title: (p: any) => p.customerEmail,
+                            badge: (p: any) => ({
+                                text: p.status,
+                                className: p.status === 'succeeded'
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30'
+                                    : 'bg-zinc-100 text-zinc-600'
+                            }),
+                            fields: [
+                                { label: 'Amount', value: (p: any) => `${p.currency.toUpperCase()} ${(p.amount / 100).toFixed(2)}` },
+                                { label: 'Date', value: (p: any) => new Date(p.createdAt).toLocaleDateString() },
+                            ],
+                        }}
+                        emptyMessage="No recent payments recorded."
+                    />
                 </div>
             </div>
 
@@ -322,14 +336,14 @@ const StatCard: React.FC<{ label: string; value: string | number; icon: React.Re
     };
 
     return (
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-xl ${colors[color]}`}>
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3 md:p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 md:gap-4">
+                <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${colors[color]}`}>
                     {icon}
                 </div>
-                <div>
-                    <p className="text-zinc-500 text-sm font-medium">{label}</p>
-                    <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 leading-none mt-1">{value}</p>
+                <div className="min-w-0">
+                    <p className="text-zinc-500 text-xs md:text-sm font-medium truncate">{label}</p>
+                    <p className="text-lg md:text-2xl font-bold text-zinc-900 dark:text-zinc-100 leading-none mt-0.5 md:mt-1">{value}</p>
                 </div>
             </div>
         </div>

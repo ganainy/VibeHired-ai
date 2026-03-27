@@ -100,6 +100,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Request Context - MUST be before protected routes to capture user info
+app.use(createRequestContextMiddleware());
+
 // --- Mount Routes ---
 // Public route (example)
 app.get('/', (req: Request, res: Response) => {

@@ -163,10 +163,8 @@ const ReviewFinalizePage: React.FC = () => {
 
     const handleTabChange = (newTab: ActiveTab) => {
         setActiveTab(newTab);
-        if (jobId) {
-            localStorage.setItem(`job_tab_${jobId}`, newTab);
-            navigate(`/jobs/${jobId}/review/${newTab}`);
-        }
+        localStorage.setItem(`job_tab_${jobId}`, newTab);
+        navigate(`/jobs/${jobId}/review/${newTab}`);
     };
 
     // Update active tab when URL param changes
@@ -2076,268 +2074,237 @@ const ReviewFinalizePage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
-            {/* Toast Notification */}
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
-
-            {/* Inline AI action error banner */}
-            {aiActionError && (
-                <div
-                    className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-lg w-full mx-4 rounded-xl px-4 py-3 flex items-start gap-3 shadow-xl"
-                    style={{
-                        backgroundColor: aiActionError.upgrade
-                            ? 'rgba(251,191,36,0.1)'
-                            : 'rgba(239,68,68,0.1)',
-                        border: `1px solid ${aiActionError.upgrade ? 'rgba(251,191,36,0.35)' : 'rgba(239,68,68,0.35)'}`,
-                    }}
-                >
-                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"
-                        style={{ color: aiActionError.upgrade ? '#f59e0b' : '#ef4444' }}>
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium"
-                            style={{ color: aiActionError.upgrade ? '#92400e' : '#7f1d1d' }}>
-                            {aiActionError.message}
-                        </p>
-                        {aiActionError.upgrade && (
-                            PAYMENTS_ENABLED
-                                ? <a href="/subscriptions"
-                                    className="text-xs font-semibold underline mt-0.5 inline-block"
-                                    style={{ color: '#b45309' }}>
-                                    View upgrade options →
-                                  </a>
-                                : <span className="text-xs mt-0.5 inline-block" style={{ color: '#b45309' }}>
-                                    Paid plans coming soon
-                                  </span>
-                        )}
-                    </div>
-                    <button
-                        onClick={() => setAiActionError(null)}
-                        className="text-xs flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
-                        style={{ color: aiActionError.upgrade ? '#92400e' : '#7f1d1d' }}
-                    >
-                        ✕
-                    </button>
-                </div>
-            )}
-
-
-
             <div className="p-6 lg:p-8">
                 {/* Page Header */}
-                <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-6 mb-6">
+                <div className="flex flex-col md:flex-row items-start justify-between gap-4 mb-6">
                     {/* Left: Job Info */}
-                    <div className="flex-1 min-w-0 w-full">
-                        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-zinc-900 dark:text-zinc-100 break-words leading-tight">
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                             {jobApplication.jobTitle}
                         </h1>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400 mt-2">
-                            <span className="inline-flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/50 px-2.5 py-1 rounded-md">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">
+                            <span className="inline-flex items-center gap-1.5">
                                 <span className="material-symbols-outlined text-[18px]">apartment</span>
-                                <span className="font-medium">{jobApplication.companyName}</span>
+                                {jobApplication.companyName}
                             </span>
-                            <span className="inline-flex items-center gap-1.5 px-1">
-                                <span className="material-symbols-outlined text-[18px] opacity-70">schedule</span>
+                            <span className="inline-flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[18px]">schedule</span>
                                 Created: {formatDate(jobApplication.createdAt)}
                             </span>
                         </div>
                     </div>
 
                     {/* Right: Status & Match Info */}
-                    <div className="flex flex-wrap items-center md:items-start gap-3 md:gap-5 w-full md:w-auto mt-2 md:mt-0 flex-shrink-0">
+                    <div className="flex flex-wrap items-start gap-4 md:gap-6 w-full md:w-auto md:flex-shrink-0 mt-4 md:mt-0">
                         {/* Status Column */}
-                        <div className="flex-1 sm:flex-initial min-w-[100px] text-center bg-white dark:bg-zinc-900 md:bg-transparent dark:md:bg-transparent p-2 md:p-0 rounded-xl border border-zinc-100 dark:border-zinc-800 md:border-0 shadow-sm md:shadow-none">
-                            <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Status</p>
+                        <div className="text-center">
+                            <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Status</p>
                             <JobStatusBadge type="application" status={jobApplication.status} />
                         </div>
 
-                        {/* Match Column */}
-                        <div className="flex-1 sm:flex-initial min-w-[100px] text-center bg-white dark:bg-zinc-900 md:bg-transparent dark:md:bg-transparent p-2 md:p-0 rounded-xl border border-zinc-100 dark:border-zinc-800 md:border-0 shadow-sm md:shadow-none">
-                            {recommendation && recommendation.score !== null && recommendation.score !== undefined ? (
-                                <button
-                                    onClick={() => setIsRecommendationModalOpen(true)}
-                                    className="w-full text-center cursor-pointer hover:opacity-80 transition-opacity"
-                                    title="Click to view AI Application Advice"
-                                >
-                                    <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Match</p>
-                                    <p className={`text-sm font-bold ${recommendation.shouldApply
-                                        ? 'text-green-600 dark:text-green-400'
-                                        : 'text-amber-600 dark:text-amber-400'
-                                        }`}>
-                                        {`${recommendation.score}%`}
-                                    </p>
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleCalculateMatch}
-                                    disabled={isLoadingRecommendation || !jobApplication?.jobDescriptionText}
-                                    className="w-full text-center cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title={!jobApplication?.jobDescriptionText ? "Add job description first" : "Click to calculate match (2 credits)"}
-                                >
-                                    <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Match</p>
-                                    {isLoadingRecommendation ? (
-                                        <span className="inline-flex items-center justify-center">
-                                            <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
-                                            Calc
-                                            <span className="bg-amber-400 text-zinc-950 px-1 rounded-sm text-[8px]">2cr</span>
-                                        </span>
-                                    )}
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Action Buttons Group */}
-                        <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                            {/* Open Job Link Button */}
-                            {jobApplication.jobUrl && parseMultipleUrls(jobApplication.jobUrl || '').length > 0 && (
-                                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-                                    {parseMultipleUrls(jobApplication.jobUrl || '').slice(0, 1).map((url, idx) => (
-                                        <a
-                                            key={idx}
-                                            href={url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex-1 sm:flex-none p-3 rounded-xl shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95"
-                                            style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-                                            title={`View Job Posting: ${url}`}
-                                        >
-                                            <span className="material-symbols-outlined text-[20px]">open_in_new</span>
-                                            <span className="ml-2 sm:hidden text-xs font-semibold">Open Post</span>
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Mark as Applied Button */}
-                            {jobApplication.status === 'Not Applied' && (
-                                <button
-                                    onClick={handleMarkAsApplied}
-                                    className="flex-1 sm:flex-none px-4 py-3 text-xs font-bold text-white bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 hover:scale-105 active:scale-95"
-                                    title="Mark this job as Applied"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                                    <span>Applied</span>
-                                </button>
-                            )}
-
-                            {/* Delete Job Button */}
+                        {/* Match Column - Clickable or Calculate Button */}
+                        {recommendation && recommendation.score !== null && recommendation.score !== undefined ? (
                             <button
-                                onClick={handleDeleteJob}
-                                className="p-3 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-xl shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95"
-                                title="Delete this job application"
+                                onClick={() => setIsRecommendationModalOpen(true)}
+                                className="text-center cursor-pointer hover:opacity-80 transition-opacity"
+                                title="Click to view AI Application Advice"
                             >
-                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
+                                <p className={`text-sm font-semibold ${recommendation.shouldApply
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : 'text-amber-600 dark:text-amber-400'
+                                    }`}>
+                                    {`${recommendation.score}%`}
+                                </p>
                             </button>
-                        </div>
+                        ) : (
+                            <button
+                                onClick={handleCalculateMatch}
+                                disabled={isLoadingRecommendation || !jobApplication?.jobDescriptionText}
+                                className="text-center cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={!jobApplication?.jobDescriptionText ? "Add job description first" : "Click to calculate match (2 credits)"}
+                            >
+                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
+                                {isLoadingRecommendation ? (
+                                    <span className="inline-flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                    </span>
+                                ) : recommendation?.error ? (
+                                    <span className="text-xs px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
+                                        Retry
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>
+                                        Calculate
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 cr</span>
+                                    </span>
+                                )}
+                            </button>
+                        )}
+
+
+                        {/* Open Job Link Button */}
+                        {jobApplication.jobUrl && parseMultipleUrls(jobApplication.jobUrl || '').length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1 gap-y-2">
+                                {parseMultipleUrls(jobApplication.jobUrl || '').slice(0, 3).map((url, idx) => (
+                                    <a
+                                        key={idx}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-3 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
+                                        style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-bg-hover,rgba(232,184,68,0.14))')}
+                                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent-bg)')}
+                                        title={`View Job Posting ${parseMultipleUrls(jobApplication.jobUrl || '').length > 1 ? `(${idx + 1})` : ''}: ${url}`}
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">open_in_new</span>
+                                        {parseMultipleUrls(jobApplication.jobUrl || '').length > 1 && (
+                                            <span className="text-xs ml-0.5">{idx + 1}</span>
+                                        )}
+                                    </a>
+                                ))}
+                                {parseMultipleUrls(jobApplication.jobUrl || '').length > 3 && (
+                                    <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-1" title={parseMultipleUrls(jobApplication.jobUrl || '').slice(3).join('\n')}>
+                                        +{parseMultipleUrls(jobApplication.jobUrl || '').length - 3} more
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Mark as Applied Button */}
+                        {jobApplication.status === 'Not Applied' && (
+                            <button
+                                onClick={handleMarkAsApplied}
+                                className="px-4 py-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 rounded-lg shadow-sm transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 self-stretch"
+                                title="Mark this job as Applied"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                <span>Mark as Applied</span>
+                            </button>
+                        )}
+
+                        {/* Delete Job Button */}
+                        <button
+                            onClick={handleDeleteJob}
+                            className="p-3 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
+                            title="Delete this job application"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
                     </div>
                 </div>
 
 
 
-                {/* Tabs Navigation */}
-                <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden relative">
-                    <div className="overflow-x-auto no-scrollbar scroll-smooth">
-                        <div className="flex items-center justify-between min-w-[580px] w-full p-4 relative h-20">
-                            {/* Connecting line */}
-                            <div className="absolute left-10 right-10 top-[34px] h-0.5 bg-zinc-100 dark:bg-zinc-800 -z-0"></div>
+                {/* Tabs Navigation with Integrated Progress Indicators */}
+                <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-4">
+                    <div className="relative flex items-center justify-between w-full max-w-4xl mx-auto">
+                        <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-600 -z-10 transform -translate-y-1/2"></div>
 
-                            {/* Tab 1: Job Details */}
-                            <button
-                                onClick={() => handleTabChange('job-description')}
-                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
-                            >
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'job-description'
-                                    ? 'bg-primary text-black shadow-lg scale-110'
-                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
-                                    }`}>
-                                    <span className="material-symbols-outlined text-[18px]">info</span>
-                                </div>
-                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'job-description' ? 'text-primary' : 'text-zinc-500'}`}>Details</span>
-                            </button>
+                        {/* Tab 1: Job Details */}
+                        <button
+                            onClick={() => handleTabChange('job-description')}
+                            className="group flex flex-col items-center focus:outline-none"
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'job-description'
+                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">check</span>
+                            </div>
+                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'job-description'
+                                ? 'text-primary font-bold'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}>Job Details</span>
+                        </button>
 
-                            {/* Tab 2: CV */}
-                            <button
-                                onClick={() => handleTabChange('cv')}
-                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
-                            >
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'cv'
-                                    ? 'bg-primary text-black shadow-lg scale-110'
-                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
-                                    }`}>
-                                    <span className="material-symbols-outlined text-[18px]">article</span>
-                                </div>
-                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'cv' ? 'text-primary' : 'text-zinc-500'}`}>CV</span>
-                            </button>
+                        {/* Tab 2: CV Generated */}
+                        <button
+                            onClick={() => handleTabChange('cv')}
+                            className="group flex flex-col items-center focus:outline-none"
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'cv'
+                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">article</span>
+                            </div>
+                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'cv'
+                                ? 'text-primary font-bold'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}>Tailored CV</span>
+                        </button>
 
-                            {/* Tab 3: Cover Letter */}
-                            <button
-                                onClick={() => handleTabChange('cover-letter')}
-                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
-                            >
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'cover-letter'
-                                    ? 'bg-primary text-black shadow-lg scale-110'
-                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
-                                    }`}>
-                                    <span className="material-symbols-outlined text-[18px]">mail</span>
-                                </div>
-                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'cover-letter' ? 'text-primary' : 'text-zinc-500'}`}>Letter</span>
-                            </button>
+                        {/* Tab 3: Cover Letter */}
+                        <button
+                            onClick={() => handleTabChange('cover-letter')}
+                            className="group flex flex-col items-center focus:outline-none"
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'cover-letter'
+                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">mail</span>
+                            </div>
+                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'cover-letter'
+                                ? 'text-primary font-bold'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}>Cover Letter</span>
+                        </button>
 
-                            {/* Tab 4: Interview */}
-                            <button
-                                onClick={() => handleTabChange('mock-interview')}
-                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
-                            >
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'mock-interview'
-                                    ? 'bg-gold-500 text-black shadow-lg scale-110'
-                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
-                                    }`}>
-                                    <span className="material-symbols-outlined text-[18px]">mic</span>
-                                </div>
-                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'mock-interview' ? 'text-gold-500' : 'text-zinc-500'}`}>Mock Interview</span>
-                            </button>
+                        {/* Tab 4: Mock Interview */}
+                        <button
+                            onClick={() => handleTabChange('mock-interview')}
+                            className="group flex flex-col items-center focus:outline-none"
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'mock-interview'
+                                ? 'bg-gold-500 text-ink-950 shadow-lg scale-125'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">mic</span>
+                            </div>
+                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'mock-interview'
+                                ? 'text-gold-600 dark:text-gold-400 font-bold'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}>Interview</span>
+                        </button>
 
-                            {/* Tab 5: Reminders */}
-                            <button
-                                onClick={() => handleTabChange('reminders')}
-                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
-                            >
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'reminders'
-                                    ? 'bg-amber-500 text-white shadow-lg scale-110'
-                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
-                                    }`}>
-                                    <span className="material-symbols-outlined text-[18px]">notifications</span>
-                                </div>
-                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'reminders' ? 'text-amber-500' : 'text-zinc-500'}`}>Reminders</span>
-                            </button>
+                        {/* Tab 5: Reminders */}
+                        <button
+                            onClick={() => handleTabChange('reminders')}
+                            className="group flex flex-col items-center focus:outline-none"
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'reminders'
+                                ? 'bg-amber-500 text-white shadow-lg scale-125'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">notifications</span>
+                            </div>
+                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'reminders'
+                                ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}>Reminders{reminders.length > 0 && ` (${reminders.length})`}</span>
+                        </button>
 
-                            {/* Tab 6: Materials */}
-                            <button
-                                onClick={() => handleTabChange('materials')}
-                                className="relative z-10 flex flex-col items-center gap-1.5 min-w-[80px]"
-                            >
-                                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-900 transition-all duration-300 ${activeTab === 'materials'
-                                    ? 'bg-emerald-500 text-white shadow-lg scale-110'
-                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
-                                    }`}>
-                                    <span className="material-symbols-outlined text-[18px]">library_books</span>
-                                </div>
-                                <span className={`text-[10px] font-bold uppercase tracking-tight ${activeTab === 'materials' ? 'text-emerald-500' : 'text-zinc-500'}`}>Prep</span>
-                            </button>
-                        </div>
+                        {/* Tab 6: Prep Materials */}
+                        <button
+                            onClick={() => handleTabChange('materials')}
+                            className="group flex flex-col items-center focus:outline-none"
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'materials'
+                                ? 'bg-emerald-500 text-white shadow-lg scale-125'
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">library_books</span>
+                            </div>
+                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'materials'
+                                ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                                : 'text-gray-500 dark:text-gray-400'
+                                }`}>Materials</span>
+                        </button>
+
                     </div>
-                    {/* Shadow indicators for scrolling */}
-                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-zinc-900 to-transparent pointer-events-none md:hidden"></div>
-                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-zinc-900 to-transparent pointer-events-none md:hidden"></div>
                 </div>      {/* Tab Content */}
                 <div className="px-0 py-6">
 
@@ -3257,28 +3224,29 @@ const ReviewFinalizePage: React.FC = () => {
                                         </p>
                                     </div>
 
-                                    {/* ── Option picker ── */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                    {/* Cover letter mode picker */}
+                                    <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-8">
                                         {/* Option A – AI Generate */}
                                         <button
                                             type="button"
                                             onClick={() => setClCreationMode('ai')}
-                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${clCreationMode === 'ai'
+                                            className={`group relative flex-1 flex flex-row items-center gap-3 rounded-xl border-2 px-3 py-2 text-left transition-all focus:outline-none min-w-0 ${clCreationMode === 'ai'
                                                 ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
                                                 }`}
-                                            style={clCreationMode === 'ai' ? { background: 'var(--accent-bg)', borderColor: 'var(--accent)' } : {}}
+                                            style={clCreationMode === 'ai' ? { background: '#ffffff', borderColor: 'var(--accent)' } : {}}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'ai' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}
-                                                style={clCreationMode === 'ai' ? { background: 'var(--accent)' } : {}}>
-                                                <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
+                                            <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${clCreationMode === 'ai' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}
+                                                style={clCreationMode === 'ai' ? { background: 'var(--accent)' } : {}}
+                                            >
+                                                <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
                                             </div>
-                                            <div>
-                                                <p className="font-semibold text-gray-900 dark:text-gray-100">Generate with AI</p>
-                                                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Let the AI write a tailored cover letter based on your CV and the job description.</p>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Generate with AI</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">Let the AI write a tailored cover letter based on your CV and the job description.</p>
                                             </div>
                                             {clCreationMode === 'ai' && (
-                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{ background: 'var(--accent)' }}>
-                                                    <span className="material-symbols-outlined text-[14px]">check</span>
+                                                <span className="absolute top-2 right-2 flex items-center justify-center w-4 h-4 rounded-full text-ink-950" style={{ background: 'var(--accent)' }}>
+                                                    <span className="material-symbols-outlined text-[13px]">check</span>
                                                 </span>
                                             )}
                                         </button>
@@ -3287,22 +3255,23 @@ const ReviewFinalizePage: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setClCreationMode('import')}
-                                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${clCreationMode === 'import'
+                                            className={`group relative flex-1 flex flex-row items-center gap-3 rounded-xl border-2 px-3 py-2 text-left transition-all focus:outline-none min-w-0 ${clCreationMode === 'import'
                                                 ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
                                                 }`}
-                                            style={clCreationMode === 'import' ? { background: 'var(--accent-bg)', borderColor: 'var(--accent)' } : {}}
+                                            style={clCreationMode === 'import' ? { background: '#ffffff', borderColor: 'var(--accent)' } : {}}
                                         >
-                                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${clCreationMode === 'import' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}
-                                                style={clCreationMode === 'import' ? { background: 'var(--accent)' } : {}}>
-                                                <span className="material-symbols-outlined text-[22px]">upload_file</span>
+                                            <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${clCreationMode === 'import' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`}
+                                                style={clCreationMode === 'import' ? { background: 'var(--accent)' } : {}}
+                                            >
+                                                <span className="material-symbols-outlined text-[20px]">upload_file</span>
                                             </div>
-                                            <div>
-                                                <p className="font-semibold text-gray-900 dark:text-gray-100">Use my own cover letter</p>
-                                                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Upload a PDF / DOCX file or pick an existing one from your library.</p>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Use my own cover letter</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">Upload a PDF / DOCX file or pick an existing one from your library.</p>
                                             </div>
                                             {clCreationMode === 'import' && (
-                                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{ background: 'var(--accent)' }}>
-                                                    <span className="material-symbols-outlined text-[14px]">check</span>
+                                                <span className="absolute top-2 right-2 flex items-center justify-center w-4 h-4 rounded-full text-ink-950" style={{ background: 'var(--accent)' }}>
+                                                    <span className="material-symbols-outlined text-[13px]">check</span>
                                                 </span>
                                             )}
                                         </button>
@@ -3368,7 +3337,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={selectedBaseClId}
                                                         onChange={(e) => { setSelectedBaseClId(e.target.value); setClUploadFile(null); if (clUploadFileRef.current) clUploadFileRef.current.value = ''; }}
                                                         disabled={!!clUploadFile || isApplyingBaseCl}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 input-base disabled:opacity-50"
+                                                        className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 input-base disabled:opacity-50"
                                                     >
                                                         <option value="">— choose a saved cover letter —</option>
                                                         {baseCoverLetters.map(cl => (
@@ -3485,7 +3454,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                             <select
                                                                 value={selectedClBaseCvId}
                                                                 onChange={(e) => handleSelectedClBaseCvIdChange(e.target.value)}
-                                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
+                                                                className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
                                                             >
                                                                 {currentCvId && hasLocalCv && (
                                                                     <option value="__job_cv__">📄 This Job's CV (attached)</option>
@@ -3959,7 +3928,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                         value={selectedBaseCvIdForImport}
                                                         onChange={(e) => { setSelectedBaseCvIdForImport(e.target.value); setCvImportFile(null); if (cvImportFileRef.current) cvImportFileRef.current.value = ''; }}
                                                         disabled={!!cvImportFile || isApplyingBaseCv}
-                                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 input-base disabled:opacity-50"
+                                                        className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 input-base disabled:opacity-50"
                                                     >
                                                         <option value="">— choose a saved CV —</option>
                                                         {availableCvs.map(cv => (
@@ -4077,7 +4046,7 @@ const ReviewFinalizePage: React.FC = () => {
                                                                 <select
                                                                     value={selectedBaseCvId}
                                                                     onChange={(e) => handleSelectedBaseCvIdChange(e.target.value)}
-                                                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
+                                                                    className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
                                                                 >
                                                                     <option value="">— Not selected —</option>
                                                                     {availableCvs.map(cv => (
@@ -4137,12 +4106,12 @@ const ReviewFinalizePage: React.FC = () => {
 
                     {/* Tab 5: Mock Interview */}
                     {activeTab === 'mock-interview' && jobApplication && (
-                        <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} coverLetterText={coverLetterText} showResumeOption={false} showCopyPromptsDuringInterview={false} />
+                        <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} coverLetterText={coverLetterText} />
                     )}
 
                     {/* Tab 6: Reminders */}
                     {activeTab === 'reminders' && jobApplication && (
-                        <div className="max-w-2xl mx-auto space-y-4">
+                        <div className="max-w-2xl mx-auto">
                             <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-5">
                                 <RemindersPanel
                                     jobId={jobId!}
@@ -4511,7 +4480,7 @@ const ReviewFinalizePage: React.FC = () => {
                 emailBody={jobApplication?.coverLetterEmailBody}
                 emailRecipient={jobApplication?.coverLetterEmailRecipient}
             />
-        </div >
+        </div>
     );
 };
 

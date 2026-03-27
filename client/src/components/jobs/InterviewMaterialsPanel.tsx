@@ -115,7 +115,7 @@ const MaterialCard: React.FC<{
     return (
         <div
             onClick={clickable ? handleCardClick : undefined}
-            className={`group relative flex flex-col gap-3 p-3.5 rounded-xl border transition-all duration-200 ${
+            className={`group relative flex flex-col gap-3 p-3.5 rounded-xl border transition-all duration-200 overflow-hidden ${
                 clickable ? 'cursor-pointer hover:border-opacity-60' : ''
             }`}
             style={{
@@ -123,7 +123,7 @@ const MaterialCard: React.FC<{
                 borderColor: 'var(--border)',
             }}
         >
-            {/* Top row: icon + info + actions */}
+            {/* Row 1: icon + info */}
             <div className="flex items-start gap-3">
             {/* Type icon */}
             <div className="flex-shrink-0 mt-0.5">
@@ -134,104 +134,99 @@ const MaterialCard: React.FC<{
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                        <p className="text-sm font-semibold leading-snug break-words" style={{ color: 'var(--text-primary)' }}>
-                            {material.title}
-                        </p>
+                <p className="text-sm font-semibold leading-snug break-words" style={{ color: 'var(--text-primary)' }}>
+                    {material.title}
+                </p>
 
-                        {/* Metadata row */}
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <span
-                                className="text-xs px-1.5 py-0.5 rounded-md capitalize font-medium"
-                                style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
-                            >
-                                {material.type}
-                            </span>
-                            {material.fileSize !== undefined && (
-                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                    {formatBytes(material.fileSize)}
-                                </span>
-                            )}
-                            {material.originalFilename && (
-                                <span className="text-xs truncate max-w-[160px]" style={{ color: 'var(--text-muted)' }}>
-                                    {material.originalFilename}
-                                </span>
-                            )}
-                            {material.url && (
-                                <span
-                                    className="text-xs truncate max-w-[220px] underline"
-                                    style={{ color: 'var(--accent)' }}
-                                >
-                                    {material.url}
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Description */}
-                        {material.description && (
-                            <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                                {material.description}
-                            </p>
-                        )}
-
-                        {/* Content preview for text/markdown */}
-                        {(material.type === 'text' || material.type === 'markdown') && material.content && (
-                            <div className="mt-2 p-2 rounded bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800">
-                                <p className="text-xs line-clamp-4 font-mono whitespace-pre-wrap overflow-hidden" style={{ color: 'var(--text-secondary)' }}>
-                                    {material.content}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                        {/* Edit */}
-                        {!isEditing && (
-                            <button
-                                onClick={startEdit}
-                                title="Edit"
-                                className="p-1.5 rounded-lg transition-all hover:text-blue-500"
-                                style={{ color: 'var(--text-muted)' }}
-                            >
-                                <span className="material-symbols-outlined text-base">edit</span>
-                            </button>
-                        )}
-                        {/* Delete */}
-                        {confirmDelete ? (
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onDelete(material._id); }}
-                                    className="text-xs px-2 py-1 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
-                                >
-                                    Delete
-                                </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}
-                                    className="text-xs px-2 py-1 rounded-md transition-colors"
-                                    style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        ) : (
-                            !isEditing && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
-                                    title="Delete"
-                                    className="p-1.5 rounded-lg transition-all hover:text-red-500"
-                                    style={{ color: 'var(--text-muted)' }}
-                                >
-                                    <span className="material-symbols-outlined text-base">delete</span>
-                                </button>
-                            )
-                        )}
-                    </div>
+                {/* Metadata row */}
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <span
+                        className="text-xs px-1.5 py-0.5 rounded-md capitalize font-medium"
+                        style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
+                    >
+                        {material.type}
+                    </span>
+                    {material.fileSize !== undefined && (
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {formatBytes(material.fileSize)}
+                        </span>
+                    )}
+                    {material.originalFilename && (
+                        <span className="text-xs truncate max-w-[160px]" style={{ color: 'var(--text-muted)' }}>
+                            {material.originalFilename}
+                        </span>
+                    )}
+                    {material.url && (
+                        <span
+                            className="text-xs truncate max-w-[220px] underline"
+                            style={{ color: 'var(--accent)' }}
+                        >
+                            {material.url}
+                        </span>
+                    )}
                 </div>
-            </div>{/* closes flex-1 min-w-0 info */}
 
-            </div>{/* end top row */}
+                {/* Description */}
+                {material.description && (
+                    <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+                        {material.description}
+                    </p>
+                )}
+
+                {/* Content preview for text/markdown */}
+                {(material.type === 'text' || material.type === 'markdown') && material.content && (
+                    <div className="mt-2 p-2 rounded bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800">
+                        <p className="text-xs line-clamp-4 font-mono whitespace-pre-wrap overflow-hidden" style={{ color: 'var(--text-secondary)' }}>
+                            {material.content}
+                        </p>
+                    </div>
+                )}
+            </div>
+            </div>{/* end row 1 */}
+
+            {/* Row 2: actions */}
+            <div className="flex items-center gap-1 flex-wrap pl-9" onClick={(e) => e.stopPropagation()}>
+                {/* Edit */}
+                {!isEditing && (
+                    <button
+                        onClick={startEdit}
+                        title="Edit"
+                        className="p-1.5 rounded-lg transition-all hover:text-blue-500"
+                        style={{ color: 'var(--text-muted)' }}
+                    >
+                        <span className="material-symbols-outlined text-base">edit</span>
+                    </button>
+                )}
+                {/* Delete */}
+                {confirmDelete ? (
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(material._id); }}
+                            className="text-xs px-2 py-1 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
+                        >
+                            Delete
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}
+                            className="text-xs px-2 py-1 rounded-md transition-colors"
+                            style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                ) : (
+                    !isEditing && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
+                            title="Delete"
+                            className="p-1.5 rounded-lg transition-all hover:text-red-500"
+                            style={{ color: 'var(--text-muted)' }}
+                        >
+                            <span className="material-symbols-outlined text-base">delete</span>
+                        </button>
+                    )
+                )}
+            </div>
 
             {/* Inline edit form */}
             {isEditing && (

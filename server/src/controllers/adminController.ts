@@ -216,6 +216,8 @@ export async function getAdminStats(req: Request, res: Response) {
                                 host: 1,
                                 path: 1,
                                 method: 1,
+                                requestPath: 1,
+                                requestMethod: 1,
                                 statusCode: 1,
                                 success: 1,
                                 durationMs: 1,

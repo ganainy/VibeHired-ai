@@ -58,7 +58,7 @@ const MockJobReviewPage: React.FC = () => {
                 <TourBanner pageLabel="Job Review" onDismiss={handleDismiss} />
 
                 {/* Page Header */}
-                <div className="flex items-start justify-between gap-4 mt-4 mb-6">
+                <div className="flex flex-col md:flex-row items-start justify-between gap-4 mt-4 mb-6">
                     {/* Left: Job Info */}
                     <div className="flex-1 min-w-0">
                         <button
@@ -96,7 +96,7 @@ const MockJobReviewPage: React.FC = () => {
                     </div>
 
                     {/* Right: Status & Match */}
-                    <div className="flex items-start gap-6 flex-shrink-0">
+                    <div className="flex flex-wrap items-start gap-4 md:gap-6 w-full md:w-auto md:flex-shrink-0 mt-4 md:mt-0">
                         <div className="text-center">
                             <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
                                 Status

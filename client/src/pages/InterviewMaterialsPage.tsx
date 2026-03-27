@@ -181,7 +181,7 @@ const GlobalMaterialCard: React.FC<{
     return (
         <div
             onClick={clickable ? handleCardClick : undefined}
-            className={`group relative flex flex-col gap-2 p-3.5 rounded-xl border transition-all duration-200 ${clickable ? 'cursor-pointer hover:border-opacity-60' : ''}`}
+            className={`group relative flex flex-col gap-2 p-3.5 rounded-xl border transition-all duration-200 overflow-hidden ${clickable ? 'cursor-pointer hover:border-opacity-60' : ''}`}
             style={{ backgroundColor: 'var(--bg-elevated)', borderColor: editMode ? 'var(--accent)' : 'var(--border)' }}
         >
             {editMode ? (
@@ -278,6 +278,7 @@ const GlobalMaterialCard: React.FC<{
             ) : (
                 /* ── Normal view ── */
                 <>
+                    {/* Row 1: icon + title/metadata */}
                     <div className="flex items-start gap-3">
                         {/* Type icon */}
                         <div className="flex-shrink-0 mt-0.5">
@@ -288,180 +289,171 @@ const GlobalMaterialCard: React.FC<{
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2 overflow-x-auto">
-                    <div className="min-w-0 flex-1">
-                        {/* Title */}
-                        <p className="text-sm font-medium leading-snug" style={{ color: 'var(--text-primary)' }}>
-                            {material.title}
-                        </p>
-
-                        {/* Metadata */}
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <span
-                                className="text-xs px-1.5 py-0.5 rounded-md capitalize font-medium"
-                                style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
-                            >
-                                {material.type}
-                            </span>
-                            {material.fileSize !== undefined && (
-                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                    {formatBytes(material.fileSize)}
-                                </span>
-                            )}
-                            {material.url && (
-                                <span
-                                    className="text-xs truncate max-w-[220px] underline"
-                                    style={{ color: 'var(--accent)' }}
-                                >
-                                    {material.url}
-                                </span>
-                            )}
-                            {material.createdAt && (
-                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                    {formatDate(material.createdAt)}
-                                </span>
-                            )}
-                            {/* Job chip (shown in flat view) */}
-                            {showJobChip && jobRef && jobId && (
-                                <Link
-                                    to={`/jobs/${jobId}/review/materials`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="text-xs px-2 py-0.5 rounded-full font-medium hover:opacity-80 transition-opacity"
-                                    style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent)' }}
-                                >
-                                    {jobRef.companyName} — {jobRef.jobTitle}
-                                </Link>
-                            )}
-                        </div>
-
-                        {/* Description */}
-                        {material.description && (
-                            <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                                {material.description}
+                            {/* Title */}
+                            <p className="text-sm font-medium leading-snug" style={{ color: 'var(--text-primary)' }}>
+                                {material.title}
                             </p>
-                        )}
 
-
-                    </div>
-
-                        {/* Right: favourite star + hover actions */}
-                        <div className="flex items-start gap-0.5 pt-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                            {/* Favourite star — always visible */}
-                            <button
-                                onClick={() => onToggleFavorite(material._id)}
-                                disabled={isUpdating}
-                                title={material.isFavorite ? 'Remove from favourites' : 'Add to favourites'}
-                                className="p-1.5 rounded-lg transition-all disabled:opacity-50"
-                                style={{
-                                    color: material.isFavorite ? 'var(--accent)' : 'var(--text-muted)',
-                                    opacity: material.isFavorite ? 1 : 0.35,
-                                }}
-                            >
+                            {/* Metadata */}
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
                                 <span
-                                    className="material-symbols-outlined text-base"
-                                    style={material.isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                                    className="text-xs px-1.5 py-0.5 rounded-md capitalize font-medium"
+                                    style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
                                 >
-                                    star
+                                    {material.type}
                                 </span>
-                            </button>
-                            {/* Other actions */}
-                            <div className="flex items-center gap-1">
-                                {isEditable && (
-                                    <button
-                                        onClick={openEdit}
-                                        title="Edit"
-                                        disabled={isUpdating}
-                                        className="p-1.5 rounded-lg transition-colors hover:text-blue-500 disabled:opacity-50"
-                                        style={{ color: 'var(--text-muted)' }}
-                                    >
-                                        <span className="material-symbols-outlined text-base">edit</span>
-                                    </button>
+                                {material.fileSize !== undefined && (
+                                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                        {formatBytes(material.fileSize)}
+                                    </span>
                                 )}
-                                 {material.type !== 'link' && (
-                                    <button
-                                        onClick={handleDownload}
-                                        title="Download"
-                                        className="p-1.5 rounded-lg transition-colors hover:text-green-500"
-                                        style={{ color: 'var(--text-muted)' }}
-                                    >
-                                        <span className="material-symbols-outlined text-base">download</span>
-                                    </button>
-                                )}
-                                {material.cloudinaryUrl && (
-                                    <a
-                                        href={material.cloudinaryUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        title="Open file"
-                                        className="p-1.5 rounded-lg transition-colors"
-                                        style={{ color: 'var(--text-muted)' }}
-                                    >
-                                        <span className="material-symbols-outlined text-base">open_in_new</span>
-                                    </a>
-                                )}
-                                {material.shareToken ? (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onShowShare(material); }}
-                                        title="Sharing is on - click to manage"
-                                        className="p-1.5 rounded-lg transition-colors"
+                                {material.url && (
+                                    <span
+                                        className="text-xs truncate max-w-[220px] underline"
                                         style={{ color: 'var(--accent)' }}
                                     >
-                                        <span className="material-symbols-outlined text-base">link</span>
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onShare(material._id); }}
-                                        title="Share"
-                                        disabled={isUpdating}
-                                        className="p-1.5 rounded-lg transition-colors hover:text-blue-500 disabled:opacity-50"
-                                        style={{ color: 'var(--text-muted)' }}
-                                    >
-                                        <span className="material-symbols-outlined text-base">share</span>
-                                    </button>
+                                        {material.url}
+                                    </span>
                                 )}
-                                {isAssignedToJob && (
+                                {material.createdAt && (
+                                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                        {formatDate(material.createdAt)}
+                                    </span>
+                                )}
+                                {/* Job chip (shown in flat view) */}
+                                {showJobChip && jobRef && jobId && (
                                     <Link
                                         to={`/jobs/${jobId}/review/materials`}
-                                        title="Go to job"
-                                        className="p-1.5 rounded-lg transition-colors"
-                                        style={{ color: 'var(--text-muted)' }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="text-xs px-2 py-0.5 rounded-full font-medium hover:opacity-80 transition-opacity"
+                                        style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent)' }}
                                     >
-                                        <span className="material-symbols-outlined text-base">arrow_outward</span>
+                                        {jobRef.companyName} — {jobRef.jobTitle}
                                     </Link>
                                 )}
-                                {confirmDelete ? (
-                                    <div className="flex items-center gap-1">
-                                        <button
-                                            onClick={() => onDelete(material._id)}
-                                            disabled={isUpdating}
-                                            className="text-xs px-2 py-1 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
-                                        >
-                                            Delete
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmDelete(false)}
-                                            className="text-xs px-2 py-1 rounded-md transition-colors"
-                                            style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => setConfirmDelete(true)}
-                                        title="Delete"
-                                        disabled={isUpdating}
-                                        className="p-1.5 rounded-lg transition-colors hover:text-red-500 disabled:opacity-50"
-                                        style={{ color: 'var(--text-muted)' }}
-                                    >
-                                        <span className="material-symbols-outlined text-base">delete</span>
-                                    </button>
-                                )}
                             </div>
+
+                            {/* Description */}
+                            {material.description && (
+                                <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+                                    {material.description}
+                                </p>
+                            )}
                         </div>
-                    </div>{/* end justify-between */}
-                    </div>{/* end flex-1 min-w-0 */}
-                    </div>{/* end flex items-start gap-3 */}
+                    </div>
+
+                    {/* Row 2: actions */}
+                    <div className="flex items-center gap-1 flex-wrap pl-9" onClick={(e) => e.stopPropagation()}>
+                        {/* Favourite star — always visible */}
+                        <button
+                            onClick={() => onToggleFavorite(material._id)}
+                            disabled={isUpdating}
+                            title={material.isFavorite ? 'Remove from favourites' : 'Add to favourites'}
+                            className="p-1.5 rounded-lg transition-all disabled:opacity-50"
+                            style={{
+                                color: material.isFavorite ? 'var(--accent)' : 'var(--text-muted)',
+                                opacity: material.isFavorite ? 1 : 0.35,
+                            }}
+                        >
+                            <span
+                                className="material-symbols-outlined text-base"
+                                style={material.isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                            >
+                                star
+                            </span>
+                        </button>
+                        {isEditable && (
+                            <button
+                                onClick={openEdit}
+                                title="Edit"
+                                disabled={isUpdating}
+                                className="p-1.5 rounded-lg transition-colors hover:text-blue-500 disabled:opacity-50"
+                                style={{ color: 'var(--text-muted)' }}
+                            >
+                                <span className="material-symbols-outlined text-base">edit</span>
+                            </button>
+                        )}
+                        {material.type !== 'link' && (
+                            <button
+                                onClick={handleDownload}
+                                title="Download"
+                                className="p-1.5 rounded-lg transition-colors hover:text-green-500"
+                                style={{ color: 'var(--text-muted)' }}
+                            >
+                                <span className="material-symbols-outlined text-base">download</span>
+                            </button>
+                        )}
+                        {material.cloudinaryUrl && (
+                            <a
+                                href={material.cloudinaryUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Open file"
+                                className="p-1.5 rounded-lg transition-colors"
+                                style={{ color: 'var(--text-muted)' }}
+                            >
+                                <span className="material-symbols-outlined text-base">open_in_new</span>
+                            </a>
+                        )}
+                        {material.shareToken ? (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onShowShare(material); }}
+                                title="Sharing is on - click to manage"
+                                className="p-1.5 rounded-lg transition-colors"
+                                style={{ color: 'var(--accent)' }}
+                            >
+                                <span className="material-symbols-outlined text-base">link</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onShare(material._id); }}
+                                title="Share"
+                                disabled={isUpdating}
+                                className="p-1.5 rounded-lg transition-colors hover:text-blue-500 disabled:opacity-50"
+                                style={{ color: 'var(--text-muted)' }}
+                            >
+                                <span className="material-symbols-outlined text-base">share</span>
+                            </button>
+                        )}
+                        {isAssignedToJob && (
+                            <Link
+                                to={`/jobs/${jobId}/review/materials`}
+                                title="Go to job"
+                                className="p-1.5 rounded-lg transition-colors"
+                                style={{ color: 'var(--text-muted)' }}
+                            >
+                                <span className="material-symbols-outlined text-base">arrow_outward</span>
+                            </Link>
+                        )}
+                        {confirmDelete ? (
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => onDelete(material._id)}
+                                    disabled={isUpdating}
+                                    className="text-xs px-2 py-1 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                                >
+                                    Delete
+                                </button>
+                                <button
+                                    onClick={() => setConfirmDelete(false)}
+                                    className="text-xs px-2 py-1 rounded-md transition-colors"
+                                    style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-surface)' }}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setConfirmDelete(true)}
+                                title="Delete"
+                                disabled={isUpdating}
+                                className="p-1.5 rounded-lg transition-colors hover:text-red-500 disabled:opacity-50"
+                                style={{ color: 'var(--text-muted)' }}
+                            >
+                                <span className="material-symbols-outlined text-base">delete</span>
+                            </button>
+                        )}
+                    </div>
 
                 {/* Remove from library */}
                 <button
@@ -943,7 +935,7 @@ const InterviewMaterialsPage: React.FC = () => {
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 overflow-hidden">
 
             {/* Page header */}
             <div>
@@ -1068,7 +1060,7 @@ const InterviewMaterialsPage: React.FC = () => {
                             </div>
                             {/* Info */}
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2 overflow-x-auto">
+                                <div className="flex items-start justify-between gap-2 min-w-0">
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm font-medium leading-snug" style={{ color: 'var(--text-primary)' }}>
                                             {MOCK_MATERIAL.title}
