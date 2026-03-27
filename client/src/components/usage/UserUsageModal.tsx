@@ -16,6 +16,29 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
     const [isBlocking, setIsBlocking] = useState(false);
+    const [actionError, setActionError] = useState<string | null>(null);
+
+    // Escape key handler
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', handleEsc);
+        return () => document.removeEventListener('keydown', handleEsc);
+    }, [onClose]);
+
+interface UserUsageModalProps {
+    userId: string;
+    onClose: () => void;
+    onUpdate: () => void;
+}
+
+const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpdate }) => {
+    const [data, setData] = useState<(AdminUser & { usage: UserUsageDetail }) | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [grantAmount, setGrantAmount] = useState(10);
+    const [grantReason, setGrantReason] = useState('Bonus credits');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [isBlocking, setIsBlocking] = useState(false);
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -33,50 +56,54 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
 
     const handleGrantCredits = async () => {
         setIsSubmitting(true);
+        setActionError(null);
         try {
             await grantUserCredits(userId, grantAmount, grantReason);
             const updated = await getUserDetail(userId);
             setData(updated);
             onUpdate();
         } catch (err) {
-            alert('Failed to grant credits');
+            setActionError('Failed to grant credits');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleRoleChange = async (newRole: string) => {
+        setActionError(null);
         try {
             await updateUserRole(userId, newRole);
             const updated = await getUserDetail(userId);
             setData(updated);
             onUpdate();
         } catch (err) {
-            alert('Failed to update role');
+            setActionError('Failed to update role');
         }
     };
 
     const handlePlanChange = async (newPlan: string) => {
+        setActionError(null);
         try {
             await updateUserPlan(userId, newPlan);
             const updated = await getUserDetail(userId);
             setData(updated);
             onUpdate();
         } catch (err) {
-            alert('Failed to update plan');
+            setActionError('Failed to update plan');
         }
     };
 
     const handleCancelSubscription = async () => {
         if (!window.confirm(`Cancel ${data?.email}'s subscription? They will be moved to the free plan immediately.`)) return;
         setIsCancelling(true);
+        setActionError(null);
         try {
             await cancelUserSubscription(userId);
             const updated = await getUserDetail(userId);
             setData(updated);
             onUpdate();
         } catch (err) {
-            alert('Failed to cancel subscription');
+            setActionError('Failed to cancel subscription');
         } finally {
             setIsCancelling(false);
         }
@@ -87,13 +114,14 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
         const action = data.isBlocked ? 'unblock' : 'block';
         if (!window.confirm(`Are you sure you want to ${action} ${data.email}?`)) return;
         setIsBlocking(true);
+        setActionError(null);
         try {
             await setUserBlocked(userId, !data.isBlocked);
             const updated = await getUserDetail(userId);
             setData(updated);
             onUpdate();
         } catch (err) {
-            alert(`Failed to ${action} user`);
+            setActionError(`Failed to ${action} user`);
         } finally {
             setIsBlocking(false);
         }
@@ -120,10 +148,14 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
     };
 
     return (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
             <div
                 className="rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
                 style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="modal-title"
+                onClick={(e) => e.stopPropagation()}
             >
                 {isLoading ? (
                     <div className="p-20 text-center"><Spinner size="lg" /></div>
@@ -135,7 +167,7 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                             style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-base)' }}
                         >
                             <div className="min-w-0">
-                                <h2 className="text-base font-bold truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Fraunces, Georgia, serif' }}>
+                                <h2 id="modal-title" className="text-base font-bold truncate" style={{ color: 'var(--text-primary)', fontFamily: 'Fraunces, Georgia, serif' }}>
                                     {data.username && <span className="mr-2">{data.username}</span>}
                                     <span className="font-normal text-sm" style={{ color: 'var(--text-secondary)' }}>{data.email}</span>
                                 </h2>
@@ -150,12 +182,21 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                             </div>
                             <button
                                 onClick={onClose}
+                                aria-label="Close modal"
                                 className="shrink-0 p-1.5 rounded-lg transition-colors"
                                 style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
                             >
                                 <CloseIcon />
                             </button>
                         </div>
+
+                        {/* Error Banner */}
+                        {actionError && (
+                            <div className="px-6 py-2.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20" style={{ borderBottom: '1px solid var(--border)' }}>
+                                {actionError}
+                                <button onClick={() => setActionError(null)} className="ml-2 underline hover:no-underline">Dismiss</button>
+                            </div>
+                        )}
 
                         {/* Block / Unblock danger bar */}
                         <div
@@ -170,6 +211,7 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                             <button
                                 onClick={handleToggleBlock}
                                 disabled={isBlocking}
+                                aria-label={data.isBlocked ? "Unblock user" : "Block user"}
                                 className="shrink-0 px-4 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50"
                                 style={data.isBlocked
                                     ? { backgroundColor: 'rgba(34,197,94,0.12)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.25)' }
@@ -189,6 +231,7 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                                         <select
                                             value={data.plan}
                                             onChange={(e) => handlePlanChange(e.target.value)}
+                                            aria-label="Change user plan"
                                             style={selectStyle}
                                         >
                                             <option value="free">Free</option>
@@ -204,6 +247,7 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                                         <select
                                             value={data.role}
                                             onChange={(e) => handleRoleChange(e.target.value)}
+                                            aria-label="Change user role"
                                             style={selectStyle}
                                         >
                                             <option value="user">User</option>
@@ -251,6 +295,7 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                                         <button
                                             onClick={handleCancelSubscription}
                                             disabled={isCancelling}
+                                            aria-label="Cancel subscription"
                                             className="ml-auto px-3 py-1.5 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
                                             style={{ color: 'var(--rose, #f46464)', border: '1px solid rgba(244,100,100,0.25)', backgroundColor: 'transparent' }}
                                         >
@@ -289,6 +334,7 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                                     <button
                                         onClick={handleGrantCredits}
                                         disabled={isSubmitting}
+                                        aria-label="Grant credits"
                                         className="px-5 py-[0.55rem] rounded-[0.625rem] text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 shrink-0"
                                         style={{ backgroundColor: 'var(--accent)', color: '#0e0e17' }}
                                     >
