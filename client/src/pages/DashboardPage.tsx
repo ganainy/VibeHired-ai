@@ -100,6 +100,57 @@ const DashboardPage: React.FC = () => {
   const [formData, setFormData] = useState<JobFormData>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const modalTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // Focus trap for modal
+  useEffect(() => {
+    if (modalMode && modalRef.current) {
+      // Store the trigger element that opened the modal
+      modalTriggerRef.current = document.activeElement as HTMLButtonElement;
+
+      // Focus first focusable element
+      const firstFocusable = modalRef.current.querySelector<HTMLInputElement>( 'input, select, textarea, button');
+      if (firstFocusable) {
+        firstFocusable.focus();
+      }
+
+      // Trap focus within modal
+      const handleTabKey = (e: KeyboardEvent) => {
+        if (e.key !== 'Tab') return;
+
+        const focusableElements = modalRef.current?.querySelectorAll<HTMLInputElement>(
+          'input, select, textarea, button:not([disabled])'
+        );
+        if (!focusableElements || focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      };
+
+      document.addEventListener('keydown', handleTabKey);
+
+      return () => {
+        document.removeEventListener('keydown', handleTabKey);
+        // Return focus to trigger when modal closes
+        if (modalTriggerRef.current) {
+          modalTriggerRef.current.focus();
+        }
+      };
+    }
+  }, [modalMode]);
 
   // --- Create from Text State ---
   const [jobTextInput, setJobTextInput] = useState<string>('');
@@ -668,23 +719,91 @@ const DashboardPage: React.FC = () => {
   // Status dropdown component
   const StatusDropdown: React.FC<{ job: JobApplication }> = ({ job }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [focusedIndex, setFocusedIndex] = useState(-1);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
           setIsOpen(false);
+          setFocusedIndex(-1);
         }
       };
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
+      switch (e.key) {
+        case 'Enter':
+        case ' ':
+        case 'ArrowDown':
+          e.preventDefault();
+          setIsOpen(true);
+          setFocusedIndex(0);
+          setTimeout(() => optionRefs.current[0]?.focus(), 0);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setIsOpen(true);
+          setFocusedIndex(statusOptions.length - 1);
+          setTimeout(() => optionRefs.current[statusOptions.length - 1]?.focus(), 0);
+          break;
+        case 'Escape':
+          e.preventDefault();
+          setIsOpen(false);
+          triggerRef.current?.focus();
+          break;
+      }
+    };
+
+    const handleOptionKeyDown = (e: React.KeyboardEvent, index: number) => {
+      switch (e.key) {
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          handleStatusChange(job._id, statusOptions[index]);
+          setIsOpen(false);
+          triggerRef.current?.focus();
+          break;
+        case 'Escape':
+          e.preventDefault();
+          setIsOpen(false);
+          setFocusedIndex(-1);
+          triggerRef.current?.focus();
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          const nextIndex = (index + 1) % statusOptions.length;
+          setFocusedIndex(nextIndex);
+          optionRefs.current[nextIndex]?.focus();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          const prevIndex = (index - 1 + statusOptions.length) % statusOptions.length;
+          setFocusedIndex(prevIndex);
+          optionRefs.current[prevIndex]?.focus();
+          break;
+        case 'Tab':
+          e.preventDefault();
+          setIsOpen(false);
+          triggerRef.current?.focus();
+          break;
+      }
+    };
+
     return (
       <div className="relative" ref={dropdownRef}>
         <button
+          ref={triggerRef}
           onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+          onKeyDown={handleTriggerKeyDown}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all hover:shadow-sm ${statusColors[job.status] || statusColors['Not Applied']}`}
+          aria-label={`Change status for ${job.jobTitle} at ${job.companyName}, currently ${job.status}`}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
         >
           {job.status}
           <svg className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -692,17 +811,29 @@ const DashboardPage: React.FC = () => {
           </svg>
         </button>
         {isOpen && (
-          <div className="absolute z-50 mt-1 w-44 rounded-xl shadow-xl py-1 overflow-hidden" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-            {statusOptions.map((status) => (
+          <div
+            className="absolute z-50 mt-1 w-44 rounded-xl shadow-xl py-1 overflow-hidden"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+            role="listbox"
+            aria-label={`Select status for ${job.jobTitle} at ${job.companyName}`}
+            aria-activedescendant={focusedIndex >= 0 ? `status-option-${focusedIndex}` : undefined}
+          >
+            {statusOptions.map((status, index) => (
               <button
                 key={status}
+                ref={el => optionRefs.current[index] = el}
+                id={`status-option-${index}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleStatusChange(job._id, status);
                   setIsOpen(false);
+                  triggerRef.current?.focus();
                 }}
+                onKeyDown={(e) => handleOptionKeyDown(e, index)}
                 className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 transition-colors ${statusOptionColors[status]?.text ?? 'text-gray-700 dark:text-gray-200'}`}
                 style={job.status === status ? { background: 'var(--bg-raised)' } : undefined}
+                role="option"
+                aria-selected={job.status === status}
               >
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusOptionColors[status]?.dot ?? 'bg-gray-400'}`} />
                 {status}
@@ -1087,8 +1218,16 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-950">
 
+      {/* Skip link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-zinc-900 focus:text-white focus:rounded-lg"
+      >
+        Skip to main content
+      </a>
+
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+      <div id="main-content" className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
@@ -1649,6 +1788,7 @@ const DashboardPage: React.FC = () => {
                     columns={jobColumns}
                     cardConfig={jobCardConfig}
                     onRowClick={(job) => handleRowClick(job._id)}
+                    aria-label="Job applications table"
                   />
                   {/* Pagination */}
                   <div className="flex items-center justify-between pt-4">
@@ -1693,16 +1833,23 @@ const DashboardPage: React.FC = () => {
         {/* Add/Edit Modal */}
         {modalMode && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
-            <div className="card-elevated p-6 rounded-2xl shadow-2xl w-full max-w-lg mx-4 sm:mx-0 flex flex-col" style={{ maxHeight: '90vh' }}>
+            <div
+              ref={modalRef}
+              className="card-elevated p-6 rounded-2xl shadow-2xl w-full max-w-lg mx-4 sm:mx-0 flex flex-col"
+              style={{ maxHeight: '90vh' }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="modal-title"
+            >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                <h2 id="modal-title" className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
                   Add New Job Manually
                 </h2>
                 <button
                   onClick={handleCloseModal}
                   disabled={isSubmitting}
-                  className="btn-ghost w-9 h-9 p-0 flex items-center justify-center disabled:opacity-50"
-                  aria-label="Close"
+                  className="btn-ghost w-9 h-9 min-h-[44px] p-0 flex items-center justify-center disabled:opacity-50"
+                  aria-label="Close modal"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2018,13 +2165,15 @@ const DashboardPage: React.FC = () => {
         )}
 
         {/* Toast Notification */}
-        {toast && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        )}
+        <div role="status" aria-live="polite" aria-atomic="true">
+          {toast && (
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onClose={() => setToast(null)}
+            />
+          )}
+        </div>
       </div>
 
       {/* Duplicate Job Warning Modal */}
