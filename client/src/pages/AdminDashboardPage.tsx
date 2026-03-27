@@ -207,9 +207,35 @@ const AdminDashboardPage: React.FC = () => {
                                     key: 'service',
                                     label: 'Service',
                                     render: (c: any) => {
+                                        // Generate friendly service names from provider and request path
                                         if (!c.requestPath) return '-';
-                                        const parts = c.requestPath.split('/').filter(Boolean);
-                                        return parts.length > 1 ? parts.slice(1).join(' ') : c.requestPath;
+
+                                        const path = c.requestPath.toLowerCase();
+                                        const provider = (c.provider || '').toLowerCase();
+
+                                        // Gemini services
+                                        if (provider === 'gemini' || path.includes('gemini')) {
+                                            if (path.includes('generatecontent')) return 'Gemini Generate Content';
+                                            if (path.includes('streamgeneratecontent')) return 'Gemini Stream Generate';
+                                            if (path.includes('embedcontent')) return 'Gemini Embed Content';
+                                            if (path.includes('counttokens')) return 'Gemini Count Tokens';
+                                            return 'Gemini API';
+                                        }
+
+                                        // Apify services
+                                        if (provider === 'apify' || path.includes('apify')) {
+                                            return 'Apify Service';
+                                        }
+
+                                        // Fallback: extract action from path
+                                        const parts = path.split('/').filter(Boolean);
+                                        if (parts.length > 1) {
+                                            const action = parts[parts.length - 1];
+                                            // Convert camelCase to Title Case
+                                            return action.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+                                        }
+
+                                        return provider.charAt(0).toUpperCase() + provider.slice(1) + ' Service';
                                     }
                                 },
                                 { key: 'modelName', label: 'Model', render: (c: any) => c.modelName || '-', mobileHidden: true },
