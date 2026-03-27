@@ -929,14 +929,14 @@ const DashboardPage: React.FC = () => {
       render: (job) => (
         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
           {job.notes && job.notes.trim() && (
-            <span className="flex items-center justify-center w-8 h-8 text-blue-500 dark:text-blue-400" title={`Note: ${job.notes.length > 100 ? job.notes.substring(0, 100) + '...' : job.notes}`}>
+            <span className="flex items-center justify-center w-8 h-8 min-h-[44px] text-blue-500 dark:text-blue-400" title={`Note: ${job.notes.length > 100 ? job.notes.substring(0, 100) + '...' : job.notes}`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </span>
           )}
           {job.jobUrl && parseMultipleUrls(job.jobUrl).slice(0, 2).map((url, idx, arr) => (
-            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors" style={{ color: 'var(--accent)' }} title={`Open: ${url}`}>
+            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors" style={{ color: 'var(--accent)' }} title={`Open: ${url}`} aria-label={`Open job posting ${idx + 1}`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -948,13 +948,13 @@ const DashboardPage: React.FC = () => {
               +{parseMultipleUrls(job.jobUrl).length - 2}
             </span>
           )}
-          <button onClick={(e) => handleToggleFavorite(job, e)} className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${job.isFavorite ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70' : 'text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50'}`} title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'}>
+          <button onClick={(e) => handleToggleFavorite(job, e)} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${job.isFavorite ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70' : 'text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50'}`} title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'} aria-label={job.isFavorite ? "Remove from favorites" : "Add to favorites"}>
             <StarIcon filled={!!job.isFavorite} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/review/reminders`); }} className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60' : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'}>
+          <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/review/reminders`); }} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60' : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'} aria-label="Open follow-up email actions">
             <FollowUpIcon />
           </button>
-          <button onClick={(e) => handleDeleteClick(job, e)} className="flex items-center justify-center w-8 h-8 rounded-md text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors" title="Delete">
+          <button onClick={(e) => handleDeleteClick(job, e)} className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors" title="Delete" aria-label="Delete job application">
             <DeleteIcon />
           </button>
         </div>
@@ -1029,26 +1029,26 @@ const DashboardPage: React.FC = () => {
     actions: (job) => (
       <>
         {job.notes && job.notes.trim() && (
-          <span className="flex items-center justify-center w-8 h-8 text-blue-500 dark:text-blue-400" title={`Note: ${job.notes.length > 100 ? job.notes.substring(0, 100) + '...' : job.notes}`}>
+          <span className="flex items-center justify-center w-8 h-8 min-h-[44px] text-blue-500 dark:text-blue-400" title={`Note: ${job.notes.length > 100 ? job.notes.substring(0, 100) + '...' : job.notes}`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </span>
         )}
         {job.jobUrl && parseMultipleUrls(job.jobUrl).slice(0, 2).map((url, idx) => (
-          <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors" style={{ color: 'var(--accent)' }}>
+          <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors" style={{ color: 'var(--accent)' }} aria-label={`Open job posting ${idx + 1}`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </a>
         ))}
-        <button onClick={(e) => { e.stopPropagation(); handleToggleFavorite(job, e as any); }} className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${job.isFavorite ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50' : 'text-slate-400 dark:text-slate-500 hover:text-amber-500'}`}>
+        <button onClick={(e) => { e.stopPropagation(); handleToggleFavorite(job, e as any); }} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${job.isFavorite ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50' : 'text-slate-400 dark:text-slate-500 hover:text-amber-500'}`} title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'} aria-label={job.isFavorite ? "Remove from favorites" : "Add to favorites"}>
           <StarIcon filled={!!job.isFavorite} />
         </button>
-        <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/review/reminders`); }} className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60' : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'}>
+        <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/review/reminders`); }} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60' : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'} aria-label="Open follow-up email actions">
           <FollowUpIcon />
         </button>
-        <button onClick={(e) => handleDeleteClick(job, e as any)} className="flex items-center justify-center w-8 h-8 rounded-md text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
+        <button onClick={(e) => handleDeleteClick(job, e as any)} className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors" title="Delete" aria-label="Delete job application">
           <DeleteIcon />
         </button>
       </>
@@ -1131,8 +1131,10 @@ const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setAddJobFormCollapsed(!addJobFormCollapsed)}
-              className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
+              className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-lg transition-colors"
               style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              aria-label={addJobFormCollapsed ? "Expand add job form" : "Collapse add job form"}
+              aria-expanded={!addJobFormCollapsed}
             >
               <svg className={`w-4 h-4 transition-transform ${addJobFormCollapsed ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -1184,8 +1186,9 @@ const DashboardPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => { setPreExtractionCvFile(null); if (cvFileInputRef.current) cvFileInputRef.current.value = ''; }}
-                          className="text-slate-400 hover:text-red-500 transition-colors"
+                          className="text-slate-400 hover:text-red-500 transition-colors p-1 min-h-[44px] min-w-[44px]"
                           title="Remove file"
+                          aria-label="Remove selected CV file"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1430,6 +1433,7 @@ const DashboardPage: React.FC = () => {
                     onChange={(e) => setFilterText(e.target.value)}
                     placeholder="Title, company or contact name…"
                     className="input-base w-full pl-9 h-10 text-sm"
+                    aria-label="Search jobs by title, company, or contact name"
                   />
                 </div>
               </div>
@@ -1442,6 +1446,7 @@ const DashboardPage: React.FC = () => {
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="input-base w-full h-10 text-sm"
+                  aria-label="Filter by status"
                 >
                   <option value="">All Statuses</option>
                   {statusOptions.map(status => (
@@ -1458,6 +1463,7 @@ const DashboardPage: React.FC = () => {
                   value={filterJobType}
                   onChange={(e) => setFilterJobType(e.target.value)}
                   className="input-base w-full h-10 text-sm"
+                  aria-label="Filter by job type"
                 >
                   <option value="">All Types</option>
                   <option value="full-time">Full-time</option>
@@ -1476,7 +1482,7 @@ const DashboardPage: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => setFilterFavorite(!filterFavorite)}
-                      className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-sm font-medium transition-all ${filterFavorite
+                      className={`inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all ${filterFavorite
                         ? 'text-ink-950 border-transparent'
                         : 'border-transparent hover:opacity-80'
                         }`}
@@ -1484,6 +1490,8 @@ const DashboardPage: React.FC = () => {
                         ? { background: 'var(--accent)', color: '#0e0e17' }
                         : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                       title="Favorites only"
+                      aria-label="Toggle favorites filter"
+                      aria-pressed={filterFavorite}
                     >
                       <StarIcon filled={filterFavorite} />
                       <span>Favorites</span>
@@ -1494,11 +1502,13 @@ const DashboardPage: React.FC = () => {
 
                     <button
                       onClick={() => setFilterHasNotes(!filterHasNotes)}
-                      className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-sm font-medium transition-all hover:opacity-80"
+                      className="inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all hover:opacity-80"
                       style={filterHasNotes
                         ? { background: 'var(--accent)', color: '#0e0e17', border: '1px solid transparent' }
                         : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                       title="Only show jobs with notes"
+                      aria-label="Toggle notes filter"
+                      aria-pressed={filterHasNotes}
                     >
                       <span className="material-symbols-outlined text-base" style={{ fontSize: '16px' }}>sticky_note_2</span>
                       <span>Has Notes</span>
@@ -1510,11 +1520,13 @@ const DashboardPage: React.FC = () => {
                     <button
                       onClick={handleToggleDueFollowUpFilter}
                       disabled={needsFollowUpCount === 0}
-                      className="inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       style={showOnlyDueFollowUps
                         ? { background: 'var(--accent)', color: '#0e0e17', border: '1px solid transparent' }
                         : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                       title={needsFollowUpCount > 0 ? 'Show jobs that need a follow-up email' : 'No jobs currently need a follow-up email'}
+                      aria-label="Toggle follow-up filter"
+                      aria-pressed={showOnlyDueFollowUps}
                     >
                       <FollowUpIcon />
                       <span>Needs Follow-up</span>
@@ -1614,10 +1626,10 @@ const DashboardPage: React.FC = () => {
                                   <td className="p-4 text-slate-400 dark:text-slate-500">—</td>
                                   <td className="p-4">
                                     <div className="flex items-center justify-end gap-1">
-                                      <button className="flex items-center justify-center w-8 h-8 rounded-md text-slate-400 dark:text-slate-500">
+                                      <button className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-slate-400 dark:text-slate-500" aria-label="Add to favorites (demo)">
                                         <StarIcon filled={false} />
                                       </button>
-                                      <button className="flex items-center justify-center w-8 h-8 rounded-md text-red-400 dark:text-red-500">
+                                      <button className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-red-400 dark:text-red-500" aria-label="Delete job (demo)">
                                         <DeleteIcon />
                                       </button>
                                     </div>
