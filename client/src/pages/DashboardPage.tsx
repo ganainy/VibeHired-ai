@@ -1350,21 +1350,6 @@ const DashboardPage: React.FC = () => {
                         }
                       }}
                     />
-
-                    {/* Upload button */}
-                    {!preExtractionCvFile && (
-                      <button
-                        type="button"
-                        onClick={() => cvFileInputRef.current?.click()}
-                        disabled={isCreatingFromText}
-                        className="mt-1.5 text-xs disabled:opacity-40 flex items-center gap-1 transition-opacity" style={{ color: 'var(--accent)' }}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                        Or upload PDF / DOCX
-                      </button>
-                    )}
                   </div>
 
                   {/* Job URL */}
