@@ -7,6 +7,7 @@
 | 2026-03-26 | Fix Interview Buddy hold button to record | `eba4586` | ✅ Completed |
 | 2026-03-26 | Fix hold button immediate stop bug | `4b6680d` | ✅ Completed |
 | 2026-03-27 | Priority 1 accessibility improvements for Job Dashboard | `4d6bd3b` | ✅ Completed |
+| 2026-03-27 | Remove 'Or upload PDF / DOCX' button from dashboard | `f9b6a94` | ✅ Completed |
 
 ### 2026-03-26: Fix Interview Buddy Hold Button (Initial)
 
