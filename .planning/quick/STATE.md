@@ -6,6 +6,7 @@
 |------|------|--------|--------|
 | 2026-03-26 | Fix Interview Buddy hold button to record | `eba4586` | ✅ Completed |
 | 2026-03-26 | Fix hold button immediate stop bug | `4b6680d` | ✅ Completed |
+| 2026-03-27 | Priority 1 accessibility improvements for Job Dashboard | `4d6bd3b` | ✅ Completed |
 
 ### 2026-03-26: Fix Interview Buddy Hold Button (Initial)
 
@@ -36,3 +37,34 @@
 - Hold button should stay recording while mouse is held
 - Releasing mouse anywhere should stop recording and generate answer
 - Keyboard shortcut (Ctrl+Shift+Space) should continue to work
+
+### 2026-03-27: Priority 1 Accessibility Improvements for Job Dashboard
+
+**Task:** Implement 7 Priority 1 (CRITICAL) accessibility fixes for DashboardPage.tsx
+
+**Fixes Implemented:**
+1. Touch target sizes (32px → 44px minimum)
+2. ARIA labels on all interactive elements
+3. Skip link for keyboard users
+4. Status dropdown keyboard navigation
+5. Modal focus trap
+6. ARIA live region for toast notifications
+7. Table aria-label
+
+**Files Changed:**
+- `client/src/pages/DashboardPage.tsx`
+
+**Commits:**
+- `bec5f63` - Task 1: Touch targets and ARIA labels
+- `4d6bd3b` - Task 2: Skip link, focus management, ARIA regions
+- `ce3ca90` - Documentation
+
+**Changes:**
+- Added `min-h-[44px]` to all action buttons (WCAG 44×44px minimum)
+- Added `aria-label` to search, filters, and all action buttons
+- Added `aria-pressed` to toggle buttons
+- Added skip-to-content link with `id="main-content"`
+- Enhanced StatusDropdown with `role="listbox"` and keyboard nav (Arrow keys, Enter/Space, Escape)
+- Added modal focus trap with `role="dialog"`, `aria-modal="true"`
+- Wrapped Toast in `role="status"` with `aria-live="polite"`
+- Added `aria-label="Job applications table"` to TableOrCards
