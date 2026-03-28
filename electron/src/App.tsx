@@ -126,36 +126,44 @@ const App: React.FC = () => {
         const decoder = new TextDecoder();
         let buffer = '';
         let shouldStop = false;
+        let readCount = 0;
         while (!shouldStop) {
           const { done, value } = await reader.read();
-          if (done) break;
+          readCount++;
+          if (done) {
+            console.log(`[SSE] reader.read() #${readCount}: done=true. Total reads: ${readCount}`);
+            break;
+          }
 
-          buffer += decoder.decode(value, { stream: true });
-          // Process complete SSE events from buffer
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // Keep incomplete line
+          const decoded = decoder.decode(value, { stream: true });
+          console.log(`[SSE] reader.read() #${readCount}: ${decoded.length} bytes — "${decoded.slice(0, 80)}..."`);
+          buffer += decoded;
+          // Process complete SSE events (separated by \n\n per SSE spec)
+          const events = buffer.split('\n\n');
+          buffer = events.pop() || ''; // Keep incomplete event
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const jsonStr = line.slice(6).trim();
-              if (!jsonStr) continue;
-              try {
-                const data = JSON.parse(jsonStr);
-                if (data.error) {
-                  setError(data.error);
-                  shouldStop = true;
-                  break;
-                }
-                if (data.done) {
-                  shouldStop = true;
-                  break;
-                }
-                if (data.text) {
-                  setAnswer(prev => prev + data.text);
-                }
-              } catch {
-                // Skip malformed JSON
+          for (const event of events) {
+            const dataLine = event.split('\n').find(l => l.startsWith('data: '));
+            if (!dataLine) continue;
+            const jsonStr = dataLine.slice(6).trim();
+            if (!jsonStr) continue;
+            try {
+              const data = JSON.parse(jsonStr);
+              console.log(`[SSE] Parsed event:`, data.text ? `text="${data.text.slice(0, 40)}..."` : data.done ? 'done=true' : data.error ? `error="${data.error}"` : 'unknown');
+              if (data.error) {
+                setError(data.error);
+                shouldStop = true;
+                break;
               }
+              if (data.done) {
+                shouldStop = true;
+                break;
+              }
+              if (data.text) {
+                setAnswer(prev => prev + data.text);
+              }
+            } catch {
+              // Skip malformed JSON
             }
           }
         }

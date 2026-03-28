@@ -142,7 +142,7 @@ export async function initializeInterviewSession(
     const model = genAI.getGenerativeModel({
         model: GEMINI_FLASH,
         generationConfig: {
-            maxOutputTokens: 300,
+            maxOutputTokens: 2048,
             temperature: 0.7,
         },
     });
@@ -200,15 +200,19 @@ export async function streamAnswerToResponse(
 
     try {
         const stream = await session.chatSession.sendMessageStream(question);
+        let chunkCount = 0;
 
         for await (const chunk of stream.stream) {
+            chunkCount++;
             const text = chunk.text();
+            console.log(`[streamAnswer] Chunk ${chunkCount}: "${text?.slice(0, 60)}..."`);
             if (text) {
                 res.write(`data: ${JSON.stringify({ text })}\n\n`);
             }
         }
 
         // Signal completion
+        console.log(`[streamAnswer] Stream complete. Total chunks: ${chunkCount}`);
         res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
         res.end();
     } catch (error: any) {
