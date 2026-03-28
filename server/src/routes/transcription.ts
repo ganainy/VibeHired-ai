@@ -1,32 +1,30 @@
 // server/src/routes/transcription.ts
 import { Router, Request, Response, RequestHandler } from 'express';
-import { transcribeAudio, detectMimeType } from '../services/transcriptionService';
+import { transcribeAudio } from '../services/transcriptionService';
 
 const router = Router();
 
-// POST /api/transcribe - Transcribe audio using OpenAI Whisper
+// POST /api/transcribe - Transcribe audio using AssemblyAI
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const { audio, language } = req.body;
 
     if (!audio) {
+      console.error('[TranscriptionRoute] No audio data in request body');
       res.status(400).json({ error: 'Audio data is required' });
       return;
     }
 
-    // Convert base64 audio to blob
+    // Debug: Log incoming audio payload size
+    const audioSizeBytes = Buffer.byteLength(audio, 'base64');
+    const audioSizeKB = (audioSizeBytes / 1024).toFixed(2);
+    console.log(`[TranscriptionRoute] Received audio: ${audioSizeKB}KB (base64), language: ${language}`);
+
     const buffer = Buffer.from(audio, 'base64');
-    const blob = new Blob([buffer], { type: 'audio/webm' });
+    console.log(`[TranscriptionRoute] Converted to buffer: ${buffer.length} bytes`);
 
-    // Get API key from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
-    }
-    const apiKey = authHeader.substring(7);
-
-    const result = await transcribeAudio(blob, apiKey, language || 'en');
+    // transcribeAudio uses server's ASSEMBLYAI_API_KEY from environment
+    const result = await transcribeAudio(buffer, language || 'en');
 
     res.json(result);
   } catch (error) {

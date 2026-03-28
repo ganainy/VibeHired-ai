@@ -1,11 +1,12 @@
 // electron/src/hooks/useAudioRecording.ts
-// Records audio and transcribes using Whisper API via the backend
+// Records audio and transcribes using AssemblyAI via the backend
 import { useRef, useState, useCallback } from 'react';
 import { AuthPayload } from './electron.d';
 
 interface UseAudioRecordingReturn {
   startRecording: (auth: AuthPayload, language?: string) => void;
   stopRecording: () => Promise<string>;
+  resetTranscript: () => void;
   isRecording: boolean;
   transcript: string;
   error: string | null;
@@ -21,6 +22,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
   const audioChunksRef = useRef<Blob[]>([]);
   const authRef = useRef<AuthPayload | null>(null);
   const languageRef = useRef<string>('en');
+  const resolveRef = useRef<((value: string) => void) | null>(null);
 
   const isSupported = typeof MediaRecorder !== 'undefined';
 
@@ -56,10 +58,18 @@ export function useAudioRecording(): UseAudioRecordingReturn {
 
         mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-          await transcribeAudio(audioBlob);
+          const text = await transcribeAudio(audioBlob);
 
           // Stop all audio tracks to release microphone
           stream.getTracks().forEach(track => track.stop());
+          setIsRecording(false);
+          mediaRecorderRef.current = null;
+
+          // Resolve the stopRecording promise with the transcript
+          if (resolveRef.current) {
+            resolveRef.current(text);
+            resolveRef.current = null;
+          }
         };
 
         mediaRecorder.start(100); // Collect data every 100ms
@@ -72,70 +82,75 @@ export function useAudioRecording(): UseAudioRecordingReturn {
       });
   }, [isSupported]);
 
-  const transcribeAudio = async (audioBlob: Blob) => {
+  const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
     const auth = authRef.current;
     if (!auth) {
       setError('No authentication data available.');
-      return;
+      return '';
     }
 
     try {
       // Convert blob to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = async () => {
-        const base64Audio = (reader.result as string).split(',')[1];
+      const base64Audio = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(audioBlob);
+      });
 
-        console.log('[AudioRecording] Sending audio for transcription...');
+      console.log('[AudioRecording] Sending audio for transcription...');
 
-        const response = await fetch(`${auth.apiUrl}/transcribe`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${auth.token}`,
-          },
-          body: JSON.stringify({
-            audio: base64Audio,
-            language: languageRef.current,
-          }),
-        });
+      const response = await fetch(`${auth.apiUrl}/transcribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${auth.token}`,
+        },
+        body: JSON.stringify({
+          audio: base64Audio,
+          language: languageRef.current,
+        }),
+      });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Transcription failed');
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Transcription failed');
+      }
 
-        const result = await response.json();
-        console.log('[AudioRecording] Transcription result:', result);
-        setTranscript(result.text);
-      };
+      const result = await response.json();
+      console.log('[AudioRecording] Transcription result:', result);
+      setTranscript(result.text);
+      return result.text;
     } catch (err) {
       console.error('[AudioRecording] Transcription error:', err);
       setError((err as Error).message || 'Transcription failed');
+      return '';
     }
   };
 
+  const resetTranscript = useCallback(() => {
+    setTranscript('');
+  }, []);
+
   const stopRecording = useCallback(async (): Promise<string> => {
     return new Promise((resolve) => {
-      if (!mediaRecorderRef.current) {
+      const recorder = mediaRecorderRef.current;
+      if (!recorder) {
         resolve('');
         return;
       }
 
-      mediaRecorderRef.current.onstop = () => {
-        setIsRecording(false);
-        mediaRecorderRef.current = null;
-        resolve(transcript); // Resolve with the transcript
-      };
-
-      mediaRecorderRef.current.stop();
+      // Store resolve so startRecording's onstop can resolve with the transcript
+      resolveRef.current = resolve;
+      recorder.stop();
       console.log('[AudioRecording] Stopped recording');
     });
-  }, [transcript]);
+  }, []);
 
   return {
     startRecording,
     stopRecording,
+    resetTranscript,
     isRecording,
     transcript,
     error,

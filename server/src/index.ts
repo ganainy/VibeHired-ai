@@ -4,6 +4,7 @@ import './config/env';
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import { createServer } from 'http';
 import { closeBrowser } from './utils/pdfGenerator'; // Assuming this is still needed
 
 // Import routes
@@ -35,6 +36,7 @@ import subscriptionRoutes from './routes/subscription';
 import adminRoutes from './routes/admin';
 import errorRoutes from './routes/errors';
 import transcriptionRoutes from './routes/transcription';
+import { setupTranscriptionWebSocket } from './routes/transcriptionStream';
 import { handleStripeWebhook } from './controllers/webhookController';
 // Correct the import for the default export
 import protect from './middleware/authMiddleware'; // Import default export and alias it as 'protect'
@@ -84,12 +86,21 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions)); // Enable CORS with configuration
 
+// Add request size logging middleware (before body parsers)
+app.use((req, res, next) => {
+  const contentLength = req.get('content-length');
+  if (contentLength) {
+    const sizeKB = (parseInt(contentLength) / 1024).toFixed(2);
+    console.log(`[RequestLogger] ${req.method} ${req.path} - Content-Length: ${sizeKB}KB, Content-Type: ${req.get('content-type') || 'unknown'}`);
+  }
+  next();
+});
+
 // Stripe Webhook MUST stay before express.json() to get RAW body
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
-app.use(express.json()); // for parsing application/json
-app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
-app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+app.use(express.json({ limit: '10mb' })); // for parsing application/json, increased limit for audio payloads
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // for parsing application/x-www-form-urlencoded
 // Cloudinary is now used for image storage, so local static file serving is no longer primary
 // but we keep the uploads directory for temporary processing if needed
 
@@ -161,6 +172,9 @@ mongoose.connect(mongoUri)
 
     const server = app.listen(port, () => {
       console.log(`[server]: Server is running at http://localhost:${port}`);
+
+      // Setup AssemblyAI real-time transcription WebSocket
+      setupTranscriptionWebSocket(server);
     });
 
     // --- Graceful Shutdown ---

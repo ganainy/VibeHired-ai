@@ -1,53 +1,65 @@
 // server/src/services/transcriptionService.ts
-// Speech-to-text using OpenAI Whisper API
+// Speech-to-text using AssemblyAI real-time streaming
+
+import { AssemblyAI } from 'assemblyai';
+
+let client: AssemblyAI | null = null;
+
+function getClient(): AssemblyAI {
+  if (!client) {
+    const apiKey = process.env.ASSEMBLYAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('ASSEMBLYAI_API_KEY environment variable is not set');
+    }
+    client = new AssemblyAI({ apiKey });
+  }
+  return client;
+}
 
 export interface TranscriptionResult {
   text: string;
-  language?: string;
-  duration?: number;
 }
 
+/**
+ * Create a real-time transcriber for streaming audio via WebSocket.
+ */
+export function createRealtimeTranscriber(sampleRate: number = 16000) {
+  return getClient().realtime.transcriber({ sampleRate });
+}
+
+/**
+ * File-upload transcription fallback (non-streaming).
+ * Used by the REST endpoint for backward compatibility.
+ */
 export async function transcribeAudio(
-  audioBlob: Blob,
-  apiKey: string,
+  audioBuffer: Buffer | Blob,
   language: string = 'en'
 ): Promise<TranscriptionResult> {
-  const formData = new FormData();
-  formData.append('file', audioBlob, 'audio.webm');
-  formData.append('model', 'whisper-1');
-  formData.append('language', language);
+  const c = getClient();
 
-  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: formData,
+  // Convert Blob to Buffer if needed
+  const audioData: Buffer = audioBuffer instanceof Buffer
+    ? audioBuffer
+    : Buffer.from(await (audioBuffer as Blob).arrayBuffer());
+
+  // Debug: Log audio buffer details
+  const bufferKB = (audioData.length / 1024).toFixed(2);
+  console.log(`[TranscriptionService] Audio buffer: ${bufferKB}KB, language: ${language}`);
+  console.log(`[TranscriptionService] Calling AssemblyAI with speech_models: ["universal-3-pro", "universal-2"]`);
+
+  const transcript = await c.transcripts.transcribe({
+    audio: audioData,
+    language_code: language,
+    speech_models: ['universal-3-pro', 'universal-2'],
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Transcription failed');
+  // Debug: Log AssemblyAI response
+  console.log(`[TranscriptionService] AssemblyAI status: ${transcript.status}`);
+  if (transcript.status === 'error') {
+    console.error(`[TranscriptionService] AssemblyAI error: ${transcript.error}`);
+    throw new Error(transcript.error || 'Transcription failed');
   }
 
-  return response.json();
-}
-
-export function detectMimeType(mediaRecorder: MediaRecorder): string {
-  // Check supported MIME types
-  const types = [
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/ogg;codecs=opus',
-    'audio/mp4',
-    'audio/mpeg',
-  ];
-
-  for (const type of types) {
-    if (MediaRecorder.isTypeSupported(type)) {
-      return type;
-    }
-  }
-
-  return 'audio/webm'; // fallback
+  console.log(`[TranscriptionService] Transcription successful, length: ${transcript.text?.length || 0} chars`);
+  return { text: transcript.text || '' };
 }

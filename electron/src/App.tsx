@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const {
     startRecording: startAudioRecording,
     stopRecording: stopAudioRecording,
+    resetTranscript,
     transcript,
     isRecording,
     error: recordingError,
@@ -39,7 +40,8 @@ const App: React.FC = () => {
       setAuth(payload);
       setAnswer(null);
       setError(null);
-      setTranscriptState('');
+      resetTranscript();
+      transcriptRef.current = '';
     });
 
     window.electronAPI.onHotkey(async (action) => {
@@ -48,7 +50,7 @@ const App: React.FC = () => {
         if (currentAuth && !isListeningRef.current) {
           setAnswer(null);
           setError(null);
-          setTranscript('');
+          resetTranscript();
           startAudioRecording(currentAuth, 'en');
         }
       } else if (action === 'push-to-talk-stop') {
@@ -91,20 +93,14 @@ const App: React.FC = () => {
   );
 
   // ── Push-to-talk: hold button / shortcut ─────────────────────────────────
-  const setTranscriptState = useCallback((text: string) => {
-    setTranscript(text);
-    // Update the ref too for immediate access
-    transcriptRef.current = text;
-  }, []);
-
   const startRecording = useCallback(() => {
     console.log('[App] startRecording called');
     if (!auth || isListeningRef.current) return;
     setAnswer(null);
     setError(null);
-    setTranscriptState('');
+    resetTranscript();
     startAudioRecording(auth, 'en');
-  }, [auth, startAudioRecording, setTranscriptState]);
+  }, [auth, startAudioRecording, resetTranscript]);
 
   const stopRecording = useCallback(async () => {
     console.log('[App] stopRecording called');
@@ -117,11 +113,11 @@ const App: React.FC = () => {
   }, [stopAudioRecording, auth]);
 
   const clearAll = useCallback(() => {
-    setTranscriptState('');
+    resetTranscript();
     setAnswer(null);
     setError(null);
     // Recording error will clear on next recording
-  }, [setTranscriptState]);
+  }, [resetTranscript]);
 
   // ── Waiting for deep-link auth ───────────────────────────────────────────
   if (!auth) {
