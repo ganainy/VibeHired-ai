@@ -4,7 +4,7 @@ import { useRef, useState, useCallback } from 'react';
 import { AuthPayload } from './electron.d';
 
 interface UseAudioRecordingReturn {
-  startRecording: (auth: AuthPayload, language?: string, deviceId?: string) => void;
+  startRecording: (auth: AuthPayload, language?: string, deviceId?: string | null) => void;
   stopRecording: () => Promise<string>;
   isRecording: boolean;
   transcript: string;
@@ -24,7 +24,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
 
   const isSupported = typeof MediaRecorder !== 'undefined';
 
-  const startRecording = useCallback((auth: AuthPayload, language = 'en', deviceId?: string) => {
+  const startRecording = useCallback((auth: AuthPayload, language = 'en', deviceId?: string | null) => {
     if (!isSupported) {
       setError('MediaRecorder is not supported in this browser.');
       return;
