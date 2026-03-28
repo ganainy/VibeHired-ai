@@ -21,3 +21,12 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Files changed:** server/src/middleware/authMiddleware.ts, server/src/controllers/adminController.ts, server/src/services/externalCallTracking.ts, server/src/services/requestContext.ts, server/src/index.ts
 
 ---
+
+## recording-button-state-stuck-after-release — Hold-to-record button stays glowing during transcription
+- **Date:** 2026-03-28
+- **Error patterns:** recording, button, glow, stuck, state, transcription, setIsRecording, onstop, mediaRecorder
+- **Root cause:** In useAudioRecording.ts, setIsRecording(false) was called AFTER awaiting transcribeAudio(), which meant the recording state stayed true during the entire transcription process, causing the button to continue glowing.
+- **Fix:** Moved setIsRecording(false), microphone track cleanup, and mediaRecorder cleanup to execute immediately when onstop fires, before the async transcription call. This ensures the UI updates to show the button as released immediately, while transcription happens in the background.
+- **Files changed:** electron/src/hooks/useAudioRecording.ts
+
+---
