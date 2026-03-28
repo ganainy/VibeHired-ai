@@ -4,7 +4,7 @@ import { useRef, useState, useCallback } from 'react';
 import { AuthPayload } from './electron.d';
 
 interface UseAudioRecordingReturn {
-  startRecording: (auth: AuthPayload, language?: string) => void;
+  startRecording: (auth: AuthPayload, language?: string, deviceId?: string) => void;
   stopRecording: () => Promise<string>;
   isRecording: boolean;
   transcript: string;
@@ -24,7 +24,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
 
   const isSupported = typeof MediaRecorder !== 'undefined';
 
-  const startRecording = useCallback((auth: AuthPayload, language = 'en') => {
+  const startRecording = useCallback((auth: AuthPayload, language = 'en', deviceId?: string) => {
     if (!isSupported) {
       setError('MediaRecorder is not supported in this browser.');
       return;
@@ -36,7 +36,10 @@ export function useAudioRecording(): UseAudioRecordingReturn {
     languageRef.current = language;
     audioChunksRef.current = [];
 
-    navigator.mediaDevices.getUserMedia({ audio: true })
+    const constraints: MediaStreamConstraints = {
+      audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+    };
+    navigator.mediaDevices.getUserMedia(constraints)
       .then((stream) => {
         // Find best supported MIME type
         const mimeType = [
@@ -141,4 +144,21 @@ export function useAudioRecording(): UseAudioRecordingReturn {
     error,
     isSupported,
   };
+}
+
+/**
+ * Enumerate available microphone devices.
+ * Requests temporary audio access to ensure device labels are populated
+ * (labels are empty until the user grants microphone permission).
+ */
+export async function enumerateMicrophones(): Promise<MediaDeviceInfo[]> {
+  try {
+    const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    tempStream.getTracks().forEach(t => t.stop());
+    return devices.filter(d => d.kind === 'audioinput');
+  } catch {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter(d => d.kind === 'audioinput');
+  }
 }
