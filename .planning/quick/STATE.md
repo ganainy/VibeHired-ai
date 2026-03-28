@@ -8,6 +8,7 @@
 | 2026-03-26 | Fix hold button immediate stop bug | `4b6680d` | ✅ Completed |
 | 2026-03-27 | Priority 1 accessibility improvements for Job Dashboard | `4d6bd3b` | ✅ Completed |
 | 2026-03-27 | Remove 'Or upload PDF / DOCX' button from dashboard | `f9b6a94` | ✅ Completed |
+| 2026-03-28 | Fix recording button UI state stuck after release | `e49629a` | ✅ Completed |
 
 ### 2026-03-26: Fix Interview Buddy Hold Button (Initial)
 
@@ -69,3 +70,28 @@
 - Added modal focus trap with `role="dialog"`, `aria-modal="true"`
 - Wrapped Toast in `role="status"` with `aria-live="polite"`
 - Added `aria-label="Job applications table"` to TableOrCards
+
+### 2026-03-28: Fix Recording Button UI State Stuck After Release
+
+**Task:** Fix Interview Buddy recording button UI getting stuck in "isListening" state after releasing the hold button.
+
+**Problem:** After releasing the hold button, the recording button UI would remain in the "REC" state with pulse animation, even though recording had stopped. This created a confusing user experience.
+
+**Root Cause:** In `electron/src/App.tsx`, there was a `setTranscriptState` callback function (lines 94-98) that attempted to call `setTranscript(text)`, but `setTranscript` was not defined in the App component scope. The transcript state is managed internally by the `useAudioRecording` hook and was not exported, causing a runtime error that prevented proper state updates.
+
+**Solution:**
+1. Exported `setTranscript` from the `useAudioRecording` hook
+2. Removed the invalid `setTranscriptState` callback wrapper
+3. Updated all transcript clearing calls to use `setTranscript` directly from the hook
+
+**Files Changed:**
+- `electron/src/App.tsx` - Removed `setTranscriptState` callback, updated to use `setTranscript` from hook
+- `electron/src/hooks/useAudioRecording.ts` - Exported `setTranscript` in return type and object
+
+**Commit:** `e49629a`
+
+**Testing:**
+- Button UI state correctly transitions from REC to HOLD after release
+- Recording flow works: hold → record → release → stop + generate
+- Clear button clears transcript and answer
+- No new TypeScript errors introduced
