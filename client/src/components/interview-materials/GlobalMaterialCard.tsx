@@ -3,6 +3,45 @@ import React, { useState } from 'react';
 import { InterviewMaterial, MaterialJobRef, MaterialType } from '../../types/interviewMaterial';
 import MaterialPreviewModal, { canPreviewInline } from '../jobs/MaterialPreviewModal';
 
+function getJobRef(material: InterviewMaterial): MaterialJobRef | null {
+    if (!material.jobApplicationId) return null;
+    if (typeof material.jobApplicationId === 'string') return null;
+    return material.jobApplicationId as MaterialJobRef;
+}
+
+function getJobId(material: InterviewMaterial): string | null {
+    if (!material.jobApplicationId) return null;
+    if (typeof material.jobApplicationId === 'string') return material.jobApplicationId;
+    return (material.jobApplicationId as MaterialJobRef)._id;
+}
+
+function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(dateStr: string): string {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function iconForType(type: MaterialType): string {
+    switch (type) {
+        case 'pdf': return 'picture_as_pdf';
+        case 'image': return 'image';
+        case 'docx': return 'description';
+        case 'text': return 'article';
+        case 'markdown': return 'code';
+        case 'link': return 'link';
+        default: return 'attach_file';
+    }
+}
+
+function toDownloadCloudinaryUrl(url: string): string {
+    return url.replace('/upload/', '/upload/fl_attachment/');
+}
+
 interface GlobalMaterialCardProps {
     material: InterviewMaterial;
     showJobChip?: boolean;
@@ -403,7 +442,7 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                             </button>
                         ) : (
                             <button
-                                onClick={(e) => e.stopPropagation(); onShare(material._id); }}
+                                onClick={(e) => { e.stopPropagation(); onShare(material._id); }}
                                 title="Share"
                                 disabled={isUpdating}
                                 className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
