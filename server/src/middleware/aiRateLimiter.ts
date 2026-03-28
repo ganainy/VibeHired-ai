@@ -45,18 +45,24 @@ export function checkAiRateLimit(
 
     const existing = store.get(userId);
 
+    console.log(`[aiRateLimiter] userId: ${userId.slice(0, 8)}..., plan: ${tier}, window: ${limits.windowMs}ms, max: ${limits.max}`);
+    console.log(`[aiRateLimiter] existing:`, existing ? `count: ${existing.count}, resetAt: ${new Date(existing.resetAt).toISOString()}` : 'none');
+
     if (!existing || now > existing.resetAt) {
         // First request in a new window
         store.set(userId, { count: 1, resetAt: now + limits.windowMs });
+        console.log(`[aiRateLimiter] New window started. count: 1, resetAt: ${new Date(now + limits.windowMs).toISOString()}`);
         return { allowed: true };
     }
 
     if (existing.count >= limits.max) {
         const retryAfter = Math.ceil((existing.resetAt - now) / 1000);
+        console.log(`[aiRateLimiter] BLOCKED - count: ${existing.count} >= max: ${limits.max}, retryAfter: ${retryAfter}s`);
         return { allowed: false, retryAfter };
     }
 
     existing.count++;
+    console.log(`[aiRateLimiter] ALLOWED - count incremented to: ${existing.count}`);
     return { allowed: true };
 }
 

@@ -48,10 +48,16 @@ export type CreditActionType = keyof typeof CREDIT_WEIGHTS;
  * Per-user AI velocity rate limits per plan.
  * Applies regardless of role — all users are subject to the same window limits.
  * The window is shared; max scales up with plan tier.
+ *
+ * NOTE: These limits were increased (3x) on 2026-03-28 to allow for more reasonable
+ * interview practice sessions. Users were hitting 429 errors during normal usage,
+ * as each question in the Interview Buddy triggers a stream-answer request.
+ * With 30+ requests per 10 min window (free tier), users can have continuous
+ * practice sessions without interruption.
  */
 export const AI_RATE_LIMITS: Record<PlanType, { windowMs: number; max: number }> = {
-    free:    { windowMs: 10 * 60 * 1000, max: 10 },  // 10 requests / 10 min
-    starter: { windowMs: 10 * 60 * 1000, max: 20 },  // 20 requests / 10 min
-    pro:     { windowMs: 10 * 60 * 1000, max: 40 },  // 40 requests / 10 min
-    premium: { windowMs: 10 * 60 * 1000, max: 80 },  // 80 requests / 10 min
+    free:    { windowMs: 10 * 60 * 1000, max: 30 },  // 30 requests / 10 min
+    starter: { windowMs: 10 * 60 * 1000, max: 60 },  // 60 requests / 10 min
+    pro:     { windowMs: 10 * 60 * 1000, max: 120 }, // 120 requests / 10 min
+    premium: { windowMs: 10 * 60 * 1000, max: 240 }, // 240 requests / 10 min
 };
