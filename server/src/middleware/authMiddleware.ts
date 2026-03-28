@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User'; // Import User model
 import { AuthenticationError, InternalServerError } from '../utils/errors/AppError';
-import { asyncLocalStorage, setUserId, setUserEmail, clearFallbackContext } from '../services/requestContext';
+import { asyncLocalStorage, setUserId, setUserEmail, setRequestPath, clearFallbackContext } from '../services/requestContext';
 
 // Define the structure of the decoded JWT payload
 interface JwtPayload {
@@ -62,9 +62,10 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
     // Set fallback storage for SDK callbacks that lose async context
     setUserId(userId);
     setUserEmail(userEmail);
-    console.log('[AuthMiddleware] Fallback storage set');
+    setRequestPath(req.path);
+    console.log('[AuthMiddleware] Fallback storage set:', { userId, userEmail, requestPath: req.path });
 
-    asyncLocalStorage.run({ userId, userEmail }, () => {
+    asyncLocalStorage.run({ userId, userEmail, requestPath: req.path }, () => {
       next();
 
       // Clear fallback storage after response finishes

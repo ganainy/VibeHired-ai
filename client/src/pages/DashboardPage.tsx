@@ -967,50 +967,6 @@ const DashboardPage: React.FC = () => {
       ),
     },
     {
-      key: 'jobType',
-      label: 'Type',
-      sortable: true,
-      onSort: () => handleSort('jobType'),
-      sortDirection: sortKey === 'jobType' ? sortDirection : null,
-      mobileHidden: true,
-      render: (job) => (
-        <span style={{ color: 'var(--text-secondary)' }}>
-          {job.jobType ? (
-            <>
-              {job.jobType === 'full-time' && 'Full-time'}
-              {job.jobType === 'part-time' && 'Part-time'}
-              {job.jobType === 'working-student' && 'Working Student'}
-              {job.jobType === 'internship' && 'Internship'}
-              {job.jobType === 'contract' && 'Contract'}
-              {job.jobType === 'freelance' && 'Freelance'}
-            </>
-          ) : (
-            <span style={{ color: 'var(--text-muted)' }}>-</span>
-          )}
-        </span>
-      ),
-    },
-    {
-      key: 'salary',
-      label: 'Salary',
-      sortable: true,
-      onSort: () => handleSort('salary'),
-      sortDirection: sortKey === 'salary' ? sortDirection : null,
-      mobileHidden: true,
-      wrap: true,
-      render: (job) => {
-        const displaySalary = job.salary || job.extractedData?.salaryRaw || job.extractedData?.estimatedSalary;
-        if (!displaySalary) return <span style={{ color: 'var(--text-muted)' }}>-</span>;
-        const isEstimate = !job.salary && !job.extractedData?.salaryRaw && job.extractedData?.salaryIsEstimate;
-        return (
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium line-clamp-2" title={displaySalary}>{displaySalary}</span>
-            {isEstimate && <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">AI Est.</span>}
-          </div>
-        );
-      },
-    },
-    {
       key: 'contact',
       label: 'Contact',
       mobileHidden: true,
@@ -1469,7 +1425,7 @@ const DashboardPage: React.FC = () => {
                       <>
                         <SparklesIcon />
                         <span>Extract with AI</span>
-                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 cr</span>
+                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 Credit</span>
                       </>
                     )}
                   </button>

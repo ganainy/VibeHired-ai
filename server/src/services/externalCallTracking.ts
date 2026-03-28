@@ -1,7 +1,7 @@
 import axios from 'axios';
 import mongoose from 'mongoose';
 import ExternalCallLog, { ExternalCallCategory } from '../models/ExternalCallLog';
-import { getUserId, getUserEmail } from './requestContext';
+import { getUserId, getUserEmail, getRequestPath } from './requestContext';
 
 type TrackedProvider = 'gemini' | 'openrouter' | 'ollama' | 'openai' | 'anthropic' | 'apify';
 
@@ -22,6 +22,7 @@ interface TrackedCallLog {
   errorMessage?: string;
   userId?: string;
   userEmail?: string;
+  service?: string;  // The backend feature/endpoint that triggered the call
 }
 
 interface AxiosTrackingMeta {
@@ -29,6 +30,7 @@ interface AxiosTrackingMeta {
   target: TrackedTarget;
   url: string;
   modelName?: string;
+  service?: string;  // Track calling service for display
 }
 
 const TRACKED_HOSTS: Array<{ match: (host: string, port: string) => boolean; target: TrackedTarget }> = [
@@ -140,6 +142,8 @@ function persistLog(log: TrackedCallLog): void {
 
   console.log('[ExternalCallTracking] Final userId:', userId, 'userEmail:', userEmail);
 
+  const backendRequestPath = getRequestPath();
+
   const doc: any = {
     category: log.category,
     provider: log.provider,
@@ -151,7 +155,7 @@ function persistLog(log: TrackedCallLog): void {
     durationMs: Math.max(0, Math.round(log.durationMs)),
     modelName: log.modelName,
     errorMessage: truncateErrorMessage(log.errorMessage),
-    requestPath: parsed.pathname,
+    requestPath: backendRequestPath || parsed.pathname,
     requestMethod: (log.method || 'GET').toUpperCase(),
   };
 

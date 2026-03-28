@@ -753,7 +753,7 @@ const MockJobReviewPage: React.FC = () => {
                                     >
                                         <span className="material-symbols-outlined text-base">play_arrow</span>
                                         Start Interview
-                                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>5 cr</span>
+                                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>5 Credit</span>
                                     </button>
 
                                     {/* Copy prompts for external AI */}

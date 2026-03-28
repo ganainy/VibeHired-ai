@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 interface RequestContext {
   userId?: string;
   userEmail?: string;
+  requestPath?: string;
 }
 
 export const asyncLocalStorage = new AsyncLocalStorage<RequestContext>();
@@ -10,6 +11,7 @@ export const asyncLocalStorage = new AsyncLocalStorage<RequestContext>();
 // Fallback storage for when async context is lost (e.g., in SDK callbacks)
 let currentUserId: string | undefined = undefined;
 let currentUserEmail: string | undefined = undefined;
+let currentRequestPath: string | undefined = undefined;
 
 export function getUserId(): string | undefined {
   // First try async local storage
@@ -51,9 +53,28 @@ export function setUserEmail(email: string): void {
   currentUserEmail = email;
 }
 
+export function setRequestPath(path: string): void {
+  const store = asyncLocalStorage.getStore();
+  if (store) {
+    store.requestPath = path;
+  }
+  // Also set fallback
+  currentRequestPath = path;
+}
+
+export function getRequestPath(): string | undefined {
+  // First try async local storage
+  const store = asyncLocalStorage.getStore();
+  if (store?.requestPath) return store.requestPath;
+
+  // Fallback to module-level variable
+  return currentRequestPath;
+}
+
 export function clearFallbackContext(): void {
   currentUserId = undefined;
   currentUserEmail = undefined;
+  currentRequestPath = undefined;
 }
 
 export function runWithContext<T>(callback: () => Promise<T>): Promise<T> {

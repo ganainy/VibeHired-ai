@@ -934,7 +934,19 @@ const CVManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 pt-8 sm:pt-10 pb-6 gap-4 sm:gap-6 overflow-hidden">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6 gap-4 sm:gap-6 overflow-hidden">
+      {/* Page Header */}
+      {allCvs.length > 0 && !showMockTour && !isReplacing && (
+        <div className="flex-shrink-0 pb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+            Manage Your CVs
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+            Create, edit, and tailor your CVs for different job applications
+          </p>
+        </div>
+      )}
+
       {allCvs.length === 0 && !showMockTour && !isLoadingCv && !currentCvData ? (
         /* ── Zero-CV hero ── */
         <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
@@ -945,11 +957,11 @@ const CVManagementPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-                Add Your First CV
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                No CVs Yet
               </h2>
-              <p className="text-base text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                Upload your existing CV and we'll extract it into a structured, editable format.
+              <p className="text-base text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                Upload your existing CV or create one from scratch to get started with personalized job applications.
               </p>
             </div>
 
@@ -987,8 +999,10 @@ const CVManagementPage: React.FC = () => {
               </button>
             </form>
             {uploadError && <p className="mt-4 text-red-600 text-center">{uploadError}</p>}
-            <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-              Don't have a file?{' '}
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Don't have a file?
+              </p>
               <button
                 type="button"
                 onClick={() => {
@@ -998,11 +1012,11 @@ const CVManagementPage: React.FC = () => {
                   };
                   setCurrentCvData(emptyCvData);
                 }}
-                className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                className="text-sm px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
               >
-                Start from scratch instead
+                Create from Scratch
               </button>
-            </p>
+            </div>
           </div>
         </div>
       ) : (

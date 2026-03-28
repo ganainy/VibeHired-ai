@@ -424,7 +424,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
         review: isEnglish ? 'Review Answers' : 'Antworten überprüfen',
         addMore: isEnglish ? 'Add More Questions' : 'Weitere Fragen hinzufügen',
         questionCount: isEnglish ? '5 questions' : '5 Fragen',
-        credits: isEnglish ? '5 cr' : '5 cr',
+        credits: isEnglish ? '5 Credits' : '5 Credits',
         generating: isEnglish ? 'Generating your interview questions…' : 'Interviewfragen werden generiert…',
         evaluating: isEnglish ? 'Evaluating your answer…' : 'Antwort wird bewertet…',
         endInterview: isEnglish ? 'End Interview' : 'Interview beenden',

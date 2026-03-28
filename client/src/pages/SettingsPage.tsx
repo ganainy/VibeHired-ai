@@ -160,15 +160,15 @@ const SettingsPage: React.FC = () => {
   };
 
   const quickStatItems = [
-    { label: 'CV Improvements', cost: '2 cr', count: getActionCount('analysis') },
-    { label: 'CV Generation', cost: '3 cr', count: getActionCount('cvGeneration') },
-    { label: 'AI Chat Messages', cost: '1 cr', count: getActionCount('chatMessages', 'chatMessage') },
-    { label: 'Job Extractions', cost: '1 cr', count: getActionCount('jobExtractions', 'jobExtraction') },
-    { label: 'Interview Prep', cost: '5 cr', count: getActionCount('interview') },
-    { label: 'Cover Letters', cost: '3 cr', count: getActionCount('coverLetter') },
-    { label: 'ATS Scoring', cost: '2 cr', count: getActionCount('atsScoring') },
-    { label: 'CV Parsing', cost: '2 cr', count: getActionCount('cvParsing') },
-    { label: 'Email Scans', cost: '1 cr', count: getActionCount('emailScans', 'emailScan') },
+    { label: 'CV Improvements', cost: '2 Credits', count: getActionCount('analysis') },
+    { label: 'CV Generation', cost: '3 Credits', count: getActionCount('cvGeneration') },
+    { label: 'AI Chat Messages', cost: '1 Credit', count: getActionCount('chatMessages', 'chatMessage') },
+    { label: 'Job Extractions', cost: '1 Credit', count: getActionCount('jobExtractions', 'jobExtraction') },
+    { label: 'Interview Prep', cost: '5 Credits', count: getActionCount('interview') },
+    { label: 'Cover Letters', cost: '3 Credits', count: getActionCount('coverLetter') },
+    { label: 'ATS Scoring', cost: '2 Credits', count: getActionCount('atsScoring') },
+    { label: 'CV Parsing', cost: '2 Credits', count: getActionCount('cvParsing') },
+    { label: 'Email Scans', cost: '1 Credit', count: getActionCount('emailScans', 'emailScan') },
     { label: 'Auto Jobs', cost: '3 base + 0.25/job', count: getActionCount('autoJobsWorkflow') },
   ];
 

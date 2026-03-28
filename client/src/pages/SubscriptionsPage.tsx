@@ -18,10 +18,10 @@ const PLANS = [
         description: 'Try the platform at no cost',
         features: [
             '20 credits to try everything',
-            'Targeted CV generation (3 cr each)',
-            'CV analysis & ATS scoring (2 cr each)',
-            'Cover letters & interview sim (5 cr each)',
-            'Chat, email scan & job extraction (1 cr each)',
+            'Targeted CV generation (3 Credits each)',
+            'CV analysis & ATS scoring (2 Credits each)',
+            'Cover letters & interview sim (5 Credits each)',
+            'Chat, email scan & job extraction (1 Credit each)',
         ],
         popular: false,
     },
@@ -34,7 +34,7 @@ const PLANS = [
         description: 'For occasional job seekers',
         features: [
             '150 credits / month',
-            'Targeted CV generation per job (3 cr)',
+            'Targeted CV generation per job (3 Credits)',
             '~75 CV analyses or ATS scans',
             '~50 cover letters per month',
             'All features included',
@@ -50,7 +50,7 @@ const PLANS = [
         description: 'Best for active job hunters',
         features: [
             '500 credits / month',
-            'Targeted CV generation per job (3 cr)',
+            'Targeted CV generation per job (3 Credits)',
             '~250 CV analyses or ATS scans',
             '~165 cover letters per month',
             'All features included',
@@ -67,7 +67,7 @@ const PLANS = [
         description: 'For heavy or high-volume use',
         features: [
             '1,500 credits / month',
-            'Targeted CV generation per job (3 cr)',
+            'Targeted CV generation per job (3 Credits)',
             '~750 CV analyses or ATS scans',
             '~500 cover letters per month',
             'All features included',
@@ -378,7 +378,7 @@ const SubscriptionsPage: React.FC = () => {
                     />
                     <FAQItem
                         question="What do credits cost, and what do they cover?"
-                        answer="Credits power every AI action: chat messages and email scans (1 cr), CV analysis and ATS scoring (2 cr each), targeted CV generation, cover letter generation, and interview simulations (5 cr each). Job board searches cost 3 cr base + 0.25 cr per result."
+                        answer="Credits power every AI action: chat messages and email scans (1 Credit), CV analysis and ATS scoring (2 Credits each), targeted CV generation, cover letter generation, and interview simulations (5 Credits each). Job board searches cost 3 Credits base + 0.25 Credits per result."
                     />
                     <FAQItem
                         question="Do unused credits roll over?"

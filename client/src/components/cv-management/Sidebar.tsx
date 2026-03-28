@@ -199,7 +199,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex flex-col gap-2 p-3 border-b" style={{borderColor:'var(--border)'}}>
                 {/* Row 1: Title & Filter - stack on mobile */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <h2 className="text-sm font-extrabold uppercase tracking-widest label-overline" style={{color:'var(--text-primary)'}}>My Documents</h2>
+                    <h2 className="text-sm font-extrabold uppercase tracking-widest label-overline" style={{color:'var(--text-primary)'}}>My CVs</h2>
 
                     <div className="relative w-full sm:w-48 flex-shrink-0">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-gray-400">
@@ -238,7 +238,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         </svg>
                                     </div>
                                     <span className="text-[10px] font-bold uppercase tracking-tight">New CV</span>
-                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 cr</span>
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credits</span>
                                 </button>
                             )}
 
