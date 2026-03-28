@@ -8,6 +8,7 @@ interface UseAudioRecordingReturn {
   stopRecording: () => Promise<string>;
   isRecording: boolean;
   transcript: string;
+  setTranscript: (text: string) => void;
   error: string | null;
   isSupported: boolean;
 }
@@ -138,6 +139,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
     stopRecording,
     isRecording,
     transcript,
+    setTranscript,
     error,
     isSupported,
   };

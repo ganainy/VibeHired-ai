@@ -21,6 +21,7 @@ const App: React.FC = () => {
     startRecording: startAudioRecording,
     stopRecording: stopAudioRecording,
     transcript,
+    setTranscript,
     isRecording,
     error: recordingError,
     isSupported,
@@ -39,7 +40,7 @@ const App: React.FC = () => {
       setAuth(payload);
       setAnswer(null);
       setError(null);
-      setTranscriptState('');
+      setTranscript('');
     });
 
     window.electronAPI.onHotkey(async (action) => {
@@ -91,20 +92,14 @@ const App: React.FC = () => {
   );
 
   // ── Push-to-talk: hold button / shortcut ─────────────────────────────────
-  const setTranscriptState = useCallback((text: string) => {
-    setTranscript(text);
-    // Update the ref too for immediate access
-    transcriptRef.current = text;
-  }, []);
-
   const startRecording = useCallback(() => {
     console.log('[App] startRecording called');
     if (!auth || isListeningRef.current) return;
     setAnswer(null);
     setError(null);
-    setTranscriptState('');
+    setTranscript('');
     startAudioRecording(auth, 'en');
-  }, [auth, startAudioRecording, setTranscriptState]);
+  }, [auth, startAudioRecording, setTranscript]);
 
   const stopRecording = useCallback(async () => {
     console.log('[App] stopRecording called');
@@ -117,11 +112,11 @@ const App: React.FC = () => {
   }, [stopAudioRecording, auth]);
 
   const clearAll = useCallback(() => {
-    setTranscriptState('');
+    setTranscript('');
     setAnswer(null);
     setError(null);
     // Recording error will clear on next recording
-  }, [setTranscriptState]);
+  }, [setTranscript]);
 
   // ── Waiting for deep-link auth ───────────────────────────────────────────
   if (!auth) {
