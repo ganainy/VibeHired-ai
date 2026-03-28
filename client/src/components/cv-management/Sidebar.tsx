@@ -110,6 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const languageLabel = getCvLanguageLabel(cv);
         const isPrimary = cv.isPrimary || cv.isMasterCv;
         const languageCode = languageLabel === 'English' ? 'EN' : languageLabel === 'German' ? 'DE' : '??';
+        const usedCount = cv.usedByJobCount || 0;
 
         return (
             <div
@@ -147,9 +148,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs self-end" style={{color:'var(--text-muted)'}}>
-                        Edited: {getRelativeTime(cv.updatedAt)}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                        {usedCount > 0 && (
+                            <span className="text-xs flex items-center gap-1" style={{color:'var(--text-muted)'}}>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                {usedCount} job{usedCount > 1 ? 's' : ''}
+                            </span>
+                        )}
+                        <span className="text-xs" style={{color:'var(--text-muted)'}}>
+                            Edited: {getRelativeTime(cv.updatedAt)}
+                        </span>
+                    </div>
                 </div>
 
                 {/* Hover Actions */}

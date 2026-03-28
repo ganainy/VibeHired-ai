@@ -47,6 +47,7 @@ export interface CVDocument {
         before?: string;
         after?: string;
     }> | null;
+    usedByJobCount?: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -135,6 +136,17 @@ export interface PreviewCvResponse {
     pdfBase64: string;
 }
 
+export interface CvUsageJob {
+    _id: string;
+    jobTitle: string;
+    companyName: string;
+    status: string;
+}
+
+export interface GetCvUsageResponse {
+    jobs: CvUsageJob[];
+}
+
 // ============================================================================
 // New Branch API Functions
 // ============================================================================
@@ -152,6 +164,22 @@ export const getCvBranches = async (): Promise<GetCvBranchesResponse> => {
             throw error.response.data;
         }
         throw { message: 'An unknown error occurred fetching CV branches.' };
+    }
+};
+
+/**
+ * Get jobs that use a specific base CV
+ */
+export const getCvUsage = async (cvId: string): Promise<GetCvUsageResponse> => {
+    try {
+        const response = await axios.get<GetCvUsageResponse>(`${API_BASE_URL}/${cvId}/usage`);
+        return response.data;
+    } catch (error: any) {
+        console.error('Get CV usage API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred fetching CV usage.' };
     }
 };
 

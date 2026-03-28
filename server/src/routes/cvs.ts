@@ -295,6 +295,23 @@ router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
 
     const branches = await CV.getBaseCvs(userId);
 
+    // Get all job CVs to count usage per base CV
+    const allJobCvs = await CV.find({ userId, jobApplicationId: { $ne: null } });
+    const usageByBaseCv = new Map<string, number>();
+
+    // Count how many job CVs reference each base CV (via baseCvId in JobApplication)
+    const jobIds = allJobCvs.map(cv => cv.jobApplicationId);
+    const jobs = jobIds.length > 0
+        ? await JobApplication.find({ _id: { $in: jobIds } })
+        : [];
+
+    jobs.forEach(job => {
+        if (job.baseCvId) {
+            const baseCvId = String(job.baseCvId);
+            usageByBaseCv.set(baseCvId, (usageByBaseCv.get(baseCvId) || 0) + 1);
+        }
+    });
+
     res.json({
         branches: branches.map(cv => ({
             _id: cv._id,
@@ -312,8 +329,39 @@ router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
             templateId: cv.templateId,
             filename: cv.filename,
             analysisCache: cv.analysisCache,
+            usedByJobCount: usageByBaseCv.get(String(cv._id)) || 0,
             createdAt: cv.createdAt,
             updatedAt: cv.updatedAt,
+        }))
+    });
+}));
+
+/**
+ * GET /api/cvs/:cvId/usage
+ * Get jobs that use a specific base CV
+ */
+router.get('/:cvId/usage', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id as string;
+    const { cvId } = req.params;
+
+    // Verify the CV belongs to this user and is a base CV
+    const cv = await CV.findOne({ _id: cvId, userId, jobApplicationId: null });
+    if (!cv) {
+        res.status(404).json({ error: 'Base CV not found' });
+        return;
+    }
+
+    // Find all jobs that reference this base CV
+    const jobs = await JobApplication.find({ userId, baseCvId: cvId })
+        .select('_id jobTitle companyName status')
+        .sort({ createdAt: -1 });
+
+    res.json({
+        jobs: jobs.map(job => ({
+            _id: job._id,
+            jobTitle: job.jobTitle,
+            companyName: job.companyName,
+            status: job.status,
         }))
     });
 }));

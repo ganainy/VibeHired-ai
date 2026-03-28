@@ -11,7 +11,9 @@ import {
   getCvBranches,
   createCvBranch,
   renameCvBranch,
-  uploadCvBranch
+  uploadCvBranch,
+  getCvUsage,
+  CvUsageJob,
 } from '../services/cvApi';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
 import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
@@ -74,6 +76,12 @@ const CVManagementPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // CV usage data (jobs using a base CV)
+  const [cvUsageJobs, setCvUsageJobs] = useState<CvUsageJob[]>([]);
+  const [isLoadingUsage, setIsLoadingUsage] = useState(false);
+  const [usageExpanded, setUsageExpanded] = useState(true);
+
   // UI state
   const [activeCvId, setActiveCvId] = useState<string | null>(() => {
     // Initialize from URL parameter
@@ -155,6 +163,22 @@ const CVManagementPage: React.FC = () => {
     if (!activeCv) return currentCvData; // Fallback to legacy state during transition
     return activeCv.cvJson || null;
   }, [activeCv, currentCvData]);
+
+  // Fetch job usage for the active base CV
+  const isBaseCv = activeCv && !activeCv.jobApplicationId;
+  useEffect(() => {
+    if (!isBaseCv || !activeCv?._id) {
+      setCvUsageJobs([]);
+      return;
+    }
+    let cancelled = false;
+    setIsLoadingUsage(true);
+    getCvUsage(activeCv._id)
+      .then(res => { if (!cancelled) setCvUsageJobs(res.jobs); })
+      .catch(() => { if (!cancelled) setCvUsageJobs([]); })
+      .finally(() => { if (!cancelled) setIsLoadingUsage(false); });
+    return () => { cancelled = true; };
+  }, [activeCv?._id, isBaseCv]);
 
   // Sync live dynamic state when the active CV changes
   useEffect(() => {
@@ -1301,6 +1325,7 @@ const CVManagementPage: React.FC = () => {
             )}
           </div>
         ) : (
+          <>
           <CvEditorPanel
             data={activeCvData || currentCvData}
             onChange={handleCvChange}
@@ -1311,12 +1336,70 @@ const CVManagementPage: React.FC = () => {
             onTemplateChange={handleTemplateChange}
             onImproveSection={handleImproveSection}
             improvingSections={improvingSections}
-            className="h-full"
+            className={isBaseCv ? 'flex-1 min-h-0' : 'h-full'}
             cvId={activeCv?._id}
             cvDescriptor={liveCvDescriptor}
             cvData={liveCvData}
             onDynamicChange={handleDynamicChange}
           />
+          {/* Used in Jobs section — only for base CVs */}
+          {isBaseCv && (
+            <div className="flex-shrink-0 border-t" style={{ borderColor: 'var(--border)' }}>
+              <button
+                onClick={() => setUsageExpanded(!usageExpanded)}
+                className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Used in Jobs
+                  {cvUsageJobs.length > 0 && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                      {cvUsageJobs.length}
+                    </span>
+                  )}
+                </span>
+                <svg className={`w-4 h-4 transition-transform ${usageExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {usageExpanded && (
+                <div className="px-4 pb-3">
+                  {isLoadingUsage ? (
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading...</p>
+                  ) : cvUsageJobs.length === 0 ? (
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>This resume hasn't been used for any applications yet.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {cvUsageJobs.map(job => (
+                        <li key={job._id}>
+                          <Link
+                            to={`/jobs/${job._id}`}
+                            className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                          >
+                            <span className="truncate" style={{ color: 'var(--text-primary)' }}>
+                              {job.jobTitle}
+                            </span>
+                            {job.companyName && (
+                              <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                                at {job.companyName}
+                              </span>
+                            )}
+                            <span className="ml-auto text-xs px-1.5 py-0.5 rounded opacity-70 group-hover:opacity-100 transition-opacity" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)' }}>
+                              {job.status}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          </>
         )}
       </div>
       </>
