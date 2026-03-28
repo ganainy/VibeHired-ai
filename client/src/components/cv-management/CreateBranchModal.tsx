@@ -130,11 +130,18 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                        Create New CV
+                        Create a Specialized Resume
                     </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        Create a new CV version tailored for a specific career path
-                    </p>
+                </div>
+
+                {/* Info Banner */}
+                <div className="mx-6 mt-4 mb-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-400">
+                    <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">When to create a branch:</p>
+                    <ul className="list-disc list-inside space-y-0.5 ml-1">
+                        <li>Different career focus (e.g., Frontend vs DevOps)</li>
+                        <li>Different language versions of your CV</li>
+                        <li>Different experience levels to highlight</li>
+                    </ul>
                 </div>
 
                 {/* Form */}
@@ -254,7 +261,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                             value={displayName}
                             onChange={(e) => setDisplayName(e.target.value)}
                             disabled={isLoading}
-                            placeholder="e.g., Backend Developer CV"
+                            placeholder="e.g., Frontend Developer, DevOps Engineer"
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-600 ${errors.displayName ? 'border-red-500' : 'border-gray-300'
                                 } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />

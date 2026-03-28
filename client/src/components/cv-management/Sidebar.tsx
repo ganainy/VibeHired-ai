@@ -108,6 +108,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         const isMock = cv._id === '__mock_cv__';
         const displayName = cv.displayName || cv.category || 'Unnamed CV';
         const languageLabel = getCvLanguageLabel(cv);
+        const isPrimary = cv.isPrimary || cv.isMasterCv;
+        const languageCode = languageLabel === 'English' ? 'EN' : languageLabel === 'German' ? 'DE' : '??';
 
         return (
             <div
@@ -120,34 +122,34 @@ const Sidebar: React.FC<SidebarProps> = ({
                 )}
 
                 <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-semibold text-sm line-clamp-1 flex items-center gap-1.5" style={{color:'var(--text-primary)'}}>
-                        {isMock && (
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm line-clamp-1" style={{color:'var(--text-primary)'}}>
+                            {displayName}
+                        </h3>
+                        {isPrimary && (
                             <span
-                                className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
-                                style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                                className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1"
+                                style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #f59e0b' }}
                             >
-                                demo
+                                <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                                Primary
                             </span>
                         )}
-                        {displayName}
-                    </h3>
+                        <span
+                            className="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0"
+                            style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+                        >
+                            {languageCode}
+                        </span>
+                    </div>
                 </div>
 
                 <div className="flex items-center justify-between mt-2">
                     <span className="text-xs self-end" style={{color:'var(--text-muted)'}}>
                         Edited: {getRelativeTime(cv.updatedAt)}
                     </span>
-
-                    <div className="flex gap-1.5">
-                        {cv.category && (
-                            <span className="badge badge-gold text-[10px] px-1.5 py-0.5">
-                                {cv.category}
-                            </span>
-                        )}
-                        <span className="badge badge-ink text-[10px] px-1.5 py-0.5">
-                            {languageLabel}
-                        </span>
-                    </div>
                 </div>
 
                 {/* Hover Actions */}
@@ -230,7 +232,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     style={{borderColor:'var(--accent-dim)', background:'var(--accent-bg)', color:'var(--accent)'}}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.background='var(--accent-bg-hover,rgba(232,184,68,0.14))'; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor='var(--accent-dim)'; e.currentTarget.style.background='var(--accent-bg)'; }}
-                                    title="Create a new CV"
+                                    title="Create a specialized version for a different career focus (e.g., one for frontend, one for DevOps)"
                                 >
                                     <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform" style={{background:'var(--accent-bg)'}}>
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
