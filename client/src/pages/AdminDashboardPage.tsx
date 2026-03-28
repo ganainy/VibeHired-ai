@@ -207,35 +207,43 @@ const AdminDashboardPage: React.FC = () => {
                                     key: 'service',
                                     label: 'Service',
                                     render: (c: any) => {
-                                        // Generate friendly service names from provider and request path
+                                        // Generate friendly service names from backend request path
+                                        // requestPath should contain the backend endpoint (e.g., /api/ai/generate)
                                         if (!c.requestPath) return '-';
 
                                         const path = c.requestPath.toLowerCase();
-                                        const provider = (c.provider || '').toLowerCase();
 
-                                        // Gemini services
-                                        if (provider === 'gemini' || path.includes('gemini')) {
-                                            if (path.includes('generatecontent')) return 'Gemini Generate Content';
-                                            if (path.includes('streamgeneratecontent')) return 'Gemini Stream Generate';
-                                            if (path.includes('embedcontent')) return 'Gemini Embed Content';
-                                            if (path.includes('counttokens')) return 'Gemini Count Tokens';
-                                            return 'Gemini API';
-                                        }
+                                        // Map backend endpoint paths to friendly service names
+                                        // AI endpoints
+                                        if (path === '/api/ai/generate') return 'AI Generate';
+                                        if (path === '/api/ai/chat') return 'AI Chat';
+                                        if (path === '/api/ai/embed') return 'AI Embed';
+                                        if (path.startsWith('/api/ai/')) return 'AI Service';
 
-                                        // Apify services
-                                        if (provider === 'apify' || path.includes('apify')) {
-                                            return 'Apify Service';
-                                        }
+                                        // Apify endpoints
+                                        if (path === '/api/apify/fetch') return 'Apify Fetch';
+                                        if (path === '/api/apify/actors') return 'Apify Actors';
+                                        if (path.startsWith('/api/apify/')) return 'Apify Service';
+
+                                        // CV endpoints
+                                        if (path === '/api/cvs/upload') return 'CV Upload';
+                                        if (path === '/api/cvs/parse') return 'CV Parse';
+                                        if (path.startsWith('/api/cvs/')) return 'CV Service';
+
+                                        // Jobs endpoints
+                                        if (path === '/api/jobs') return 'Jobs List';
+                                        if (path.startsWith('/api/jobs/')) return 'Jobs Service';
 
                                         // Fallback: extract action from path
                                         const parts = path.split('/').filter(Boolean);
                                         if (parts.length > 1) {
                                             const action = parts[parts.length - 1];
-                                            // Convert camelCase to Title Case
-                                            return action.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+                                            // Convert kebab-case to Title Case
+                                            return action.replace(/-/g, ' ').replace(/\b\w/g, s => s.toUpperCase());
                                         }
 
-                                        return provider.charAt(0).toUpperCase() + provider.slice(1) + ' Service';
+                                        // Last resort: show the path
+                                        return path;
                                     }
                                 },
                                 { key: 'modelName', label: 'Model', render: (c: any) => c.modelName || '-', mobileHidden: true },
