@@ -1,6 +1,6 @@
 # Project State
 
-**Last activity:** 2026-03-28 - Completed quick task 260328-td3: Fix recording button UI state stuck after stopRecording
+**Last activity:** 2026-03-28 - Completed quick task 260328-twj: Show loading indicator in Interview Buddy during transcription
 
 ## Accumulated Context
 
@@ -16,3 +16,4 @@
 | 260327-wtb | Remove 'Or upload PDF / DOCX' button from dashboard CV section | 2026-03-27 | f9b6a94 | [260327-wtb-remove-or-upload-pdf-docx-button-from-da](./quick/260327-wtb-remove-or-upload-pdf-docx-button-from-da/) |
 | 260328-ql9 | Add microphone selector dropdown to interview buddy | 2026-03-28 | 82b817b | [260328-ql9-add-microphone-selector-dropdown-to-inte](./quick/260328-ql9-add-microphone-selector-dropdown-to-inte/) |
 | 260328-td3 | Fix recording button UI state stuck after stopRecording | 2026-03-28 | e49629a | [260328-td3-fix-recording-button-ui-state-stuck-afte](./quick/260328-td3-fix-recording-button-ui-state-stuck-afte/) |
+| 260328-twj | Show loading indicator in Interview Buddy during transcription | 2026-03-28 | f744f4c | [260328-twj-show-a-loading-indicator-in-the-intervie](./quick/260328-twj-show-a-loading-indicator-in-the-intervie/) |
