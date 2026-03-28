@@ -29,6 +29,7 @@ import { validateCvFile, formatFileSize } from '../lib/utils';
 import ConfirmModal from '../components/common/ConfirmModal';
 import TourBanner from '../components/onboarding/TourBanner';
 import { usePageTour } from '../hooks/usePageTour';
+import JobStatusBadge from '../components/jobs/JobStatusBadge';
 import { MOCK_CV } from '../data/mockTourData';
 
 const CVManagementPage: React.FC = () => {
@@ -1387,8 +1388,8 @@ const CVManagementPage: React.FC = () => {
                                 at {job.companyName}
                               </span>
                             )}
-                            <span className="ml-auto text-xs px-1.5 py-0.5 rounded opacity-70 group-hover:opacity-100 transition-opacity" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)' }}>
-                              {job.status}
+                            <span className="ml-auto flex-shrink-0">
+                              <JobStatusBadge type="application" status={job.status as any} className="text-xs" />
                             </span>
                           </Link>
                         </li>
