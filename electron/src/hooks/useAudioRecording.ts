@@ -60,13 +60,14 @@ export function useAudioRecording(): UseAudioRecordingReturn {
         };
 
         mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-          const text = await transcribeAudio(audioBlob);
-
-          // Stop all audio tracks to release microphone
+          // Stop all audio tracks to release microphone immediately
           stream.getTracks().forEach(track => track.stop());
           setIsRecording(false);
           mediaRecorderRef.current = null;
+
+          // Process transcription in background
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          const text = await transcribeAudio(audioBlob);
 
           // Resolve the stopRecording promise with the transcript
           if (resolveRef.current) {
