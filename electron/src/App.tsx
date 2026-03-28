@@ -28,6 +28,7 @@ const App: React.FC = () => {
     resetTranscript,
     transcript,
     isRecording,
+    isTranscribing,
     error: recordingError,
     isSupported,
   } = useAudioRecording();
@@ -124,7 +125,8 @@ const App: React.FC = () => {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
-        while (true) {
+        let shouldStop = false;
+        while (!shouldStop) {
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -141,9 +143,11 @@ const App: React.FC = () => {
                 const data = JSON.parse(jsonStr);
                 if (data.error) {
                   setError(data.error);
+                  shouldStop = true;
                   break;
                 }
                 if (data.done) {
+                  shouldStop = true;
                   break;
                 }
                 if (data.text) {
@@ -310,6 +314,7 @@ const App: React.FC = () => {
       {/* ── Transcript bar ── */}
       <TranscriptBar
         isListening={isRecording}
+        isTranscribing={isTranscribing}
         transcript={transcript}
         interimTranscript={''}
         onPushStart={startRecording}

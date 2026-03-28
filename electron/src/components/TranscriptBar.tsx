@@ -3,6 +3,7 @@ import React, { useCallback, useRef, useEffect } from 'react';
 
 interface TranscriptBarProps {
   isListening: boolean;
+  isTranscribing: boolean;
   transcript: string;
   interimTranscript: string;
   onPushStart: () => void;   // mousedown / touchstart → start recording
@@ -16,6 +17,7 @@ interface TranscriptBarProps {
 
 const TranscriptBar: React.FC<TranscriptBarProps> = ({
   isListening,
+  isTranscribing,
   transcript,
   interimTranscript,
   onPushStart,
@@ -93,9 +95,9 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
           width: 40,
           height: 40,
           borderRadius: 10,
-          border: `1.5px solid ${isListening ? 'var(--accent)' : 'var(--border)'}`,
-          background: isListening ? 'var(--accent-bg)' : 'var(--bg-raised)',
-          color: isListening ? 'var(--accent)' : 'var(--text-muted)',
+          border: `1.5px solid ${isListening || isTranscribing ? 'var(--accent)' : 'var(--border)'}`,
+          background: isListening || isTranscribing ? 'var(--accent-bg)' : 'var(--bg-raised)',
+          color: isListening || isTranscribing ? 'var(--accent)' : 'var(--text-muted)',
           cursor: 'pointer',
           display: 'flex',
           flexDirection: 'column',
@@ -125,14 +127,21 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
             }} />
           </>
         )}
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2a3 3 0 013 3v5a3 3 0 01-6 0V5a3 3 0 013-3z" />
-          <path d="M19 10a7 7 0 01-14 0" />
-          <line x1="12" y1="19" x2="12" y2="23" />
-          <line x1="8" y1="23" x2="16" y2="23" />
-        </svg>
+        {isTranscribing && (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+            <path d="M21 12a9 9 0 11-6.219-8.56" />
+          </svg>
+        )}
+        {!isTranscribing && (
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2a3 3 0 013 3v5a3 3 0 01-6 0V5a3 3 0 013-3z" />
+            <path d="M19 10a7 7 0 01-14 0" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+        )}
         <span style={{ fontSize: 8, letterSpacing: '0.03em', lineHeight: 1, opacity: 0.7 }}>
-          {isListening ? 'REC' : 'HOLD'}
+          {isListening ? 'REC' : isTranscribing ? 'WAIT' : 'HOLD'}
         </span>
       </button>
 
@@ -213,11 +222,20 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
             )}
           </p>
         ) : (
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>
-            {isListening
-              ? 'Listening… speak the interview question'
-              : 'Hold button (or Ctrl+Shift+Space) to record'}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isTranscribing && (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}>
+                <path d="M21 12a9 9 0 11-6.219-8.56" />
+              </svg>
+            )}
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>
+              {isTranscribing
+                ? 'Transcribing...'
+                : isListening
+                ? 'Listening… speak the interview question'
+                : 'Hold button (or Ctrl+Shift+Space) to record'}
+            </p>
+          </div>
         )}
       </div>
 
@@ -247,6 +265,9 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
         @keyframes pulse-ring {
           0%   { transform: scale(1); opacity: 0.5; }
           100% { transform: scale(1.5); opacity: 0; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>
