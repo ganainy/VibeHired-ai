@@ -1,6 +1,6 @@
 # Project State
 
-**Last activity:** 2026-03-27 - Completed quick task 260327-wtb: Remove 'Or upload PDF / DOCX' button from dashboard
+**Last activity:** 2026-03-28 - Completed quick task 260328-ql9: Add microphone selector dropdown to Interview Buddy
 
 ## Quick Tasks Completed
 

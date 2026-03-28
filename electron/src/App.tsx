@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AuthPayload } from './electron.d';
 import { AnswerResult, fetchAnswer } from './services/api';
-import { useAudioRecording } from './hooks/useAudioRecording';
+import { useAudioRecording, enumerateMicrophones } from './hooks/useAudioRecording';
 import TranscriptBar from './components/TranscriptBar';
 import OverlayPanel from './components/OverlayPanel';
 
@@ -11,6 +11,11 @@ const App: React.FC = () => {
   const [answer, setAnswer] = useState<AnswerResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Microphone device selection
+  const [microphones, setMicrophones] = useState<{ deviceId: string; label: string }[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const selectedDeviceIdRef = useRef<string | null>(null);
 
   // Mirrors transcript state for reading inside callbacks without stale closure
   const transcriptRef = useRef('');
@@ -30,6 +35,23 @@ const App: React.FC = () => {
   // Keep refs in sync
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
   useEffect(() => { authRef.current = auth; }, [auth]);
+  useEffect(() => { selectedDeviceIdRef.current = selectedDeviceId; }, [selectedDeviceId]);
+
+  // Enumerate microphones on mount and refresh on device change
+  useEffect(() => {
+    const loadMics = async () => {
+      try {
+        const devices = await enumerateMicrophones();
+        setMicrophones(devices.map(d => ({ deviceId: d.deviceId, label: d.label })));
+      } catch (e) {
+        console.error('[App] Failed to enumerate microphones:', e);
+      }
+    };
+    loadMics();
+
+    navigator.mediaDevices.addEventListener('devicechange', loadMics);
+    return () => navigator.mediaDevices.removeEventListener('devicechange', loadMics);
+  }, []);
 
   // ── Register IPC listeners once ──────────────────────────────────────────
   useEffect(() => {
@@ -51,7 +73,7 @@ const App: React.FC = () => {
           setAnswer(null);
           setError(null);
           resetTranscript();
-          startAudioRecording(currentAuth, 'en');
+          startAudioRecording(currentAuth, 'en', selectedDeviceIdRef.current);
         }
       } else if (action === 'push-to-talk-stop') {
         if (isListeningRef.current) {
@@ -99,7 +121,7 @@ const App: React.FC = () => {
     setAnswer(null);
     setError(null);
     resetTranscript();
-    startAudioRecording(auth, 'en');
+    startAudioRecording(auth, 'en', selectedDeviceIdRef.current);
   }, [auth, startAudioRecording, resetTranscript]);
 
   const stopRecording = useCallback(async () => {
@@ -246,6 +268,9 @@ const App: React.FC = () => {
         onPushStop={stopRecording}
         onClear={clearAll}
         recognitionError={recordingError}
+        microphones={microphones}
+        selectedDeviceId={selectedDeviceId}
+        onDeviceChange={setSelectedDeviceId}
       />
 
       {/* ── Answer panel ── */}

@@ -9,6 +9,9 @@ interface TranscriptBarProps {
   onPushStop: () => void;    // mouseup / touchend → stop + generate
   onClear: () => void;
   recognitionError: string | null;
+  microphones: { deviceId: string; label: string }[];
+  selectedDeviceId: string | null;
+  onDeviceChange: (deviceId: string | null) => void;
 }
 
 const TranscriptBar: React.FC<TranscriptBarProps> = ({
@@ -19,6 +22,9 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
   onPushStop,
   onClear,
   recognitionError,
+  microphones,
+  selectedDeviceId,
+  onDeviceChange,
 }) => {
   const displayText = transcript || interimTranscript;
   const isPressedRef = useRef(false);
@@ -129,6 +135,42 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
           {isListening ? 'REC' : 'HOLD'}
         </span>
       </button>
+
+      {/* Microphone selector */}
+      <select
+        className="no-drag"
+        value={selectedDeviceId ?? 'default'}
+        onChange={(e) => onDeviceChange(e.target.value === 'default' ? null : e.target.value)}
+        title="Select microphone"
+        style={{
+          height: 32,
+          fontSize: 10,
+          fontFamily: 'inherit',
+          background: 'var(--bg-raised)',
+          border: '1px solid var(--border)',
+          borderRadius: 6,
+          color: 'var(--text-secondary)',
+          padding: '0 4px',
+          cursor: 'pointer',
+          flexShrink: 0,
+          maxWidth: 140,
+          outline: 'none',
+          WebkitAppRegion: 'no-drag',
+        }}
+      >
+        <option value="default" style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}>
+          Default mic
+        </option>
+        {microphones.map((mic) => (
+          <option
+            key={mic.deviceId}
+            value={mic.deviceId}
+            style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}
+          >
+            {mic.label || `Microphone (${mic.deviceId.slice(0, 8)})`}
+          </option>
+        ))}
+      </select>
 
       {/* ── Speech recognition error ── */}
       {recognitionError && !displayText && (
