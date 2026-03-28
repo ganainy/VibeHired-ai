@@ -1,7 +1,8 @@
 // server/src/adapters/geminiAdapter.ts
 import { GoogleGenerativeAI, GenerativeModel, Part } from '@google/generative-ai';
-import fs from 'fs';
-import { ModelAdapter, GenerateContentOptions, GenerateContentResult } from './base';
+import * as fs from 'fs';
+import { Readable } from 'stream';
+import { ModelAdapter, GenerateContentOptions, GenerateContentResult, chatSessions, generateSessionId, cleanupExpiredSessions } from './base';
 import { GEMINI_FLASH } from '../constants/geminiModels';
 
 /**
@@ -146,6 +147,65 @@ export class GeminiAdapter extends ModelAdapter {
     return parseJsonResponse<T>(result.text);
   }
 
+  async startChatSession(
+    systemPrompt: string,
+    options?: GenerateContentOptions
+  ): Promise<string> {
+    const generationConfig: any = {};
+    if (options?.temperature !== undefined) generationConfig.temperature = options.temperature;
+    if (options?.maxTokens !== undefined) generationConfig.maxOutputTokens = options.maxTokens;
+
+    if (options?.topP !== undefined) generationConfig.topP = options.topP;
+    if (options?.topK !== undefined) generationConfig.topK = options.topK;
+
+    const model = Object.keys(generationConfig).length > 0
+      ? this.genAI.getGenerativeModel({ model: this.modelName, generationConfig })
+      : this.model;
+    const chatSession = model.startChat({
+      history: [
+        { role: 'user', parts: [{ text: systemPrompt }] },
+        { role: 'model', parts: [{ text: 'Understood. I am ready to help the candidate answer interview questions.' }] },
+      ],
+    });
+    const sessionId = generateSessionId();
+    chatSessions.set(sessionId, { chatSession, createdAt: Date.now() });
+    return sessionId;
+  }
+
+  async sendMessageStream(
+    sessionId: string,
+    message: string
+  ): Promise<NodeJS.ReadableStream> {
+    const session = chatSessions.get(sessionId);
+    if (!session) {
+      throw new Error(`Chat session ${sessionId} not found`);
+    }
+    try {
+      const result = await session.chatSession.sendMessageStream(message);
+      const readable = new Readable({
+        read() {
+          return { done: true } as any;
+        },
+      });
+      (async () => {
+        try {
+          for await (const chunk of result.stream) {
+            const text = chunk.text();
+            if (text) {
+              readable.push(Buffer.from(text));
+            }
+          }
+          readable.push(null);
+        } catch (err) {
+          readable.destroy(err instanceof Error ? err : new Error(String(err)));
+        }
+      })();
+      return readable;
+    } catch (error: any) {
+      chatSessions.delete(sessionId);
+      throw new Error(`Failed to stream message: ${error.message || error}`);
+    }
+  }
   getModelInfo() {
     return {
       provider: 'gemini',

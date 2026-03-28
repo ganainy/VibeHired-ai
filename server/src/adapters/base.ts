@@ -1,5 +1,11 @@
 // server/src/adapters/base.ts
 
+import { Readable } from 'stream';
+
+import { EnhancedGenerateContentResponse } from '@google/generative-ai';
+
+import { GEMINI_FLASH } from '../constants/geminiModels';
+
 export interface GenerateContentOptions {
   temperature?: number;
   maxTokens?: number;
@@ -47,6 +53,22 @@ export abstract class ModelAdapter {
   ): Promise<T>;
 
   /**
+   * Start a chat session with initial history (for multi-turn conversations)
+   */
+  abstract startChatSession(
+    systemPrompt: string,
+    options?: GenerateContentOptions
+  ): Promise<string>;
+
+  /**
+   * Send a message to an existing chat session and return streaming response
+   */
+  abstract sendMessageStream(
+    sessionId: string,
+    message: string,
+  ): Promise<NodeJS.ReadableStream>;
+
+  /**
    * Get information about the model
    */
   abstract getModelInfo(): {
@@ -57,5 +79,36 @@ export abstract class ModelAdapter {
       maxTokens?: number;
     };
   };
+}
+
+/**
+ * In-memory store for active Gemini chat sessions.
+ * Keyed by sessionId → { chatSession, createdAt }
+ */
+export const chatSessions = new Map<string, {
+  chatSession: import('@google/generative-ai').ChatSession;
+  createdAt: number;
+}>();
+
+/**
+ * Generate a unique session ID
+ */
+export function generateSessionId(): string {
+  return `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * Clean up expired chat sessions (older than 2 hours)
+ */
+export function cleanupExpiredSessions(): void {
+  const TWO_HOURS = 2 * 60 * 60 * 1000;
+  const now = Date.now();
+  const keysToDelete: string[] = [];
+  chatSessions.forEach((session, id) => {
+    if (now - session.createdAt > TWO_HOURS) {
+      keysToDelete.push(id);
+    }
+  });
+  keysToDelete.forEach(id => chatSessions.delete(id));
 }
 

@@ -1,7 +1,13 @@
 import { Response } from 'express';
 import { ValidatedRequest } from '../middleware/validateRequest';
 import { AuthorizationError } from '../utils/errors/AppError';
-import { generateQuestions, evaluateAnswer, generateAnswer } from '../services/interviewService';
+import {
+  generateQuestions,
+  evaluateAnswer,
+  generateAnswer,
+  initializeInterviewSession,
+  streamAnswerToResponse,
+} from '../services/interviewService';
 
 /**
  * POST /api/interview/:jobId/questions
@@ -58,4 +64,35 @@ export const answerInterviewQuestion = async (req: ValidatedRequest, res: Respon
 
     const result = await generateAnswer(userId, jobId, question.trim());
     res.json(result);
+};
+
+/**
+ * POST /api/interview/:jobId/initialize-session
+ * Pre-warm a Gemini chat session with CV + job context for fast follow-up answers.
+ */
+export const initializeSession = async (req: ValidatedRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new AuthorizationError('User not authenticated');
+
+    const { jobId } = req.params;
+    const sessionId = await initializeInterviewSession(userId, jobId);
+    res.json({ sessionId });
+};
+
+/**
+ * POST /api/interview/:jobId/stream-answer
+ * Stream an AI-generated answer using SSE (Server-Sent Events).
+ */
+export const streamAnswer = async (req: ValidatedRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new AuthorizationError('User not authenticated');
+
+    const { jobId } = req.params;
+    const { question } = req.body as { question: string };
+
+    if (!question || typeof question !== 'string' || !question.trim()) {
+        throw new Error('question is required');
+    }
+
+    await streamAnswerToResponse(userId, jobId, question.trim(), res);
 };

@@ -1,16 +1,17 @@
 // electron/src/App.tsx
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { AuthPayload } from './electron.d';
-import { AnswerResult, fetchAnswer } from './services/api';
+import { initializeSession, fetchStreamingAnswer } from './services/api';
 import { useAudioRecording, enumerateMicrophones } from './hooks/useAudioRecording';
 import TranscriptBar from './components/TranscriptBar';
 import OverlayPanel from './components/OverlayPanel';
 
 const App: React.FC = () => {
   const [auth, setAuth] = useState<AuthPayload | null>(null);
-  const [answer, setAnswer] = useState<AnswerResult | null>(null);
+  const [answer, setAnswer] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
 
   // Microphone device selection
   const [microphones, setMicrophones] = useState<{ deviceId: string; label: string }[]>([]);
@@ -21,7 +22,6 @@ const App: React.FC = () => {
   const transcriptRef = useRef('');
   const authRef = useRef<AuthPayload | null>(null);
   const prevIsListeningRef = useRef(false);
-
   const {
     startRecording: startAudioRecording,
     stopRecording: stopAudioRecording,
@@ -31,12 +31,10 @@ const App: React.FC = () => {
     error: recordingError,
     isSupported,
   } = useAudioRecording();
-
   // Keep refs in sync
   useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
   useEffect(() => { authRef.current = auth; }, [auth]);
   useEffect(() => { selectedDeviceIdRef.current = selectedDeviceId; }, [selectedDeviceId]);
-
   // Enumerate microphones on mount and refresh on device change
   useEffect(() => {
     const loadMics = async () => {
@@ -48,7 +46,6 @@ const App: React.FC = () => {
       }
     };
     loadMics();
-
     navigator.mediaDevices.addEventListener('devicechange', loadMics);
     return () => navigator.mediaDevices.removeEventListener('devicechange', loadMics);
   }, []);
@@ -57,20 +54,33 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!window.electronAPI) return;
     window.electronAPI.signalReady();
-
     window.electronAPI.onAuthPayload((payload) => {
       setAuth(payload);
-      setAnswer(null);
+      setAnswer('');
       setError(null);
       resetTranscript();
       transcriptRef.current = '';
-    });
+      setSessionReady(false);
 
+      // Pre-warm the Gemini session immediately upon auth
+      if (payload.apiUrl && payload.token && payload.jobId) {
+        initializeSession(payload.apiUrl, payload.token, payload.jobId)
+          .then(() => {
+            setSessionReady(true);
+            console.log('[App] Interview session initialized');
+          })
+          .catch((err) => {
+            console.error('[App] Failed to initialize session:', err);
+            // Session init is not blocking — user can still use legacy endpoint
+            setSessionReady(true);
+          });
+      }
+    });
     window.electronAPI.onHotkey(async (action) => {
       if (action === 'push-to-talk-start') {
         const currentAuth = authRef.current;
         if (currentAuth && !isListeningRef.current) {
-          setAnswer(null);
+          setAnswer('');
           setError(null);
           resetTranscript();
           startAudioRecording(currentAuth, 'en', selectedDeviceIdRef.current);
@@ -79,7 +89,7 @@ const App: React.FC = () => {
         if (isListeningRef.current) {
           const result = await stopAudioRecording();
           if (result && result.length > 2) {
-            triggerAnswer(authRef.current!, result);
+            triggerStreamingAnswer(authRef.current!, result);
           }
         }
       } else if (action === 'clear-answer') {
@@ -92,19 +102,59 @@ const App: React.FC = () => {
   // Keep a ref so the IPC handler above can read current isListening without re-registering
   const isListeningRef = useRef(false);
   useEffect(() => { isListeningRef.current = isRecording; }, [isRecording]);
-
-  const triggerAnswer = useCallback(
+  /**
+   * Stream an AI answer using SSE (Server-Sent Events).
+   * Text appears incrementally in the overlay as it arrives from the server.
+   */
+  const triggerStreamingAnswer = useCallback(
     async (currentAuth: AuthPayload, question: string) => {
       setLoading(true);
       setError(null);
+      setAnswer('');
       try {
-        const result = await fetchAnswer(
+        const res = await fetchStreamingAnswer(
           currentAuth.apiUrl,
           currentAuth.token,
           currentAuth.jobId,
-          question
+          question,
         );
-        setAnswer(result);
+        if (!res.body) {
+          throw new Error('No response body');
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          // Process complete SSE events from buffer
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const jsonStr = line.slice(6).trim();
+              if (!jsonStr) continue;
+              try {
+                const data = JSON.parse(jsonStr);
+                if (data.error) {
+                  setError(data.error);
+                  break;
+                }
+                if (data.done) {
+                  break;
+                }
+                if (data.text) {
+                  setAnswer(prev => prev + data.text);
+                }
+              } catch {
+                // Skip malformed JSON
+              }
+            }
+          }
+        }
       } catch (err) {
         setError((err as Error).message || 'Failed to generate answer');
       } finally {
@@ -113,34 +163,29 @@ const App: React.FC = () => {
     },
     []
   );
-
   // ── Push-to-talk: hold button / shortcut ─────────────────────────────────
   const startRecording = useCallback(() => {
     console.log('[App] startRecording called');
     if (!auth || isListeningRef.current) return;
-    setAnswer(null);
+    setAnswer('');
     setError(null);
     resetTranscript();
     startAudioRecording(auth, 'en', selectedDeviceIdRef.current);
   }, [auth, startAudioRecording, resetTranscript]);
-
   const stopRecording = useCallback(async () => {
     console.log('[App] stopRecording called');
     if (!isListeningRef.current) return;
-
     const result = await stopAudioRecording();
     if (result && result.trim().length > 2) {
-      triggerAnswer(auth!, result.trim());
+      triggerStreamingAnswer(auth!, result.trim());
     }
   }, [stopAudioRecording, auth]);
-
   const clearAll = useCallback(() => {
     resetTranscript();
-    setAnswer(null);
+    setAnswer('');
     setError(null);
     // Recording error will clear on next recording
   }, [resetTranscript]);
-
   // ── Waiting for deep-link auth ───────────────────────────────────────────
   if (!auth) {
     return (
@@ -188,7 +233,6 @@ const App: React.FC = () => {
       </div>
     );
   }
-
   // ── Main overlay UI ──────────────────────────────────────────────────────
   return (
     <div
@@ -226,8 +270,12 @@ const App: React.FC = () => {
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>
             INTERVIEW BUDDY
           </span>
+          {!sessionReady && (
+            <span style={{ fontSize: 9, color: 'var(--accent)', animation: 'pulse 1.5s infinite' }}>
+              warming up...
+            </span>
+          )}
         </div>
-
         <div className="no-drag" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {/* Not-supported warning */}
           {!isSupported && (

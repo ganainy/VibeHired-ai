@@ -1,15 +1,13 @@
 // electron/src/components/OverlayPanel.tsx
 import React from 'react';
-import { AnswerResult } from '../services/api';
 
 interface OverlayPanelProps {
-  answer: AnswerResult | null;
+  answer: string;
   loading: boolean;
   error: string | null;
 }
-
 const OverlayPanel: React.FC<OverlayPanelProps> = ({ answer, loading, error }) => {
-  if (loading) {
+  if (loading && !answer) {
     return (
       <div
         className="answer-scroll"
@@ -95,63 +93,31 @@ const OverlayPanel: React.FC<OverlayPanelProps> = ({ answer, loading, error }) =
       className="answer-scroll no-drag"
       style={{ flex: 1, padding: '14px 16px', overflowY: 'auto' }}
     >
-      {/* Opener */}
       <p
         style={{
           fontSize: 13,
-          fontWeight: 500,
+          fontWeight: 400,
           color: 'var(--text-primary)',
-          lineHeight: 1.6,
-          marginBottom: 10,
-          paddingBottom: 10,
-          borderBottom: '1px solid var(--border-subtle)',
+          lineHeight: 1.7,
+          whiteSpace: 'pre-wrap',
         }}
       >
-        {answer.opener}
+        {answer}
+        {loading && (
+          <span
+            style={{
+              display: 'inline-block',
+              width: 2,
+              height: 14,
+              background: 'var(--accent)',
+              marginLeft: 2,
+              verticalAlign: 'text-bottom',
+              animation: 'blink 0.8s infinite',
+            }}
+          />
+        )}
       </p>
-
-      {/* Key points */}
-      <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 10 }}>
-        {answer.keyPoints.map((point, i) => (
-          <li key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <span
-              style={{
-                flexShrink: 0,
-                width: 18,
-                height: 18,
-                borderRadius: 5,
-                background: 'var(--accent-bg)',
-                border: '1px solid var(--accent-dim)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: 1,
-              }}
-            >
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </span>
-            <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.6, flex: 1 }}>
-              {point}
-            </p>
-          </li>
-        ))}
-      </ul>
-
-      {/* Closing */}
-      <p
-        style={{
-          fontSize: 12.5,
-          color: 'var(--text-secondary)',
-          lineHeight: 1.6,
-          paddingTop: 10,
-          borderTop: '1px solid var(--border-subtle)',
-          fontStyle: 'italic',
-        }}
-      >
-        {answer.closing}
-      </p>
+      <style>{`@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
     </div>
   );
 };

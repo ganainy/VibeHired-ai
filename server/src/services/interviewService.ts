@@ -1,6 +1,16 @@
 import { generateStructuredResponse } from '../utils/aiService';
 import JobApplication from '../models/JobApplication';
 import { NotFoundError, AuthorizationError } from '../utils/errors/AppError';
+import CV from '../models/CV';
+import { convertJsonResumeToText } from '../utils/cvTextExtractor';
+import { GoogleGenerativeAI, ChatSession } from '@google/generative-ai';
+import { GEMINI_FLASH } from '../constants/geminiModels';
+import { Response } from 'express';
+import { Readable } from 'stream';
+
+// ─────────────────────────────────────────────────────────────
+// Language helpers
+// ─────────────────────────────────────────────────────────────
 
 const LANGUAGE_NAMES: Record<string, string> = {
     en: 'English',
@@ -10,6 +20,211 @@ const LANGUAGE_NAMES: Record<string, string> = {
 function getLanguageName(lang?: string): string {
     return LANGUAGE_NAMES[lang ?? 'en'] ?? 'English';
 }
+
+// ─────────────────────────────────────────────────────────────
+// Auth helpers
+// ─────────────────────────────────────────────────────────────
+
+async function getOwnedJob(jobId: string, userId: string) {
+    const job = await JobApplication.findById(jobId);
+    if (!job) throw new NotFoundError('Job application not found');
+    if (job.userId.toString() !== userId.toString()) {
+        throw new AuthorizationError('You do not have access to this job application');
+    }
+    return job;
+}
+
+// ─────────────────────────────────────────────────────────────
+// In-memory chat session store
+// Key: `${userId}:${jobId}` → { chatSession, createdAt }
+// ─────────────────────────────────────────────────────────────
+
+const chatSessions = new Map<string, { chatSession: ChatSession; createdAt: number }>();
+
+const SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+function sessionKey(userId: string, jobId: string): string {
+    return `${userId}:${jobId}`;
+}
+
+function cleanupExpiredSessions(): void {
+    const now = Date.now();
+    const keysToDelete: string[] = [];
+    chatSessions.forEach((session, key) => {
+        if (now - session.createdAt > SESSION_TTL_MS) {
+            keysToDelete.push(key);
+        }
+    });
+    keysToDelete.forEach(key => chatSessions.delete(key));
+}
+
+// ─────────────────────────────────────────────────────────────
+// Gemini model factory
+// ─────────────────────────────────────────────────────────────
+
+function getGeminiApiKey(): string {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error('GEMINI_API_KEY not configured on server');
+    return key;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pre-warmed chat session: initialize
+// ─────────────────────────────────────────────────────────────
+
+function buildSystemPrompt(
+    jobContext: string,
+    cvText: string | null,
+    languageName: string,
+): string {
+    let prompt = `You are an expert interview coach helping a candidate answer a live interview question.
+The candidate will READ your answer aloud to the interviewer, so it must sound natural and confident.
+
+Job Context:
+${jobContext}
+`;
+
+    if (cvText) {
+        prompt += `
+Candidate's CV (reference this for specific examples):
+${cvText.slice(0, 3000)}
+`;
+    }
+
+    prompt += `
+Rules:
+1. Answer ONLY the question asked — no preamble, no filler, no summary paragraph at the end.
+2. Keep the total answer concise — about 30–45 seconds to say aloud.
+3. Sound natural — avoid robotic phrases like "I believe" or "As a candidate".
+4. If relevant, briefly reference a specific experience from the CV.
+5. ALL text must be in ${languageName}.
+6. Respond with plain text only — no bullet points, no headers, no formatting.`;
+
+    return prompt;
+}
+
+export async function initializeInterviewSession(
+    userId: string,
+    jobId: string,
+): Promise<string> {
+    // Cleanup old sessions
+    cleanupExpiredSessions();
+
+    const job = await getOwnedJob(jobId, userId);
+    const languageName = getLanguageName(job.language);
+
+    // Build job context
+    const jobContext = [
+        `Job Title: ${job.jobTitle}`,
+        `Company: ${job.companyName}`,
+        job.jobDescriptionText
+            ? `Job Description:\n${job.jobDescriptionText.slice(0, 3000)}`
+            : '',
+        job.jobPrerequisites
+            ? `Key Requirements:\n${job.jobPrerequisites.slice(0, 1500)}`
+            : '',
+    ]
+        .filter(Boolean)
+        .join('\n\n');
+
+    // Extract CV text
+    let cvText: string | null = null;
+    const cv = await CV.getJobCv(jobId);
+    if (cv?.cvJson) {
+        cvText = convertJsonResumeToText(cv.cvJson);
+    }
+
+    // Build system prompt
+    const systemPrompt = buildSystemPrompt(jobContext, cvText, languageName);
+
+    // Create Gemini chat session
+    const genAI = new GoogleGenerativeAI(getGeminiApiKey());
+    const model = genAI.getGenerativeModel({
+        model: GEMINI_FLASH,
+        generationConfig: {
+            maxOutputTokens: 300,
+            temperature: 0.7,
+        },
+    });
+
+    // Start chat with system context as first user message
+    const chatSession = model.startChat({
+        history: [
+            {
+                role: 'user',
+                parts: [{ text: systemPrompt }],
+            },
+            {
+                role: 'model',
+                parts: [
+                    {
+                        text: `Understood. I'm ready to help you answer interview questions for the ${job.jobTitle} position at ${job.companyName}. I'll keep my answers concise and reference your CV when relevant. Go ahead with the first question.`,
+                    },
+                ],
+            },
+        ],
+    });
+
+    // Store session
+    const key = sessionKey(userId, jobId);
+    chatSessions.set(key, { chatSession, createdAt: Date.now() });
+
+    return key;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Streaming answer
+// ─────────────────────────────────────────────────────────────
+
+export async function streamAnswerToResponse(
+    userId: string,
+    jobId: string,
+    question: string,
+    res: Response,
+): Promise<void> {
+    const key = sessionKey(userId, jobId);
+    const session = chatSessions.get(key);
+
+    if (!session) {
+        throw new NotFoundError('Interview session not found. Please initialize a session first.');
+    }
+
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    // Flush headers
+    res.flushHeaders();
+
+    try {
+        const stream = await session.chatSession.sendMessageStream(question);
+
+        for await (const chunk of stream.stream) {
+            const text = chunk.text();
+            if (text) {
+                res.write(`data: ${JSON.stringify({ text })}\n\n`);
+            }
+        }
+
+        // Signal completion
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+    } catch (error: any) {
+        console.error('[streamAnswer] Error:', error);
+        res.write(
+            `data: ${JSON.stringify({ error: error.message || 'Failed to generate answer' })}\n\n`,
+        );
+        res.end();
+        // Remove broken session
+        chatSessions.delete(key);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Legacy functions (kept for backward compatibility)
+// ─────────────────────────────────────────────────────────────
 
 interface InterviewQuestionsResponse {
     questions: string[];
@@ -23,27 +238,13 @@ interface EvaluationResponse {
 }
 
 /**
- * Fetch a job application, verify ownership, and return it.
- */
-async function getOwnedJob(jobId: string, userId: string) {
-    const job = await JobApplication.findById(jobId);
-    if (!job) throw new NotFoundError('Job application not found');
-    if (job.userId.toString() !== userId.toString()) {
-        throw new AuthorizationError('You do not have access to this job application');
-    }
-    return job;
-}
-
-/**
  * Generate interview questions tailored to the job description.
- * Questions are produced in the same language as the job posting.
- * Supports different interview levels: 'first' (general/behavioral) or 'second' (technical).
  */
 export async function generateQuestions(
     userId: string,
     jobId: string,
     level: 'first' | 'second' = 'first',
-    questionCount: number = 5
+    questionCount: number = 5,
 ): Promise<string[]> {
     const job = await getOwnedJob(jobId, userId);
 
@@ -118,13 +319,12 @@ Respond with a JSON object matching this exact schema:
 
 /**
  * Evaluate a candidate's answer to an interview question.
- * Feedback is provided in the same language as the job posting.
  */
 export async function evaluateAnswer(
     userId: string,
     jobId: string,
     question: string,
-    answer: string
+    answer: string,
 ): Promise<EvaluationResponse> {
     const job = await getOwnedJob(jobId, userId);
 
@@ -183,13 +383,12 @@ interface AnswerResponse {
 
 /**
  * Generate a concise, ready-to-speak answer for an interview question.
- * The answer is structured (opener + key points + closing) so the candidate
- * can read it naturally during a live interview.
+ * (Legacy — the streaming version is preferred for the live Interview Buddy.)
  */
 export async function generateAnswer(
     userId: string,
     jobId: string,
-    question: string
+    question: string,
 ): Promise<AnswerResponse> {
     const job = await getOwnedJob(jobId, userId);
 
