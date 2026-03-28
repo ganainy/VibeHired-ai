@@ -939,10 +939,10 @@ const CVManagementPage: React.FC = () => {
       {allCvs.length > 0 && !showMockTour && !isReplacing && (
         <div className="flex-shrink-0 pb-2">
           <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-            Manage Your CVs
+            CV Library
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Create, edit, and tailor your CVs for different job applications
+            Your base resumes — the starting point for tailored job applications
           </p>
         </div>
       )}

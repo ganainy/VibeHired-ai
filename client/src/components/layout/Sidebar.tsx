@@ -165,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
 
     const navItems = [
         { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-        { path: '/manage-cv', label: 'Manage CV', icon: WorkIcon },
+        { path: '/manage-cv', label: 'CV Library', icon: WorkIcon },
         { path: '/email-suggestions', label: 'Inbox', icon: InboxIcon, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
         { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon, disabled: true },
         { path: '/interview-materials', label: 'Prep Library', icon: PrepLibraryIcon },
