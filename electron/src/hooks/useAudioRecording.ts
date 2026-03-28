@@ -8,6 +8,7 @@ interface UseAudioRecordingReturn {
   stopRecording: () => Promise<string>;
   resetTranscript: () => void;
   isRecording: boolean;
+  isTranscribing: boolean;
   transcript: string;
   error: string | null;
   isSupported: boolean;
@@ -15,6 +16,7 @@ interface UseAudioRecordingReturn {
 
 export function useAudioRecording(): UseAudioRecordingReturn {
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +36,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
 
     setError(null);
     setTranscript('');
+    setIsTranscribing(false);
     authRef.current = auth;
     languageRef.current = language;
     audioChunksRef.current = [];
@@ -63,6 +66,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
           // Stop all audio tracks to release microphone immediately
           stream.getTracks().forEach(track => track.stop());
           setIsRecording(false);
+          setIsTranscribing(true);
           mediaRecorderRef.current = null;
 
           // Process transcription in background
@@ -124,10 +128,12 @@ export function useAudioRecording(): UseAudioRecordingReturn {
       const result = await response.json();
       console.log('[AudioRecording] Transcription result:', result);
       setTranscript(result.text);
+      setIsTranscribing(false);
       return result.text;
     } catch (err) {
       console.error('[AudioRecording] Transcription error:', err);
       setError((err as Error).message || 'Transcription failed');
+      setIsTranscribing(false);
       return '';
     }
   };
@@ -156,6 +162,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
     stopRecording,
     resetTranscript,
     isRecording,
+    isTranscribing,
     transcript,
     error,
     isSupported,
