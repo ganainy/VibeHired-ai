@@ -10,6 +10,7 @@ interface UseAudioRecordingReturn {
   isRecording: boolean;
   isTranscribing: boolean;
   transcript: string;
+  setTranscript: (text: string) => void;
   error: string | null;
   isSupported: boolean;
 }
@@ -164,6 +165,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
     isRecording,
     isTranscribing,
     transcript,
+    setTranscript,
     error,
     isSupported,
   };

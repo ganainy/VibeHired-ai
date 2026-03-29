@@ -27,6 +27,7 @@ const App: React.FC = () => {
     stopRecording: stopAudioRecording,
     resetTranscript,
     transcript,
+    setTranscript,
     isRecording,
     isTranscribing,
     error: recordingError,
@@ -62,6 +63,7 @@ const App: React.FC = () => {
       resetTranscript();
       transcriptRef.current = '';
       setSessionReady(false);
+        });
 
       // Pre-warm the Gemini session immediately upon auth
       if (payload.apiUrl && payload.token && payload.jobId) {
