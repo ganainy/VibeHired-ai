@@ -25,6 +25,75 @@ const formatCreditUsed = (call: any): string => {
     return Number.isInteger(value) ? String(value) : value.toFixed(2);
 };
 
+const toTitleCase = (value: string): string =>
+    value
+        .replace(/[-_]+/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const normalizeCallPath = (rawPath: string): string => {
+    if (!rawPath) return '';
+
+    try {
+        if (/^https?:\/\//i.test(rawPath)) {
+            return new URL(rawPath).pathname.toLowerCase();
+        }
+    } catch {
+        // Ignore URL parsing errors and fallback to string normalization.
+    }
+
+    const cleaned = rawPath.split('?')[0].split('#')[0].trim().toLowerCase();
+    if (!cleaned) return '';
+    return cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+};
+
+const getCallRequestPath = (call: any): string =>
+    call?.requestPath || call?.path || call?.metadata?.requestPath || call?.metadata?.path || '';
+
+const getServiceLabelFromPath = (rawPath: string): string => {
+    const normalized = normalizeCallPath(rawPath);
+    if (!normalized) return '-';
+
+    // Normalize both "/api/..." and router-relative paths like "/create-from-text".
+    const path = normalized.replace(/^\/api(?=\/)/, '');
+
+    const exactMap: Record<string, string> = {
+        '/generate-cv': 'Generate Cv',
+        '/create-from-text': 'Create From Text',
+        '/create-from-url': 'Create From Url',
+        '/recommendations/regenerate': 'Recommendation',
+        '/upload': 'Upload',
+        '/upload-branch': 'Upload Branch',
+        '/stream-answer': 'Stream Answer',
+        '/questions': 'Questions',
+        '/evaluate': 'Evaluate',
+        '/ai/generate': 'AI Generate',
+        '/ai/chat': 'AI Chat',
+        '/ai/embed': 'AI Embed',
+        '/apify/fetch': 'Apify Fetch',
+        '/apify/actors': 'Apify Actors',
+        '/cvs/upload': 'CV Upload',
+        '/cvs/parse': 'CV Parse',
+        '/jobs': 'Jobs List',
+    };
+
+    if (exactMap[path]) return exactMap[path];
+
+    if (path.startsWith('/job-applications/recommendations')) return 'Recommendation';
+    if (/^\/job-applications\/[^/]+\/generate-cv$/.test(path)) return 'Generate Cv';
+    if (/^\/interview\/[^/]+\/(questions|evaluate)$/.test(path)) return 'Questions';
+    if (path.startsWith('/chat/')) return 'Questions';
+    if (path.startsWith('/ai/')) return 'AI Service';
+    if (path.startsWith('/apify/')) return 'Apify Service';
+    if (path.startsWith('/cvs/')) return 'CV Service';
+    if (path.startsWith('/jobs/')) return 'Jobs Service';
+
+    const parts = path.split('/').filter(Boolean);
+    if (parts.length === 0) return normalized;
+    return toTitleCase(parts[parts.length - 1]);
+};
+
+const getServiceLabelForCall = (call: any): string => getServiceLabelFromPath(getCallRequestPath(call));
+
 const AdminDashboardPage: React.FC = () => {
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [errorStats, setErrorStats] = useState<ErrorStats | null>(null);
@@ -268,45 +337,7 @@ const AdminDashboardPage: React.FC = () => {
                                 {
                                     key: 'service',
                                     label: 'Service',
-                                    render: (c: any) => {
-                                        // Generate friendly service names from backend request path
-                                        // requestPath should contain the backend endpoint (e.g., /api/ai/generate)
-                                        if (!c.requestPath) return '-';
-
-                                        const path = c.requestPath.toLowerCase();
-
-                                        // Map backend endpoint paths to friendly service names
-                                        // AI endpoints
-                                        if (path === '/api/ai/generate') return 'AI Generate';
-                                        if (path === '/api/ai/chat') return 'AI Chat';
-                                        if (path === '/api/ai/embed') return 'AI Embed';
-                                        if (path.startsWith('/api/ai/')) return 'AI Service';
-
-                                        // Apify endpoints
-                                        if (path === '/api/apify/fetch') return 'Apify Fetch';
-                                        if (path === '/api/apify/actors') return 'Apify Actors';
-                                        if (path.startsWith('/api/apify/')) return 'Apify Service';
-
-                                        // CV endpoints
-                                        if (path === '/api/cvs/upload') return 'CV Upload';
-                                        if (path === '/api/cvs/parse') return 'CV Parse';
-                                        if (path.startsWith('/api/cvs/')) return 'CV Service';
-
-                                        // Jobs endpoints
-                                        if (path === '/api/jobs') return 'Jobs List';
-                                        if (path.startsWith('/api/jobs/')) return 'Jobs Service';
-
-                                        // Fallback: extract action from path
-                                        const parts = path.split('/').filter(Boolean);
-                                        if (parts.length > 1) {
-                                            const action = parts[parts.length - 1];
-                                            // Convert kebab-case to Title Case
-                                            return action.replace(/-/g, ' ').replace(/\b\w/g, s => s.toUpperCase());
-                                        }
-
-                                        // Last resort: show the path
-                                        return path;
-                                    }
+                                    render: (c: any) => getServiceLabelForCall(c)
                                 },
                                 { key: 'modelName', label: 'Model', render: (c: any) => c.modelName || '-', mobileHidden: true },
                                 { key: 'userEmail', label: 'User', render: (c: any) => c.userEmail || '-', mobileHidden: true },
@@ -326,9 +357,9 @@ const AdminDashboardPage: React.FC = () => {
                             cardConfig={{
                                 title: (c: any) => c.provider,
                                 subtitle: (c: any) => {
-                                    if (!c.requestPath) return c.modelName || 'No model';
-                                    const parts = c.requestPath.split('/').filter(Boolean);
-                                    return parts.length > 1 ? parts.slice(1).join(' ') : c.requestPath;
+                                    const requestPath = getCallRequestPath(c);
+                                    if (!requestPath) return c.modelName || 'No model';
+                                    return getServiceLabelFromPath(requestPath);
                                 },
                                 badge: (c: any) => ({
                                     text: c.statusCode || (c.success ? 'OK' : 'ERR'),
