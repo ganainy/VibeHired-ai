@@ -8,6 +8,7 @@ export interface IExternalCallLog extends Document {
   host: string;
   path: string;
   method: string;
+  creditUsed?: number;
   statusCode?: number;
   success: boolean;
   durationMs: number;
@@ -48,6 +49,10 @@ const ExternalCallLogSchema = new Schema<IExternalCallLog>(
       required: true,
       uppercase: true,
       default: 'GET',
+    },
+    creditUsed: {
+      type: Number,
+      min: 0,
     },
     statusCode: {
       type: Number,

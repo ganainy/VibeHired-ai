@@ -48,10 +48,12 @@ export interface AdminStats {
             statusCode?: number;
             success: boolean;
             durationMs: number;
+            creditUsed?: number;
             errorMessage?: string;
             createdAt: string;
             userId?: string;
             userEmail?: string;
+            metadata?: Record<string, any>;
         }>;
     };
 }

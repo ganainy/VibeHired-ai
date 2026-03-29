@@ -217,6 +217,23 @@ export async function getAdminStats(req: Request, res: Response) {
                                 method: 1,
                                 requestPath: 1,
                                 requestMethod: 1,
+                                creditUsed: {
+                                    $ifNull: [
+                                        '$creditUsed',
+                                        {
+                                            $ifNull: [
+                                                '$metadata.creditUsed',
+                                                {
+                                                    $ifNull: [
+                                                        '$metadata.creditsUsed',
+                                                        '$metadata.credits'
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                metadata: 1,
                                 statusCode: 1,
                                 success: 1,
                                 durationMs: 1,

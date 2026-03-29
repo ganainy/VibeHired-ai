@@ -5,6 +5,7 @@ import { IUser } from '../models/User';
 import Profile from '../models/Profile';
 import { checkAiRateLimit } from './aiRateLimiter';
 import { PlanType } from '../constants/plans';
+import { setCreditUsed } from '../services/requestContext';
 
 /**
  * Middleware to check and consume user credits for AI actions.
@@ -65,6 +66,11 @@ export function usageLimiter(actionType: CreditActionType): RequestHandler {
                 });
                 return;
             }
+
+            const creditForThisRequest = customWeight !== undefined
+                ? customWeight
+                : Number(CREDIT_WEIGHTS[actionType]);
+            setCreditUsed(creditForThisRequest);
 
             // Step 5: Consume credits on successful response only
             res.on('finish', () => {

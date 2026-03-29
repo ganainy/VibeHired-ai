@@ -1,7 +1,7 @@
 import axios from 'axios';
 import mongoose from 'mongoose';
 import ExternalCallLog, { ExternalCallCategory } from '../models/ExternalCallLog';
-import { getUserId, getUserEmail, getRequestPath } from './requestContext';
+import { getUserId, getUserEmail, getRequestPath, getCreditUsed } from './requestContext';
 
 type TrackedProvider = 'gemini' | 'openrouter' | 'ollama' | 'openai' | 'anthropic' | 'apify';
 
@@ -143,6 +143,7 @@ function persistLog(log: TrackedCallLog): void {
   console.log('[ExternalCallTracking] Final userId:', userId, 'userEmail:', userEmail);
 
   const backendRequestPath = getRequestPath();
+  const contextCreditUsed = getCreditUsed();
 
   const doc: any = {
     category: log.category,
@@ -157,7 +158,14 @@ function persistLog(log: TrackedCallLog): void {
     errorMessage: truncateErrorMessage(log.errorMessage),
     requestPath: backendRequestPath || parsed.pathname,
     requestMethod: (log.method || 'GET').toUpperCase(),
+    metadata: {
+      creditUsed: contextCreditUsed,
+    },
   };
+
+  if (typeof contextCreditUsed === 'number' && Number.isFinite(contextCreditUsed) && contextCreditUsed >= 0) {
+    doc.creditUsed = contextCreditUsed;
+  }
 
   if (userId && mongoose.Types.ObjectId.isValid(userId)) {
     doc.userId = new mongoose.Types.ObjectId(userId);

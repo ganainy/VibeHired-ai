@@ -4,6 +4,7 @@ interface RequestContext {
   userId?: string;
   userEmail?: string;
   requestPath?: string;
+  creditUsed?: number;
 }
 
 export const asyncLocalStorage = new AsyncLocalStorage<RequestContext>();
@@ -12,6 +13,7 @@ export const asyncLocalStorage = new AsyncLocalStorage<RequestContext>();
 let currentUserId: string | undefined = undefined;
 let currentUserEmail: string | undefined = undefined;
 let currentRequestPath: string | undefined = undefined;
+let currentCreditUsed: number | undefined = undefined;
 
 export function getUserId(): string | undefined {
   // First try async local storage
@@ -71,10 +73,25 @@ export function getRequestPath(): string | undefined {
   return currentRequestPath;
 }
 
+export function setCreditUsed(creditUsed: number): void {
+  const store = asyncLocalStorage.getStore();
+  if (store) {
+    store.creditUsed = creditUsed;
+  }
+  currentCreditUsed = creditUsed;
+}
+
+export function getCreditUsed(): number | undefined {
+  const store = asyncLocalStorage.getStore();
+  if (typeof store?.creditUsed === 'number') return store.creditUsed;
+  return currentCreditUsed;
+}
+
 export function clearFallbackContext(): void {
   currentUserId = undefined;
   currentUserEmail = undefined;
   currentRequestPath = undefined;
+  currentCreditUsed = undefined;
 }
 
 export function runWithContext<T>(callback: () => Promise<T>): Promise<T> {

@@ -8,6 +8,23 @@ import { TableOrCards } from '../components/common/TableOrCards';
 
 const EXTERNAL_CALLS_PAGE_SIZE = 20;
 
+const getCreditUsedFromCall = (call: any): number | null => {
+    const direct = Number(call?.creditUsed);
+    if (Number.isFinite(direct) && direct >= 0) return direct;
+
+    const metadata = call?.metadata;
+    const fallback = Number(metadata?.creditUsed ?? metadata?.creditsUsed ?? metadata?.credits);
+    if (Number.isFinite(fallback) && fallback >= 0) return fallback;
+
+    return null;
+};
+
+const formatCreditUsed = (call: any): string => {
+    const value = getCreditUsedFromCall(call);
+    if (value === null) return '-';
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
+};
+
 const AdminDashboardPage: React.FC = () => {
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [errorStats, setErrorStats] = useState<ErrorStats | null>(null);
@@ -293,6 +310,7 @@ const AdminDashboardPage: React.FC = () => {
                                 },
                                 { key: 'modelName', label: 'Model', render: (c: any) => c.modelName || '-', mobileHidden: true },
                                 { key: 'userEmail', label: 'User', render: (c: any) => c.userEmail || '-', mobileHidden: true },
+                                { key: 'creditUsed', label: 'Credit Used', render: (c: any) => formatCreditUsed(c) },
                                 {
                                     key: 'status',
                                     label: 'Status',
@@ -321,6 +339,7 @@ const AdminDashboardPage: React.FC = () => {
                                 fields: [
                                     { label: 'Model', value: (c: any) => c.modelName || '-' },
                                     { label: 'User', value: (c: any) => c.userEmail || '-' },
+                                    { label: 'Credit Used', value: (c: any) => formatCreditUsed(c) },
                                     { label: 'Latency', value: (c: any) => `${c.durationMs} ms` },
                                     { label: 'Time', value: (c: any) => new Date(c.createdAt).toLocaleString() },
                                 ],
