@@ -20,6 +20,7 @@ import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
 import axios from 'axios';
 import ErrorAlert from '../components/common/ErrorAlert';
 import { parseApiError, parseApiErrorMessage } from '../utils/parseApiError';
+import { hasMeaningfulContent } from '../utils/hasMeaningfulContent';
 import { PAYMENTS_ENABLED } from '../utils/featureFlags';
 import SendToPhoneButton from '../components/jobs/SendToPhoneButton';
 import Spinner from '../components/common/Spinner';
@@ -42,6 +43,9 @@ import { saveAs } from 'file-saver';
 import { getBaseCoverLetters, applyBaseCoverLetterToJob, uploadCoverLetterForJob, saveCurrentCoverLetterForJob, CoverLetterBase } from '../services/coverLetterBaseApi';
 import TailoredCvPage from '../components/review-finalize/TailoredCvPage';
 import CoverLetterPage from '../components/review-finalize/CoverLetterPage';
+import ReviewTabsNavigation from '../components/review-finalize/ReviewTabsNavigation';
+import ReviewPageHeader from '../components/review-finalize/ReviewPageHeader';
+import { useReviewTabState } from '../hooks/useReviewTabState';
 
 interface ToastState {
     message: string;
@@ -49,12 +53,6 @@ interface ToastState {
 }
 
 const EMPTY_CV_DATA: JsonResumeSchema = { basics: {} };
-
-function hasMeaningfulContent(value: unknown): boolean {
-    return value !== null && value !== undefined && value !== '' && 
-           !(Array.isArray(value) && value.length === 0) &&
-           !(typeof value === 'object' && Object.keys(value).length === 0);
-}
 
 const ReviewFinalizePage: React.FC = () => {
     const { jobId, tab } = useParams<{ jobId: string; tab?: string }>();
@@ -119,57 +117,11 @@ const ReviewFinalizePage: React.FC = () => {
     const [isRefreshingRecommendation, setIsRefreshingRecommendation] = useState<boolean>(false);
     const [isRecommendationModalOpen, setIsRecommendationModalOpen] = useState<boolean>(false);
     const [isClCopied, setIsClCopied] = useState<boolean>(false);
-    const VALID_TABS = ['job-description', 'cover-letter', 'cv', 'mock-interview', 'reminders', 'materials'] as const;
-    type ActiveTab = typeof VALID_TABS[number];
-    const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
-        // Priority 1: URL Param
-        if (tab && (VALID_TABS as readonly string[]).includes(tab)) {
-            return tab as ActiveTab;
-        }
-        // Priority 2: Local Storage
-        if (jobId) {
-            try {
-                const saved = localStorage.getItem(`job_tab_${jobId}`);
-                if (saved && (VALID_TABS as readonly string[]).includes(saved)) {
-                    return saved as ActiveTab;
-                }
-            } catch (e) {
-                console.error("Error reading tab from localStorage", e);
-            }
-        }
-        // Priority 3: Default
-        return 'job-description';
+    const { activeTab, handleTabChange } = useReviewTabState({
+        jobId,
+        tab,
+        navigate,
     });
-
-    const handleTabChange = (newTab: ActiveTab) => {
-        setActiveTab(newTab);
-        localStorage.setItem(`job_tab_${jobId}`, newTab);
-        navigate(`/jobs/${jobId}/review/${newTab}`);
-    };
-
-    // Update active tab when URL param changes
-    useEffect(() => {
-        if (tab && (VALID_TABS as readonly string[]).includes(tab)) {
-            setActiveTab(tab as ActiveTab);
-        } else if (!tab && jobId) {
-            // If no tab in URL, check localStorage or default logic (though initial state handles this, 
-            // this handles navigation from /review/cv to /review)
-            // But actually, we probably want to Redirect /review to /review/job-description or whatever is saved?
-            // For now, let's just stick to what `activeTab` is if tab is invalid or missing, to avoid loops
-        }
-    }, [tab]);
-
-    // Update active tab when switching jobs (if component doesn't unmount) - keeping existing logic but ensuring it respects URL first
-    useEffect(() => {
-        if (jobId && !tab) { // Only checking localStorage if no tab param is provided
-            const saved = localStorage.getItem(`job_tab_${jobId}`);
-            if (saved && (VALID_TABS as readonly string[]).includes(saved)) {
-                setActiveTab(saved as ActiveTab);
-            } else {
-                setActiveTab('job-description');
-            }
-        }
-    }, [jobId]);
     const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isInitialLoadRef = useRef<boolean>(true);
     const lastSavedCvDataRef = useRef<string | null>(null);
@@ -1939,68 +1891,6 @@ const ReviewFinalizePage: React.FC = () => {
         }
     };
 
-    // Calculate progress steps
-    const getProgressSteps = () => {
-        if (!jobApplication) return [];
-        return [
-            {
-                label: 'Job Details',
-                completed: !!jobApplication.jobDescriptionText,
-            },
-            {
-                label: 'CV Generated',
-                completed: hasLocalCv,
-            },
-            {
-                label: 'Cover Letter Generated',
-                completed: !!jobApplication.draftCoverLetterText,
-            },
-            {
-                label: 'AI Review',
-                completed: !!atsScores,
-            },
-        ];
-    };
-
-    // Format date helper with relative time
-    const formatDate = (dateString?: string) => {
-        if (!dateString) return 'N/A';
-        try {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffMs = now.getTime() - date.getTime();
-            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-            if (diffDays === 0) return 'Today';
-            if (diffDays === 1) return 'Yesterday';
-            if (diffDays < 7) return `${diffDays} days ago`;
-
-            // For older dates, show full date
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-            });
-        } catch {
-            return 'N/A';
-        }
-    };
-
-    // Get full date for tooltip
-    const getFullDate = (dateString?: string) => {
-        if (!dateString) return 'N/A';
-        try {
-            return new Date(dateString).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
-        } catch {
-            return 'N/A';
-        }
-    };
 
     if (isLoading) {
         return (
@@ -2050,241 +1940,20 @@ const ReviewFinalizePage: React.FC = () => {
         );
     }
 
-    const progressSteps = getProgressSteps();
-
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-24">
             <div className="p-6 lg:p-8">
-                {/* Page Header */}
-                <div className="flex flex-col md:flex-row items-start justify-between gap-4 mb-6">
-                    {/* Left: Job Info */}
-                    <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                            {jobApplication.jobTitle}
-                        </h1>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">
-                            <span className="inline-flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[18px]">apartment</span>
-                                {jobApplication.companyName}
-                            </span>
-                            <span className="inline-flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[18px]">schedule</span>
-                                Created: {formatDate(jobApplication.createdAt)}
-                            </span>
-                        </div>
-                    </div>
+                <ReviewPageHeader
+                    jobApplication={jobApplication}
+                    recommendation={recommendation}
+                    isLoadingRecommendation={isLoadingRecommendation}
+                    onOpenRecommendationModal={() => setIsRecommendationModalOpen(true)}
+                    onCalculateMatch={handleCalculateMatch}
+                    onMarkAsApplied={handleMarkAsApplied}
+                    onDeleteJob={handleDeleteJob}
+                />
 
-                    {/* Right: Status & Match Info */}
-                    <div className="flex flex-wrap items-start gap-4 md:gap-6 w-full md:w-auto md:flex-shrink-0 mt-4 md:mt-0">
-                        {/* Status Column */}
-                        <div className="text-center">
-                            <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Status</p>
-                            <JobStatusBadge type="application" status={jobApplication.status} />
-                        </div>
-
-                        {/* Match Column - Clickable or Calculate Button */}
-                        {recommendation && recommendation.score !== null && recommendation.score !== undefined ? (
-                            <button
-                                onClick={() => setIsRecommendationModalOpen(true)}
-                                className="text-center cursor-pointer hover:opacity-80 transition-opacity"
-                                title="Click to view AI Application Advice"
-                            >
-                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
-                                <p className={`text-sm font-semibold ${recommendation.shouldApply
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : 'text-amber-600 dark:text-amber-400'
-                                    }`}>
-                                    {`${recommendation.score}%`}
-                                </p>
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleCalculateMatch}
-                                disabled={isLoadingRecommendation || !jobApplication?.jobDescriptionText}
-                                className="text-center cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                                title={!jobApplication?.jobDescriptionText ? "Add job description first" : "Click to calculate match (2 credits)"}
-                            >
-                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Match</p>
-                                {isLoadingRecommendation ? (
-                                    <span className="inline-flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                                    </span>
-                                ) : recommendation?.error ? (
-                                    <span className="text-xs px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">
-                                        Retry
-                                    </span>
-                                ) : (
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>
-                                        Calculate
-                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credit</span>
-                                    </span>
-                                )}
-                            </button>
-                        )}
-
-
-                        {/* Open Job Link Button */}
-                        {jobApplication.jobUrl && parseMultipleUrls(jobApplication.jobUrl || '').length > 0 && (
-                            <div className="flex flex-wrap items-center gap-1 gap-y-2">
-                                {parseMultipleUrls(jobApplication.jobUrl || '').slice(0, 3).map((url, idx) => (
-                                    <a
-                                        key={idx}
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-3 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
-                                        style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-                                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-bg-hover,rgba(232,184,68,0.14))')}
-                                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent-bg)')}
-                                        title={`View Job Posting ${parseMultipleUrls(jobApplication.jobUrl || '').length > 1 ? `(${idx + 1})` : ''}: ${url}`}
-                                    >
-                                        <span className="material-symbols-outlined text-[20px]">open_in_new</span>
-                                        {parseMultipleUrls(jobApplication.jobUrl || '').length > 1 && (
-                                            <span className="text-xs ml-0.5">{idx + 1}</span>
-                                        )}
-                                    </a>
-                                ))}
-                                {parseMultipleUrls(jobApplication.jobUrl || '').length > 3 && (
-                                    <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-1" title={parseMultipleUrls(jobApplication.jobUrl || '').slice(3).join('\n')}>
-                                        +{parseMultipleUrls(jobApplication.jobUrl || '').length - 3} more
-                                    </span>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Mark as Applied Button */}
-                        {jobApplication.status === 'Not Applied' && (
-                            <button
-                                onClick={handleMarkAsApplied}
-                                className="px-4 py-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 rounded-lg shadow-sm transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 self-stretch"
-                                title="Mark this job as Applied"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                                <span>Mark as Applied</span>
-                            </button>
-                        )}
-
-                        {/* Delete Job Button */}
-                        <button
-                            onClick={handleDeleteJob}
-                            className="p-3 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg shadow-sm transition-all flex items-center justify-center hover:scale-105 active:scale-95 self-stretch"
-                            title="Delete this job application"
-                        >
-                            <span className="material-symbols-outlined text-[20px]">delete</span>
-                        </button>
-                    </div>
-                </div>
-
-
-
-                {/* Tabs Navigation with Integrated Progress Indicators */}
-                <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-4">
-                    <div className="relative flex items-center justify-between w-full max-w-4xl mx-auto">
-                        <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-600 -z-10 transform -translate-y-1/2"></div>
-
-                        {/* Tab 1: Job Details */}
-                        <button
-                            onClick={() => handleTabChange('job-description')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'job-description'
-                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">check</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'job-description'
-                                ? 'text-primary font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Job Details</span>
-                        </button>
-
-                        {/* Tab 2: CV Generated */}
-                        <button
-                            onClick={() => handleTabChange('cv')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'cv'
-                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">article</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'cv'
-                                ? 'text-primary font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Tailored CV</span>
-                        </button>
-
-                        {/* Tab 3: Cover Letter */}
-                        <button
-                            onClick={() => handleTabChange('cover-letter')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'cover-letter'
-                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">mail</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'cover-letter'
-                                ? 'text-primary font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Cover Letter</span>
-                        </button>
-
-                        {/* Tab 4: Mock Interview */}
-                        <button
-                            onClick={() => handleTabChange('mock-interview')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'mock-interview'
-                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">psychology</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'mock-interview'
-                                ? 'text-primary font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Mock Interview</span>
-                        </button>
-
-                        {/* Tab 5: Reminders */}
-                        <button
-                            onClick={() => handleTabChange('reminders')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'reminders'
-                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">schedule</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'reminders'
-                                ? 'text-primary font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Reminders</span>
-                        </button>
-
-                        {/* Tab 6: Prep Materials */}
-                        <button
-                            onClick={() => handleTabChange('materials')}
-                            className="group flex flex-col items-center focus:outline-none"
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 transition-all duration-200 ${activeTab === 'materials'
-                                ? 'bg-primary text-ink-950 shadow-lg scale-125'
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                }`}>
-                                <span className="material-symbols-outlined text-sm">library_books</span>
-                            </div>
-                            <span className={`text-xs font-medium mt-2 transition-colors duration-200 ${activeTab === 'materials'
-                                ? 'text-primary font-bold'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>Prep Materials</span>
-                        </button>
-                    </div>
-                </div>
+                <ReviewTabsNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
                 {/* Tab Contents */}
                 <div className="mt-6">
