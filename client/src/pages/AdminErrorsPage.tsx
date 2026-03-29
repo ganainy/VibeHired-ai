@@ -88,11 +88,14 @@ const AdminErrorsPage: React.FC = () => {
         }
     };
 
+    const unresolvedErrorIds = logs.filter(l => !l.resolved).map(l => l._id);
+    const areAllUnresolvedSelected = unresolvedErrorIds.length > 0 && unresolvedErrorIds.every(id => selectedErrors.includes(id));
+
     const toggleSelectAll = () => {
-        if (selectedErrors.length === logs.length) {
+        if (areAllUnresolvedSelected) {
             setSelectedErrors([]);
         } else {
-            setSelectedErrors(logs.filter(l => !l.resolved).map(l => l._id));
+            setSelectedErrors(unresolvedErrorIds);
         }
     };
 
@@ -192,11 +195,13 @@ const AdminErrorsPage: React.FC = () => {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="text-zinc-500 text-xs uppercase tracking-wider border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
-                                <th className="p-4 w-10">
+                                <th className="p-4 w-10 cursor-pointer" onClick={toggleSelectAll}>
                                     <input
                                         type="checkbox"
-                                        checked={selectedErrors.length === logs.filter(l => !l.resolved).length && logs.filter(l => !l.resolved).length > 0}
+                                        checked={areAllUnresolvedSelected}
                                         onChange={toggleSelectAll}
+                                        onClick={(e) => e.stopPropagation()}
+                                        aria-label="Select all unresolved errors"
                                         className="rounded"
                                     />
                                 </th>
@@ -226,12 +231,17 @@ const AdminErrorsPage: React.FC = () => {
                                 logs.map((error) => (
                                     <React.Fragment key={error._id}>
                                         <tr className={`text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800/50 ${error.resolved ? 'opacity-60' : ''}`}>
-                                            <td className="p-4">
+                                            <td
+                                                className={`p-4 ${!error.resolved ? 'cursor-pointer' : ''}`}
+                                                onClick={!error.resolved ? () => toggleSelect(error._id) : undefined}
+                                            >
                                                 {!error.resolved && (
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedErrors.includes(error._id)}
                                                         onChange={() => toggleSelect(error._id)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        aria-label={`Select error ${error._id}`}
                                                         className="rounded"
                                                     />
                                                 )}

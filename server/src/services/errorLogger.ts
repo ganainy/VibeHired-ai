@@ -16,24 +16,76 @@ interface ErrorLogInput {
     metadata?: Record<string, any>;
 }
 
+const ERROR_DEDUPE_WINDOW_MS = 2 * 60 * 1000;
+
 export async function logError(input: ErrorLogInput): Promise<IErrorLog> {
+    const normalizedMessage = input.message?.trim();
+    const normalizedStack = input.stack?.trim();
+    const normalizedUrl = input.url?.trim();
+    const normalizedMethod = input.method?.trim().toUpperCase();
+    const normalizedEndpoint = input.endpoint?.trim();
+    const normalizedUserEmail = input.userEmail?.trim().toLowerCase();
+
     const doc: Partial<IErrorLog> = {
         errorType: input.errorType,
         severity: input.severity,
-        message: input.message,
-        stack: input.stack,
-        url: input.url,
+        message: normalizedMessage,
+        stack: normalizedStack,
+        url: normalizedUrl,
         userAgent: input.userAgent,
-        method: input.method,
-        endpoint: input.endpoint,
+        method: normalizedMethod,
+        endpoint: normalizedEndpoint,
         statusCode: input.statusCode,
-        userEmail: input.userEmail,
+        userEmail: normalizedUserEmail,
         metadata: input.metadata,
         resolved: false,
     };
 
+    const createdAfter = new Date(Date.now() - ERROR_DEDUPE_WINDOW_MS);
+    const dedupeFilter: Record<string, any> = {
+        errorType: input.errorType,
+        severity: input.severity,
+        message: normalizedMessage,
+        stack: normalizedStack,
+        url: normalizedUrl,
+        method: normalizedMethod,
+        endpoint: normalizedEndpoint,
+        statusCode: input.statusCode,
+        userEmail: normalizedUserEmail,
+        resolved: false,
+        createdAt: { $gte: createdAfter },
+    };
+
+    if (normalizedStack === undefined) {
+        dedupeFilter.stack = { $in: [null, ''] };
+    }
+    if (normalizedUrl === undefined) {
+        dedupeFilter.url = { $in: [null, ''] };
+    }
+    if (normalizedMethod === undefined) {
+        dedupeFilter.method = { $in: [null, ''] };
+    }
+    if (normalizedEndpoint === undefined) {
+        dedupeFilter.endpoint = { $in: [null, ''] };
+    }
+    if (input.statusCode === undefined) {
+        dedupeFilter.statusCode = { $in: [null] };
+    }
+    if (normalizedUserEmail === undefined) {
+        dedupeFilter.userEmail = { $in: [null, ''] };
+    }
+
     if (input.userId && mongoose.Types.ObjectId.isValid(input.userId)) {
-        doc.userId = new mongoose.Types.ObjectId(input.userId);
+        const objectUserId = new mongoose.Types.ObjectId(input.userId);
+        doc.userId = objectUserId;
+        dedupeFilter.userId = objectUserId;
+    } else {
+        dedupeFilter.userId = { $in: [null] };
+    }
+
+    const existing = await ErrorLog.findOne(dedupeFilter).sort({ createdAt: -1 });
+    if (existing) {
+        return existing;
     }
 
     const errorLog = new ErrorLog(doc);

@@ -86,6 +86,7 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
     const clickable = !editMode && (canPreviewInline(material.type) || isLink);
     const jobRef = getJobRef(material);
     const jobId = getJobId(material);
+    const dimmedMutedIconStyle = { color: 'var(--text-muted)', opacity: 0.62 } as const;
 
     const handleCardClick = () => {
         if (editMode) return;
@@ -163,7 +164,7 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                     {/* Header */}
                     <div className="flex items-center justify-between gap-2 mb-4">
                         <div className="flex items-center gap-2">
-                            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--accent-bg-hover)', color: 'var(--accent)' }}>
                                 <span className="material-symbols-outlined text-base" style={{ color: 'var(--bg-base)' }}>
                                     {iconForType(material.type)}
                                 </span>
@@ -308,7 +309,7 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                     <div className="flex items-start gap-4 mb-3">
                         {/* Type Icon */}
                         <div className="relative flex-shrink-0">
-                            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--accent-bg-hover)', color: 'var(--accent)' }}>
                                 <span className="material-symbols-outlined text-base" style={{ color: 'var(--bg-base)' }}>
                                     {iconForType(material.type)}
                                 </span>
@@ -376,16 +377,16 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                     </div>
 
                     {/* Actions Row */}
-                    <div className="flex items-center gap-2 mt-2 pl-9" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center flex-wrap gap-2 mt-2 pl-9" onClick={(e) => e.stopPropagation()}>
                         {/* Favorite Star */}
                         <button
                             onClick={() => onToggleFavorite(material._id)}
                             disabled={isUpdating}
                             title={material.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                            className="p-2 rounded-lg transition-all disabled:opacity-50"
+                            className="p-2 rounded-lg transition-all hover:opacity-100 disabled:opacity-50"
                             style={{
                                 color: material.isFavorite ? 'var(--accent)' : 'var(--text-muted)',
-                                opacity: material.isFavorite ? 1 : 0.6,
+                                opacity: material.isFavorite ? 0.82 : 0.56,
                             }}
                         >
                             <span
@@ -402,8 +403,8 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                                 onClick={openEdit}
                                 title="Edit"
                                 disabled={isUpdating}
-                                className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
-                                style={{ color: 'var(--text-muted)' }}
+                                className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
+                                style={dimmedMutedIconStyle}
                             >
                                 <span className="material-symbols-outlined text-base">edit</span>
                             </button>
@@ -414,8 +415,8 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                             <button
                                 onClick={handleDownload}
                                 title="Download"
-                                className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
-                                style={{ color: 'var(--text-muted)' }}
+                                className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
+                                style={dimmedMutedIconStyle}
                             >
                                 <span className="material-symbols-outlined text-base">download</span>
                             </button>
@@ -426,8 +427,8 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                             <button
                                 onClick={() => window.open(toDownloadCloudinaryUrl(material.cloudinaryUrl), '_blank', 'noopener,noreferrer')}
                                 title="Open file"
-                                className="p-2 rounded-lg transition-colors"
-                                style={{ color: 'var(--accent)' }}
+                                className="p-2 rounded-lg transition-colors hover:opacity-100"
+                                style={{ color: 'var(--accent)', opacity: 0.75 }}
                             >
                                 <span className="material-symbols-outlined text-base">open_in_new</span>
                             </button>
@@ -435,8 +436,8 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                             <button
                                 onClick={(e) => { e.stopPropagation(); onShowShare(material); }}
                                 title="Sharing is on - click to manage"
-                                className="p-2 rounded-lg transition-colors"
-                                style={{ color: 'var(--accent)' }}
+                                className="p-2 rounded-lg transition-colors hover:opacity-100"
+                                style={{ color: 'var(--accent)', opacity: 0.75 }}
                             >
                                 <span className="material-symbols-outlined text-base">link</span>
                             </button>
@@ -445,8 +446,8 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                                 onClick={(e) => { e.stopPropagation(); onShare(material._id); }}
                                 title="Share"
                                 disabled={isUpdating}
-                                className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
-                                style={{ color: 'var(--text-muted)' }}
+                                className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
+                                style={dimmedMutedIconStyle}
                             >
                                 <span className="material-symbols-outlined text-base">share</span>
                             </button>
@@ -475,8 +476,8 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                                 onClick={() => setConfirmDelete(true)}
                                 title="Delete"
                                 disabled={isUpdating}
-                                className="p-2 rounded-lg transition-colors hover:text-red-500 disabled:opacity-50"
-                                style={{ color: 'var(--text-muted)' }}
+                                className="p-2 rounded-lg transition-colors hover:text-red-500 hover:opacity-100 disabled:opacity-50"
+                                style={dimmedMutedIconStyle}
                             >
                                 <span className="material-symbols-outlined text-base">delete</span>
                             </button>
@@ -486,8 +487,8 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                         <button
                             onClick={() => onRemoveGlobal(material._id)}
                             disabled={isUpdating}
-                            className="flex items-center gap-2 mt-2 text-xs transition-colors disabled:opacity-50 hover:text-red-500"
-                            style={{ color: 'var(--text-muted)' }}
+                            className="inline-flex items-center gap-2 text-xs leading-none transition-colors hover:opacity-100 disabled:opacity-50 hover:text-red-500"
+                            style={dimmedMutedIconStyle}
                         >
                             <span className="material-symbols-outlined text-sm">remove_circle_outline</span>
                             Remove from library
