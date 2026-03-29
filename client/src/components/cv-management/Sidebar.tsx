@@ -24,6 +24,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     onCreateBranch,
     className = ''
 }) => {
+    void onAddNewCv;
+    void onReplaceCv;
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredCvs = cvs.filter(cv => {

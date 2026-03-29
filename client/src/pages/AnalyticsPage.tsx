@@ -1,23 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getJobs, updateJob, JobApplication } from '../services/jobApi';
+import { getJobs, JobApplication } from '../services/jobApi';
 import { getApplicationStats, ApplicationStats } from '../services/analyticsApi';
 import { WeeklyGoalWidget } from '../components/analytics/WeeklyGoalWidget';
 import { PipelineConversionWidget } from '../components/analytics/PipelineConversionWidget';
 import { ApplicationsOverTimeChart } from '../components/analytics/ApplicationsOverTimeChart';
-import { ApplicationsByStatusChart } from '../components/analytics/ApplicationsByStatusChart';
 import { RecentActivityWidget } from '../components/analytics/RecentActivityWidget';
 import { WorkTrackerStatsWidget } from '../components/analytics/WorkTrackerStatsWidget';
 import { WorkHoursChart } from '../components/analytics/WorkHoursChart';
 import { EmployerDistributionChart } from '../components/analytics/EmployerDistributionChart';
-import { ApplicationsOverallWidget } from '../components/analytics/ApplicationsOverallWidget';
 // import ApplicationPipelineKanban from '../components/jobs/ApplicationPipelineKanban'; // Archived
 import { getWorkTrackerAnalytics, WorkTrackerAnalytics, getWorkMonths } from '../services/workTrackerApi';
 import Spinner from '../components/common/Spinner';
 import ErrorAlert from '../components/common/ErrorAlert';
-import { Briefcase, Clock, ChevronDown, TrendingUp, Users, CalendarCheck2 } from 'lucide-react';
+import { Briefcase, Clock, ChevronDown } from 'lucide-react';
 import TourBanner from '../components/onboarding/TourBanner';
 import { usePageTour } from '../hooks/usePageTour';
-import { MOCK_ANALYTICS, getMockAnalyticsData } from '../data/mockTourData';
+import { getMockAnalyticsData } from '../data/mockTourData';
 
 const AnalyticsPage: React.FC = () => {
     const [jobs, setJobs] = useState<JobApplication[]>([]);

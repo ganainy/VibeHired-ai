@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import appLogo from '../../assets/app-logo.png';
 import { VibeHiredLogo } from '../VibeHiredLogo';
 // ── Inbox icon (email suggestions) ───────────────────────────────────────────────────────
 const InboxIconMobile = () => (
@@ -12,10 +11,6 @@ const InboxIconMobile = () => (
     </svg>
 );
 // ── Icons ─────────────────────────────────────────────────────────────────────
-
-const Logo = () => (
-    <img src={appLogo} alt="VibeHired" width="24" height="24" style={{ borderRadius: '6px', display: 'block', objectFit: 'contain' }} />
-);
 
 const HamburgerIcon = () => (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
@@ -273,7 +268,7 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
 
                         {/* Nav items */}
                         <nav className="flex-1 px-4 py-6 space-y-1.5">
-                            {navItems.map((item, i) => {
+                            {navItems.map((item) => {
                                 const isActive = isActiveRoute(item.path);
                                 const isDisabled = !!(item as any).disabled;
 
@@ -335,7 +330,7 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
                                 <div className="mt-8 pt-5" style={{ borderTop: '1px solid var(--border)' }}>
                                     <p className="px-4 mb-3 text-[10px] font-black uppercase tracking-[0.15em] opacity-50" style={{ color: 'var(--text-muted)' }}>Admin Controls</p>
                                     <div className="space-y-1">
-                                        {adminNavItems.map((item, i) => {
+                                        {adminNavItems.map((item) => {
                                             const isActive = isActiveRoute(item.path);
                                             return (
                                                 <Link

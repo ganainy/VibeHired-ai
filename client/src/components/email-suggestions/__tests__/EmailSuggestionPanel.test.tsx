@@ -7,9 +7,8 @@
  *
  * All API calls are mocked via vi.mock so no real network/auth is needed.
  */
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import EmailSuggestionPanel from '../EmailSuggestionPanel';
 
@@ -31,13 +30,12 @@ vi.mock('../../../services/googleCalendarApi', () => ({
 }));
 
 import * as api from '../../../services/emailSuggestionsApi';
-import { getGoogleConnectUrl } from '../../../services/googleCalendarApi';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const defaultPrefs = { lookbackDays: 14, autoPollApplications: false, autoPollJobLeads: false };
 
-function setupApiDefaults(overrides: Partial<typeof api> = {}) {
+function setupApiDefaults() {
     vi.mocked(api.getGmailScopeStatus).mockResolvedValue({ hasScope: true });
     vi.mocked(api.getPreferences).mockResolvedValue(defaultPrefs);
     vi.mocked(api.acceptSuggestion).mockResolvedValue({ calendarEventCreated: true });

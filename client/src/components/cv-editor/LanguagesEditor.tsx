@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { EditorProps } from './types';
 import { JsonResumeLanguageItem } from '../../../../server/src/types/jsonresume';
 import ArrayItemControls from './ArrayItemControls';
-import { SectionScore } from '../../services/analysisApi'; // Import SectionScore
-import SectionAnalysisPanel from './SectionAnalysisPanel'; // Import the panel
 
 // Update props to include analysis and onApplyImprovements
 interface LanguagesEditorProps extends EditorProps<JsonResumeLanguageItem[] | undefined> {
-    analysis?: SectionScore | null;
+    analysis?: unknown;
     onApplyImprovements?: () => Promise<void>;
 }
 
 const LanguagesEditor: React.FC<LanguagesEditorProps> = ({ data = [], onChange, analysis }) => {
-    const [showAnalysis, setShowAnalysis] = useState(false);
+    void analysis;
 
     const handleItemChange = (index: number, field: keyof JsonResumeLanguageItem, value: string) => {
         const newData = [...data];

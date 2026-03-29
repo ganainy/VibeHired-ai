@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import CoverLetterEditor from '../CoverLetterEditor';
 import ErrorAlert from '../common/ErrorAlert';
@@ -104,14 +104,12 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
     applyClError,
     setApplyClError,
     handleApplyBaseCoverLetter,
-    handleSaveClSnapshot,
     tailoredJobTitle,
     setTailoredJobTitle,
     tailoredCompanyName,
     setTailoredCompanyName,
     tailoredJobDescription,
     setTailoredJobDescription,
-    clCustomInstructions,
     setClCustomInstructions,
     selectedClBaseCvId,
     handleSelectedClBaseCvIdChange,
@@ -192,7 +190,7 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
 
                                     {/* Download PDF Button */}
                                     <button
-                                        onClick={finalPdfFiles.cl ? () => handleDownload(finalPdfFiles.cl) : handleGenerateCoverLetterPdf}
+                                        onClick={finalPdfFiles.cl ? () => handleDownload(finalPdfFiles.cl as string) : handleGenerateCoverLetterPdf}
                                         disabled={isRenderingCoverLetterPdf}
                                         className="btn-primary group flex items-center gap-2 px-3 py-2 text-xs disabled:opacity-70 disabled:cursor-not-allowed"
                                         title="Download as PDF"

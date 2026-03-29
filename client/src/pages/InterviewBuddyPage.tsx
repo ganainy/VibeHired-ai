@@ -83,8 +83,6 @@ const InterviewBuddyPage: React.FC = () => {
       .finally(() => setJobsLoading(false));
   }, []);
 
-  const selectedJob = jobs.find((j) => j._id === selectedJobId);
-
   const handleLaunch = () => {
     if (!selectedJobId) return;
     const token = localStorage.getItem('authToken') ?? '';

@@ -83,24 +83,6 @@ const GeneralCvAtsPanel: React.FC<GeneralCvAtsPanelProps> = ({ atsScores, analys
         });
     }, [analyses]);
 
-    const topSuggestions = useMemo(() => {
-        if (!analyses) return [];
-        const allSuggestions: { section: string; feedback: string }[] = [];
-
-        Object.entries(analyses).forEach(([section, results]) => {
-            results.forEach(result => {
-                if (result.needsImprovement && result.feedback) {
-                    allSuggestions.push({
-                        section: section.charAt(0).toUpperCase() + section.slice(1),
-                        feedback: result.feedback
-                    });
-                }
-            });
-        });
-
-        return allSuggestions.slice(0, 3);
-    }, [analyses]);
-
     const getRecommendationPriority = (rec: string): 'critical' | 'high' | 'medium' => {
         const lowerRec = rec.toLowerCase();
         if (lowerRec.includes('crucial') || lowerRec.includes('critical') || lowerRec.includes('significantly') || lowerRec.includes('must') || lowerRec.includes('required')) {
@@ -171,10 +153,8 @@ const GeneralCvAtsPanel: React.FC<GeneralCvAtsPanelProps> = ({ atsScores, analys
     const complianceDetails = atsScores.complianceDetails;
     const skillMatchDetails = atsScores.skillMatchDetails;
 
-    const sectionScores = complianceDetails?.sectionScores || {};
     const recommendations = complianceDetails?.suggestions || [];
     const formattingIssues = complianceDetails?.formattingIssues || [];
-    const gapAnalysis = skillMatchDetails?.gapAnalysis || {};
 
     // New comprehensive metrics
     const sectionCompleteness = complianceDetails?.sectionCompleteness;
@@ -230,7 +210,6 @@ const GeneralCvAtsPanel: React.FC<GeneralCvAtsPanelProps> = ({ atsScores, analys
 
     const score = atsScores?.score || 0;
     const scoreColor = score >= 80 ? 'text-green-600 dark:text-green-400' : score >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
-    const scoreBg = score >= 80 ? 'bg-green-100 dark:bg-green-900/30' : score >= 60 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-red-100 dark:bg-red-900/30';
 
     return (
         <div className="space-y-6">

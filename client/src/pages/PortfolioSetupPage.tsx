@@ -168,8 +168,6 @@ const PortfolioSetupPage: React.FC = () => {
     location: '',
   });
 
-  const stepNames = ['Connecting Accounts', 'Configuring GitHub Repos', 'Configuring LinkedIn Data', 'Publish Portfolio', 'Community Portfolios'];
-
   // Function to change tab and update URL
   const handleTabChange = (tabIndex: number) => {
     if (tabIndex >= 0 && tabIndex <= 4) {
@@ -355,25 +353,6 @@ const PortfolioSetupPage: React.FC = () => {
         setProjects(projects);
         setError(err.message || 'Failed to update project order');
         setToast({ message: err.message || 'Failed to update project order', type: 'error' });
-      }
-    }
-  };
-
-  const handleSaveAndContinue = async () => {
-    if (activeTab === 0) {
-      // Save URLs and move to next tab
-      await handleSave();
-      if (!error) {
-        handleTabChange(1);
-      }
-    } else if (activeTab === 1) {
-      // Move to LinkedIn configuration tab
-      handleTabChange(2);
-    } else if (activeTab === 2) {
-      // Save LinkedIn data and settings, move to publish
-      await handleSaveLinkedInData();
-      if (!error) {
-        handleTabChange(3);
       }
     }
   };

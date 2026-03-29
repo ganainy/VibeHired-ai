@@ -139,12 +139,6 @@ const RemindersPanel: React.FC<RemindersPanelProps> = ({
         }
     };
 
-    const canShowFollowUpCard = followUpSuggestion && (
-        followUpSuggestion.status === 'suggested' ||
-        followUpSuggestion.status === 'snoozed' ||
-        followUpSuggestion.isDue
-    );
-
     const handleGenerateFollowUpDraft = async () => {
         setIsGeneratingFollowUpDraft(true);
         try {

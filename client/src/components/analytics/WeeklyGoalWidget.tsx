@@ -53,7 +53,6 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
     // Circle calculations
     const radius = 60;
     const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
     return (
         <div className="bg-white dark:bg-zinc-900 px-6 py-6 pb-4 rounded-xl border border-zinc-100 dark:border-zinc-800 flex flex-col h-full relative" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>

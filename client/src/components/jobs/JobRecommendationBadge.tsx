@@ -16,6 +16,7 @@ const JobRecommendationBadge: React.FC<JobRecommendationBadgeProps> = ({
     onRetry,
     jobId
 }) => {
+    void jobId;
     const [showTooltip, setShowTooltip] = useState(false);
     const [isRetrying, setIsRetrying] = useState(false);
 

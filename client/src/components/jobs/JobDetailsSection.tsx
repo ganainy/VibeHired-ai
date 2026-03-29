@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobApplication, JobStatusOptions } from '../../services/jobApi';
+import { JobApplication } from '../../services/jobApi';
 import JobStatusBadge from './JobStatusBadge';
 import Spinner from '../common/Spinner';
 import ErrorAlert from '../common/ErrorAlert';

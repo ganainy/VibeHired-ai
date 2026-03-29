@@ -115,17 +115,6 @@ const ListeningWave = () => (
     </span>
 );
 
-function formatDateTime(iso: string): string {
-    try {
-        return new Date(iso).toLocaleString(undefined, {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-        });
-    } catch {
-        return iso;
-    }
-}
-
 const ReminderModal: React.FC<ReminderModalProps> = ({
     isOpen,
     onClose,

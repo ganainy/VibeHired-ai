@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import { EditorProps } from './types';
 import ArrayItemControls from './ArrayItemControls';
 import { JsonResumeWorkItem } from '../../../../server/src/types/jsonresume';
-import { SectionScore } from '../../services/analysisApi';
-import SectionAnalysisPanel from './SectionAnalysisPanel';
 
 type WorkItem = JsonResumeWorkItem;
 
 interface WorkExperienceEditorProps extends EditorProps<WorkItem[] | undefined> {
-    analysis?: SectionScore | null;
+    analysis?: unknown;
     onApplyImprovements?: (improvements: string) => void;
 }
 
@@ -18,7 +16,8 @@ const WorkExperienceEditor: React.FC<WorkExperienceEditorProps> = ({
     analysis,
     onApplyImprovements
 }) => {
-    const [showAnalysis, setShowAnalysis] = useState(false);
+    void analysis;
+    void onApplyImprovements;
     const [pendingImprovements, setPendingImprovements] = useState<string | null>(null);
 
     const handleItemChange = (index: number, field: keyof WorkItem, value: string | string[]) => {
@@ -48,16 +47,8 @@ const WorkExperienceEditor: React.FC<WorkExperienceEditorProps> = ({
         onChange(newItems);
     };
 
-    const handleAcceptChanges = () => {
-        if (pendingImprovements && onApplyImprovements) {
-            onApplyImprovements(pendingImprovements);
-            setPendingImprovements(null);
-        }
-    };
-
-    const handleCancelChanges = () => {
-        setPendingImprovements(null);
-    };
+    void pendingImprovements;
+    void setPendingImprovements;
 
     return (
         <div>

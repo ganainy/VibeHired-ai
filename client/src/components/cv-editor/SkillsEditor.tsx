@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { EditorProps } from './types';
 import { JsonResumeSkillItem } from '../../../../server/src/types/jsonresume';
 import ArrayItemControls from './ArrayItemControls';
-import { SectionScore } from '../../services/analysisApi'; // Import SectionScore
-import SectionAnalysisPanel from './SectionAnalysisPanel'; // Import the panel
 
 // Update props to include analysis and onApplyImprovements
 interface SkillsEditorProps extends EditorProps<JsonResumeSkillItem[] | undefined> {
-    analysis?: SectionScore | null;
+    analysis?: unknown;
     onApplyImprovements?: () => Promise<void>;
 }
 
 const SkillsEditor: React.FC<SkillsEditorProps> = ({ data = [], onChange, analysis }) => {
-    const [showAnalysis, setShowAnalysis] = useState(false);
+    void analysis;
 
     const handleItemChange = (index: number, field: keyof JsonResumeSkillItem, value: string | string[]) => {
         const newData = [...data];

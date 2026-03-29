@@ -1,7 +1,7 @@
 // client/src/components/interview-materials/GlobalMaterialCard.tsx
 import React, { useState } from 'react';
 import { InterviewMaterial, MaterialJobRef, MaterialType } from '../../types/interviewMaterial';
-import MaterialPreviewModal, { canPreviewInline } from '../jobs/MaterialPreviewModal';
+import { canPreviewInline } from '../jobs/MaterialPreviewModal';
 
 function getJobRef(material: InterviewMaterial): MaterialJobRef | null {
     if (!material.jobApplicationId) return null;
@@ -86,6 +86,7 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
     const clickable = !editMode && (canPreviewInline(material.type) || isLink);
     const jobRef = getJobRef(material);
     const jobId = getJobId(material);
+    void isAssignedToJob;
     const dimmedMutedIconStyle = { color: 'var(--text-muted)', opacity: 0.62 } as const;
 
     const handleCardClick = () => {
@@ -425,7 +426,12 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
                         {/* Share / Open Button */}
                         {material.cloudinaryUrl ? (
                             <button
-                                onClick={() => window.open(toDownloadCloudinaryUrl(material.cloudinaryUrl), '_blank', 'noopener,noreferrer')}
+                                onClick={() => {
+                                    const cloudinaryUrl = material.cloudinaryUrl;
+                                    if (cloudinaryUrl) {
+                                        window.open(toDownloadCloudinaryUrl(cloudinaryUrl), '_blank', 'noopener,noreferrer');
+                                    }
+                                }}
                                 title="Open file"
                                 className="p-2 rounded-lg transition-colors hover:opacity-100"
                                 style={{ color: 'var(--accent)', opacity: 0.75 }}

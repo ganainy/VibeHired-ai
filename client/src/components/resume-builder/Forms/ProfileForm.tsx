@@ -218,7 +218,6 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
                             value={basics.profiles?.find(p => p.network?.toLowerCase() === 'github')?.url || ''}
                             onChange={(v) => {
                                 const profiles = basics.profiles || [];
-                                const otherProfiles = profiles.filter(p => p.network?.toLowerCase() !== 'github');
                                 const otherProfilesFiltered = profiles.filter(p => p.network?.toLowerCase() !== 'github'); // Fix logic
                                 const newProfiles = v ? [...otherProfilesFiltered, { network: 'GitHub', url: v, username: v.split('/').pop() || '' }] : otherProfilesFiltered;
                                 onChange({

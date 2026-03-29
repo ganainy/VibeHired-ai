@@ -23,9 +23,8 @@ interface AboutProps {
 }
 
 const About: React.FC<AboutProps> = ({ profile }) => {
-  const { skills, linkedinData, bio } = profile;
+  const { skills, linkedinData } = profile;
 
-  const displayBio = linkedinData?.bio || bio;
   const linkedInExperience = linkedinData?.experience;
   const linkedInSkills = linkedinData?.skills;
   const linkedInLanguages = linkedinData?.languages;

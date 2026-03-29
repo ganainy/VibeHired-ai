@@ -64,7 +64,7 @@ export const EmployerDistributionChart: React.FC<EmployerDistributionChartProps>
                         dataKey="hours"
                         stroke="none"
                     >
-                        {data.map((entry, index) => (
+                        {data.map((_, index) => (
                             <Cell
                                 key={`cell-${index}`}
                                 fill={COLORS[index % COLORS.length]}

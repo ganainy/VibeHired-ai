@@ -114,7 +114,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   diffChanges,
   showDiffOverlay = false,
 }) => {
-  const [rightView, setRightView] = useState<'preview' | 'ats'>(atsPanel ? defaultRightView : 'preview');
+  const [rightView] = useState<'preview' | 'ats'>(atsPanel ? defaultRightView : 'preview');
   const [availableTemplates, setAvailableTemplates] = useState<TemplateConfig[]>([]);
   const [showEditorPanel, setShowEditorPanel] = useState<boolean>(() => loadShowEditorPreference());
   useEffect(() => { setAvailableTemplates(getAllTemplates()); }, []);

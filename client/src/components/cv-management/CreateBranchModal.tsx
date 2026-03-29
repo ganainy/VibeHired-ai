@@ -1,6 +1,6 @@
 // client/src/components/cv-management/CreateBranchModal.tsx
 import React, { useState, useEffect } from 'react';
-import { CVDocument, uploadCvBranch } from '../../services/cvApi';
+import { CVDocument } from '../../services/cvApi';
 import { validateCvFile } from '../../lib/utils';
 
 interface CreateBranchModalProps {

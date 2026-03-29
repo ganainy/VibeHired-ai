@@ -80,7 +80,7 @@ export const WorkHoursChart: React.FC<WorkHoursChartProps> = ({ data, isLoading 
                         dataKey="totalHours"
                         radius={[6, 6, 0, 0]}
                     >
-                        {chartData.map((entry, index) => (
+                        {chartData.map((_, index) => (
                             <Cell
                                 key={`cell-${index}`}
                                 fill="var(--accent)"

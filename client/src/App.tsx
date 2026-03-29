@@ -1,8 +1,6 @@
 // client/src/App.tsx
-import React from 'react';
 import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import { useTheme } from './context/ThemeContext';
 import MainLayout from './components/layout/MainLayout';
 
 // Import Pages
@@ -17,7 +15,6 @@ import PortfolioPage from './pages/PortfolioPage';
 import PortfolioSetupPage from './pages/PortfolioSetupPage';
 import SettingsPage from './pages/SettingsPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import AutoJobsPage from './pages/AutoJobsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import GoogleAuthCallbackPage from './pages/GoogleAuthCallbackPage';
@@ -36,7 +33,6 @@ import AdminRoute from './components/auth/AdminRoute';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { theme } = useTheme();
   const location = useLocation();
 
   // Check if current route is a public portfolio or shared material route

@@ -50,7 +50,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
     onDragEnd?.(e);
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = () => {
     const timeSinceDragStart = Date.now() - dragStartTime.current;
     if (timeSinceDragStart > 200 || !isDragging) {
       onCardClick?.(job);

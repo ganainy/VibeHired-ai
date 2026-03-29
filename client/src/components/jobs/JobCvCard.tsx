@@ -1,7 +1,7 @@
 // Component for displaying individual job-specific CV cards with editing and ATS analysis
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { JobApplication, updateJob } from '../../services/jobApi';
+import { JobApplication } from '../../services/jobApi';
 import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
 import { getJobCv, updateCv, createJobCv, getAllCvs, createJobCvFromBase, uploadCvForJob, CVDocument } from '../../services/cvApi';
 import CvFormEditor from '../cv-editor/CvFormEditor';

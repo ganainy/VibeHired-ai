@@ -22,7 +22,6 @@ const EmailFormatModal: React.FC<EmailFormatModalProps> = ({
     jobTitle,
     companyName,
     language,
-    hiringManagerName,
     contactEmail,
     emailSubject: providedEmailSubject,
     emailBody: providedEmailBody,
@@ -50,8 +49,6 @@ const EmailFormatModal: React.FC<EmailFormatModalProps> = ({
         }
 
         // Fallback: Generate email body from cover letter
-        const lines = coverLetterText.split('\n').filter(line => line.trim());
-        
         // Attachment note based on language
         const attachmentNote = language === 'de'
             ? '\n\nIm Anhang finden Sie meinen Lebenslauf sowie meine Zeugnisse und Zertifikate.\n\nMit freundlichen Grüßen'

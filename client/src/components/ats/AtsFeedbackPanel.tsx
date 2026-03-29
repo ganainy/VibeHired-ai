@@ -151,17 +151,11 @@ const AtsFeedbackPanel: React.FC<AtsFeedbackPanelProps> = ({ atsScores, isLoadin
     const uniqueMatchedSkills = Array.from(new Set(matchedSkills));
     const uniqueMatchedKeywords = Array.from(new Set(matchedKeywords));
 
-    // Combine matched skills and keywords for display
-    const uniqueMatchedItems = Array.from(new Set([...matchedSkills, ...matchedKeywords]));
-
     // Separate missing skills and keywords
     const missingSkills = skillMatchDetails?.missingSkills || [];
     const missingKeywords = complianceDetails?.keywordsMissing || [];
     const uniqueMissingSkills = Array.from(new Set(missingSkills));
     const uniqueMissingKeywords = Array.from(new Set(missingKeywords));
-
-    // Combine missing skills and keywords for display
-    const uniqueMissingItems = Array.from(new Set([...missingSkills, ...missingKeywords]));
 
     // Merge recommendations and suggestions (remove duplicates)
     const allRecommendations = [

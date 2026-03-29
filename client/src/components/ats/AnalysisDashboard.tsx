@@ -55,7 +55,6 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
     const score = atsScores?.score || 0;
     const scoreColor = score >= 80 ? 'text-green-600 dark:text-green-400' : score >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
-    const scoreBg = score >= 80 ? 'bg-green-100 dark:bg-green-900/30' : score >= 60 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-red-100 dark:bg-red-900/30';
 
     if (isLoading) {
         return (

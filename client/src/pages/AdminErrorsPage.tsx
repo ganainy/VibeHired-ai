@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getErrorStats, getErrorLogs, resolveError, bulkResolveErrors, deleteErrorLog, ErrorStats, GetErrorLogsResponse, ErrorLogEntry } from '../services/errorApi';
+import { getErrorStats, getErrorLogs, resolveError, bulkResolveErrors, deleteErrorLog, ErrorStats, ErrorLogEntry } from '../services/errorApi';
 import Spinner from '../components/common/Spinner';
 import Toast from '../components/common/Toast';
 

@@ -7,9 +7,7 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    Area,
-    AreaChart
+    ResponsiveContainer
 } from 'recharts';
 import { StatusOverTimeData } from '../../services/analyticsApi';
 
@@ -161,7 +159,6 @@ export const ApplicationsOverTimeChart: React.FC<ApplicationsOverTimeChartProps>
     const CustomXAxisTick = (props: any) => {
         const { x, y, payload, index } = props;
         const isClickable = !selectedMonth && onMonthClick;
-        const isHovered = false; // Simple hover not possible in inline SVG without state, relying on CSS class
 
         return (
             <g transform={`translate(${x},${y})`}>

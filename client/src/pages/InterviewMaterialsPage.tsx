@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom';
 import { getGlobalMaterials, deleteMaterial, updateMaterial, createMaterial, generateMaterialTitle, shareMaterial, unshareMaterial } from '../services/interviewMaterialsApi';
 import { InterviewMaterial, MaterialJobRef, MaterialType } from '../types/interviewMaterial';
-import MaterialPreviewModal, { canPreviewInline } from '../components/jobs/MaterialPreviewModal';
+import MaterialPreviewModal from '../components/jobs/MaterialPreviewModal';
 import TourBanner from '../components/onboarding/TourBanner';
 import { usePageTour } from '../hooks/usePageTour';
 import GlobalMaterialCard from '../components/interview-materials/GlobalMaterialCard';
@@ -16,12 +16,6 @@ function formatBytes(bytes: number): string {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
-
-function formatDate(dateStr: string): string {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
 
 function iconForType(type: MaterialType): string {
     switch (type) {
@@ -45,10 +39,6 @@ function colorForType(type: MaterialType): string {
         case 'link': return 'text-amber-500';
         default: return 'text-gray-400';
     }
-}
-
-function toDownloadCloudinaryUrl(url: string): string {
-    return url.replace('/upload/', '/upload/fl_attachment/');
 }
 
 function getJobRef(material: InterviewMaterial): MaterialJobRef | null {
@@ -1053,7 +1043,7 @@ const InterviewMaterialsPage: React.FC = () => {
                             isAssignedToJob={!!getJobId(m)}
                             onRemoveGlobal={handleRemoveGlobal}
                             onDelete={handleDelete}
-                            onPreview={onPreview}
+                            onPreview={setPreviewMaterial}
                             onToggleFavorite={handleToggleFavorite}
                             onEdit={handleEdit}
                             onShare={handleShare}

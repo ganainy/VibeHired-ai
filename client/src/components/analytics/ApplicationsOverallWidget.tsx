@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ApplicationStats } from '../../services/analyticsApi';
 import { ApplicationsByStatusChart } from './ApplicationsByStatusChart';
 import { PipelineConversionWidget } from './PipelineConversionWidget';

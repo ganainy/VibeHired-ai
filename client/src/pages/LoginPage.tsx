@@ -5,7 +5,6 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { getGoogleLoginUrl, resendVerificationEmail } from '../services/authApi';
 import Spinner from '../components/common/Spinner';
-import appLogo from '../assets/app-logo.png';
 import { VibeHiredLogo } from '../components/VibeHiredLogo';
 
 

@@ -20,7 +20,6 @@ import linkedinLogo from '../assets/linkedin-svgrepo-com.svg';
 import indeedLogo from '../assets/indeed-svgrepo-com.svg';
 import xingLogo from '../assets/xing-logo-svgrepo-com.svg';
 import stepstoneLogo from '../assets/stepstone-svgrepo-com.svg';
-import Spinner from '../components/common/Spinner';
 import SimpleLoader from '../components/common/SimpleLoader';
 import Toast from '../components/common/Toast';
 import { TableOrCards, ColumnDef, CardConfig } from '../components/common/TableOrCards';
@@ -61,27 +60,6 @@ type JobFormData = Partial<Omit<JobApplication, '_id' | 'updatedAt' | 'generatio
 
 // Explicitly list sortable keys for type safety
 type SortableJobKeys = 'jobTitle' | 'companyName' | 'status' | 'createdAt' | 'jobType' | 'salary';
-
-// Job type options for dropdown
-const JOB_TYPE_OPTIONS = [
-  { value: '', label: 'Auto-detect (AI will determine)' },
-  { value: 'full-time', label: 'Full-time' },
-  { value: 'part-time', label: 'Part-time' },
-  { value: 'working-student', label: 'Working Student' },
-  { value: 'internship', label: 'Internship' },
-  { value: 'contract', label: 'Contract' },
-  { value: 'freelance', label: 'Freelance' },
-];
-
-// Status options for filter dropdown
-const STATUS_OPTIONS = [
-  { value: 'Not Applied', label: 'Not Applied', icon: '🕗' },
-  { value: 'Applied', label: 'Applied', icon: '📤' },
-  { value: 'Interview', label: 'Interview', icon: '💬' },
-  { value: 'Assessment', label: 'Assessment', icon: '📝' },
-  { value: 'Offer', label: 'Offer', icon: '🎉' },
-  { value: 'Rejected', label: 'Rejected', icon: '❌' },
-];
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -664,12 +642,6 @@ const DashboardPage: React.FC = () => {
   };
 
 
-  // --- Helper function to render sort indicators ---
-  const renderSortArrow = (key: SortableJobKeys) => {
-    if (sortKey !== key) return null;
-    return sortDirection === 'asc' ? ' ▲' : ' ▼';
-  };
-
   // Define status options for filter dropdown
   const statusOptions: JobApplication['status'][] = ['Not Applied', 'Applied', 'Interview', 'Assessment', 'Rejected', 'Offer'];
 
@@ -863,13 +835,6 @@ const DashboardPage: React.FC = () => {
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
   );
-
-  const ArrowDownIcon = ({ className = '' }: { className?: string }) => (
-    <svg className={`w-4 h-4 ${className}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-    </svg>
-  );
-
 
   const DeleteIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>

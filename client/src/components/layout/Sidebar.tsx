@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import appLogo from '../../assets/app-logo.png';
 import { VibeHiredLogo } from '../VibeHiredLogo';
 
 // ── Email inbox icon ──────────────────────────────────────────────────────────
@@ -14,10 +13,6 @@ const InboxIcon = () => (
 );
 
 // ── Icons ────────────────────────────────────────────────────────────────────
-
-const Logo = () => (
-    <img src={appLogo} alt="VibeHired" width="28" height="28" style={{ borderRadius: '7px', display: 'block', objectFit: 'contain' }} />
-);
 
 const DashboardIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
