@@ -1,12 +1,11 @@
 // client/src/pages/ReviewFinalizePage.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { updateCustomPrompts } from '../services/settingsApi';
 import { getJobById, updateJob, JobApplication, scrapeJobDescriptionApi, extractJobFromTextApi, deleteJob, IReminder } from '../services/jobApi';
 import { getGoogleCalendarStatus } from '../services/googleCalendarApi';
 import { renderFinalPdfs, renderCvPdf, renderCoverLetterPdf, getDownloadUrl, generateCvOnly, improveSection, applyAtsSuggestion } from '../services/generatorApi';
 import { analyzeCv, AnalysisResult, getAnalysis } from '../services/analysisApi';
-import { scanAts, getAtsScores, getAtsForJob, AtsScores, deleteAtsAnalysis } from '../services/atsApi';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
 import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 // import { downloadCvAsPdf } from '../services/pdfService'; // Removed as we use react-to-print now
@@ -44,8 +43,12 @@ import TailoredCvPage from '../components/review-finalize/TailoredCvPage';
 import CoverLetterPage from '../components/review-finalize/CoverLetterPage';
 import ReviewTabsNavigation from '../components/review-finalize/ReviewTabsNavigation';
 import ReviewPageHeader from '../components/review-finalize/ReviewPageHeader';
+import JobDescriptionInsights from '../components/review-finalize/JobDescriptionInsights';
+import RecommendationModal from '../components/review-finalize/RecommendationModal';
+import GenerationProgressModal, { GenerationStep } from '../components/review-finalize/GenerationProgressModal';
 import { useReviewTabState } from '../hooks/useReviewTabState';
 import { buildJobDetailsForm, formatDateForInput } from './review-finalize/jobDetailsFormUtils';
+import { useAtsWorkflow } from './review-finalize/hooks/useAtsWorkflow';
 
 interface ToastState {
     message: string;
@@ -91,7 +94,6 @@ const ReviewFinalizePage: React.FC = () => {
     const [showInlineCvDiff, setShowInlineCvDiff] = useState<boolean>(false);
 
     // New state for generation progress
-    type GenerationStep = 'idle' | 'analyzing' | 'matching' | 'tailoring' | 'finalizing';
     const [generationStep, setGenerationStep] = useState<GenerationStep>('idle');
     const [generationProgress, setGenerationProgress] = useState(0);
     const [hasMasterCv, setHasMasterCv] = useState<boolean>(false);
@@ -103,12 +105,6 @@ const ReviewFinalizePage: React.FC = () => {
     const [isEditingJobDetails, setIsEditingJobDetails] = useState<boolean>(false);
     const [toast, setToast] = useState<ToastState | null>(null);
     const [isJobDescriptionExpanded, setIsJobDescriptionExpanded] = useState<boolean>(false);
-    const [atsScores, setAtsScores] = useState<AtsScores | null>(null);
-    const [isLoadingAts, setIsLoadingAts] = useState<boolean>(false);
-    const [isScanningAts, setIsScanningAts] = useState<boolean>(false);
-    const [atsAnalysisId, setAtsAnalysisId] = useState<string | null>(null);
-    const [atsPollingIntervalId, setAtsPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
-    const [atsProgressMessage, setAtsProgressMessage] = useState<string>('');
     const [isApplyingAtsBatch, setIsApplyingAtsBatch] = useState<boolean>(false);
     const [appliedAtsSuggestions, setAppliedAtsSuggestions] = useState<string[]>([]);
     // --- AI Application Advice State ---
@@ -374,8 +370,6 @@ const ReviewFinalizePage: React.FC = () => {
         }
     }, [jobApplication, jobId]);
 
-    const ATS_POLLING_INTERVAL_MS = 3000; // Poll more frequently for ATS
-    const ATS_POLLING_TIMEOUT_MS = 120000; // 2 minutes timeout
     const AUTO_SAVE_DELAY_MS = 2000; // Auto-save after 2 seconds of inactivity
 
     const jobDetailsHasChanges = React.useMemo(() => {
@@ -389,6 +383,22 @@ const ReviewFinalizePage: React.FC = () => {
     const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
         setToast({ message, type });
     };
+
+    const {
+        atsScores,
+        isLoadingAts,
+        isScanningAts,
+        atsProgressMessage,
+        handleScanAts,
+        handleDeleteAts,
+    } = useAtsWorkflow({
+        jobId,
+        jobApplication,
+        cvData,
+        appliedAtsSuggestions,
+        showToast,
+        onError: (error) => setAiActionError(parseApiError(error)),
+    });
 
     useEffect(() => {
         if (!jobApplication) {
@@ -607,44 +617,6 @@ const ReviewFinalizePage: React.FC = () => {
         handleSelectedBaseCvIdChange('');
     }, [availableCvs, selectedBaseCvId, jobId]);
 
-    // Fetch existing ATS scores when job application is loaded
-    useEffect(() => {
-        const fetchExistingAtsScores = async () => {
-            if (jobId && jobApplication) {
-                setIsLoadingAts(true);
-                try {
-                    // Try to find existing ATS analysis for this job
-                    const response = await getAtsForJob(jobId);
-                    if (response.atsScores && response.analysisId) {
-                        setAtsScores(response.atsScores);
-                        setAtsAnalysisId(response.analysisId);
-                        console.log(`[DEBUG Frontend] Found existing ATS scores for job ${jobId}`);
-                    } else {
-                        console.log(`[DEBUG Frontend] No existing ATS scores found for job ${jobId}`);
-                    }
-                } catch (error: any) {
-                    console.error('Error fetching existing ATS scores:', error);
-                    // Don't show error toast, just log it - ATS scores are optional
-                } finally {
-                    setIsLoadingAts(false);
-                }
-            }
-        };
-
-        if (jobApplication) {
-            fetchExistingAtsScores();
-        }
-    }, [jobId, jobApplication]);
-
-    // Cleanup ATS polling on unmount
-    useEffect(() => {
-        return () => {
-            if (atsPollingIntervalId) {
-                clearInterval(atsPollingIntervalId);
-            }
-        };
-    }, [atsPollingIntervalId]);
-
     // Load available templates
     // (now handled inside CvEditorPanel)
     // Fetch AI recommendation when job application is loaded - DISABLED (now manual via button)
@@ -739,71 +711,6 @@ const ReviewFinalizePage: React.FC = () => {
         }
     };
 
-    const pollAtsScores = useCallback(async (analysisIdToPoll: string, startTime: number, intervalIdRef: NodeJS.Timeout | null) => {
-        try {
-            const response = await getAtsScores(analysisIdToPoll);
-
-            // Debug logging
-            console.log('[ATS Poll] Response:', response);
-            console.log('[ATS Poll] ATS Scores:', response.atsScores);
-
-            // Check if we have valid scores - check for score OR any details
-            const hasScores = response.atsScores && (
-                (response.atsScores.score !== null && response.atsScores.score !== undefined) ||
-                (response.atsScores.skillMatchDetails && (
-                    response.atsScores.skillMatchDetails.skillMatchPercentage !== undefined ||
-                    (response.atsScores.skillMatchDetails.matchedSkills && response.atsScores.skillMatchDetails.matchedSkills.length > 0) ||
-                    (response.atsScores.skillMatchDetails.missingSkills && response.atsScores.skillMatchDetails.missingSkills.length > 0)
-                )) ||
-                (response.atsScores.complianceDetails && (
-                    (response.atsScores.complianceDetails.keywordsMatched && response.atsScores.complianceDetails.keywordsMatched.length > 0) ||
-                    (response.atsScores.complianceDetails.keywordsMissing && response.atsScores.complianceDetails.keywordsMissing.length > 0) ||
-                    (response.atsScores.complianceDetails.formattingIssues && response.atsScores.complianceDetails.formattingIssues.length > 0) ||
-                    (response.atsScores.complianceDetails.suggestions && response.atsScores.complianceDetails.suggestions.length > 0)
-                )) ||
-                response.atsScores.error
-            );
-
-            console.log('[ATS Poll] Has scores:', hasScores);
-
-            if (hasScores) {
-                // Results are ready!
-                console.log('[ATS Poll] Setting ATS scores:', response.atsScores);
-                setAtsScores(response.atsScores);
-                setIsScanningAts(false);
-                setAtsProgressMessage('');
-                if (intervalIdRef) {
-                    clearInterval(intervalIdRef);
-                    setAtsPollingIntervalId(null);
-                }
-                showToast('ATS analysis completed successfully!', 'success');
-                return true;
-            }
-
-            // Check for timeout
-            const elapsed = Date.now() - startTime;
-            if (elapsed > ATS_POLLING_TIMEOUT_MS) {
-                setIsScanningAts(false);
-                setAtsProgressMessage('');
-                if (intervalIdRef) {
-                    clearInterval(intervalIdRef);
-                    setAtsPollingIntervalId(null);
-                }
-                showToast('ATS analysis is taking longer than expected. Please try again later.', 'info');
-                return true;
-            }
-
-            // Update progress message
-            const elapsedSeconds = Math.floor(elapsed / 1000);
-            setAtsProgressMessage(`Analyzing your CV... (${elapsedSeconds}s)`);
-            return false;
-        } catch (error: any) {
-            console.error('Error polling ATS scores:', error);
-            // Continue polling on error (might be temporary)
-            return false;
-        }
-    }, []);
-
     const [improvingSections, setImprovingSections] = useState<Record<string, boolean>>({});
 
     const handleImproveSection = async (section: string, index: number, data: any, instructions?: string) => {
@@ -823,68 +730,6 @@ const ReviewFinalizePage: React.FC = () => {
             throw error;
         } finally {
             setImprovingSections(prev => ({ ...prev, [section]: false }));
-        }
-    };
-
-    const handleScanAts = async () => {
-        if (!jobApplication || !jobId) {
-            showToast('Job application not loaded', 'error');
-            return;
-        }
-
-        // Require a tailored CV to be generated before ATS scan
-        // ATS should analyze the tailored CV, not the master CV
-        if (!cvData || Object.keys(cvData).length === 0) {
-            showToast('Please generate a tailored CV first before running ATS scan', 'error');
-            return;
-        }
-
-        if (!jobApplication.jobDescriptionText) {
-            showToast('Please scrape the job description first', 'error');
-            return;
-        }
-
-        // Clear any existing polling
-        if (atsPollingIntervalId) {
-            clearInterval(atsPollingIntervalId);
-            setAtsPollingIntervalId(null);
-        }
-
-        setIsScanningAts(true);
-        setAtsProgressMessage('Starting ATS analysis...');
-        setAtsScores(null); // Clear previous scores
-
-        try {
-            // Always create a new analysis for a fresh scan (don't reuse existing analysisId)
-            // This ensures we get updated results instead of cached values
-            const response = await scanAts(jobId, undefined, appliedAtsSuggestions.length > 0 ? appliedAtsSuggestions : undefined);
-            setAtsAnalysisId(response.analysisId);
-            showToast('ATS scan started. Analyzing your tailored CV...', 'info');
-
-            const startTime = Date.now();
-
-            // Set up interval polling
-            const intervalId = setInterval(async () => {
-                const result = await pollAtsScores(response.analysisId, startTime, intervalId);
-                if (result) {
-                    clearInterval(intervalId);
-                    setAtsPollingIntervalId(null);
-                }
-            }, ATS_POLLING_INTERVAL_MS);
-
-            setAtsPollingIntervalId(intervalId);
-
-            // Start polling immediately
-            const checkResult = await pollAtsScores(response.analysisId, startTime, intervalId);
-            if (checkResult) {
-                clearInterval(intervalId);
-                setAtsPollingIntervalId(null);
-            }
-        } catch (error: any) {
-            console.error('Error starting ATS scan:', error);
-            setAiActionError(parseApiError(error));
-            setIsScanningAts(false);
-            setAtsProgressMessage('');
         }
     };
 
@@ -911,21 +756,6 @@ const ReviewFinalizePage: React.FC = () => {
             if (interval) clearInterval(interval);
         };
     }, [isGeneratingCv, generationProgress, generationStep]);
-
-    const handleDeleteAts = async () => {
-        if (!atsAnalysisId) return;
-        if (!window.confirm('Are you sure you want to delete this ATS analysis? This cannot be undone.')) return;
-
-        try {
-            await deleteAtsAnalysis(atsAnalysisId);
-            setAtsScores(null);
-            setAtsAnalysisId(null);
-            showToast('ATS analysis deleted successfully', 'success');
-        } catch (error: any) {
-            console.error('Error deleting ATS analysis:', error);
-            showToast(error.message || 'Failed to delete ATS analysis', 'error');
-        }
-    };
 
     const handleApplyAtsSuggestionBatch = async (items: { suggestion: string; index: number }[]) => {
         if (!jobApplication) return;
@@ -1931,123 +1761,7 @@ const ReviewFinalizePage: React.FC = () => {
                     )}
 
                     {activeTab === 'job-description' && (
-                        <>
-                            {/* Key Highlights Card */}
-                            <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mt-6">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="material-symbols-outlined text-primary">lightbulb</span>
-                                    <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Key Highlights</h2>
-                                </div>
-                                <ul className="space-y-3">
-                                    {jobApplication.extractedData?.location && (
-                                        <li className="flex items-start gap-3">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                <strong className="text-text-main-light dark:text-text-main-dark">Location:</strong> {jobApplication.extractedData.location}
-                                            </span>
-                                        </li>
-                                    )}
-                                    {(jobApplication.extractedData?.salaryRaw || jobApplication.extractedData?.estimatedSalary) && (
-                                        <li className="flex items-start gap-3">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                <strong className="text-text-main-light dark:text-text-main-dark">Salary:</strong>{' '}
-                                                {jobApplication.extractedData?.salaryRaw
-                                                    ? jobApplication.extractedData.salaryRaw
-                                                    : jobApplication.extractedData?.estimatedSalary}
-                                                {' '}
-                                                {jobApplication.extractedData?.salaryIsEstimate === false ? (
-                                                    <span className="inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">
-                                                        From posting
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" title="This salary is an AI estimate based on the job data">
-                                                        AI Estimate
-                                                    </span>
-                                                )}
-                                            </span>
-                                        </li>
-                                    )}
-                                    {jobApplication.contactEmail && (
-                                        <li className="flex items-start gap-3">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                <strong className="text-text-main-light dark:text-text-main-dark">Contact Email:</strong>{' '}
-                                                <a href={`mailto:${jobApplication.contactEmail}`} className="hover:underline" style={{ color: 'var(--accent)' }}>
-                                                    {jobApplication.contactEmail}
-                                                </a>
-                                            </span>
-                                        </li>
-                                    )}
-                                    {jobApplication.contactPhone && (
-                                        <li className="flex items-start gap-3">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark flex flex-wrap items-center gap-2">
-                                                <strong className="text-text-main-light dark:text-text-main-dark">Contact Phone:</strong>
-                                                {jobApplication.contactPhone}
-                                            </span>
-                                        </li>
-                                    )}
-                                    {jobApplication.hiringManagerName && (
-                                        <li className="flex items-start gap-3">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                <strong className="text-text-main-light dark:text-text-main-dark">Hiring Manager:</strong> {jobApplication.hiringManagerName}
-                                            </span>
-                                        </li>
-                                    )}
-                                    {jobApplication.applicationUrl && (
-                                        <li className="flex items-start gap-3">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                            <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                <strong className="text-text-main-light dark:text-text-main-dark">Application Portal:</strong>{' '}
-                                                <a href={jobApplication.applicationUrl} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--accent)' }}>
-                                                    {jobApplication.applicationUrl.length > 50 ? jobApplication.applicationUrl.substring(0, 50) + '...' : jobApplication.applicationUrl}
-                                                </a>
-                                            </span>
-                                        </li>
-                                    )}
-                                    {jobApplication.extractedData?.keyDetails && (
-                                        Array.isArray(jobApplication.extractedData.keyDetails) ? (
-                                            jobApplication.extractedData.keyDetails.map((item: { key: string; value: string }, idx: number) => (
-                                                <li key={idx} className="flex items-start gap-3">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                                    <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
-                                                        <strong className="text-text-main-light dark:text-text-main-dark">{item.key}:</strong> {item.value}
-                                                    </span>
-                                                </li>
-                                            ))
-                                        ) : (
-                                            (jobApplication.extractedData.keyDetails as string).split('\n').filter((line: string) => line.trim()).map((line: string, idx: number) => (
-                                                <li key={idx} className="flex items-start gap-3">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></span>
-                                                    <span className="text-sm text-text-sub-light dark:text-text-sub-dark leading-relaxed">
-                                                        {line.replace(/^[\*\-]\s*/, '')}
-                                                    </span>
-                                                </li>
-                                            ))
-                                        )
-                                    )}
-                                </ul>
-                            </div>
-
-                            {/* Job Prerequisites Card */}
-                            {jobApplication.jobPrerequisites && (
-                                <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mt-6">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark flex items-center gap-2">
-                                            <span className="material-symbols-outlined">checklist</span>
-                                            Requirements Description
-                                        </h2>
-                                    </div>
-                                    <div className="text-sm text-text-main-light dark:text-text-main-dark leading-relaxed">
-                                        <div className="whitespace-pre-wrap">
-                                            {jobApplication.jobPrerequisites}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </>
+                        <JobDescriptionInsights jobApplication={jobApplication} />
                     )}
 
                 {activeTab === 'cover-letter' && (
@@ -2234,57 +1948,11 @@ const ReviewFinalizePage: React.FC = () => {
 
             </div>
 
-            {/* Tailoring Progress Modal */}
-            {
-                isGeneratingCv && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
-                            <div className="p-8">
-                                <div className="flex justify-center mb-6">
-                                    <SimpleLoader
-                                        message={
-                                            generationStep === 'analyzing' ? 'Analyzing Job Requirements...' :
-                                                generationStep === 'matching' ? 'Matching Skills & Experience...' :
-                                                    generationStep === 'tailoring' ? 'Tailoring Your Resume...' :
-                                                        'Finalizing Document...'
-                                        }
-                                        description={
-                                            generationStep === 'analyzing' ? 'Identifying key keywords and requirements from the job description.' :
-                                                generationStep === 'matching' ? 'Finding the best projects and experiences from your history.' :
-                                                    generationStep === 'tailoring' ? 'Rewriting descriptions to highlight relevance and impact.' :
-                                                        'Formatting your new CV for maximum impact.'
-                                        }
-                                        height="auto"
-                                    />
-                                </div>
-
-                                {/* Progress Steps */}
-                                <div className="space-y-4">
-                                    <div className="relative pt-1">
-                                        <div className="flex mb-2 items-center justify-between">
-                                            <div className="text-right">
-                                                <span className="text-xs font-semibold inline-block" style={{ color: 'var(--accent)' }}>
-                                                    {Math.round(generationProgress)}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
-                                            <div style={{ width: `${generationProgress}%`, background: 'var(--accent)' }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ease-out"></div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-medium text-gray-400">
-                                        <div style={generationStep === 'analyzing' || generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? { color: "var(--accent)" } : {}}>Analyze</div>
-                                        <div style={generationStep === 'matching' || generationStep === 'tailoring' || generationStep === 'finalizing' ? { color: "var(--accent)" } : {}}>Match</div>
-                                        <div style={generationStep === 'tailoring' || generationStep === 'finalizing' ? { color: "var(--accent)" } : {}}>Tailor</div>
-                                        <div style={generationStep === 'finalizing' ? { color: "var(--accent)" } : {}}>Finalize</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
+            <GenerationProgressModal
+                isOpen={isGeneratingCv}
+                generationStep={generationStep}
+                generationProgress={generationProgress}
+            />
 
             {/* CV Preview Modal */}
             <CvPreviewModal
@@ -2346,217 +2014,15 @@ const ReviewFinalizePage: React.FC = () => {
                 )
             }
 
-            {/* AI Application Advice Modal */}
-            {
-                isRecommendationModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                        <div className="relative w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-2xl shadow-2xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                            {/* Modal Header */}
-                            <div className="flex items-center gap-3 mb-6">
-                                <span className={`material-symbols-outlined text-2xl ${recommendation?.shouldApply
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : recommendation?.error
-                                        ? 'text-red-500 dark:text-red-400'
-                                        : recommendation && !recommendation.shouldApply
-                                            ? 'text-amber-600 dark:text-amber-400'
-                                            : 'text-primary'
-                                    }`}>smart_toy</span>
-                                <h2 className="text-xl font-bold text-text-main-light dark:text-text-main-dark">AI Application Advice</h2>
-                                <div className="ml-auto flex items-center gap-2">
-                                    <button
-                                        onClick={handleRefreshRecommendation}
-                                        disabled={isLoadingRecommendation || isRefreshingRecommendation || !jobApplication?.jobDescriptionText}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                        title={!jobApplication?.jobDescriptionText ? 'Job description required' : 'Refresh analysis (2 credits)'}
-                                    >
-                                        {isRefreshingRecommendation ? (
-                                            <Spinner size="sm" />
-                                        ) : (
-                                            <span className="material-symbols-outlined text-sm">refresh</span>
-                                        )}
-                                        <span>Refresh</span>
-                                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credit</span>
-                                    </button>
-                                    {/* Close Button */}
-                                    <button
-                                        onClick={() => setIsRecommendationModalOpen(false)}
-                                        className="p-1.5 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                        title="Close"
-                                    >
-                                        <span className="material-symbols-outlined">close</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Loading State */}
-                            {isLoadingRecommendation && (
-                                <div className="flex items-center gap-3 py-8 justify-center">
-                                    <Spinner size="md" />
-                                    <span className="text-gray-500 dark:text-gray-400">Analyzing job match...</span>
-                                </div>
-                            )}
-
-                            {/* No Job Description */}
-                            {!isLoadingRecommendation && !jobApplication?.jobDescriptionText && (
-                                <div className="flex items-start gap-3 py-4">
-                                    <span className="material-symbols-outlined text-gray-400 dark:text-gray-500 mt-0.5">info</span>
-                                    <div>
-                                        <p className="text-gray-600 dark:text-gray-400">
-                                            Job description is required to provide AI application advice.
-                                        </p>
-                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-500">
-                                            Go to the Job Description tab and paste the job description.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Error State - CV not found */}
-                            {!isLoadingRecommendation && recommendation?.error && recommendation.error.toLowerCase().includes('cv') && (
-                                <div className="flex items-start gap-3 py-4">
-                                    <span className="material-symbols-outlined text-amber-500 dark:text-amber-400 mt-0.5">upload_file</span>
-                                    <div>
-                                        <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">CV Required</p>
-                                        <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
-                                            Please upload a CV first to get AI-powered application advice.
-                                        </p>
-                                        <Link
-                                            to="/manage-cv"
-                                            onClick={() => setIsRecommendationModalOpen(false)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-amber-600 text-white hover:bg-amber-700 transition-colors"
-                                        >
-                                            <span className="material-symbols-outlined text-sm">description</span>
-                                            <span>Upload CV</span>
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Error State - Other errors */}
-                            {!isLoadingRecommendation && recommendation?.error && !recommendation.error.toLowerCase().includes('cv') && (
-                                <div className="flex items-start gap-3 py-4">
-                                    <span className="material-symbols-outlined text-red-500 dark:text-red-400 mt-0.5">error</span>
-                                    <div>
-                                        <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">Analysis Error</p>
-                                        <p className="text-sm text-red-600 dark:text-red-400">{recommendation.error}</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Recommendation Result */}
-                            {!isLoadingRecommendation && recommendation && !recommendation.error && (
-                                <div className="space-y-5">
-                                    {/* Main Verdict */}
-                                    <div className={`flex items-center gap-4 p-5 rounded-xl ${recommendation.shouldApply
-                                        ? 'bg-green-100 dark:bg-green-900/40'
-                                        : 'bg-amber-100 dark:bg-amber-900/40'
-                                        }`}>
-                                        <div className={`flex items-center justify-center w-14 h-14 rounded-full ${recommendation.shouldApply ? 'bg-green-500' : 'bg-amber-500'
-                                            }`}>
-                                            <span className="material-symbols-outlined text-white text-3xl">
-                                                {recommendation.shouldApply ? 'thumb_up' : 'warning'}
-                                            </span>
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className={`text-xl font-bold ${recommendation.shouldApply
-                                                ? 'text-green-800 dark:text-green-200'
-                                                : 'text-amber-800 dark:text-amber-200'
-                                                }`}>
-                                                {recommendation.shouldApply ? 'Apply!' : 'Consider Carefully'}
-                                            </p>
-                                            {recommendation.score !== null && (
-                                                <p className={`text-sm ${recommendation.shouldApply
-                                                    ? 'text-green-700 dark:text-green-300'
-                                                    : 'text-amber-700 dark:text-amber-300'
-                                                    }`}>
-                                                    Match Score: <span className="font-bold text-lg">{recommendation.score}%</span>
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Reason */}
-                                    <div>
-                                        <p className="text-sm font-medium text-text-main-light dark:text-text-main-dark mb-2">Why?</p>
-                                        <p className="text-sm text-text-sub-light dark:text-text-sub-dark leading-relaxed">
-                                            {recommendation.reason}
-                                        </p>
-                                    </div>
-
-                                    {/* Keyword Analysis Section */}
-                                    {recommendation.keywordAnalysis && (
-                                        recommendation.keywordAnalysis.matchedKeywords.length > 0 ||
-                                        recommendation.keywordAnalysis.missingKeywords.length > 0
-                                    ) && (
-                                            <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
-                                                <p className="text-sm font-medium text-text-main-light dark:text-text-main-dark mb-3">
-                                                    Keyword Analysis
-                                                </p>
-                                                <p className="text-xs text-text-sub-light dark:text-text-sub-dark mb-3">
-                                                    <span className="text-green-600 dark:text-green-400 font-medium">Matched</span> keywords in your CV |
-                                                    <span className="text-amber-600 dark:text-amber-400 font-medium"> Missing</span> from your CV
-                                                </p>
-                                                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto custom-scrollbar">
-                                                    {recommendation.keywordAnalysis.matchedKeywords.map((keyword, idx) => (
-                                                        <span
-                                                            key={`matched-${idx}`}
-                                                            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-800"
-                                                        >
-                                                            {keyword}
-                                                        </span>
-                                                    ))}
-                                                    {recommendation.keywordAnalysis.missingKeywords.map((keyword, idx) => (
-                                                        <span
-                                                            key={`missing-${idx}`}
-                                                            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                                                        >
-                                                            {keyword}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                    {/* Cached Info */}
-                                    {recommendation.cached && recommendation.cachedAt && (
-                                        <p className="text-xs text-gray-400 dark:text-gray-500 pt-2">
-                                            Last analyzed: {new Date(recommendation.cachedAt).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* No recommendation yet but has job description */}
-                            {!isLoadingRecommendation && !recommendation && jobApplication?.jobDescriptionText && (
-                                <div className="flex flex-col items-center justify-center py-8 gap-4">
-                                    <span className="material-symbols-outlined text-gray-400 dark:text-gray-500 text-4xl">auto_awesome</span>
-                                    <p className="text-gray-600 dark:text-gray-400 text-center">
-                                        AI recommendation not yet generated.
-                                    </p>
-                                    <button
-                                        onClick={handleRefreshRecommendation}
-                                        disabled={isRefreshingRecommendation}
-                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary text-ink-950 hover:bg-primaryLight disabled:opacity-50 transition-colors"
-                                    >
-                                        {isRefreshingRecommendation ? (
-                                            <Spinner size="sm" />
-                                        ) : (
-                                            <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                                        )}
-                                        <span>Generate Recommendation</span>
-                                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credit</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )
-            }
+            <RecommendationModal
+                isOpen={isRecommendationModalOpen}
+                recommendation={recommendation}
+                isLoadingRecommendation={isLoadingRecommendation}
+                isRefreshingRecommendation={isRefreshingRecommendation}
+                hasJobDescription={Boolean(jobApplication?.jobDescriptionText)}
+                onRefreshRecommendation={handleRefreshRecommendation}
+                onClose={() => setIsRecommendationModalOpen(false)}
+            />
 
             {/* Email Format Modal */}
             <EmailFormatModal
