@@ -6,11 +6,12 @@ import CvEditorPanel from '../cv-workspace/CvEditorPanel';
 import { CvSectionDescriptor } from '../../types/cvDescriptor';
 import AtsInlinePanel from '../ats/AtsInlinePanel';
 import CvPreviewModal from '../cv-editor/CvPreviewModal';
+import ConfirmModal from '../common/ConfirmModal';
 import ErrorAlert from '../common/ErrorAlert';
 import Spinner from '../common/Spinner';
 import SimpleLoader from '../common/SimpleLoader';
 import PromptChecklist from '../common/PromptChecklist';
-import { getCvOriginalPdf, detachJobCv, deleteCv } from '../../services/cvApi';
+import { getCvOriginalPdf, detachJobCv, deleteCv, getJobCv } from '../../services/cvApi';
 import { AtsScores } from '../../services/atsApi';
 import { JobApplication } from '../../services/jobApi';
 
@@ -191,6 +192,31 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     handleDeleteAts,
     handleApplyAtsSuggestionBatch,
 }) => {
+    const [showRemoveCvConfirm, setShowRemoveCvConfirm] = React.useState(false);
+
+    const handleRemoveAttachedCv = async () => {
+        try {
+            if (jobId) {
+                await detachJobCv(jobId);
+            } else if (currentCvId) {
+                await deleteCv(currentCvId);
+            } else {
+                showToast('Could not find the attached CV. Please refresh and try again.', 'error');
+                return;
+            }
+        } catch (err: any) {
+            // 'No CV attached' is not a real error — proceed anyway
+            const msg: string = err?.message ?? '';
+            if (!msg.toLowerCase().includes('no cv was attached') && !msg.toLowerCase().includes('not found')) {
+                showToast(`Failed to remove CV: ${msg}`, 'error');
+                return;
+            }
+        }
+
+        resetLocalCvState();
+        showToast('CV removed', 'success');
+    };
+
     return (
         <div>
             {/* Raw PDF attached — no JSON, show placeholder */}
@@ -211,10 +237,20 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                             type="button"
                             disabled={isLoadingRawPdf}
                             onClick={async () => {
-                                if (!currentCvId) return;
                                 setIsLoadingRawPdf(true);
                                 try {
-                                    const { pdfBase64 } = await getCvOriginalPdf(currentCvId);
+                                    let cvIdToPreview = currentCvId;
+                                    if (!cvIdToPreview && jobId) {
+                                        const latestJobCv = await getJobCv(jobId);
+                                        cvIdToPreview = latestJobCv.cv?._id ?? null;
+                                    }
+
+                                    if (!cvIdToPreview) {
+                                        showToast('Could not find the attached CV. Please refresh and try again.', 'error');
+                                        return;
+                                    }
+
+                                    const { pdfBase64 } = await getCvOriginalPdf(cvIdToPreview);
                                     setPreviewPdfBase64(pdfBase64);
                                     setIsPreviewOpen(true);
                                 } catch {
@@ -234,25 +270,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                         </button>
                         <button
                             type="button"
-                            onClick={async () => {
-                                if (!window.confirm('Remove this attached CV? You can re-attach another one.')) return;
-                                try {
-                                    if (jobId) {
-                                        await detachJobCv(jobId);
-                                    } else if (currentCvId) {
-                                        await deleteCv(currentCvId);
-                                    }
-                                } catch (err: any) {
-                                    // 'No CV attached' is not a real error — proceed anyway
-                                    const msg: string = err?.message ?? '';
-                                    if (!msg.toLowerCase().includes('no cv was attached') && !msg.toLowerCase().includes('not found')) {
-                                        showToast(`Failed to remove CV: ${msg}`, 'error');
-                                        return;
-                                    }
-                                }
-                                resetLocalCvState();
-                                showToast('CV removed', 'success');
-                            }}
+                            onClick={() => setShowRemoveCvConfirm(true)}
                             className="inline-flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors"
                         >
                             <span className="material-symbols-outlined text-base">delete</span>
@@ -812,6 +830,17 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                 }}
                 pdfBase64={previewPdfBase64}
                 isLoading={isGeneratingPreview}
+            />
+
+            <ConfirmModal
+                show={showRemoveCvConfirm}
+                title="Remove attached CV?"
+                message="This removes the CV attached to this job only. You can attach a different CV right after."
+                confirmLabel="Remove CV"
+                cancelLabel="Keep CV"
+                danger
+                onConfirm={() => { void handleRemoveAttachedCv(); }}
+                onClose={() => setShowRemoveCvConfirm(false)}
             />
         </div>
     );

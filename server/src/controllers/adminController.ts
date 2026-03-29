@@ -198,7 +198,6 @@ export async function getAdminStats(req: Request, res: Response) {
                     ],
                     recentCalls: [
                         { $sort: { createdAt: -1 } },
-                        { $limit: 20 },
                         {
                             $lookup: {
                                 from: 'users',

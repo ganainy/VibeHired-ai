@@ -172,7 +172,7 @@ const GroupedView: React.FC<{
                             </span>
                             {group.jobId !== '__unassigned__' && (
                                 <Link
-                                    to={`/jobs/${group.jobId}/review/materials`}
+                                    to={`/jobs/${group.jobId}/workspace/materials`}
                                     className="text-xs px-2 py-1 rounded-md transition-colors hover:underline flex items-center gap-0.5"
                                     style={{ color: 'var(--text-muted)' }}
                                     onClick={e => e.stopPropagation()}

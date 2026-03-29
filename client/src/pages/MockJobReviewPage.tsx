@@ -32,7 +32,7 @@ const MockJobReviewPage: React.FC = () => {
 
     const handleTabChange = (newTab: MockTab) => {
         setActiveTab(newTab);
-        navigate(`/jobs/__mock_job__/review/${newTab}`, { replace: true });
+        navigate(`/jobs/__mock_job__/workspace/${newTab}`, { replace: true });
     };
 
     const handleDismiss = () => {

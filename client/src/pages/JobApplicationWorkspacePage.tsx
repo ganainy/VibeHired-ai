@@ -1,4 +1,4 @@
-// client/src/pages/ReviewFinalizePage.tsx
+// client/src/pages/JobApplicationWorkspacePage.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getJobById, updateJob, JobApplication, deleteJob, IReminder } from '../services/jobApi';
@@ -47,7 +47,7 @@ interface ToastState {
 
 const EMPTY_CV_DATA: JsonResumeSchema = { basics: {} };
 
-const ReviewFinalizePage: React.FC = () => {
+const JobApplicationWorkspacePage: React.FC = () => {
     const { jobId, tab } = useParams<{ jobId: string; tab?: string }>();
     const navigate = useNavigate();
     const { refreshUsage } = useAuth();
@@ -143,15 +143,21 @@ const ReviewFinalizePage: React.FC = () => {
             // Fetch Job CV from Unified Model
             try {
                 const cvResponse = await getJobCv(jobId);
-                if (cvResponse.cv && cvResponse.cv.cvJson) {
-                    setCvData(cvResponse.cv.cvJson);
+                if (cvResponse.cv) {
                     setCurrentCvId(cvResponse.cv._id);
                     setCurrentCvFilename(cvResponse.cv.filename ?? null);
                     setTailoringChanges(cvResponse.cv.tailoringChanges ?? []);
                     setShowInlineCvDiff(false);
-                    lastSavedCvDataRef.current = JSON.stringify(cvResponse.cv.cvJson);
                     setLiveCvDescriptor(cvResponse.cv.cvDescriptor ?? null);
                     setLiveCvData(cvResponse.cv.cvData ?? null);
+
+                    if (cvResponse.cv.cvJson) {
+                        setCvData(cvResponse.cv.cvJson);
+                        lastSavedCvDataRef.current = JSON.stringify(cvResponse.cv.cvJson);
+                    } else {
+                        setCvData(EMPTY_CV_DATA);
+                        lastSavedCvDataRef.current = JSON.stringify(EMPTY_CV_DATA);
+                    }
                 } else {
                     // No CV document — clear all CV state first
                     setCurrentCvId(null);
@@ -165,8 +171,8 @@ const ReviewFinalizePage: React.FC = () => {
                         setCvData(data.draftCvJson);
                         lastSavedCvDataRef.current = JSON.stringify(data.draftCvJson);
                     } else {
-                        setCvData({ basics: {} });
-                        lastSavedCvDataRef.current = JSON.stringify({ basics: {} });
+                        setCvData(EMPTY_CV_DATA);
+                        lastSavedCvDataRef.current = JSON.stringify(EMPTY_CV_DATA);
                     }
                 }
             } catch (err) {
@@ -179,8 +185,8 @@ const ReviewFinalizePage: React.FC = () => {
                     setCvData(data.draftCvJson);
                     lastSavedCvDataRef.current = JSON.stringify(data.draftCvJson);
                 } else {
-                    setCvData({ basics: {} });
-                    lastSavedCvDataRef.current = JSON.stringify({ basics: {} });
+                    setCvData(EMPTY_CV_DATA);
+                    lastSavedCvDataRef.current = JSON.stringify(EMPTY_CV_DATA);
                 }
             }
 
@@ -965,5 +971,5 @@ const ReviewFinalizePage: React.FC = () => {
     );
 };
 
-export default ReviewFinalizePage;
+export default JobApplicationWorkspacePage;
 

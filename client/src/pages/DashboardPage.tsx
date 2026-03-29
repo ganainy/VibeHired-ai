@@ -620,7 +620,7 @@ const DashboardPage: React.FC = () => {
       setPreExtractionJobType('');
       setDuplicateWarning({ isOpen: false, duplicates: [], pendingPayload: null });
       setToast({ message: 'Job application created successfully!', type: 'success' });
-      navigate(`/jobs/${newJob._id}/review/job-description`);
+      navigate(`/jobs/${newJob._id}/workspace/job-description`);
     } catch (err: any) {
       console.error('Failed to create job from text:', err);
       // Server-side company+title duplicate check
@@ -660,7 +660,7 @@ const DashboardPage: React.FC = () => {
 
   // --- Navigation Handler ---
   const handleRowClick = (jobId: string) => {
-    navigate(`/jobs/${jobId}/review`);
+    navigate(`/jobs/${jobId}/workspace/`);
   };
 
 
@@ -1038,7 +1038,7 @@ const DashboardPage: React.FC = () => {
           <button onClick={(e) => handleToggleFavorite(job, e)} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${job.isFavorite ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 dark:hover:bg-amber-900/70' : 'text-slate-400 dark:text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50'}`} title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'} aria-label={job.isFavorite ? "Remove from favorites" : "Add to favorites"}>
             <StarIcon filled={!!job.isFavorite} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/review/reminders`); }} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60' : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'} aria-label="Open follow-up email actions">
+          <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/workspace/reminders`); }} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60' : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'} aria-label="Open follow-up email actions">
             <FollowUpIcon />
           </button>
           <button onClick={(e) => handleDeleteClick(job, e)} className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors" title="Delete" aria-label="Delete job application">
@@ -1132,7 +1132,7 @@ const DashboardPage: React.FC = () => {
         <button onClick={(e) => { e.stopPropagation(); handleToggleFavorite(job, e as any); }} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${job.isFavorite ? 'text-amber-500 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50' : 'text-slate-400 dark:text-slate-500 hover:text-amber-500'}`} title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'} aria-label={job.isFavorite ? "Remove from favorites" : "Add to favorites"}>
           <StarIcon filled={!!job.isFavorite} />
         </button>
-        <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/review/reminders`); }} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60' : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'} aria-label="Open follow-up email actions">
+        <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/workspace/reminders`); }} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-amber-600 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60' : 'text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'} aria-label="Open follow-up email actions">
           <FollowUpIcon />
         </button>
         <button onClick={(e) => handleDeleteClick(job, e as any)} className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors" title="Delete" aria-label="Delete job application">
@@ -1665,7 +1665,7 @@ const DashboardPage: React.FC = () => {
                               <tbody>
                                 <tr
                                   className="border-t border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                                  onClick={() => navigate('/jobs/__mock_job__/review/job-description')}
+                                  onClick={() => navigate('/jobs/__mock_job__/workspace/job-description')}
                                 >
                                   <td className="p-4 font-medium text-slate-800 dark:text-slate-100">
                                     <div className="flex items-center gap-2">

@@ -1,5 +1,17 @@
 export function hasMeaningfulContent(value: unknown): boolean {
-    return value !== null && value !== undefined && value !== '' &&
-        !(Array.isArray(value) && value.length === 0) &&
-        !(typeof value === 'object' && Object.keys(value).length === 0);
+    if (value === null || value === undefined) return false;
+
+    if (typeof value === 'string') {
+        return value.trim().length > 0;
+    }
+
+    if (Array.isArray(value)) {
+        return value.some((item) => hasMeaningfulContent(item));
+    }
+
+    if (typeof value === 'object') {
+        return Object.values(value as Record<string, unknown>).some((item) => hasMeaningfulContent(item));
+    }
+
+    return true;
 }

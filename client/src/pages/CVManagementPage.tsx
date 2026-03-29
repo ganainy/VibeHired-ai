@@ -1377,7 +1377,7 @@ const CVManagementPage: React.FC = () => {
                       {cvUsageJobs.map(job => (
                         <li key={job._id}>
                           <Link
-                            to={`/jobs/${job._id}/review/job-description`}
+                            to={`/jobs/${job._id}/workspace/job-description`}
                             className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
                           >
                             <span className="truncate" style={{ color: 'var(--text-primary)' }}>

@@ -10,7 +10,7 @@ import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CVManagementPage from './pages/CVManagementPage';
-import ReviewFinalizePage from './pages/ReviewFinalizePage';
+import JobApplicationWorkspacePage from './pages/JobApplicationWorkspacePage';
 import MockJobReviewPage from './pages/MockJobReviewPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import PortfolioPage from './pages/PortfolioPage';
@@ -124,18 +124,18 @@ function App() {
         <Route path="/work-tracker" element={<ProtectedRoute><WorkTrackerPage /></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
         <Route
-          path="/jobs/:jobId/review/ai-review"
+          path="/jobs/:jobId/workspace/ai-review"
           element={<Navigate to="../cv" relative="path" replace />}
         />
         <Route
-          path="/jobs/__mock_job__/review/:tab?"
+          path="/jobs/__mock_job__/workspace/:tab?"
           element={<MockJobReviewPage />}
         />
         <Route
-          path="/jobs/:jobId/review/:tab?"
+          path="/jobs/:jobId/workspace/:tab?"
           element={
             <ProtectedRoute>
-              <ReviewFinalizePage />
+              <JobApplicationWorkspacePage />
             </ProtectedRoute>
           }
         />

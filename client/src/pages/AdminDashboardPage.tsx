@@ -6,11 +6,15 @@ import Spinner from '../components/common/Spinner';
 import Toast from '../components/common/Toast';
 import { TableOrCards } from '../components/common/TableOrCards';
 
+const EXTERNAL_CALLS_PAGE_SIZE = 20;
+
 const AdminDashboardPage: React.FC = () => {
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [errorStats, setErrorStats] = useState<ErrorStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [externalCallsPage, setExternalCallsPage] = useState(1);
+    const [externalCallsUserSearch, setExternalCallsUserSearch] = useState('');
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -30,6 +34,20 @@ const AdminDashboardPage: React.FC = () => {
         fetchStats();
     }, []);
 
+    useEffect(() => {
+        if (!stats?.externalCalls?.recentCalls?.length) {
+            setExternalCallsPage(1);
+            return;
+        }
+
+        const totalPages = Math.max(1, Math.ceil(stats.externalCalls.recentCalls.length / EXTERNAL_CALLS_PAGE_SIZE));
+        setExternalCallsPage((prev) => Math.min(prev, totalPages));
+    }, [stats?.externalCalls?.recentCalls?.length]);
+
+    useEffect(() => {
+        setExternalCallsPage(1);
+    }, [externalCallsUserSearch]);
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -45,6 +63,20 @@ const AdminDashboardPage: React.FC = () => {
             </div>
         );
     }
+
+    const externalCalls = stats.externalCalls?.recentCalls || [];
+    const externalCallsSearchTerm = externalCallsUserSearch.trim().toLowerCase();
+    const filteredExternalCalls = externalCalls.filter((call: any) => {
+        if (!externalCallsSearchTerm) return true;
+        const userEmail = (call.userEmail || '').toString().toLowerCase();
+        const userId = (call.userId || '').toString().toLowerCase();
+        return userEmail.includes(externalCallsSearchTerm) || userId.includes(externalCallsSearchTerm);
+    });
+    const externalCallsTotalPages = Math.max(1, Math.ceil(filteredExternalCalls.length / EXTERNAL_CALLS_PAGE_SIZE));
+    const safeExternalCallsPage = Math.min(externalCallsPage, externalCallsTotalPages);
+    const externalCallsStartIndex = (safeExternalCallsPage - 1) * EXTERNAL_CALLS_PAGE_SIZE;
+    const externalCallsEndIndex = Math.min(externalCallsStartIndex + EXTERNAL_CALLS_PAGE_SIZE, filteredExternalCalls.length);
+    const paginatedExternalCalls = filteredExternalCalls.slice(externalCallsStartIndex, externalCallsEndIndex);
 
     return (
         <div className="space-y-4 md:space-y-8">
@@ -197,10 +229,23 @@ const AdminDashboardPage: React.FC = () => {
 
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
                         <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
-                            <ClockIcon /> Recent AI & Apify Calls
+                            <ClockIcon /> AI & Apify Calls
                         </h3>
+                        <div className="mb-4">
+                            <label htmlFor="external-calls-user-search" className="sr-only">
+                                Search by user email or ID
+                            </label>
+                            <input
+                                id="external-calls-user-search"
+                                type="text"
+                                value={externalCallsUserSearch}
+                                onChange={(e) => setExternalCallsUserSearch(e.target.value)}
+                                placeholder="Search by user email or ID"
+                                className="w-full sm:max-w-sm px-3 py-2 text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            />
+                        </div>
                         <TableOrCards
-                            data={stats.externalCalls.recentCalls}
+                            data={paginatedExternalCalls}
                             columns={[
                                 { key: 'provider', label: 'Provider', className: 'capitalize' },
                                 {
@@ -282,6 +327,37 @@ const AdminDashboardPage: React.FC = () => {
                             }}
                             emptyMessage="No AI or Apify calls recorded yet."
                         />
+                        {filteredExternalCalls.length > 0 && (
+                            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-xs md:text-sm text-zinc-500">
+                                    Showing {externalCallsStartIndex + 1}-{externalCallsEndIndex} of {filteredExternalCalls.length} calls
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setExternalCallsPage((prev) => Math.max(1, prev - 1))}
+                                        disabled={safeExternalCallsPage <= 1}
+                                        className="px-3 py-1.5 text-xs md:text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                                    >
+                                        Previous
+                                    </button>
+                                    <span className="text-xs md:text-sm text-zinc-500 min-w-[88px] text-center">
+                                        Page {safeExternalCallsPage} of {externalCallsTotalPages}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setExternalCallsPage((prev) => Math.min(externalCallsTotalPages, prev + 1))}
+                                        disabled={safeExternalCallsPage >= externalCallsTotalPages}
+                                        className="px-3 py-1.5 text-xs md:text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {externalCalls.length > 0 && filteredExternalCalls.length === 0 && (
+                            <p className="mt-4 text-xs md:text-sm text-zinc-500">No calls match that user search.</p>
+                        )}
                     </div>
                 </>
             )}

@@ -318,7 +318,7 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
 
                         {/* Link to Full Review Page */}
                         <Link
-                            to={`/jobs/${jobApplication._id}/review/`}
+                            to={`/jobs/${jobApplication._id}/workspace/`}
                             className="btn-primary rounded-lg font-medium text-sm flex items-center gap-2"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

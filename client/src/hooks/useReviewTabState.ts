@@ -40,7 +40,7 @@ export function useReviewTabState({
     const handleTabChange = (newTab: ActiveReviewTab) => {
         setActiveTab(newTab);
         localStorage.setItem(`job_tab_${jobId}`, newTab);
-        navigate(`/jobs/${jobId}/review/${newTab}`);
+        navigate(`/jobs/${jobId}/workspace/${newTab}`);
     };
 
     useEffect(() => {
