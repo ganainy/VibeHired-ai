@@ -2224,7 +2224,7 @@ const ReviewFinalizePage: React.FC = () => {
                             jobId={jobId}
                             // Cover Letter State
                             coverLetterText={coverLetterText}
-                            handleCoverLetterChange={handleCoverLetterChange},
+                            handleCoverLetterChange={handleCoverLetterChange}
                             // Download & Actions
                             finalPdfFiles={finalPdfFiles}
                             isRenderingCoverLetterPdf={isRenderingCoverLetterPdf}
@@ -2232,14 +2232,14 @@ const ReviewFinalizePage: React.FC = () => {
                             handleCopyCoverLetter={handleCopyCoverLetter}
                             handleDownload={handleDownload}
                             handleGenerateCoverLetterPdf={handleGenerateCoverLetterPdf}
-                            setIsEmailModalOpen={setIsEmailModalOpen},
+                            setIsEmailModalOpen={setIsEmailModalOpen}
                             // Cover Letter Generation
                             isGeneratingCoverLetter={isGeneratingCoverLetter}
                             coverLetterError={coverLetterError}
-                            setCoverLetterError={setCoverLetterError},
+                            setCoverLetterError={setCoverLetterError}
                             // Creation Mode
                             clCreationMode={clCreationMode}
-                            setClCreationMode={setClCreationMode},
+                            setClCreationMode={setClCreationMode}
                             // Library Panel
                             showClLibraryPanel={showClLibraryPanel}
                             setShowClLibraryPanel={setShowClLibraryPanel}
@@ -2253,7 +2253,7 @@ const ReviewFinalizePage: React.FC = () => {
                             applyClError={applyClError}
                             setApplyClError={setApplyClError}
                             handleApplyBaseCoverLetter={handleApplyBaseCoverLetter}
-                            handleSaveClSnapshot={handleSaveClSnapshot},
+                            handleSaveClSnapshot={handleSaveClSnapshot}
                             // AI Generation Form
                             tailoredJobTitle={tailoredJobTitle}
                             setTailoredJobTitle={setTailoredJobTitle}
@@ -2262,14 +2262,14 @@ const ReviewFinalizePage: React.FC = () => {
                             tailoredJobDescription={tailoredJobDescription}
                             setTailoredJobDescription={setTailoredJobDescription}
                             clCustomInstructions={clCustomInstructions}
-                            setClCustomInstructions={setClCustomInstructions},
+                            setClCustomInstructions={setClCustomInstructions}
                             // CV Selection
                             selectedClBaseCvId={selectedClBaseCvId}
                             handleSelectedClBaseCvIdChange={handleSelectedClBaseCvIdChange}
                             availableCvs={availableCvs}
                             currentCvId={currentCvId}
                             hasLocalCv={hasLocalCv}
-                            hasMasterCv={hasMasterCv},
+                            hasMasterCv={hasMasterCv}
                             // Actions
                             handleGenerateCoverLetter={handleGenerateCoverLetter}
                             updateJob={updateJob}
