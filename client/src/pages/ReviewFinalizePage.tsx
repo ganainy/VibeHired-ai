@@ -37,6 +37,7 @@ import PromptChecklist from '../components/common/PromptChecklist';
 import MockInterviewPanel from '../components/jobs/MockInterviewPanel';
 import RemindersPanel from '../components/jobs/RemindersPanel';
 import InterviewMaterialsPanel from '../components/jobs/InterviewMaterialsPanel';
+import JobDetailsSection, { JobDetailsFormData } from '../components/jobs/JobDetailsSection';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { getBaseCoverLetters, applyBaseCoverLetterToJob, uploadCoverLetterForJob, saveCurrentCoverLetterForJob, CoverLetterBase } from '../services/coverLetterBaseApi';
@@ -49,32 +50,10 @@ interface ToastState {
 const EMPTY_CV_DATA: JsonResumeSchema = { basics: {} };
 
 function hasMeaningfulContent(value: unknown): boolean {
-    if (value == null) return false;
-    if (typeof value === 'string') return value.trim().length > 0;
-    if (typeof value === 'number' || typeof value === 'boolean') return true;
-    if (Array.isArray(value)) return value.some(hasMeaningfulContent);
-    if (typeof value === 'object') {
-        return Object.values(value as Record<string, unknown>).some(hasMeaningfulContent);
-    }
-    return false;
+    return value !== null && value !== undefined && value !== '' && 
+           !(Array.isArray(value) && value.length === 0) &&
+           !(typeof value === 'object' && Object.keys(value).length === 0);
 }
-
-type JobDetailsFormData = {
-    jobTitle: string;
-    companyName: string;
-    status: JobApplication['status'];
-    language: 'en' | 'de';
-    baseCvId: string;
-    jobType: JobApplication['jobType'] | '';
-    createdAt: string;
-    jobUrls: string[];
-    salary: string;
-    contactEmail: string;
-    contactPhone: string;
-    hiringManagerName: string;
-    applicationUrl: string;
-    notes: string;
-};
 
 const ReviewFinalizePage: React.FC = () => {
     const { jobId, tab } = useParams<{ jobId: string; tab?: string }>();
@@ -2313,391 +2292,30 @@ const ReviewFinalizePage: React.FC = () => {
                         <div className="w-full space-y-6">
 
                             {/* Job Details - Read-only / Edit */}
-                            <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 md:p-6">
-                                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-primary">{isEditingJobDetails ? 'edit_square' : 'work'}</span>
-                                        <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Job Details</h2>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {isEditingJobDetails ? (
-                                            <>
-                                                {jobDetailsHasChanges && (
-                                                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Unsaved changes</span>
-                                                )}
-                                                <button
-                                                    onClick={() => {
-                                                        setIsEditingJobDetails(false);
-                                                        // Revert unsaved changes
-                                                        if (jobDetailsInitialForm) {
-                                                            setJobDetailsForm(jobDetailsInitialForm);
-                                                        }
-                                                        setJobDetailsSaveError(null);
-                                                    }}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                                                >
-                                                    <span className="material-symbols-outlined text-sm">close</span>
-                                                    <span>Cancel</span>
-                                                </button>
-                                                <button
-                                                    onClick={handleSaveJobDetails}
-                                                    disabled={!jobDetailsHasChanges || isSavingJobDetails || !jobDetailsForm}
-                                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-ink-950 bg-primary hover:bg-primaryLight focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                >
-                                                    {isSavingJobDetails ? (
-                                                        <>
-                                                            <Spinner size="sm" />
-                                                            <span>Saving...</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <span className="material-symbols-outlined text-sm">save</span>
-                                                            <span>Save</span>
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <button
-                                                onClick={() => setIsEditingJobDetails(true)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                                            >
-                                                <span className="material-symbols-outlined text-sm">edit</span>
-                                                <span>Edit</span>
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {jobDetailsSaveError && isEditingJobDetails && (
-                                    <div className="mb-4">
-                                        <ErrorAlert
-                                            message={jobDetailsSaveError}
-                                            onDismiss={() => setJobDetailsSaveError(null)}
-                                        />
-                                    </div>
-                                )}
-
-                                {isEditingJobDetails && jobDetailsForm ? (
-                                    /* ── Edit mode ── */
-                                    <div className="space-y-5 md:space-y-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Title <span className="text-red-500">*</span></label>
-                                                <input
-                                                    type="text"
-                                                    value={jobDetailsForm.jobTitle}
-                                                    onChange={(e) => handleJobDetailsInputChange('jobTitle', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Name <span className="text-red-500">*</span></label>
-                                                <input
-                                                    type="text"
-                                                    value={jobDetailsForm.companyName}
-                                                    onChange={(e) => handleJobDetailsInputChange('companyName', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                                                <select
-                                                    value={jobDetailsForm.status}
-                                                    onChange={(e) => handleJobDetailsInputChange('status', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                >
-                                                    {jobStatusOptions.map(status => (
-                                                        <option key={status} value={status}>{status}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Language</label>
-                                                <select
-                                                    value={jobDetailsForm.language}
-                                                    onChange={(e) => handleJobDetailsInputChange('language', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                >
-                                                    <option value="en">English</option>
-                                                    <option value="de">German</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date Added</label>
-                                                <input
-                                                    type="date"
-                                                    value={formatDateForInput(jobDetailsForm.createdAt)}
-                                                    onChange={(e) => {
-                                                        const nextDate = e.target.value ? new Date(`${e.target.value}T12:00:00`).toISOString() : '';
-                                                        handleJobDetailsInputChange('createdAt', nextDate);
-                                                    }}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employment Type</label>
-                                                <select
-                                                    value={jobDetailsForm.jobType || ''}
-                                                    onChange={(e) => handleJobDetailsInputChange('jobType', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                >
-                                                    <option value="">Not specified</option>
-                                                    <option value="full-time">Full-time</option>
-                                                    <option value="part-time">Part-time</option>
-                                                    <option value="working-student">Working Student</option>
-                                                    <option value="internship">Internship</option>
-                                                    <option value="contract">Contract</option>
-                                                    <option value="freelance">Freelance</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Base CV</label>
-                                                <select
-                                                    value={jobDetailsForm.baseCvId}
-                                                    onChange={(e) => handleJobDetailsInputChange('baseCvId', e.target.value)}
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                >
-                                                    <option value="">Use master/primary CV</option>
-                                                    {jobDetailsForm.baseCvId && !availableCvs.some(cv => cv.id === jobDetailsForm.baseCvId) && (
-                                                        <option value={jobDetailsForm.baseCvId}>Current saved CV ({jobDetailsForm.baseCvId})</option>
-                                                    )}
-                                                    {availableCvs.map((cv) => (
-                                                        <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
-                                                    ))}
-                                                </select>
-                                                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">Choose which CV version to use as the default for this job.</p>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job URL(s)</label>
-                                            <div className="space-y-2">
-                                                {jobDetailsForm.jobUrls.map((urlValue, idx) => (
-                                                    <div key={idx} className="flex items-center gap-2">
-                                                        <input
-                                                            type="url"
-                                                            value={urlValue}
-                                                            onChange={(e) => handleJobUrlFieldChange(idx, e.target.value)}
-                                                            onBlur={(e) => handleJobUrlFieldChange(idx, normalizeMultipleUrls(e.target.value))}
-                                                            placeholder={`Job URL ${idx + 1}`}
-                                                            className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                        />
-                                                        {jobDetailsForm.jobUrls.length > 1 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleRemoveJobUrlField(idx)}
-                                                                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 hover:text-red-500 hover:border-red-300 dark:hover:border-red-700 transition-colors"
-                                                                title="Remove URL"
-                                                            >
-                                                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                <button
-                                                    type="button"
-                                                    onClick={handleAddJobUrlField}
-                                                    className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primaryLight transition-colors"
-                                                >
-                                                    <span className="material-symbols-outlined text-[16px]">add</span>
-                                                    <span>Add another URL</span>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Salary</label>
-                                                <input
-                                                    type="text"
-                                                    value={jobDetailsForm.salary}
-                                                    onChange={(e) => handleJobDetailsInputChange('salary', e.target.value)}
-                                                    placeholder="e.g., 50k-70k, $80,000"
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                />
-                                                {!jobDetailsForm.salary && (jobApplication.extractedData?.salaryRaw || jobApplication.extractedData?.estimatedSalary) && (
-                                                    <p className="mt-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                                                        {jobApplication.extractedData?.salaryIsEstimate === false
-                                                            ? `✅ From posting: ${jobApplication.extractedData.salaryRaw}`
-                                                            : `🤖 AI estimate: ${jobApplication.extractedData.estimatedSalary}`}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Email</label>
-                                                <input
-                                                    type="email"
-                                                    value={jobDetailsForm.contactEmail}
-                                                    onChange={(e) => handleJobDetailsInputChange('contactEmail', e.target.value)}
-                                                    placeholder="name@company.com"
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Phone</label>
-                                                <input
-                                                    type="text"
-                                                    value={jobDetailsForm.contactPhone}
-                                                    onChange={(e) => handleJobDetailsInputChange('contactPhone', e.target.value)}
-                                                    placeholder="+49 ..."
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hiring Manager</label>
-                                                <input
-                                                    type="text"
-                                                    value={jobDetailsForm.hiringManagerName}
-                                                    onChange={(e) => handleJobDetailsInputChange('hiringManagerName', e.target.value)}
-                                                    placeholder="Recruiter or manager name"
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Application URL</label>
-                                                <input
-                                                    type="url"
-                                                    value={jobDetailsForm.applicationUrl}
-                                                    onChange={(e) => handleJobDetailsInputChange('applicationUrl', e.target.value)}
-                                                    placeholder="https://company.com/apply"
-                                                    className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
-                                            <textarea
-                                                value={jobDetailsForm.notes}
-                                                onChange={(e) => handleJobDetailsInputChange('notes', e.target.value)}
-                                                rows={3}
-                                                placeholder="Add notes for this application"
-                                                className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm resize-y"
-                                            />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    /* ── Read-only mode ── */
-                                    jobDetailsForm && (
-                                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-                                            {/* Job Title – always shown */}
-                                            <div className="flex flex-col gap-0.5">
-                                                <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Job Title</dt>
-                                                <dd className="text-sm font-semibold text-text-main-light dark:text-text-main-dark">{jobDetailsForm.jobTitle || <span className="italic text-gray-400">—</span>}</dd>
-                                            </div>
-                                            {/* Company – always shown */}
-                                            <div className="flex flex-col gap-0.5">
-                                                <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Company</dt>
-                                                <dd className="text-sm font-semibold text-text-main-light dark:text-text-main-dark">{jobDetailsForm.companyName || <span className="italic text-gray-400">—</span>}</dd>
-                                            </div>
-                                            {/* Status – always shown */}
-                                            <div className="flex flex-col gap-0.5">
-                                                <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Status</dt>
-                                                <dd><JobStatusBadge type="application" status={jobDetailsForm.status} /></dd>
-                                            </div>
-                                            {/* Language */}
-                                            {jobDetailsForm.language && (
-                                                <div className="flex flex-col gap-0.5">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Language</dt>
-                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">{jobDetailsForm.language === 'de' ? 'German' : 'English'}</dd>
-                                                </div>
-                                            )}
-                                            {/* Employment Type */}
-                                            {jobDetailsForm.jobType && (
-                                                <div className="flex flex-col gap-0.5">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Employment Type</dt>
-                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark capitalize">{jobDetailsForm.jobType.replace(/-/g, ' ')}</dd>
-                                                </div>
-                                            )}
-                                            {/* Date Added */}
-                                            {jobDetailsForm.createdAt && (
-                                                <div className="flex flex-col gap-0.5">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Date Added</dt>
-                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">{new Date(jobDetailsForm.createdAt).toLocaleDateString()}</dd>
-                                                </div>
-                                            )}
-                                            {/* Base CV */}
-                                            {jobDetailsForm.baseCvId && (
-                                                <div className="flex flex-col gap-0.5">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Base CV</dt>
-                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">
-                                                        {availableCvs.find(cv => cv.id === jobDetailsForm.baseCvId)?.name || jobDetailsForm.baseCvId}
-                                                    </dd>
-                                                </div>
-                                            )}
-                                            {/* Job URL(s) */}
-                                            {jobDetailsForm.jobUrls.filter(u => u.trim()).length > 0 && (
-                                                <div className="flex flex-col gap-0.5 sm:col-span-2">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Job URL{jobDetailsForm.jobUrls.filter(u => u.trim()).length > 1 ? 's' : ''}</dt>
-                                                    <dd className="flex flex-col gap-1">
-                                                        {jobDetailsForm.jobUrls.filter(u => u.trim()).map((url, idx) => (
-                                                            <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="text-sm truncate max-w-xs hover:underline" style={{ color: 'var(--accent)' }}>{url}</a>
-                                                        ))}
-                                                    </dd>
-                                                </div>
-                                            )}
-                                            {/* Salary */}
-                                            {jobDetailsForm.salary && (
-                                                <div className="flex flex-col gap-0.5">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Salary</dt>
-                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">{jobDetailsForm.salary}</dd>
-                                                </div>
-                                            )}
-                                            {/* Contact Email */}
-                                            {jobDetailsForm.contactEmail && (
-                                                <div className="flex flex-col gap-0.5">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Contact Email</dt>
-                                                    <dd className="text-sm">
-                                                        <a href={`mailto:${jobDetailsForm.contactEmail}`} className="hover:underline" style={{ color: 'var(--accent)' }}>{jobDetailsForm.contactEmail}</a>
-                                                    </dd>
-                                                </div>
-                                            )}
-                                            {/* Contact Phone */}
-                                            {jobDetailsForm.contactPhone && (
-                                                <div className="flex flex-col gap-0.5">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Contact Phone</dt>
-                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">{jobDetailsForm.contactPhone}</dd>
-                                                </div>
-                                            )}
-                                            {/* Hiring Manager */}
-                                            {jobDetailsForm.hiringManagerName && (
-                                                <div className="flex flex-col gap-0.5">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Hiring Manager</dt>
-                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark">{jobDetailsForm.hiringManagerName}</dd>
-                                                </div>
-                                            )}
-                                            {/* Application URL */}
-                                            {jobDetailsForm.applicationUrl && (
-                                                <div className="flex flex-col gap-0.5 sm:col-span-2">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Application Portal</dt>
-                                                    <dd className="text-sm">
-                                                        <a href={jobDetailsForm.applicationUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate" style={{ color: 'var(--accent)' }}>
-                                                            {jobDetailsForm.applicationUrl.length > 60 ? jobDetailsForm.applicationUrl.substring(0, 60) + '…' : jobDetailsForm.applicationUrl}
-                                                        </a>
-                                                    </dd>
-                                                </div>
-                                            )}
-                                            {/* Notes */}
-                                            {jobDetailsForm.notes && (
-                                                <div className="flex flex-col gap-0.5 sm:col-span-2">
-                                                    <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Notes</dt>
-                                                    <dd className="text-sm text-text-main-light dark:text-text-main-dark whitespace-pre-wrap break-words">{jobDetailsForm.notes}</dd>
-                                                </div>
-                                            )}
-                                        </dl>
-                                    )
-                                )}
-                            </div>
+                            <JobDetailsSection
+                                jobApplication={jobApplication}
+                                isEditing={isEditingJobDetails}
+                                setIsEditing={setIsEditingJobDetails}
+                                formData={jobDetailsForm}
+                                hasChanges={jobDetailsHasChanges}
+                                isSaving={isSavingJobDetails}
+                                saveError={jobDetailsSaveError}
+                                setSaveError={setJobDetailsSaveError}
+                                onInputChange={handleJobDetailsInputChange}
+                                onUrlChange={handleJobUrlFieldChange}
+                                onAddUrl={handleAddJobUrlField}
+                                onRemoveUrl={handleRemoveJobUrlField}
+                                onSave={handleSaveJobDetails}
+                                onCancel={() => {
+                                    setIsEditingJobDetails(false);
+                                    if (jobDetailsInitialForm) {
+                                        setJobDetailsForm(jobDetailsInitialForm);
+                                    }
+                                    setJobDetailsSaveError(null);
+                                }}
+                                availableCvs={availableCvs}
+                                formatDateForInput={formatDateForInput}
+                            />
 
                             {/* Highlights Card */}
                             <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
