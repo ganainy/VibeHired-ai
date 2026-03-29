@@ -221,7 +221,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
         <div>
             {/* Raw PDF attached — no JSON, show placeholder */}
             {hasLocalCv && (!cvData || !cvData.basics || Object.keys(cvData.basics).length === 0) && !liveCvDescriptor ? (
-                <div className="p-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col items-center gap-4 text-center">
+                <div className="p-10 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center gap-4 text-center">
                     <span className="material-symbols-outlined text-5xl" style={{ color: 'var(--accent)' }}>description</span>
                     <div>
                         <p className="text-base font-semibold text-gray-800 dark:text-gray-200">CV attached as PDF</p>

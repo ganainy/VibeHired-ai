@@ -8,7 +8,7 @@ interface JobDescriptionInsightsProps {
 const JobDescriptionInsights: React.FC<JobDescriptionInsightsProps> = ({ jobApplication }) => {
     return (
         <>
-            <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mt-6">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mt-6">
                 <div className="flex items-center gap-2 mb-4">
                     <span className="material-symbols-outlined text-primary">lightbulb</span>
                     <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark">Key Highlights</h2>
@@ -107,7 +107,7 @@ const JobDescriptionInsights: React.FC<JobDescriptionInsightsProps> = ({ jobAppl
             </div>
 
             {jobApplication.jobPrerequisites && (
-                <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mt-6">
+                <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mt-6">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold text-text-main-light dark:text-text-main-dark flex items-center gap-2">
                             <span className="material-symbols-outlined">checklist</span>

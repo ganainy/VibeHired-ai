@@ -64,7 +64,7 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
     if (!formData) return null;
 
     return (
-        <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 md:p-6">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 md:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">{isEditing ? 'edit_square' : 'work'}</span>

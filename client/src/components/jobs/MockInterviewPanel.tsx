@@ -437,14 +437,14 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
     };
 
     return (
-        <div className="w-full max-w-3xl mx-auto space-y-6">
+        <div className="w-full max-w-5xl mx-auto space-y-6">
             <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl text-ink-950 shadow-sm" style={{background:"var(--accent)"}}>
                     <span className="material-symbols-outlined text-[22px]">mic</span>
                 </div>
-                <div>
+                <div className="min-w-0">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{labels.title}</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{labels.subtitle}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{labels.subtitle}</p>
                 </div>
             </div>
 
@@ -460,21 +460,21 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
 
             {/* ── SELECT LEVEL ── */}
             {phase === 'select-level' && (
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 p-8 text-center space-y-6 shadow-sm">
-                    <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
-                        <span className="material-symbols-outlined text-4xl" style={{color:"var(--accent)"}}>record_voice_over</span>
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 md:p-7 text-center space-y-5 shadow-sm">
+                    <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
+                        <span className="material-symbols-outlined text-3xl" style={{color:"var(--accent)"}}>record_voice_over</span>
                     </div>
                     <div>
-                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed max-w-md mx-auto">
+                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed max-w-lg mx-auto">
                             {isEnglish
                                 ? <>The AI will generate tailored interview questions based on your <strong>CV</strong> and the <strong>job description</strong>. Answer each one and get instant feedback.</>
                                 : <>Die KI erstellt passende Interviewfragen basierend auf deinem <strong>Lebenslauf</strong> und der <strong>Stellenbeschreibung</strong>. Beantworte jede Frage und erhalte sofortiges Feedback.</>}
                         </p>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 max-w-3xl mx-auto">
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{labels.selectLevel}</p>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <button
                                 onClick={() => { setLevel('first'); startInterview(); }}
                                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all relative ${level === 'first' ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20' : 'border-zinc-200 dark:border-slate-700 hover:border-gold-300'}`}
@@ -496,12 +496,13 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                         </div>
                     </div>
 
-                    <div className="border-t border-zinc-100 dark:border-slate-800 pt-4">
-                        <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    <details className="border-t border-zinc-200 dark:border-zinc-800 pt-4">
+                        <summary className="list-none cursor-pointer inline-flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
                             <span className="material-symbols-outlined text-sm">content_copy</span>
-                            <span>{isEnglish ? 'Or use with ChatGPT / Claude' : 'Oder mit ChatGPT / Claude verwenden'}</span>
-                        </div>
-                        <div className="flex gap-2 justify-center">
+                            <span>{isEnglish ? 'Use with ChatGPT / Claude' : 'Mit ChatGPT / Claude verwenden'}</span>
+                            <span className="material-symbols-outlined text-sm">expand_more</span>
+                        </summary>
+                        <div className="flex flex-wrap gap-2 justify-center mt-3">
                             <button
                                 onClick={() => copyToClipboard(buildFirstInterviewPrompt(), 'first')}
                                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
@@ -515,13 +516,13 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                                 {copiedKey === 'second' ? labels.copied : (isEnglish ? 'Copy 2nd level prompt' : '2. Runde Prompt kopieren')}
                             </button>
                         </div>
-                    </div>
+                    </details>
                 </div>
             )}
 
             {/* ── RESUME INTERVIEW ── */}
             {phase === 'resume' && (
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 p-8 text-center space-y-6 shadow-sm">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-8 text-center space-y-6 shadow-sm">
                     <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
                         <span className="material-symbols-outlined text-4xl" style={{color:"var(--accent)"}}>play_circle</span>
                     </div>
@@ -555,7 +556,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
 
             {/* ── LOADING ── */}
             {phase === 'loading' && (
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 p-12 text-center space-y-4 shadow-sm">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-12 text-center space-y-4 shadow-sm">
                     <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
                         <span className="material-symbols-outlined text-3xl animate-pulse" style={{color:"var(--accent)"}}>auto_awesome</span>
                     </div>
@@ -565,7 +566,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
 
             {/* ── QUESTION ── */}
             {(phase === 'question' || phase === 'evaluating' || phase === 'result') && (
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                     <div className="w-full bg-gray-100 dark:bg-slate-800 h-1.5">
                         <div className="h-1.5 transition-all duration-500" style={{ width: `${((currentIndex) / totalQuestions) * 100}%`, background: 'var(--accent)' }} />
                     </div>
@@ -653,7 +654,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
 
             {/* ── EVALUATING ── */}
             {phase === 'evaluating' && (
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 p-12 text-center space-y-4 shadow-sm">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-12 text-center space-y-4 shadow-sm">
                     <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
                         <span className="material-symbols-outlined text-3xl animate-spin" style={{color:"var(--accent)"}}>progress_activity</span>
                     </div>
@@ -663,7 +664,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
 
             {/* ── RESULT ── */}
             {phase === 'result' && currentEvaluation && (
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                     <div className="w-full bg-gray-100 dark:bg-slate-800 h-1.5">
                         <div className="h-1.5 transition-all duration-500" style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%`, background: 'var(--accent)' }} />
                     </div>
@@ -739,7 +740,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
             {/* ── FINISHED ── */}
             {phase === 'finished' && (
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm p-8 text-center space-y-4">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-8 text-center space-y-4">
                         <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{labels.interviewComplete}</p>
                         <div className="flex flex-col items-center gap-2">
                             <span className="text-xs text-gray-400 uppercase tracking-wider font-medium">{labels.overallScore}</span>
@@ -754,7 +755,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                         </button>
                     </div>
 
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-slate-800 shadow-sm p-4">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-4">
                         <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{labels.review}</p>
                         <div className="space-y-4">
                             {results.map((r, idx) => (
@@ -787,7 +788,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
 
             {/* ── REVIEW PANEL (During Interview) ── */}
             {showReview && results.length > 0 && (phase === 'question' || phase === 'result') && (
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 shadow-sm p-4 space-y-3">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-4 space-y-3">
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{labels.review}</p>
                     <div className="space-y-2 max-h-64 overflow-y-auto">
                         {results.map((r, idx) => (

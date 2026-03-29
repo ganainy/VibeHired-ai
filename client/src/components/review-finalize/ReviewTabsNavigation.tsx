@@ -25,7 +25,7 @@ const ReviewTabsNavigation: React.FC<ReviewTabsNavigationProps> = ({
 }) => {
     return (
         <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-4">
-            <div className="relative flex items-center justify-between w-full max-w-4xl mx-auto">
+            <div className="relative flex items-center justify-between w-full max-w-7xl mx-auto">
                 <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-600 -z-10 transform -translate-y-1/2"></div>
 
                 {TAB_ITEMS.map((tab) => {

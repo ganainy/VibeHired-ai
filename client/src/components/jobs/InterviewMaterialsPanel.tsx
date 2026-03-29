@@ -506,9 +506,9 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
     // ── Render ─────────────────────────────────────────────────────────────────
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-4">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined" style={{ color: 'var(--accent)' }}>
                         library_books
@@ -526,7 +526,7 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                     )}
                 </div>
                 <p className="text-xs sm:text-right max-w-md" style={{ color: 'var(--text-muted)' }}>
-                    Upload PDFs, images, notes, or links to use when preparing for this interview
+                    Upload files, notes, or links for interview prep
                 </p>
             </div>
 
@@ -543,17 +543,17 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
 
             {/* ── Drop zone / Add buttons ── */}
             {addMode === 'idle' && (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                     {/* Drag-drop upload zone */}
                     <div
                         onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                         onDragLeave={() => setIsDragOver(false)}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        className="relative flex flex-col items-center justify-center gap-2 p-6 md:p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200"
+                        className="relative flex flex-col items-center justify-center gap-2 p-5 md:p-6 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200 bg-white dark:bg-zinc-900"
                         style={{
                             borderColor: isDragOver ? 'var(--accent)' : 'var(--border)',
-                            backgroundColor: isDragOver ? 'var(--accent-bg)' : 'var(--bg-elevated)',
+                            backgroundColor: isDragOver ? 'var(--accent-bg)' : undefined,
                         }}
                     >
                         <span
@@ -580,7 +580,7 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                     </div>
 
                     {/* Quick add buttons */}
-                    <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <button
                             onClick={() => setAddMode('text')}
                             className="flex items-center justify-center sm:justify-start gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
@@ -845,14 +845,7 @@ const InterviewMaterialsPanel: React.FC<Props> = ({ jobId }) => {
                     <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
                 </div>
             ) : materials.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-10 text-center">
-                    <span className="material-symbols-outlined text-4xl" style={{ color: 'var(--text-muted)' }}>
-                        library_books
-                    </span>
-                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                        No prep materials yet — add your first one above
-                    </p>
-                </div>
+                null
             ) : (
                 <div className="grid gap-2.5 sm:grid-cols-1">
                     {materials.map(m => (

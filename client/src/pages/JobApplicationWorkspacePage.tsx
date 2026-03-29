@@ -600,6 +600,8 @@ const JobApplicationWorkspacePage: React.FC = () => {
         }
     };
 
+    const activeTabMaxWidth = 'max-w-7xl';
+
 
     if (isLoading) {
         return (
@@ -666,190 +668,189 @@ const JobApplicationWorkspacePage: React.FC = () => {
 
                 {/* Tab Contents */}
                 <div className="mt-6">
-                {activeTab === 'job-description' && (
-                        <div className="w-full space-y-6">
-                            <JobDetailsSection
-                                jobApplication={jobApplication}
-                                isEditing={isEditingJobDetails}
-                                setIsEditing={setIsEditingJobDetails}
-                                formData={jobDetailsForm}
-                                hasChanges={jobDetailsHasChanges}
-                                isSaving={isSavingJobDetails}
-                                saveError={jobDetailsSaveError}
-                                setSaveError={setJobDetailsSaveError}
-                                onInputChange={handleJobDetailsInputChange}
-                                onUrlChange={handleJobUrlFieldChange}
-                                onAddUrl={handleAddJobUrlField}
-                                onRemoveUrl={handleRemoveJobUrlField}
-                                onSave={handleSaveJobDetails}
-                                onCancel={handleCancelJobDetails}
-                                availableCvs={availableCvs}
-                                formatDateForInput={formatDateForInput}
-                            />
-                        </div>
-                    )}
+                    <section className={`mx-auto w-full ${activeTabMaxWidth}`}>
+                        <div className="animate-in fade-in duration-200">
+                            {activeTab === 'job-description' && (
+                                <div className="w-full space-y-6">
+                                    <JobDetailsSection
+                                        jobApplication={jobApplication}
+                                        isEditing={isEditingJobDetails}
+                                        setIsEditing={setIsEditingJobDetails}
+                                        formData={jobDetailsForm}
+                                        hasChanges={jobDetailsHasChanges}
+                                        isSaving={isSavingJobDetails}
+                                        saveError={jobDetailsSaveError}
+                                        setSaveError={setJobDetailsSaveError}
+                                        onInputChange={handleJobDetailsInputChange}
+                                        onUrlChange={handleJobUrlFieldChange}
+                                        onAddUrl={handleAddJobUrlField}
+                                        onRemoveUrl={handleRemoveJobUrlField}
+                                        onSave={handleSaveJobDetails}
+                                        onCancel={handleCancelJobDetails}
+                                        availableCvs={availableCvs}
+                                        formatDateForInput={formatDateForInput}
+                                    />
+                                </div>
+                            )}
 
-                    {activeTab === 'job-description' && (
-                        <JobDescriptionInsights jobApplication={jobApplication} />
-                    )}
+                            {activeTab === 'job-description' && (
+                                <JobDescriptionInsights jobApplication={jobApplication} />
+                            )}
 
-                {activeTab === 'cover-letter' && (
-                        <CoverLetterPage
-                            // Job Application & Basic State
-                            jobApplication={jobApplication}
-                            jobId={jobId!}
-                            // Cover Letter State
-                            coverLetterText={coverLetterText}
-                            handleCoverLetterChange={handleCoverLetterChange}
-                            // Download & Actions
-                            finalPdfFiles={finalPdfFiles}
-                            isRenderingCoverLetterPdf={isRenderingCoverLetterPdf}
-                            isClCopied={isClCopied}
-                            handleCopyCoverLetter={handleCopyCoverLetter}
-                            handleDownload={handleDownload}
-                            handleGenerateCoverLetterPdf={handleGenerateCoverLetterPdf}
-                            setIsEmailModalOpen={setIsEmailModalOpen}
-                            // Cover Letter Generation
-                            isGeneratingCoverLetter={isGeneratingCoverLetter}
-                            coverLetterError={coverLetterError}
-                            setCoverLetterError={setCoverLetterError}
-                            // Creation Mode
-                            clCreationMode={clCreationMode}
-                            setClCreationMode={setClCreationMode}
-                            // Library Panel
-                            showClLibraryPanel={showClLibraryPanel}
-                            setShowClLibraryPanel={setShowClLibraryPanel}
-                            baseCoverLetters={baseCoverLetters}
-                            selectedBaseClId={selectedBaseClId}
-                            setSelectedBaseClId={setSelectedBaseClId}
-                            clUploadFile={clUploadFile}
-                            setClUploadFile={setClUploadFile}
-                            clUploadFileRef={clUploadFileRef}
-                            isApplyingBaseCl={isApplyingBaseCl}
-                            applyClError={applyClError}
-                            setApplyClError={setApplyClError}
-                            handleApplyBaseCoverLetter={handleApplyBaseCoverLetter}
-                            handleSaveClSnapshot={handleSaveClSnapshot}
-                            // AI Generation Form
-                            tailoredJobTitle={tailoredJobTitle}
-                            setTailoredJobTitle={setTailoredJobTitle}
-                            tailoredCompanyName={tailoredCompanyName}
-                            setTailoredCompanyName={setTailoredCompanyName}
-                            tailoredJobDescription={tailoredJobDescription}
-                            setTailoredJobDescription={setTailoredJobDescription}
-                            clCustomInstructions={clCustomInstructions}
-                            setClCustomInstructions={setClCustomInstructions}
-                            // CV Selection
-                            selectedClBaseCvId={selectedClBaseCvId}
-                            handleSelectedClBaseCvIdChange={handleSelectedClBaseCvIdChange}
-                            availableCvs={availableCvs}
-                            currentCvId={currentCvId}
-                            hasLocalCv={hasLocalCv}
-                            hasMasterCv={hasMasterCv}
-                            // Actions
-                            handleGenerateCoverLetter={handleGenerateCoverLetter}
-                            updateJob={updateJob}
-                            showToast={showToast}
-                        />
-                    )}
+                            {activeTab === 'cover-letter' && (
+                                <CoverLetterPage
+                                    // Job Application & Basic State
+                                    jobApplication={jobApplication}
+                                    jobId={jobId!}
+                                    // Cover Letter State
+                                    coverLetterText={coverLetterText}
+                                    handleCoverLetterChange={handleCoverLetterChange}
+                                    // Download & Actions
+                                    finalPdfFiles={finalPdfFiles}
+                                    isRenderingCoverLetterPdf={isRenderingCoverLetterPdf}
+                                    isClCopied={isClCopied}
+                                    handleCopyCoverLetter={handleCopyCoverLetter}
+                                    handleDownload={handleDownload}
+                                    handleGenerateCoverLetterPdf={handleGenerateCoverLetterPdf}
+                                    setIsEmailModalOpen={setIsEmailModalOpen}
+                                    // Cover Letter Generation
+                                    isGeneratingCoverLetter={isGeneratingCoverLetter}
+                                    coverLetterError={coverLetterError}
+                                    setCoverLetterError={setCoverLetterError}
+                                    // Creation Mode
+                                    clCreationMode={clCreationMode}
+                                    setClCreationMode={setClCreationMode}
+                                    // Library Panel
+                                    showClLibraryPanel={showClLibraryPanel}
+                                    setShowClLibraryPanel={setShowClLibraryPanel}
+                                    baseCoverLetters={baseCoverLetters}
+                                    selectedBaseClId={selectedBaseClId}
+                                    setSelectedBaseClId={setSelectedBaseClId}
+                                    clUploadFile={clUploadFile}
+                                    setClUploadFile={setClUploadFile}
+                                    clUploadFileRef={clUploadFileRef}
+                                    isApplyingBaseCl={isApplyingBaseCl}
+                                    applyClError={applyClError}
+                                    setApplyClError={setApplyClError}
+                                    handleApplyBaseCoverLetter={handleApplyBaseCoverLetter}
+                                    handleSaveClSnapshot={handleSaveClSnapshot}
+                                    // AI Generation Form
+                                    tailoredJobTitle={tailoredJobTitle}
+                                    setTailoredJobTitle={setTailoredJobTitle}
+                                    tailoredCompanyName={tailoredCompanyName}
+                                    setTailoredCompanyName={setTailoredCompanyName}
+                                    tailoredJobDescription={tailoredJobDescription}
+                                    setTailoredJobDescription={setTailoredJobDescription}
+                                    clCustomInstructions={clCustomInstructions}
+                                    setClCustomInstructions={setClCustomInstructions}
+                                    // CV Selection
+                                    selectedClBaseCvId={selectedClBaseCvId}
+                                    handleSelectedClBaseCvIdChange={handleSelectedClBaseCvIdChange}
+                                    availableCvs={availableCvs}
+                                    currentCvId={currentCvId}
+                                    hasLocalCv={hasLocalCv}
+                                    hasMasterCv={hasMasterCv}
+                                    // Actions
+                                    handleGenerateCoverLetter={handleGenerateCoverLetter}
+                                    updateJob={updateJob}
+                                    showToast={showToast}
+                                />
+                            )}
 
-                    {activeTab === 'cv' && jobId && (
-                        <TailoredCvPage
-                            // CV State
-                            hasLocalCv={hasLocalCv}
-                            cvData={cvData}
-                            currentCvId={currentCvId}
-                            currentCvFilename={currentCvFilename}
-                            liveCvDescriptor={liveCvDescriptor}
-                            liveCvData={liveCvData}
-                            tailoringChanges={tailoringChanges}
-                            showInlineCvDiff={showInlineCvDiff}
-                            setShowInlineCvDiff={setShowInlineCvDiff}
-                            
-                            // CV Creation Mode
-                            cvCreationMode={cvCreationMode}
-                            setCvCreationMode={setCvCreationMode}
-                            cvImportFile={cvImportFile}
-                            setCvImportFile={setCvImportFile}
-                            selectedBaseCvIdForImport={selectedBaseCvIdForImport}
-                            setSelectedBaseCvIdForImport={setSelectedBaseCvIdForImport}
-                            isApplyingBaseCv={isApplyingBaseCv}
-                            applyCvError={applyCvError}
-                            setApplyCvError={setApplyCvError}
-                            cvImportFileRef={cvImportFileRef}
-                            
-                            // AI Generation State
-                            tailoredJobTitle={tailoredJobTitle}
-                            setTailoredJobTitle={setTailoredJobTitle}
-                            tailoredCompanyName={tailoredCompanyName}
-                            setTailoredCompanyName={setTailoredCompanyName}
-                            tailoredJobDescription={tailoredJobDescription}
-                            setTailoredJobDescription={setTailoredJobDescription}
-                            setCustomInstructions={setCustomInstructions}
-                            selectedBaseCvId={selectedBaseCvId}
-                            handleSelectedBaseCvIdChange={handleSelectedBaseCvIdChange}
-                            availableCvs={availableCvs}
-                            hasMasterCv={hasMasterCv}
-                            isGeneratingCv={isGeneratingCv}
-                            generateCvError={generateCvError}
-                            setGenerateCvError={setGenerateCvError}
-                            
-                            // Generation Progress
-                            generationStep={generationStep}
-                            generationProgress={generationProgress}
-                            
-                            // CV Editor State
-                            selectedTemplate={selectedTemplate}
-                            setSelectedTemplate={setSelectedTemplate}
-                            cvSaveStatus={cvSaveStatus}
-                            lastSavedCvDataRef={lastSavedCvDataRef}
-                            improvingSections={improvingSections}
+                            {activeTab === 'cv' && jobId && (
+                                <TailoredCvPage
+                                    // CV State
+                                    hasLocalCv={hasLocalCv}
+                                    cvData={cvData}
+                                    currentCvId={currentCvId}
+                                    currentCvFilename={currentCvFilename}
+                                    liveCvDescriptor={liveCvDescriptor}
+                                    liveCvData={liveCvData}
+                                    tailoringChanges={tailoringChanges}
+                                    showInlineCvDiff={showInlineCvDiff}
+                                    setShowInlineCvDiff={setShowInlineCvDiff}
 
-                            
-                            // ATS State
-                            atsScores={atsScores}
-                            isLoadingAts={isLoadingAts}
-                            isScanningAts={isScanningAts}
-                            atsProgressMessage={atsProgressMessage}
-                            isApplyingAtsBatch={isApplyingAtsBatch}
-                            
-                            // Preview State
-                            isPreviewOpen={isPreviewOpen}
-                            setIsPreviewOpen={setIsPreviewOpen}
-                            previewPdfBase64={previewPdfBase64}
-                            setPreviewPdfBase64={setPreviewPdfBase64}
-                            isLoadingRawPdf={isLoadingRawPdf}
-                            setIsLoadingRawPdf={setIsLoadingRawPdf}
-                            isGeneratingPreview={isGeneratingPreview}
-                            
-                            // Job Application
-                            jobApplication={jobApplication}
-                            jobId={jobId}
-                            
-                            // Handlers
-                            handleCvChange={handleCvChange}
-                            handleManualSaveCv={handleManualSaveCv}
-                            handleImproveSection={handleImproveSection}
-                            handleDynamicChange={handleDynamicChange}
-                            resetLocalCvState={resetLocalCvState}
-                            showToast={showToast}
-                            handleApplyBaseCv={handleApplyBaseCv}
-                            handleGenerateSpecificCv={handleGenerateSpecificCv}
-                            handleScanAts={handleScanAts}
-                            handleDeleteAts={handleDeleteAts}
-                            handleApplyAtsSuggestionBatch={handleApplyAtsSuggestionBatch}
-                        />
-                    )}
+                                    // CV Creation Mode
+                                    cvCreationMode={cvCreationMode}
+                                    setCvCreationMode={setCvCreationMode}
+                                    cvImportFile={cvImportFile}
+                                    setCvImportFile={setCvImportFile}
+                                    selectedBaseCvIdForImport={selectedBaseCvIdForImport}
+                                    setSelectedBaseCvIdForImport={setSelectedBaseCvIdForImport}
+                                    isApplyingBaseCv={isApplyingBaseCv}
+                                    applyCvError={applyCvError}
+                                    setApplyCvError={setApplyCvError}
+                                    cvImportFileRef={cvImportFileRef}
 
-                    {/* Tab 5: Mock Interview */}
-                    {activeTab === 'mock-interview' && jobApplication && (
-                        <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} coverLetterText={coverLetterText} />
-                    )}
+                                    // AI Generation State
+                                    tailoredJobTitle={tailoredJobTitle}
+                                    setTailoredJobTitle={setTailoredJobTitle}
+                                    tailoredCompanyName={tailoredCompanyName}
+                                    setTailoredCompanyName={setTailoredCompanyName}
+                                    tailoredJobDescription={tailoredJobDescription}
+                                    setTailoredJobDescription={setTailoredJobDescription}
+                                    setCustomInstructions={setCustomInstructions}
+                                    selectedBaseCvId={selectedBaseCvId}
+                                    handleSelectedBaseCvIdChange={handleSelectedBaseCvIdChange}
+                                    availableCvs={availableCvs}
+                                    hasMasterCv={hasMasterCv}
+                                    isGeneratingCv={isGeneratingCv}
+                                    generateCvError={generateCvError}
+                                    setGenerateCvError={setGenerateCvError}
 
-                    {/* Tab 6: Reminders */}
-                    {activeTab === 'reminders' && jobApplication && (
-                        <div className="max-w-2xl mx-auto">
-                            <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-5">
+                                    // Generation Progress
+                                    generationStep={generationStep}
+                                    generationProgress={generationProgress}
+
+                                    // CV Editor State
+                                    selectedTemplate={selectedTemplate}
+                                    setSelectedTemplate={setSelectedTemplate}
+                                    cvSaveStatus={cvSaveStatus}
+                                    lastSavedCvDataRef={lastSavedCvDataRef}
+                                    improvingSections={improvingSections}
+
+                                    // ATS State
+                                    atsScores={atsScores}
+                                    isLoadingAts={isLoadingAts}
+                                    isScanningAts={isScanningAts}
+                                    atsProgressMessage={atsProgressMessage}
+                                    isApplyingAtsBatch={isApplyingAtsBatch}
+
+                                    // Preview State
+                                    isPreviewOpen={isPreviewOpen}
+                                    setIsPreviewOpen={setIsPreviewOpen}
+                                    previewPdfBase64={previewPdfBase64}
+                                    setPreviewPdfBase64={setPreviewPdfBase64}
+                                    isLoadingRawPdf={isLoadingRawPdf}
+                                    setIsLoadingRawPdf={setIsLoadingRawPdf}
+                                    isGeneratingPreview={isGeneratingPreview}
+
+                                    // Job Application
+                                    jobApplication={jobApplication}
+                                    jobId={jobId}
+
+                                    // Handlers
+                                    handleCvChange={handleCvChange}
+                                    handleManualSaveCv={handleManualSaveCv}
+                                    handleImproveSection={handleImproveSection}
+                                    handleDynamicChange={handleDynamicChange}
+                                    resetLocalCvState={resetLocalCvState}
+                                    showToast={showToast}
+                                    handleApplyBaseCv={handleApplyBaseCv}
+                                    handleGenerateSpecificCv={handleGenerateSpecificCv}
+                                    handleScanAts={handleScanAts}
+                                    handleDeleteAts={handleDeleteAts}
+                                    handleApplyAtsSuggestionBatch={handleApplyAtsSuggestionBatch}
+                                />
+                            )}
+
+                            {/* Tab 5: Mock Interview */}
+                            {activeTab === 'mock-interview' && jobApplication && (
+                                <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} coverLetterText={coverLetterText} />
+                            )}
+
+                            {/* Tab 6: Reminders */}
+                            {activeTab === 'reminders' && jobApplication && (
                                 <RemindersPanel
                                     jobId={jobId!}
                                     jobTitle={jobApplication.jobTitle}
@@ -860,18 +861,14 @@ const JobApplicationWorkspacePage: React.FC = () => {
                                     onRemindersChange={setReminders}
                                     onToast={showToast}
                                 />
-                            </div>
-                        </div>
-                    )}
+                            )}
 
-                    {/* Tab 7: Prep Materials */}
-                    {activeTab === 'materials' && jobId && (
-                        <div className="max-w-3xl mx-auto">
-                            <div className="rounded-xl shadow-sm border p-5" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                            {/* Tab 7: Prep Materials */}
+                            {activeTab === 'materials' && jobId && (
                                 <InterviewMaterialsPanel jobId={jobId} />
-                            </div>
+                            )}
                         </div>
-                    )}
+                    </section>
                 </div>
 
 

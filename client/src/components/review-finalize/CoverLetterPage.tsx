@@ -166,9 +166,9 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
     return (
         <div>
             {jobApplication.draftCoverLetterText ? (
-                <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[calc(100vh-280px)] min-h-[800px]">
+                <div className="bg-white dark:bg-zinc-900 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col h-[calc(100vh-280px)] min-h-[800px]">
                     {/* Header part */}
-                    <div className="bg-gray-50 dark:bg-gray-600/80 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="bg-zinc-50 dark:bg-zinc-800/80 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit Cover Letter</h2>
 
@@ -179,7 +179,7 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                     {/* Copy Button */}
                                     <button
                                         onClick={handleCopyCoverLetter}
-                                        className="group flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
+                                        className="group flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-900 text-gray-700 dark:text-gray-200 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 active:bg-gray-100 dark:active:bg-zinc-700 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
                                         title="Copy to clipboard"
                                     >
                                         {isClCopied ? (
