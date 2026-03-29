@@ -2275,7 +2275,6 @@ const ReviewFinalizePage: React.FC = () => {
                             updateJob={updateJob}
                             showToast={showToast}
                         />
-                    )}
                     {activeTab === 'cv' && jobId && (
                         <TailoredCvPage
                             // CV State
