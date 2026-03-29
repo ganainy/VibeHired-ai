@@ -372,7 +372,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
     { value: 'tr-TR', label: 'Turkish' },
   ] as const;
   const [step, setStep] = useState<ImportStep>('upload');
-  const [importMode, setImportMode] = useState<'shift' | 'appointment' | 'auto'>('shift');
+  const importMode: 'auto' = 'auto';
   const [employerId, setEmployerId] = useState(employers[0]?._id ?? '');
   const [appointmentTypeId, setAppointmentTypeId] = useState(appointmentTypes[0]?._id ?? '');
   const [subLocationId, setSubLocationId] = useState('');
@@ -585,11 +585,8 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
   }, []);
 
   const handleParse = async () => {
-    // Validate based on import mode
-    if (importMode === 'shift' && !employerId) return setImportError('Select an employer first.');
-    if (importMode === 'appointment' && !appointmentTypeId) return setImportError('Select an appointment type first.');
-    if (importMode === 'auto' && !employerId && !appointmentTypeId) {
-      return setImportError('Select at least an employer or appointment type for auto-detect mode.');
+    if (!employerId && !appointmentTypeId) {
+      return setImportError('Select at least one default: Employer or Appointment Type.');
     }
     if (inputMode === 'file' && !file) return setImportError('Upload a schedule file.');
     if ((inputMode === 'text' || inputMode === 'voice') && !scheduleText.trim()) return setImportError('Provide schedule text before extracting.');
@@ -614,7 +611,8 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
           startTimeInferred: Boolean(e.startTimeInferred),
           endTimeInferred: Boolean(e.endTimeInferred),
           notes: e.notes ?? '',
-          type: e.type || (importMode === 'auto' ? 'shift' : importMode), // Use AI-detected type or fallback to importMode (auto defaults to shift)
+          // Use AI-detected type. If missing, fallback to whichever default is available.
+          type: e.type || (!employerId && appointmentTypeId ? 'appointment' : 'shift'),
           selected: true,
         })),
       );
@@ -693,74 +691,58 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
                 </div>
               )}
 
-              {/* Import mode selector */}
+              {/* Unified smart mode */}
               <div>
-                <label className="label-overline mb-2 block">Import as *</label>
+                <label className="label-overline mb-2 block">Import mode</label>
                 <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ background: 'var(--bg-raised)' }}>
-                  {(['shift', 'appointment', 'auto'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setImportMode(mode)}
-                      className="px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5"
-                      style={{
-                        background: importMode === mode ? 'var(--bg-surface)' : 'transparent',
-                        color: importMode === mode ? 'var(--text-primary)' : 'var(--text-muted)',
-                        border: importMode === mode ? '1px solid var(--border)' : '1px solid transparent',
-                      }}
-                    >
-                      {mode === 'shift' ? <Briefcase size={12} /> : mode === 'appointment' ? <CalendarDays size={12} /> : <Sparkles size={12} />}
-                      {mode === 'shift' ? 'Shifts' : mode === 'appointment' ? 'Appointments' : 'Auto-detect'}
-                    </button>
-                  ))}
+                  <div
+                    className="px-3 py-1.5 text-xs font-medium rounded-md flex items-center gap-1.5"
+                    style={{
+                      background: 'var(--bg-surface)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <Sparkles size={12} />Smart import (Shifts + Appointments)
+                  </div>
                 </div>
                 <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                  {importMode === 'shift' && 'All entries will be created as work shifts.'}
-                  {importMode === 'appointment' && 'All entries will be created as appointments.'}
-                  {importMode === 'auto' && 'AI will automatically detect whether each entry is a shift or appointment.'}
+                  AI will detect each row as either a shift or an appointment automatically.
                 </p>
               </div>
 
-              {/* Employer selector - show for shift or auto modes */}
-              {(importMode === 'shift' || importMode === 'auto') && (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="label-overline mb-2 block">
-                      {importMode === 'shift' ? 'Employer *' : 'Default Employer'}
-                      {importMode === 'auto' && ' (for shifts)'}
-                    </label>
-                    {employers.length === 0 ? (
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No employers yet. Add one in the Employers tab.</p>
-                    ) : (
-                      <EmployerSelect
-                        employers={employers}
-                        value={employerId}
-                        onChange={(id) => handleEmployerChangeImport(id)}
-                      />
-                    )}
-                  </div>
-                  {hasSubLocationsImport && (
-                    <div>
-                      <label className="label-overline mb-2 block">
-                        <MapPin size={10} className="inline mr-1" />Sub-location (optional)
-                      </label>
-                      <select className="input-base w-full" value={subLocationId} onChange={(e) => setSubLocationId(e.target.value)}>
-                        <option value="">None — general</option>
-                        {selectedEmployerImport!.subLocations.map((sl) => (
-                          <option key={sl._id} value={sl._id}>{sl.name}</option>
-                        ))}
-                      </select>
-                    </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-end">
+                <div>
+                  <label className="label-overline mb-2 block whitespace-nowrap">Default Employer</label>
+                  {employers.length === 0 ? (
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No employers yet. Add one in the Employers tab.</p>
+                  ) : (
+                    <EmployerSelect
+                      employers={employers}
+                      value={employerId}
+                      onChange={(id) => handleEmployerChangeImport(id)}
+                    />
                   )}
                 </div>
-              )}
 
-              {/* Appointment type selector - show for appointment or auto modes */}
-              {(importMode === 'appointment' || importMode === 'auto') && (
+                <div
+                  className="hidden sm:flex items-center justify-center pb-2"
+                  aria-hidden="true"
+                >
+                  <span
+                    className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-[0.08em]"
+                    style={{
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    OR
+                  </span>
+                </div>
+
                 <div>
-                  <label className="label-overline mb-2 block">
-                    {importMode === 'appointment' ? 'Appointment Type *' : 'Default Appointment Type'}
-                    {importMode === 'auto' && ' (for appointments)'}
-                  </label>
+                  <label className="label-overline mb-2 block whitespace-nowrap">Default Appointment Type</label>
                   {appointmentTypes.length === 0 ? (
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No appointment types yet. Add one in the Appointments tab.</p>
                   ) : (
@@ -775,14 +757,28 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
                     </select>
                   )}
                 </div>
+              </div>
+
+              {hasSubLocationsImport && (
+                <div>
+                  <label className="label-overline mb-2 block">
+                    <MapPin size={10} className="inline mr-1" />Sub-location (optional)
+                  </label>
+                  <select className="input-base w-full" value={subLocationId} onChange={(e) => setSubLocationId(e.target.value)}>
+                    <option value="">None — general</option>
+                    {selectedEmployerImport!.subLocations.map((sl) => (
+                      <option key={sl._id} value={sl._id}>{sl.name}</option>
+                    ))}
+                  </select>
+                </div>
               )}
 
               {/* Validation message */}
-              {((importMode === 'shift' && !employerId) || (importMode === 'appointment' && !appointmentTypeId)) && (
+              {!employerId && !appointmentTypeId && (
                 <div className="rounded-lg p-3 text-xs flex items-start gap-2" style={{ background: 'var(--rose-bg)', border: '1px solid var(--rose-dim)', color: 'var(--rose)' }}>
                   <AlertCircle size={14} className="shrink-0 mt-0.5" />
                   <span>
-                    {importMode === 'shift' ? 'Please select an employer to continue.' : 'Please select an appointment type to continue.'}
+                    Select at least one default (Employer or Appointment Type) before extracting.
                   </span>
                 </div>
               )}
@@ -1106,7 +1102,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
           {step === 'upload' && (
             <button
               onClick={handleParse}
-              disabled={parsing || !employerId || (inputMode === 'file' ? !file : !scheduleText.trim())}
+              disabled={parsing || (!employerId && !appointmentTypeId) || (inputMode === 'file' ? !file : !scheduleText.trim())}
               className="btn-primary flex items-center gap-2 text-sm disabled:opacity-40"
             >
               {parsing
@@ -2538,14 +2534,18 @@ const WorkTrackerPage: React.FC = () => {
               <div className="flex items-center gap-2.5 flex-wrap">
                 <button
                   onClick={() => setShowImportModal(true)}
-                  className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg transition-all"
+                  className="group flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all"
                   style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-                  title="Import schedule with AI"
+                  title="Import with AI"
                 >
                   <Sparkles size={15} />
-                  <span className="hidden lg:inline">Import schedule</span>
+                  <span className="flex flex-col items-start leading-tight">
+                    <span className="text-sm font-semibold">Import with AI</span>
+                    <span className="text-[11px] opacity-80 hidden md:inline">Parse image, PDF, or pasted text</span>
+                  </span>
                   <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 Credit</span>
                 </button>
+
                 <button
                   onClick={() => {
                     setEditingEntry(null);
@@ -2561,10 +2561,19 @@ const WorkTrackerPage: React.FC = () => {
                     setEntryNotes('');
                     setShowEntryModal(true);
                   }}
-                  className="btn-primary flex items-center gap-2 text-sm"
+                  className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all"
+                  style={{
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                  title="Add manual entry"
                 >
                   <Plus size={16} />
-                  <span className="hidden sm:inline">Add entry</span>
+                  <span className="flex flex-col items-start leading-tight">
+                    <span className="text-sm font-semibold">Manual entry</span>
+                    <span className="text-[11px] opacity-80 hidden md:inline">Add one shift or appointment</span>
+                  </span>
                 </button>
               </div>
             </div>

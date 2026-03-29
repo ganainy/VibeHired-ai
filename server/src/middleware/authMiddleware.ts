@@ -60,12 +60,20 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
     console.log('[AuthMiddleware] Setting up user context:', userId, userEmail);
 
     // Set fallback storage for SDK callbacks that lose async context
+    const requestPath = (() => {
+      const originalPath = (req.originalUrl || '').split('?')[0];
+      if (originalPath) return originalPath;
+      const basePath = req.baseUrl || '';
+      const routePath = req.path || '';
+      return `${basePath}${routePath}`;
+    })();
+
     setUserId(userId);
     setUserEmail(userEmail);
-    setRequestPath(req.path);
-    console.log('[AuthMiddleware] Fallback storage set:', { userId, userEmail, requestPath: req.path });
+    setRequestPath(requestPath);
+    console.log('[AuthMiddleware] Fallback storage set:', { userId, userEmail, requestPath });
 
-    asyncLocalStorage.run({ userId, userEmail, requestPath: req.path }, () => {
+    asyncLocalStorage.run({ userId, userEmail, requestPath }, () => {
       next();
 
       // Clear fallback storage after response finishes

@@ -8,6 +8,7 @@ import Profile from '../models/Profile';
 import { generateCoverLetter, CoverLetterResponse } from '../services/coverLetterService';
 import { JsonResumeSchema } from '../types/jsonresume';
 import mongoose from 'mongoose';
+import { usageLimiter } from '../middleware/usageLimiter';
 
 const router: Router = express.Router();
 router.use(authMiddleware as RequestHandler); // Apply auth to all routes in this file
@@ -145,6 +146,6 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
 };
 
 // Route definition
-router.post('/:jobId', generateCoverLetterHandler);
+router.post('/:jobId', usageLimiter('coverLetter'), generateCoverLetterHandler);
 
 export default router;

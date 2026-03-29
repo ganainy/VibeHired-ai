@@ -80,7 +80,13 @@ const getServiceLabelFromPath = (rawPath: string): string => {
 
     if (path.startsWith('/job-applications/recommendations')) return 'Recommendation';
     if (/^\/job-applications\/[^/]+\/generate-cv$/.test(path)) return 'Generate Cv';
+    if (/^\/generator\/[^/]+\/generate-cv$/.test(path)) return 'Generate Cv';
+    if (/^\/cover-letter\/[^/]+$/.test(path)) return 'Generate Cover Letter';
+    if (/^\/generator\/[^/]+\/render-cover-letter-pdf$/.test(path)) return 'Cover Letter Pdf';
+    if (/^\/generator\/[^/]+\/render-cv-pdf$/.test(path)) return 'Cv Pdf';
+    if (/^\/generator\/[^/]+\/render-pdf$/.test(path)) return 'Final Pdfs';
     if (/^\/interview\/[^/]+\/(questions|evaluate)$/.test(path)) return 'Questions';
+    if (/^\/chat\/[^/]+$/.test(path)) return 'AI Chat';
     if (path.startsWith('/chat/')) return 'Questions';
     if (path.startsWith('/ai/')) return 'AI Service';
     if (path.startsWith('/apify/')) return 'Apify Service';
