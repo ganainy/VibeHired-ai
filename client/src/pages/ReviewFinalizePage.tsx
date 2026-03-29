@@ -1,54 +1,44 @@
 // client/src/pages/ReviewFinalizePage.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { updateCustomPrompts } from '../services/settingsApi';
-import { getJobById, updateJob, JobApplication, scrapeJobDescriptionApi, extractJobFromTextApi, deleteJob, IReminder } from '../services/jobApi';
+import { getJobById, updateJob, JobApplication, deleteJob, IReminder } from '../services/jobApi';
 import { getGoogleCalendarStatus } from '../services/googleCalendarApi';
-import { renderFinalPdfs, renderCvPdf, renderCoverLetterPdf, getDownloadUrl, generateCvOnly, improveSection, applyAtsSuggestion } from '../services/generatorApi';
-import { analyzeCv, AnalysisResult, getAnalysis } from '../services/analysisApi';
+import { improveSection, applyAtsSuggestion } from '../services/generatorApi';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
-import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 // import { downloadCvAsPdf } from '../services/pdfService'; // Removed as we use react-to-print now
-import { DEFAULT_CV_PROMPT, DEFAULT_COVER_LETTER_PROMPT } from '../constants/prompts';
-import { generateCoverLetter } from '../services/coverLetterApi';
 import { useAuth } from '../context/AuthContext';
-import { getMasterCv, previewCv, getCvBranches, CVDocument, getJobCv, createJobCv, createJobCvFromBase, uploadCvForJob, updateCv, deleteCv, getCvOriginalPdf, detachJobCv } from '../services/cvApi';
-import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
-import AtsInlinePanel from '../components/ats/AtsInlinePanel';
+import { getMasterCv, getJobCv } from '../services/cvApi';
+import { CvSectionDescriptor } from '../types/cvDescriptor';
 import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
-import axios from 'axios';
 import ErrorAlert from '../components/common/ErrorAlert';
-import { parseApiError, parseApiErrorMessage } from '../utils/parseApiError';
+import { parseApiError } from '../utils/parseApiError';
 import { hasMeaningfulContent } from '../utils/hasMeaningfulContent';
-import { PAYMENTS_ENABLED } from '../utils/featureFlags';
-import SendToPhoneButton from '../components/jobs/SendToPhoneButton';
 import Spinner from '../components/common/Spinner';
 import SimpleLoader from '../components/common/SimpleLoader';
 import Toast from '../components/common/Toast';
 import { getJobRecommendation, JobRecommendation } from '../services/jobRecommendationApi';
 import EmailFormatModal from '../components/EmailFormatModal';
 import { JobChatWindow, FloatingChatButton } from '../components/chat';
-import { parseMultipleUrls, normalizeMultipleUrls } from '../lib/utils';
 
-import PromptCustomizer from '../components/common/PromptCustomizer';
-import PromptChecklist from '../components/common/PromptChecklist';
 import MockInterviewPanel from '../components/jobs/MockInterviewPanel';
 import RemindersPanel from '../components/jobs/RemindersPanel';
 import InterviewMaterialsPanel from '../components/jobs/InterviewMaterialsPanel';
-import JobDetailsSection, { JobDetailsFormData } from '../components/jobs/JobDetailsSection';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
-import { saveAs } from 'file-saver';
-import { getBaseCoverLetters, applyBaseCoverLetterToJob, uploadCoverLetterForJob, saveCurrentCoverLetterForJob, CoverLetterBase } from '../services/coverLetterBaseApi';
+import JobDetailsSection from '../components/jobs/JobDetailsSection';
 import TailoredCvPage from '../components/review-finalize/TailoredCvPage';
 import CoverLetterPage from '../components/review-finalize/CoverLetterPage';
 import ReviewTabsNavigation from '../components/review-finalize/ReviewTabsNavigation';
 import ReviewPageHeader from '../components/review-finalize/ReviewPageHeader';
 import JobDescriptionInsights from '../components/review-finalize/JobDescriptionInsights';
 import RecommendationModal from '../components/review-finalize/RecommendationModal';
-import GenerationProgressModal, { GenerationStep } from '../components/review-finalize/GenerationProgressModal';
+import GenerationProgressModal from '../components/review-finalize/GenerationProgressModal';
 import { useReviewTabState } from '../hooks/useReviewTabState';
-import { buildJobDetailsForm, formatDateForInput } from './review-finalize/jobDetailsFormUtils';
+import { formatDateForInput } from './review-finalize/jobDetailsFormUtils';
 import { useAtsWorkflow } from './review-finalize/hooks/useAtsWorkflow';
+import { useReviewCvPersistence } from './review-finalize/hooks/useReviewCvPersistence';
+import { useReviewCoverLetterPdf } from './review-finalize/hooks/useReviewCoverLetterPdf';
+import { useReviewGeneration } from './review-finalize/hooks/useReviewGeneration';
+import { useReviewJobDetails } from './review-finalize/hooks/useReviewJobDetails';
+import { useReviewBaseAssets } from './review-finalize/hooks/useReviewBaseAssets';
 
 interface ToastState {
     message: string;
@@ -69,42 +59,15 @@ const ReviewFinalizePage: React.FC = () => {
     const [liveCvData, setLiveCvData] = useState<Record<string, any> | null>(null);
     const [coverLetterText, setCoverLetterText] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [isSaving, setIsSaving] = useState<boolean>(false);
-    const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-    const [saveError, setSaveError] = useState<string | null>(null);
     const [fetchError, setFetchError] = useState<string | null>(null);
-    const [isRenderingPdf, setIsRenderingPdf] = useState<boolean>(false);
-    const [isRenderingCvPdf, setIsRenderingCvPdf] = useState<boolean>(false);
-    const [isRenderingCoverLetterPdf, setIsRenderingCoverLetterPdf] = useState<boolean>(false);
-    const [renderError, setRenderError] = useState<string | null>(null);
-    const [refreshError, setRefreshError] = useState<string | null>(null);
-    const [analyzeError, setAnalyzeError] = useState<string | null>(null);
     const [finalPdfFiles, setFinalPdfFiles] = useState<{ cv: string | null, cl: string | null }>({ cv: null, cl: null });
-    const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-    const [analyzingSections, setAnalyzingSections] = useState<Record<string, boolean>>({});
-    const pollingIntervalId = useRef<NodeJS.Timeout | null>(null);
-    const POLLING_INTERVAL_MS = 2000;
-    const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState<boolean>(false);
-    const [coverLetterError, setCoverLetterError] = useState<string | null>(null);
-    const [isGeneratingCv, setIsGeneratingCv] = useState<boolean>(false);
-    const [generateCvError, setGenerateCvError] = useState<string | null>(null);
     // Shared inline error for AI actions (improve section, ATS scan, apply suggestions)
-    const [aiActionError, setAiActionError] = useState<{ message: string; upgrade?: boolean } | null>(null);
+    const [, setAiActionError] = useState<{ message: string; upgrade?: boolean } | null>(null);
     const [tailoringChanges, setTailoringChanges] = useState<Array<{ section: string; description: string; reason: string; before?: string; after?: string }> | null>(null);
     const [showInlineCvDiff, setShowInlineCvDiff] = useState<boolean>(false);
 
-    // New state for generation progress
-    const [generationStep, setGenerationStep] = useState<GenerationStep>('idle');
-    const [generationProgress, setGenerationProgress] = useState(0);
     const [hasMasterCv, setHasMasterCv] = useState<boolean>(false);
-    const [jobDetailsForm, setJobDetailsForm] = useState<JobDetailsFormData | null>(null);
-    const [jobDetailsInitialForm, setJobDetailsInitialForm] = useState<JobDetailsFormData | null>(null);
-    const [jobDetailsSourceJobId, setJobDetailsSourceJobId] = useState<string | null>(null);
-    const [isSavingJobDetails, setIsSavingJobDetails] = useState<boolean>(false);
-    const [jobDetailsSaveError, setJobDetailsSaveError] = useState<string | null>(null);
-    const [isEditingJobDetails, setIsEditingJobDetails] = useState<boolean>(false);
     const [toast, setToast] = useState<ToastState | null>(null);
-    const [isJobDescriptionExpanded, setIsJobDescriptionExpanded] = useState<boolean>(false);
     const [isApplyingAtsBatch, setIsApplyingAtsBatch] = useState<boolean>(false);
     const [appliedAtsSuggestions, setAppliedAtsSuggestions] = useState<string[]>([]);
     // --- AI Application Advice State ---
@@ -112,7 +75,6 @@ const ReviewFinalizePage: React.FC = () => {
     const [isLoadingRecommendation, setIsLoadingRecommendation] = useState<boolean>(false);
     const [isRefreshingRecommendation, setIsRefreshingRecommendation] = useState<boolean>(false);
     const [isRecommendationModalOpen, setIsRecommendationModalOpen] = useState<boolean>(false);
-    const [isClCopied, setIsClCopied] = useState<boolean>(false);
     const { activeTab, handleTabChange } = useReviewTabState({
         jobId,
         tab,
@@ -124,7 +86,7 @@ const ReviewFinalizePage: React.FC = () => {
     const lastSavedCoverLetterRef = useRef<string | null>(null);
     const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
     const [previewPdfBase64, setPreviewPdfBase64] = useState<string | null>(null);
-    const [isGeneratingPreview, setIsGeneratingPreview] = useState<boolean>(false);
+    const [isGeneratingPreview] = useState<boolean>(false);
     const [isLoadingRawPdf, setIsLoadingRawPdf] = useState<boolean>(false);
     const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
     const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false);
@@ -134,25 +96,6 @@ const ReviewFinalizePage: React.FC = () => {
     const [googleCalConnected, setGoogleCalConnected] = useState<boolean>(false);
 
     const [selectedTemplate, setSelectedTemplate] = useState<string>('german-latex');
-    const [cvSaveStatus, setCvSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-
-    // Ref for accessing the CV preview element for PDF generation
-    // (print refs are now managed inside CvEditorPanel)
-
-    // Helper to generate a clean filename
-    const getPdfFilename = () => {
-        if (!jobApplication) return 'CV_Export';
-
-        const sanitize = (str: string) => str?.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_') || 'Unknown';
-        const companyName = sanitize(jobApplication.companyName);
-        const jobTitle = sanitize(jobApplication.jobTitle);
-        // Determine document type based on language (default to Resume if not de)
-        const docType = (jobApplication.language === 'de') ? 'Lebenslauf' : 'Resume';
-
-        return `${docType}_${companyName}_${jobTitle}`;
-    };
-
-    // React-to-print hooks are now handled inside CvEditorPanel
 
     // Tailor Job CV Form State
     const [tailoredJobTitle, setTailoredJobTitle] = useState<string>('');
@@ -160,225 +103,8 @@ const ReviewFinalizePage: React.FC = () => {
     const [tailoredJobDescription, setTailoredJobDescription] = useState<string>('');
     const [customInstructions, setCustomInstructions] = useState<string>('');
     const [clCustomInstructions, setClCustomInstructions] = useState<string>('');
-    // Base CV Selection State
-    const [availableCvs, setAvailableCvs] = useState<{ id: string; name: string; data: any }[]>([]);
-    const [selectedBaseCvId, setSelectedBaseCvId] = useState<string>(() => {
-        // Read from localStorage for persistence per job
-        if (jobId) {
-            try {
-                const saved = localStorage.getItem(`job_selectedBaseCvId_${jobId}`);
-                if (saved) {
-                    return saved;
-                }
-            } catch (e) {
-                console.error("Error reading selectedBaseCvId from localStorage", e);
-            }
-        }
-        return '';
-    });
-    const [selectedClBaseCvId, setSelectedClBaseCvId] = useState<string>(() => {
-        // Read from localStorage for persistence per job
-        if (jobId) {
-            try {
-                const saved = localStorage.getItem(`job_selectedClBaseCvId_${jobId}`);
-                if (saved) {
-                    return saved;
-                }
-            } catch (e) {
-                console.error("Error reading selectedClBaseCvId from localStorage", e);
-            }
-        }
-        return 'master';
-    });
-
-    // Cover Letter Library Panel State
-    const [baseCoverLetters, setBaseCoverLetters] = useState<CoverLetterBase[]>([]);
-    const [showClLibraryPanel, setShowClLibraryPanel] = useState<boolean>(false);
-    const [clCreationMode, setClCreationMode] = useState<'ai' | 'import'>('ai');
-    const [selectedBaseClId, setSelectedBaseClId] = useState<string>('');
-    const [clUploadFile, setClUploadFile] = useState<File | null>(null);
-    const [isApplyingBaseCl, setIsApplyingBaseCl] = useState<boolean>(false);
-    const [applyClError, setApplyClError] = useState<string | null>(null);
     const clUploadFileRef = useRef<HTMLInputElement>(null);
-
-    // CV creation mode state (for the CV tab picker)
-    const [cvCreationMode, setCvCreationMode] = useState<'ai' | 'import'>('ai');
-    const [cvImportFile, setCvImportFile] = useState<File | null>(null);
-    const [selectedBaseCvIdForImport, setSelectedBaseCvIdForImport] = useState<string>('');
-    const [isApplyingBaseCv, setIsApplyingBaseCv] = useState<boolean>(false);
-    const [applyCvError, setApplyCvError] = useState<string | null>(null);
     const cvImportFileRef = useRef<HTMLInputElement>(null);
-
-    // Extract with AI State
-    const [pastedJobText, setPastedJobText] = useState<string>('');
-    const [isExtractingWithAi, setIsExtractingWithAi] = useState<boolean>(false);
-    const [showExtractWithAi, setShowExtractWithAi] = useState<boolean>(false);
-
-    // Handlers for Base CV selection that persist to localStorage
-    const handleSelectedBaseCvIdChange = (newId: string) => {
-        setSelectedBaseCvId(newId);
-        if (jobId) {
-            const currentJobId = jobId;
-            try {
-                localStorage.setItem(`job_selectedBaseCvId_${currentJobId}`, newId);
-            } catch (e) {
-                console.error("Error saving selectedBaseCvId to localStorage", e);
-            }
-
-            const baseCvIdForJob = (newId === 'master' || newId === '') ? null : newId;
-            void updateJob(currentJobId, { baseCvId: baseCvIdForJob })
-                .then((updatedJob) => {
-                    setJobApplication(prev => prev ? { ...prev, baseCvId: updatedJob.baseCvId ?? null } : prev);
-                })
-                .catch((error: any) => {
-                    console.error('Error saving baseCvId to job:', error);
-                });
-        }
-    };
-
-    const handleSelectedClBaseCvIdChange = (newId: string) => {
-        setSelectedClBaseCvId(newId);
-        if (jobId) {
-            try {
-                localStorage.setItem(`job_selectedClBaseCvId_${jobId}`, newId);
-            } catch (e) {
-                console.error("Error saving selectedClBaseCvId to localStorage", e);
-            }
-        }
-    };
-
-    // Load base cover letters when the library panel opens or import mode is selected
-    useEffect(() => {
-        if (!showClLibraryPanel && clCreationMode !== 'import') return;
-        getBaseCoverLetters()
-            .then(setBaseCoverLetters)
-            .catch((err: any) => console.error('Failed to load base cover letters', err));
-    }, [showClLibraryPanel, clCreationMode]);
-
-    // Apply / upload a base cover letter to this job
-    const handleApplyBaseCoverLetter = async () => {
-        if (!jobId) return;
-        setIsApplyingBaseCl(true);
-        setApplyClError(null);
-        try {
-            if (clUploadFile) {
-                await uploadCoverLetterForJob(jobId, clUploadFile, (jobApplication?.language as 'en' | 'de') ?? 'en');
-                setClUploadFile(null);
-            } else if (selectedBaseClId) {
-                await applyBaseCoverLetterToJob(jobId, selectedBaseClId);
-            } else {
-                setApplyClError('Please select a cover letter or upload a file.');
-                return;
-            }
-            await fetchJobData();
-            setShowClLibraryPanel(false);
-            showToast('Cover letter attached to this job', 'success');
-        } catch (err: any) {
-            setApplyClError(err?.response?.data?.message || err?.message || 'Failed to apply cover letter.');
-        } finally {
-            setIsApplyingBaseCl(false);
-        }
-    };
-
-    // Apply / upload a CV for this job without AI tailoring
-    const handleApplyBaseCv = async () => {
-        if (!jobId) return;
-        setIsApplyingBaseCv(true);
-        setApplyCvError(null);
-        try {
-            let result;
-            if (cvImportFile) {
-                result = await uploadCvForJob(jobId, cvImportFile);
-                setCvImportFile(null);
-                if (cvImportFileRef.current) cvImportFileRef.current.value = '';
-            } else if (selectedBaseCvIdForImport) {
-                result = await createJobCvFromBase(jobId, selectedBaseCvIdForImport === 'master' ? undefined : selectedBaseCvIdForImport);
-            } else {
-                setApplyCvError('Please select a CV or upload a file.');
-                return;
-            }
-            if (result.cv.cvJson) setCvData(result.cv.cvJson);
-            setCurrentCvId(result.cv._id);
-            setCurrentCvFilename(result.cv.filename ?? null);
-            setSelectedBaseCvIdForImport('');
-            showToast('CV attached to this job', 'success');
-        } catch (err: any) {
-            setApplyCvError(err?.response?.data?.message || err?.message || 'Failed to attach CV.');
-        } finally {
-            setIsApplyingBaseCv(false);
-        }
-    };
-
-    // Snapshot the current cover letter text as an independent document
-    const handleSaveClSnapshot = async () => {
-        if (!jobId) return;
-        try {
-            await saveCurrentCoverLetterForJob(jobId);
-            showToast('Cover letter snapshot saved', 'success');
-        } catch (err: any) {
-            showToast('Failed to save snapshot', 'error');
-        }
-    };
-
-    // Update selected CV IDs when jobId changes (switching between jobs)
-    useEffect(() => {
-        if (jobId) {
-            try {
-                const savedBaseCvId = localStorage.getItem(`job_selectedBaseCvId_${jobId}`);
-                if (savedBaseCvId) {
-                    setSelectedBaseCvId(savedBaseCvId);
-                } else {
-                    setSelectedBaseCvId('');
-                }
-
-                const savedClBaseCvId = localStorage.getItem(`job_selectedClBaseCvId_${jobId}`);
-                if (savedClBaseCvId) {
-                    setSelectedClBaseCvId(savedClBaseCvId);
-                } else {
-                    setSelectedClBaseCvId('master');
-                }
-            } catch (e) {
-                console.error("Error reading CV selection from localStorage", e);
-                setSelectedBaseCvId('');
-                setSelectedClBaseCvId('master');
-            }
-        }
-    }, [jobId]);
-
-    // Sync selected CV IDs from job's baseCvId when job is loaded (if no localStorage entry exists)
-    useEffect(() => {
-        if (!jobApplication || !jobId) return;
-
-        try {
-            // Check if we already have a saved selection in localStorage
-            const savedBaseCvId = localStorage.getItem(`job_selectedBaseCvId_${jobId}`);
-            const savedClBaseCvId = localStorage.getItem(`job_selectedClBaseCvId_${jobId}`);
-
-            // If job has a baseCvId and we don't have a saved selection, sync from job
-            if (jobApplication.baseCvId) {
-                if (!savedBaseCvId) {
-                    setSelectedBaseCvId(jobApplication.baseCvId);
-                    localStorage.setItem(`job_selectedBaseCvId_${jobId}`, jobApplication.baseCvId);
-                }
-                if (!savedClBaseCvId) {
-                    setSelectedClBaseCvId(jobApplication.baseCvId);
-                    localStorage.setItem(`job_selectedClBaseCvId_${jobId}`, jobApplication.baseCvId);
-                }
-            }
-        } catch (e) {
-            console.error("Error syncing CV selection from job:", e);
-        }
-    }, [jobApplication, jobId]);
-
-    const AUTO_SAVE_DELAY_MS = 2000; // Auto-save after 2 seconds of inactivity
-
-    const jobDetailsHasChanges = React.useMemo(() => {
-        if (!jobDetailsForm || !jobDetailsInitialForm) {
-            return false;
-        }
-
-        return JSON.stringify(jobDetailsForm) !== JSON.stringify(jobDetailsInitialForm);
-    }, [jobDetailsForm, jobDetailsInitialForm]);
 
     const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
         setToast({ message, type });
@@ -399,22 +125,6 @@ const ReviewFinalizePage: React.FC = () => {
         showToast,
         onError: (error) => setAiActionError(parseApiError(error)),
     });
-
-    useEffect(() => {
-        if (!jobApplication) {
-            return;
-        }
-
-        const nextForm = buildJobDetailsForm(jobApplication);
-        const isSwitchingJob = jobDetailsSourceJobId !== jobApplication._id;
-
-        if (isSwitchingJob || !jobDetailsHasChanges) {
-            setJobDetailsForm(nextForm);
-            setJobDetailsInitialForm(nextForm);
-            setJobDetailsSourceJobId(jobApplication._id);
-            setJobDetailsSaveError(null);
-        }
-    }, [jobApplication, buildJobDetailsForm, jobDetailsSourceJobId, jobDetailsHasChanges]);
 
     const fetchJobData = useCallback(async () => {
         if (!jobId) return;
@@ -504,6 +214,76 @@ const ReviewFinalizePage: React.FC = () => {
         fetchJobData();
     }, [fetchJobData]);
 
+    const {
+        availableCvs,
+        selectedBaseCvId,
+        setSelectedBaseCvId,
+        selectedClBaseCvId,
+        setSelectedClBaseCvId,
+        handleSelectedBaseCvIdChange,
+        handleSelectedClBaseCvIdChange,
+        baseCoverLetters,
+        showClLibraryPanel,
+        setShowClLibraryPanel,
+        clCreationMode,
+        setClCreationMode,
+        selectedBaseClId,
+        setSelectedBaseClId,
+        clUploadFile,
+        setClUploadFile,
+        isApplyingBaseCl,
+        applyClError,
+        setApplyClError,
+        handleApplyBaseCoverLetter,
+        handleSaveClSnapshot,
+        cvCreationMode,
+        setCvCreationMode,
+        cvImportFile,
+        setCvImportFile,
+        selectedBaseCvIdForImport,
+        setSelectedBaseCvIdForImport,
+        isApplyingBaseCv,
+        applyCvError,
+        setApplyCvError,
+        handleApplyBaseCv,
+    } = useReviewBaseAssets({
+        jobId,
+        jobApplication,
+        fetchJobData,
+        showToast,
+        setJobApplication,
+        setCvData,
+        setCurrentCvId,
+        setCurrentCvFilename,
+        cvImportFileRef,
+    });
+
+    const {
+        jobDetailsForm,
+        jobDetailsHasChanges,
+        isSavingJobDetails,
+        jobDetailsSaveError,
+        setJobDetailsSaveError,
+        isEditingJobDetails,
+        setIsEditingJobDetails,
+        handleJobDetailsInputChange,
+        handleJobUrlFieldChange,
+        handleAddJobUrlField,
+        handleRemoveJobUrlField,
+        handleSaveJobDetails,
+        handleCancelJobDetails,
+    } = useReviewJobDetails({
+        jobId,
+        jobApplication,
+        showToast,
+        setJobApplication,
+        setTailoredJobTitle,
+        setTailoredCompanyName,
+        setTailoredJobDescription,
+        setSelectedBaseCvId,
+        setSelectedClBaseCvId,
+    });
+
     // Fetch Google Calendar connection status once on mount
     useEffect(() => {
         getGoogleCalendarStatus()
@@ -525,6 +305,79 @@ const ReviewFinalizePage: React.FC = () => {
     const hasPersistableCvContent = React.useMemo(() => {
         return hasMeaningfulContent(cvData) || hasMeaningfulContent(liveCvData) || Boolean(liveCvDescriptor?.length);
     }, [cvData, liveCvData, liveCvDescriptor]);
+
+    const {
+        cvSaveStatus,
+        setCvSaveStatus,
+        handleManualSaveCv,
+        handleDynamicChange,
+    } = useReviewCvPersistence({
+        jobId,
+        jobApplication,
+        cvData,
+        coverLetterText,
+        currentCvId,
+        hasPersistableCvContent,
+        liveCvDescriptor,
+        liveCvData,
+        isInitialLoadRef,
+        autoSaveTimeoutRef,
+        lastSavedCvDataRef,
+        lastSavedCoverLetterRef,
+        setCurrentCvId,
+        setJobApplication,
+        setLiveCvDescriptor,
+        setLiveCvData,
+        showToast,
+    });
+
+    const {
+        isRenderingCoverLetterPdf,
+        handleDownload,
+        handleGenerateCoverLetterPdf,
+    } = useReviewCoverLetterPdf({
+        jobId,
+        coverLetterText,
+        jobApplication,
+        setJobApplication,
+        setFinalPdfFiles,
+        showToast,
+    });
+
+    const {
+        isGeneratingCoverLetter,
+        coverLetterError,
+        setCoverLetterError,
+        isClCopied,
+        handleGenerateCoverLetter,
+        handleCopyCoverLetter,
+        isGeneratingCv,
+        generateCvError,
+        setGenerateCvError,
+        generationStep,
+        generationProgress,
+        handleGenerateSpecificCv,
+    } = useReviewGeneration({
+        jobId,
+        jobApplication,
+        hasMasterCv,
+        tailoredJobTitle,
+        tailoredCompanyName,
+        tailoredJobDescription,
+        customInstructions,
+        clCustomInstructions,
+        selectedBaseCvId,
+        selectedClBaseCvId,
+        availableCvs,
+        cvData,
+        coverLetterText,
+        fetchJobData,
+        refreshUsage,
+        showToast,
+        setCoverLetterText,
+        setFinalPdfFiles,
+        setJobApplication,
+    });
 
     const resetLocalCvState = useCallback(() => {
         if (autoSaveTimeoutRef.current) {
@@ -557,65 +410,6 @@ const ReviewFinalizePage: React.FC = () => {
             setTailoredJobDescription(jobApplication.jobDescriptionText || '');
         }
     }, [jobApplication]);
-
-    // Fetch Available CVs (Primary + Branches only, exclude job-specific CVs)
-    useEffect(() => {
-        const loadCvs = async () => {
-            try {
-                const response = await getCvBranches();
-                const branches = response.branches;
-
-                const options: { id: string; name: string; data: any }[] = [];
-
-                // Add Primary CV first
-                const primaryCv = branches.find((cv: CVDocument) => cv.isPrimary);
-                if (primaryCv) {
-                    const primaryName = primaryCv.displayName
-                        ? `${primaryCv.displayName} (Primary)`
-                        : primaryCv.filename
-                            ? `${primaryCv.filename} (Primary)`
-                            : 'Primary CV';
-                    options.push({ id: primaryCv._id, name: primaryName, data: primaryCv.cvJson });
-                }
-
-                // Add CV Branches (CVs without jobApplication - these are branches, not job-specific CVs)
-                branches.forEach((cv: CVDocument) => {
-                    // Only include CVs that are NOT job-specific (no jobApplication field)
-                    // and are not the primary CV (already added above)
-                    if (!cv.jobApplicationId && cv._id !== primaryCv?._id) {
-                        const branchName = cv.displayName
-                            ? cv.displayName
-                            : cv.category
-                                ? `${cv.category} CV`
-                                : 'CV Branch';
-                        options.push({
-                            id: cv._id,
-                            name: branchName,
-                            data: cv.cvJson
-                        });
-                    }
-                });
-                setAvailableCvs(options);
-            } catch (err) {
-                console.error("Failed to load CVs", err);
-            }
-        };
-        loadCvs();
-    }, [jobId]);
-
-    // Ensure selected Base CV is always a valid option once CVs are loaded
-    useEffect(() => {
-        if (availableCvs.length === 0 || !jobId) return;
-
-        // '' means "not selected" — always valid, don't auto-select
-        if (selectedBaseCvId === '' || selectedBaseCvId === 'master') return;
-
-        const hasValidSelection = availableCvs.some(cv => cv.id === selectedBaseCvId);
-        if (hasValidSelection) return;
-
-        // Previously selected CV no longer exists — reset to "not selected"
-        handleSelectedBaseCvIdChange('');
-    }, [availableCvs, selectedBaseCvId, jobId]);
 
     // Load available templates
     // (now handled inside CvEditorPanel)
@@ -713,7 +507,7 @@ const ReviewFinalizePage: React.FC = () => {
 
     const [improvingSections, setImprovingSections] = useState<Record<string, boolean>>({});
 
-    const handleImproveSection = async (section: string, index: number, data: any, instructions?: string) => {
+    const handleImproveSection = async (section: string, _index: number, data: any, instructions?: string) => {
         setImprovingSections(prev => ({ ...prev, [section]: true }));
         try {
             const result = await improveSection(section, data, instructions);
@@ -732,30 +526,6 @@ const ReviewFinalizePage: React.FC = () => {
             setImprovingSections(prev => ({ ...prev, [section]: false }));
         }
     };
-
-    // progress interval effect
-    useEffect(() => {
-        let interval: NodeJS.Timeout | undefined;
-        if (isGeneratingCv && generationProgress < 90) {
-            interval = setInterval(() => {
-                setGenerationProgress(prev => {
-                    const increment = Math.random() * 8; // Faster increment
-                    const newProgress = Math.min(prev + increment, 90);
-                    if (newProgress >= 20 && generationStep === 'analyzing') {
-                        setGenerationStep('matching');
-                    } else if (newProgress >= 50 && generationStep === 'matching') {
-                        setGenerationStep('tailoring');
-                    } else if (newProgress >= 80 && generationStep === 'tailoring') {
-                        setGenerationStep('finalizing');
-                    }
-                    return newProgress;
-                });
-            }, 500); // Faster interval
-        }
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [isGeneratingCv, generationProgress, generationStep]);
 
     const handleApplyAtsSuggestionBatch = async (items: { suggestion: string; index: number }[]) => {
         if (!jobApplication) return;
@@ -791,269 +561,6 @@ const ReviewFinalizePage: React.FC = () => {
         setCoverLetterText(value);
     };
 
-    // Auto-save effect - debounced
-    useEffect(() => {
-        // Skip auto-save on initial load
-        if (isInitialLoadRef.current || !jobId || !jobApplication) {
-            return;
-        }
-
-        // Serialize current data for comparison
-        const currentCvDataStr = JSON.stringify(cvData);
-        const currentCoverLetterStr = coverLetterText;
-
-        // Check if data has actually changed
-        if (
-            currentCvDataStr === lastSavedCvDataRef.current &&
-            currentCoverLetterStr === lastSavedCoverLetterRef.current
-        ) {
-            // No changes, skip auto-save
-            return;
-        }
-
-        // Clear existing timeout
-        if (autoSaveTimeoutRef.current) {
-            clearTimeout(autoSaveTimeoutRef.current);
-        }
-
-        // Set new timeout for auto-save
-        autoSaveTimeoutRef.current = setTimeout(async () => {
-            if (!jobId || !jobApplication) return;
-
-            // Double-check data hasn't changed during the delay
-            const cvDataStr = JSON.stringify(cvData);
-            const coverLetterStr = coverLetterText;
-
-            if (
-                cvDataStr === lastSavedCvDataRef.current &&
-                coverLetterStr === lastSavedCoverLetterRef.current
-            ) {
-                // Data hasn't changed, skip save
-                return;
-            }
-
-            setIsSaving(true);
-            setSaveError(null);
-            try {
-                // 1. Update Job Application (Cover Letter)
-                const updatePayload: any = {
-                    draftCoverLetterText: coverLetterText,
-                };
-
-                if (hasPersistableCvContent && coverLetterText && coverLetterText.trim().length > 0) {
-                    const currentStatus = jobApplication.generationStatus;
-                    if (currentStatus !== 'finalized') {
-                        updatePayload.generationStatus = 'draft_ready';
-                    }
-                }
-
-                await updateJob(jobId, updatePayload);
-
-                // 2. Update CV in Unified Model
-                if (currentCvId && hasPersistableCvContent) {
-                    await updateCv(currentCvId, { cvJson: cvData });
-                } else if (hasPersistableCvContent) {
-                    const newCvResponse = await createJobCv(jobId, { cvJson: cvData });
-                    setCurrentCvId(newCvResponse.cv._id);
-                }
-
-                // Update refs with saved values
-                lastSavedCvDataRef.current = JSON.stringify(cvData);
-                lastSavedCoverLetterRef.current = coverLetterText;
-
-                setJobApplication(prev => prev ? { ...prev, ...updatePayload } : null);
-            } catch (error: any) {
-                console.error("Error auto-saving changes:", error);
-                setSaveError(error.message || 'Failed to save changes.');
-            } finally {
-                setIsSaving(false);
-            }
-        }, AUTO_SAVE_DELAY_MS);
-
-        // Cleanup timeout on unmount or when dependencies change
-        return () => {
-            if (autoSaveTimeoutRef.current) {
-                clearTimeout(autoSaveTimeoutRef.current);
-            }
-        };
-    }, [cvData, coverLetterText, jobId, jobApplication, currentCvId, hasPersistableCvContent]);
-
-    const handleRefreshJobDetails = async () => {
-        if (!jobId || !jobApplication?.jobUrl || parseMultipleUrls(jobApplication.jobUrl || '').length === 0) return;
-
-        setIsRefreshing(true);
-        setRefreshError(null);
-        try {
-            const response = await scrapeJobDescriptionApi(jobId);
-            setJobApplication(response.job);
-            showToast('Job details refreshed successfully', 'success');
-        } catch (error: any) {
-            console.error("Error refreshing job details:", error);
-            setRefreshError(error.message || 'Failed to refresh job details.');
-        } finally {
-            setIsRefreshing(false);
-        }
-    };
-
-    const handleExtractWithAi = async () => {
-        if (!jobId || !pastedJobText || pastedJobText.trim().length < 50) return;
-
-        setIsExtractingWithAi(true);
-        setRefreshError(null);
-        try {
-            // Use AI to extract job data from the pasted text
-            const updatedJob = await extractJobFromTextApi(jobId, pastedJobText.trim());
-            setJobApplication(updatedJob);
-            setPastedJobText(''); // Clear the textarea
-            setShowExtractWithAi(false); // Close the extract UI
-            showToast('Job details extracted successfully', 'success');
-            // Redirect to the job page after successful extraction
-            navigate(`/jobs/${jobId}/review/job-description`);
-        } catch (error: any) {
-            console.error("Error extracting job details:", error);
-            setRefreshError(error.message || 'Failed to extract job details.');
-            showToast('Failed to extract job details', 'error');
-        } finally {
-            setIsExtractingWithAi(false);
-        }
-    };
-
-    // Re-extract from existing job description
-    const handleReExtractWithAi = async () => {
-        if (!jobId || !jobApplication?.jobDescriptionText || jobApplication.jobDescriptionText.trim().length < 50) return;
-
-        setIsExtractingWithAi(true);
-        setRefreshError(null);
-        try {
-            // Use AI to extract job data from the existing description
-            const updatedJob = await extractJobFromTextApi(jobId, jobApplication.jobDescriptionText.trim());
-            setJobApplication(updatedJob);
-            setShowExtractWithAi(false); // Close the extract UI
-            showToast('Job details re-extracted successfully', 'success');
-        } catch (error: any) {
-            console.error("Error re-extracting job details:", error);
-            setRefreshError(error.message || 'Failed to re-extract job details.');
-            showToast('Failed to re-extract job details', 'error');
-        } finally {
-            setIsExtractingWithAi(false);
-        }
-    };
-
-    const pollAnalysisResults = useCallback(async (id: string) => {
-        try {
-            const response = await getAnalysis(id);
-
-            if (response.status === 'completed') {
-                setAnalysisResult(prev => ({
-                    ...prev,
-                    ...response
-                }));
-                if (pollingIntervalId.current) {
-                    clearInterval(pollingIntervalId.current);
-                    pollingIntervalId.current = null;
-                }
-                try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
-            } else if (response.status === 'failed') {
-                setAnalyzeError(response.errorInfo || 'Analysis failed');
-                if (pollingIntervalId.current) {
-                    clearInterval(pollingIntervalId.current);
-                    pollingIntervalId.current = null;
-                }
-            }
-        } catch (error: any) {
-            console.error('Error polling analysis results:', error);
-            setAnalyzeError(parseApiErrorMessage(error));
-        }
-    }, [refreshUsage]);
-
-    const handleAnalyzeSection = async (section: string) => {
-        if (!jobId || !cvData) return;
-
-        setAnalyzingSections(prev => ({ ...prev, [section]: true }));
-        setAnalyzeError(null);
-
-        try {
-            const sectionData = {
-                ...cvData,
-                basics: cvData.basics,
-                work: section === 'work' ? cvData.work : undefined,
-                education: section === 'education' ? cvData.education : undefined,
-                skills: section === 'skills' ? cvData.skills : undefined,
-                projects: section === 'projects' ? cvData.projects : undefined,
-                languages: section === 'languages' ? cvData.languages : undefined,
-                certificates: section === 'certificates' ? cvData.certificates : undefined,
-            };
-
-            const jobContext = jobApplication?.jobDescriptionText ? { jobDescription: jobApplication.jobDescriptionText } : undefined;
-            const response = await analyzeCv(sectionData, jobContext);
-
-            if (pollingIntervalId.current) {
-                clearInterval(pollingIntervalId.current);
-            }
-            pollAnalysisResults(response.id);
-            pollingIntervalId.current = setInterval(() => pollAnalysisResults(response.id), POLLING_INTERVAL_MS);
-
-        } catch (error: any) {
-            console.error(`Error analyzing ${section}:`, error);
-            setAnalyzeError(parseApiErrorMessage(error));
-        } finally {
-            setAnalyzingSections(prev => ({ ...prev, [section]: false }));
-        }
-    };
-
-    useEffect(() => {
-        return () => {
-            if (pollingIntervalId.current) {
-                clearInterval(pollingIntervalId.current);
-                pollingIntervalId.current = null;
-            }
-        };
-    }, []);
-
-    const handleSaveChanges = async () => {
-        if (!jobId || !jobApplication) return false;
-
-        setIsSaving(true);
-        setSaveError(null);
-        try {
-            // 1. Update Job Application (Cover Letter, Status)
-            const updatePayload: any = {
-                draftCoverLetterText: coverLetterText,
-            };
-
-            if (hasPersistableCvContent && coverLetterText && coverLetterText.trim().length > 0) {
-                const currentStatus = jobApplication.generationStatus;
-                if (currentStatus !== 'finalized') {
-                    updatePayload.generationStatus = 'draft_ready';
-                }
-            }
-
-            await updateJob(jobId, updatePayload);
-
-            // 2. Update/Create CV in Unified Model
-            if (currentCvId && hasPersistableCvContent) {
-                await updateCv(currentCvId, { cvJson: cvData });
-            } else if (hasPersistableCvContent) {
-                const newCvResponse = await createJobCv(jobId, { cvJson: cvData });
-                setCurrentCvId(newCvResponse.cv._id);
-            }
-
-            // Update refs with saved values
-            lastSavedCvDataRef.current = JSON.stringify(cvData);
-            lastSavedCoverLetterRef.current = coverLetterText;
-
-            setJobApplication(prev => prev ? { ...prev, ...updatePayload } : null);
-            showToast('Changes saved successfully', 'success');
-            return true;
-        } catch (error: any) {
-            console.error("Error saving changes:", error);
-            setSaveError(error.message || 'Failed to save changes.');
-            return false;
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
     const handleMarkAsApplied = async () => {
         if (!jobId || !jobApplication) return;
 
@@ -1069,584 +576,6 @@ const ReviewFinalizePage: React.FC = () => {
         } catch (error: any) {
             console.error("Error updating job status:", error);
             showToast('Failed to mark job as applied', 'error');
-        }
-    };
-
-    const handleGenerateFinalPdfs = async () => {
-        if (!jobId) return;
-
-        setIsRenderingPdf(true);
-        setRenderError(null);
-        setFinalPdfFiles({ cv: null, cl: null });
-
-        try {
-            // Ensure latest changes are saved before generating PDFs
-            const updatePayload: any = {
-                draftCoverLetterText: coverLetterText,
-            };
-
-            if (hasPersistableCvContent && coverLetterText && coverLetterText.trim().length > 0) {
-                const currentStatus = jobApplication?.generationStatus;
-                if (currentStatus !== 'finalized') {
-                    updatePayload.generationStatus = 'draft_ready';
-                }
-            }
-
-            await updateJob(jobId, updatePayload);
-
-            // Save CV to Unified Model
-            if (currentCvId && hasPersistableCvContent) {
-                await updateCv(currentCvId, { cvJson: cvData });
-            } else if (hasPersistableCvContent) {
-                const newCvResponse = await createJobCv(jobId, { cvJson: cvData });
-                setCurrentCvId(newCvResponse.cv._id);
-            }
-
-            setJobApplication(prev => prev ? { ...prev, ...updatePayload } : null);
-
-            const result = await renderFinalPdfs(jobId);
-            setFinalPdfFiles({ cv: result.cvFilename, cl: result.coverLetterFilename });
-            setJobApplication(prev => prev ? { ...prev, generationStatus: 'finalized' } : null);
-            showToast('PDFs generated successfully', 'success');
-        } catch (error: any) {
-            console.error("Error generating final PDFs:", error);
-            setRenderError(error.message || 'Failed to generate final PDFs.');
-        } finally {
-            setIsRenderingPdf(false);
-        }
-    };
-
-    const handleGenerateCvPdf = async () => {
-        if (!jobId) return;
-
-        setIsRenderingCvPdf(true);
-        setRenderError(null);
-
-        try {
-            // Ensure latest CV changes are saved before generating PDF
-            const updatePayload: any = {};
-
-            if (hasPersistableCvContent) {
-                const currentStatus = jobApplication?.generationStatus;
-                if (currentStatus !== 'finalized') {
-                    updatePayload.generationStatus = 'draft_ready';
-                }
-            }
-
-            if (Object.keys(updatePayload).length > 0) {
-                await updateJob(jobId, updatePayload);
-                setJobApplication(prev => prev ? { ...prev, ...updatePayload } : null);
-            }
-
-            // Save CV to Unified Model
-            if (currentCvId && hasPersistableCvContent) {
-                await updateCv(currentCvId, { cvJson: cvData });
-            } else if (hasPersistableCvContent) {
-                const newCvResponse = await createJobCv(jobId, { cvJson: cvData });
-                setCurrentCvId(newCvResponse.cv._id);
-            }
-
-            const result = await renderCvPdf(jobId);
-            setFinalPdfFiles(prev => ({ ...prev, cv: result.cvFilename }));
-            setJobApplication(prev => prev ? { ...prev, generationStatus: 'finalized', generatedCvFilename: result.cvFilename } : null);
-            showToast('CV PDF generated successfully', 'success');
-        } catch (error: any) {
-            console.error("Error generating CV PDF:", error);
-            setRenderError(error.message || 'Failed to generate CV PDF.');
-        } finally {
-            setIsRenderingCvPdf(false);
-        }
-    };
-
-    const handlePreviewCv = async () => {
-        if (!cvData || !hasLocalCv) {
-            showToast('No CV data available to preview.', 'error');
-            return;
-        }
-
-        setIsGeneratingPreview(true);
-        try {
-            const response = await previewCv(cvData);
-            setPreviewPdfBase64(response.pdfBase64);
-            setIsPreviewOpen(true);
-        } catch (error: any) {
-            console.error("Error generating CV preview:", error);
-            showToast(error.message || 'Failed to generate CV preview.', 'error');
-        } finally {
-            setIsGeneratingPreview(false);
-        }
-    };
-
-    const handleGenerateCoverLetterPdf = async () => {
-        if (!jobId) return;
-
-        setIsRenderingCoverLetterPdf(true);
-        setRenderError(null);
-
-        try {
-            // Ensure latest cover letter changes are saved before generating PDF
-            const updatePayload: any = {
-                draftCoverLetterText: coverLetterText,
-            };
-
-            if (coverLetterText && coverLetterText.trim().length > 0) {
-                const currentStatus = jobApplication?.generationStatus;
-                if (currentStatus !== 'finalized') {
-                    updatePayload.generationStatus = 'draft_ready';
-                }
-            }
-
-            await updateJob(jobId, updatePayload);
-            setJobApplication(prev => prev ? { ...prev, ...updatePayload } : null);
-
-            const result = await renderCoverLetterPdf(jobId);
-            setFinalPdfFiles(prev => ({ ...prev, cl: result.coverLetterFilename }));
-            setJobApplication(prev => prev ? { ...prev, generationStatus: 'finalized', generatedCoverLetterFilename: result.coverLetterFilename } : null);
-            showToast('Cover Letter PDF generated successfully', 'success');
-
-            // Auto-download the file
-            handleDownload(result.coverLetterFilename);
-        } catch (error: any) {
-            console.error("Error generating Cover Letter PDF:", error);
-            setRenderError(error.message || 'Failed to generate Cover Letter PDF.');
-        } finally {
-            setIsRenderingCoverLetterPdf(false);
-        }
-    };
-
-    const handleDownload = async (filename: string | null) => {
-        if (!filename) return;
-        try {
-            const url = getDownloadUrl(filename);
-            const response = await axios.get(url, {
-                responseType: 'blob',
-            });
-
-            const blob = new Blob([response.data], { type: response.headers['content-type'] });
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(downloadUrl);
-            showToast('Download started', 'success');
-        } catch (error: any) {
-            const errorMessage = error.response?.data instanceof Blob ?
-                await error.response.data.text() :
-                error.response?.data?.message || error.message || 'An unknown error occurred during download.';
-            showToast(`Failed to download: ${errorMessage}`, 'error');
-        }
-    };
-
-    /**
-     * Explicit manual save of the CV (triggered by the Save button in CvEditorPanel).
-     * Auto-save continues to run in the background as a safety net.
-     */
-    const handleManualSaveCv = async () => {
-        if (!currentCvId || !cvData) return;
-        setCvSaveStatus('saving');
-        try {
-            await updateCv(currentCvId, {
-                cvJson: cvData,
-                cvDescriptor: liveCvDescriptor ?? undefined,
-                cvData: liveCvData ?? undefined,
-            });
-            lastSavedCvDataRef.current = JSON.stringify(cvData);
-            setCvSaveStatus('saved');
-            setTimeout(() => setCvSaveStatus('idle'), 3000);
-        } catch (error: any) {
-            console.error('Error saving CV:', error);
-            setCvSaveStatus('error');
-            showToast(error.message || 'Failed to save CV.', 'error');
-            setTimeout(() => setCvSaveStatus('idle'), 5000);
-        }
-    };
-
-    const handleDynamicChange = useCallback((payload: CvDynamicPayload) => {
-        setLiveCvDescriptor(payload.descriptor);
-        setLiveCvData(payload.data);
-        setCvSaveStatus('idle');
-        // Auto-save after a short debounce
-        setTimeout(() => handleManualSaveCv(), 800);
-    }, [liveCvDescriptor, liveCvData]);
-
-    const handleGenerateCoverLetter = async () => {
-
-        if (!jobId || !jobApplication) return;
-
-        setIsGeneratingCoverLetter(true);
-        setCoverLetterError(null);
-
-        try {
-            // 1. Update Job Details if changed (using the tailored fields)
-            if (
-                tailoredJobTitle !== jobApplication.jobTitle ||
-                tailoredCompanyName !== jobApplication.companyName ||
-                tailoredJobDescription !== jobApplication.jobDescriptionText
-            ) {
-                await updateJob(jobId, {
-                    jobTitle: tailoredJobTitle,
-                    companyName: tailoredCompanyName,
-                    jobDescriptionText: tailoredJobDescription
-                });
-                // Update local state to reflect saved
-                setJobApplication(prev => prev ? ({
-                    ...prev,
-                    jobTitle: tailoredJobTitle,
-                    companyName: tailoredCompanyName,
-                    jobDescriptionText: tailoredJobDescription
-                }) : null);
-            }
-
-            if (!tailoredJobDescription) {
-                setCoverLetterError('Please provide a job description.');
-                return;
-            }
-
-            if (!hasMasterCv) {
-                setCoverLetterError('Please upload a CV first at the CV Management page.');
-                return;
-            }
-
-            // 2. Update Custom Prompt with Instructions
-            if (clCustomInstructions) {
-                const fullPrompt = DEFAULT_COVER_LETTER_PROMPT + "\n\n**USER INSTRUCTIONS:**\n" + clCustomInstructions;
-                await updateCustomPrompts({ coverLetterPrompt: fullPrompt });
-            } else {
-                await updateCustomPrompts({ coverLetterPrompt: null });
-            }
-
-            const language = jobApplication.language || 'en';
-
-            // Determine Base CV Data for Cover Letter
-            let baseCvDataToUse = undefined;
-            if (selectedClBaseCvId === '__job_cv__') {
-                // Use the job-specific CV that was uploaded/attached to this job
-                baseCvDataToUse = cvData;
-            } else if (selectedClBaseCvId !== 'master') {
-                const selectedOption = availableCvs.find(cv => cv.id === selectedClBaseCvId);
-                if (selectedOption) {
-                    baseCvDataToUse = selectedOption.data;
-                }
-            }
-
-            const response = await generateCoverLetter(jobId, language as 'en' | 'de', baseCvDataToUse);
-            const { text: generatedText, suggestedFilename } = response;
-
-            await updateJob(jobId, {
-                draftCoverLetterText: generatedText,
-                suggestedCoverLetterFilename: suggestedFilename,
-                generatedCoverLetterFilename: null
-            });
-
-            // Optimistic update - update local state immediately
-            setCoverLetterText(generatedText);
-            setFinalPdfFiles(prev => ({ ...prev, cl: null }));
-            setJobApplication(prev => prev ? {
-                ...prev,
-                draftCoverLetterText: generatedText,
-                suggestedCoverLetterFilename: suggestedFilename || prev.suggestedCoverLetterFilename,
-                generatedCoverLetterFilename: undefined
-            } : null);
-
-            await fetchJobData();
-            // fetchJobData may restore stale cl from DB — keep it cleared
-            setFinalPdfFiles(prev => ({ ...prev, cl: null }));
-            showToast('Cover letter generated successfully', 'success');
-            // Refresh credits in the sidebar
-            try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
-
-        } catch (error: any) {
-            console.error('Error generating cover letter:', error);
-            setCoverLetterError(parseApiErrorMessage(error));
-        } finally {
-            setIsGeneratingCoverLetter(false);
-        }
-    };
-
-    const handleCopyCoverLetter = () => {
-        if (!coverLetterText) return;
-        navigator.clipboard.writeText(coverLetterText);
-        setIsClCopied(true);
-        showToast('Cover letter copied to clipboard', 'success');
-        setTimeout(() => setIsClCopied(false), 2000);
-    };
-
-    const handleDownloadWord = async () => {
-        if (!coverLetterText || !jobApplication) return;
-
-        try {
-            // Split text by newlines to create paragraphs
-            const paragraphs = coverLetterText.split('\n').map(line => {
-                return new Paragraph({
-                    children: [
-                        new TextRun({
-                            text: line,
-                            font: "Calibri",
-                            size: 24, // 12pt
-                        }),
-                    ],
-                    spacing: {
-                        after: 0, // Minimize spacing to look like plain text lines unless double newline
-                    }
-                });
-            });
-
-            const doc = new Document({
-                sections: [{
-                    properties: {},
-                    children: paragraphs,
-                }],
-            });
-
-            const blob = await Packer.toBlob(doc);
-
-            // Use AI-suggested filename (same source as PDF download)
-            const sanitize = (str: string) => str?.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_') || 'Unknown';
-            const aiName = (jobApplication.suggestedCoverLetterFilename || '').replace(/\.pdf$/i, '');
-            const filename = (aiName || sanitize(jobApplication.companyName + '_Anschreiben')) + '.docx';
-
-            saveAs(blob, filename);
-            showToast('Word document downloaded', 'success');
-        } catch (error: any) {
-            console.error('Error generating Word document:', error);
-            showToast('Failed to generate Word document', 'error');
-        }
-    };
-
-    const handleGenerateSpecificCv = async () => {
-        if (!jobId || !jobApplication) return;
-
-        if (!tailoredJobDescription) { // Simplified check as base CV is optional/defaults
-            showToast('Please ensure job description is present', 'error');
-            return;
-        }
-
-        setIsGeneratingCv(true);
-        setGenerateCvError(null);
-        setGenerationStep('analyzing');
-        setGenerationProgress(5); // Start at 5%
-
-        try {
-            // 1. Update Job Details if changed
-            if (
-                tailoredJobTitle !== jobApplication.jobTitle ||
-                tailoredCompanyName !== jobApplication.companyName ||
-                tailoredJobDescription !== jobApplication.jobDescriptionText
-            ) {
-                await updateJob(jobId, {
-                    jobTitle: tailoredJobTitle,
-                    companyName: tailoredCompanyName,
-                    jobDescriptionText: tailoredJobDescription
-                });
-                // Update local state to reflect saved
-                setJobApplication(prev => prev ? ({
-                    ...prev,
-                    jobTitle: tailoredJobTitle,
-                    companyName: tailoredCompanyName,
-                    jobDescriptionText: tailoredJobDescription
-                }) : null);
-            }
-
-            if (!hasMasterCv) {
-                setGenerateCvError('Please upload a CV first at the CV Management page.');
-                return;
-            }
-
-            // 2. Update Custom Prompt with Instructions
-            // We append the custom instructions to the default prompt
-            if (customInstructions) {
-                const fullPrompt = DEFAULT_CV_PROMPT + "\n\n**USER INSTRUCTIONS:**\n" + customInstructions;
-                await updateCustomPrompts({ cvPrompt: fullPrompt });
-            } else {
-                // Reset to default if empty (optional, but good practice to ensure clean state)
-                // Or we could just not update it, but the user might want to clear previous instructions
-                // Let's reset it to null to use system default if user cleared the box
-                await updateCustomPrompts({ cvPrompt: null });
-            }
-
-            const language = jobApplication.language || 'en';
-
-            // Simulate progress steps before the actual API call
-            await new Promise(resolve => setTimeout(resolve, 800)); // Analyzing
-            setGenerationStep('matching');
-            setGenerationProgress(25);
-
-            await new Promise(resolve => setTimeout(resolve, 800)); // Matching
-            setGenerationStep('tailoring');
-            setGenerationProgress(45);
-
-            const response = await generateCvOnly(jobId, language as 'en' | 'de', {
-                baseCvId: selectedBaseCvId === 'master' ? undefined : selectedBaseCvId,
-                jobDescription: tailoredJobDescription,
-                customInstructions: customInstructions,
-                maxOutputTokens: 16384 // Passed to the generator call
-            });
-
-            setGenerationStep('finalizing');
-            setGenerationProgress(100);
-
-            // Brief delay to show completion
-            await new Promise(resolve => setTimeout(resolve, 600));
-
-            if (response.status === 'draft_ready') {
-                await fetchJobData();
-                const changesMsg = response.changesCount
-                    ? ` with ${response.changesCount} tailoring changes`
-                    : '';
-                showToast(`CV generated successfully${changesMsg}`, 'success');
-                try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
-            } else if (response.status === 'pending_input') {
-                setGenerateCvError('Generation requires additional input. Please check the console for details.');
-            } else {
-                setGenerateCvError('Unexpected response from generation service.');
-            }
-        } catch (error: any) {
-            console.error('Error generating specific CV:', error);
-            setGenerateCvError(parseApiErrorMessage(error));
-        } finally {
-            setIsGeneratingCv(false);
-            setGenerationProgress(0);
-            setGenerationStep('idle');
-        }
-    };
-
-    const handleJobDetailsInputChange = (field: keyof JobDetailsFormData, value: string) => {
-        setJobDetailsForm(prev => {
-            if (!prev) {
-                return prev;
-            }
-
-            return {
-                ...prev,
-                [field]: value,
-            };
-        });
-
-        if (jobDetailsSaveError) {
-            setJobDetailsSaveError(null);
-        }
-    };
-
-    const handleJobUrlFieldChange = (index: number, value: string) => {
-        setJobDetailsForm(prev => {
-            if (!prev) {
-                return prev;
-            }
-
-            const nextUrls = [...prev.jobUrls];
-            nextUrls[index] = value;
-            return {
-                ...prev,
-                jobUrls: nextUrls,
-            };
-        });
-
-        if (jobDetailsSaveError) {
-            setJobDetailsSaveError(null);
-        }
-    };
-
-    const handleAddJobUrlField = () => {
-        setJobDetailsForm(prev => {
-            if (!prev) {
-                return prev;
-            }
-
-            return {
-                ...prev,
-                jobUrls: [...prev.jobUrls, ''],
-            };
-        });
-    };
-
-    const handleRemoveJobUrlField = (index: number) => {
-        setJobDetailsForm(prev => {
-            if (!prev) {
-                return prev;
-            }
-
-            const nextUrls = prev.jobUrls.filter((_, idx) => idx !== index);
-            return {
-                ...prev,
-                jobUrls: nextUrls.length > 0 ? nextUrls : [''],
-            };
-        });
-    };
-
-    const handleSaveJobDetails = async () => {
-        if (!jobId || !jobDetailsForm) {
-            return;
-        }
-
-        const title = jobDetailsForm.jobTitle.trim();
-        const company = jobDetailsForm.companyName.trim();
-
-        if (!title || !company) {
-            setJobDetailsSaveError('Job title and company name are required.');
-            return;
-        }
-
-        setIsSavingJobDetails(true);
-        setJobDetailsSaveError(null);
-        try {
-            const normalizedJobUrl = normalizeMultipleUrls(jobDetailsForm.jobUrls.join('\n'));
-            const legacyContact =
-                jobDetailsForm.contactEmail.trim() ||
-                jobDetailsForm.contactPhone.trim() ||
-                jobDetailsForm.hiringManagerName.trim() ||
-                jobDetailsForm.applicationUrl.trim() ||
-                undefined;
-            const updatePayload: Partial<JobApplication> = {
-                jobTitle: title,
-                companyName: company,
-                status: jobDetailsForm.status,
-                language: jobDetailsForm.language,
-                baseCvId: jobDetailsForm.baseCvId || null,
-                jobType: jobDetailsForm.jobType || null,
-                createdAt: jobDetailsForm.createdAt,
-                jobUrl: normalizedJobUrl || undefined,
-                salary: jobDetailsForm.salary.trim() || undefined,
-                contactEmail: jobDetailsForm.contactEmail.trim() || undefined,
-                contactPhone: jobDetailsForm.contactPhone.trim() || undefined,
-                hiringManagerName: jobDetailsForm.hiringManagerName.trim() || undefined,
-                applicationUrl: jobDetailsForm.applicationUrl.trim() || undefined,
-                contact: legacyContact,
-                notes: jobDetailsForm.notes,
-            };
-
-            const updatedJob = await updateJob(jobId, updatePayload);
-            const updatedForm = buildJobDetailsForm(updatedJob);
-
-            setJobApplication(updatedJob);
-            setJobDetailsForm(updatedForm);
-            setJobDetailsInitialForm(updatedForm);
-            setTailoredJobTitle(updatedJob.jobTitle || '');
-            setTailoredCompanyName(updatedJob.companyName || '');
-            setTailoredJobDescription(updatedJob.jobDescriptionText || '');
-
-            const syncedBaseCvId = updatedJob.baseCvId || 'master';
-            setSelectedBaseCvId(syncedBaseCvId);
-            setSelectedClBaseCvId(syncedBaseCvId);
-            if (jobId) {
-                try {
-                    localStorage.setItem(`job_selectedBaseCvId_${jobId}`, syncedBaseCvId);
-                    localStorage.setItem(`job_selectedClBaseCvId_${jobId}`, syncedBaseCvId);
-                } catch (storageError) {
-                    console.error('Error saving base CV selection to localStorage', storageError);
-                }
-            }
-
-            showToast('Job details updated successfully', 'success');
-            setIsEditingJobDetails(false);
-        } catch (error: any) {
-            console.error('Failed to update job details:', error);
-            setJobDetailsSaveError(error.message || 'Failed to update job details.');
-            showToast(error.message || 'Failed to update job details.', 'error');
-        } finally {
-            setIsSavingJobDetails(false);
         }
     };
 
@@ -1747,13 +676,7 @@ const ReviewFinalizePage: React.FC = () => {
                                 onAddUrl={handleAddJobUrlField}
                                 onRemoveUrl={handleRemoveJobUrlField}
                                 onSave={handleSaveJobDetails}
-                                onCancel={() => {
-                                    setIsEditingJobDetails(false);
-                                    if (jobDetailsInitialForm) {
-                                        setJobDetailsForm(jobDetailsInitialForm);
-                                    }
-                                    setJobDetailsSaveError(null);
-                                }}
+                                onCancel={handleCancelJobDetails}
                                 availableCvs={availableCvs}
                                 formatDateForInput={formatDateForInput}
                             />
