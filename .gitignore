@@ -32,6 +32,7 @@ influence/
 
 mcp-install/brave.json
 .cursor/mcp.json
+.claude/
 .claude/worktrees/
 
 # GSD
