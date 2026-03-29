@@ -1,0 +1,41 @@
+---
+status: awaiting_human_verify
+trigger: "Investigate issue: vite-babel-unexpected-token"
+created: 2026-03-29T00:00:00.000Z
+updated: 2026-03-29T00:00:00.000Z
+---
+
+## Current Focus
+hypothesis: Trailing commas after JSX props in CoverLetterPage component call are causing Babel parser error
+test: Remove trailing commas from JSX props and verify compilation succeeds
+expecting: Vite dev server/build should compile without errors
+next_action: Request human verification that the app runs correctly
+
+## Symptoms
+expected: The app should compile and run without errors
+actual: Vite dev server or build fails with the shown Babel syntax error
+errors: [plugin:vite:react-babel] E:\VS-projects\job-app-assistant\client\src\pages\ReviewFinalizePage.tsx: Unexpected token (2227:77)
+reproduction: Running `npm run dev` or `npm run build` triggers the error
+timeline: Started right after the cover letter extraction refactoring commit (071b03f)
+
+## Eliminated
+
+## Evidence
+- timestamp: 2026-03-29T00:00:00.000Z
+  checked: Lines 2220-2280 of ReviewFinalizePage.tsx
+  found: Trailing commas exist after JSX props in CoverLetterPage component call at lines 2227, 2235, 2239, 2242, 2256, 2265, 2272
+  implication: These commas are invalid JSX syntax and cause Babel parser to fail
+- timestamp: 2026-03-29T00:00:00.000Z
+  checked: Vite dev server startup
+  found: Vite dev server started successfully on localhost:5174 without any Babel errors
+  implication: Fix successfully resolved the parsing error
+- timestamp: 2026-03-29T00:00:00.000Z
+  checked: TypeScript compilation
+  found: npx tsc --noEmit --skipLibCheck passed without errors
+  implication: No TypeScript issues introduced by the fix
+
+## Resolution
+root_cause: Trailing commas after JSX props in CoverLetterPage component call (lines 2227, 2235, 2239, 2242, 2256, 2265, 2272). In JSX, props should not be separated by commas - they should only be separated by whitespace/newlines.
+fix: Removed 7 trailing commas from JSX props in the CoverLetterPage component call
+verification: Vite dev server starts successfully without Babel errors; TypeScript compilation passes without errors
+files_changed: ["src/pages/ReviewFinalizePage.tsx"]
