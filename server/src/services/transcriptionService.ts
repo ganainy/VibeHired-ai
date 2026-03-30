@@ -28,12 +28,27 @@ export function createRealtimeTranscriber(sampleRate: number = 16000) {
 }
 
 /**
+ * Create a streaming transcriber using AssemblyAI's current v3 streaming API.
+ */
+export function createStreamingTranscriber(sampleRate: number = 16000, language: string = 'auto') {
+  const speechModel = language === 'en'
+    ? 'universal-streaming-english'
+    : 'universal-streaming-multilingual';
+
+  return getClient().streaming.transcriber({
+    sampleRate,
+    speechModel,
+    formatTurns: true,
+  });
+}
+
+/**
  * File-upload transcription fallback (non-streaming).
  * Used by the REST endpoint for backward compatibility.
  */
 export async function transcribeAudio(
   audioBuffer: Buffer | Blob,
-  language: string = 'en'
+  language?: string
 ): Promise<TranscriptionResult> {
   const c = getClient();
 
@@ -49,7 +64,7 @@ export async function transcribeAudio(
 
   const transcript = await c.transcripts.transcribe({
     audio: audioData,
-    language_code: language,
+    ...(language && language !== 'auto' ? { language_code: language } : {}),
     speech_models: ['universal-3-pro', 'universal-2'],
   });
 

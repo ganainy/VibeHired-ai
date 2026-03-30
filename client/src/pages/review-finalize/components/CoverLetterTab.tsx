@@ -198,7 +198,7 @@ export const CoverLetterTab: React.FC<CoverLetterTabProps> = ({
                                         disabled={!!clUploadFile || isApplyingBaseCl}
                                         className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 disabled:opacity-50" style={{ caretColor: 'var(--accent)' }}
                                     >
-                                        <option value="">— choose a cover letter —</option>
+                                        <option value=""> choose a cover letter </option>
                                         {baseCoverLetters.map(cl => (
                                             <option key={cl._id} value={cl._id}>{cl.displayName}</option>
                                         ))}
@@ -542,7 +542,7 @@ export const CoverLetterTab: React.FC<CoverLetterTabProps> = ({
                                             <>
                                                 <span className="material-symbols-outlined text-white">auto_awesome</span>
                                                 <span>Generate Cover Letter</span>
-                                                <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>3 Credit</span>
+                                                <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>3 Credit</span>
                                             </>
                                         )}
                                     </button>
@@ -564,3 +564,4 @@ export const CoverLetterTab: React.FC<CoverLetterTabProps> = ({
 };
 
 export default CoverLetterTab;
+

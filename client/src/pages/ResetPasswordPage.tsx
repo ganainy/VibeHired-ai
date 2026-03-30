@@ -66,7 +66,7 @@ const ResetPasswordPage: React.FC = () => {
         style={{ backgroundColor: 'var(--bg-base)' }}
       >
         <div className="text-center space-y-4">
-          <p style={{ color: 'var(--rose, #f46464)' }}>Invalid or missing reset token.</p>
+          <p style={{ color: 'var(--rose, var(--error))' }}>Invalid or missing reset token.</p>
           <Link to="/forgot-password" style={{ color: 'var(--accent)', fontSize: '0.875rem' }}>
             Request a new link
           </Link>
@@ -141,7 +141,7 @@ const ResetPasswordPage: React.FC = () => {
                 style={{
                   backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))',
                   border: '1px solid rgba(244,100,100,0.2)',
-                  color: 'var(--rose, #f46464)',
+                  color: 'var(--rose, var(--error))',
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5">
@@ -229,7 +229,7 @@ const ResetPasswordPage: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all"
                 style={{
                   backgroundColor: 'var(--accent)',
-                  color: '#0e0e17',
+                  color: 'var(--text-on-accent)',
                   boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(232,184,68,0.2)',
                   opacity: isLoading ? 0.7 : 1,
                   cursor: isLoading ? 'not-allowed' : 'pointer',
@@ -237,7 +237,7 @@ const ResetPasswordPage: React.FC = () => {
                 onMouseEnter={(e) => { if (!isLoading) (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent-hover)'; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent)'; }}
               >
-                {isLoading ? <><Spinner size="xs" /><span>Updating…</span></> : 'Update password'}
+                {isLoading ? <><Spinner size="xs" /><span>Updating</span></> : 'Update password'}
               </button>
             </form>
           </>
@@ -247,7 +247,7 @@ const ResetPasswordPage: React.FC = () => {
               className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
               style={{ backgroundColor: 'rgba(45,212,160,0.12)', border: '1px solid rgba(45,212,160,0.25)' }}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2dd4a0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
@@ -265,7 +265,7 @@ const ResetPasswordPage: React.FC = () => {
               className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all"
               style={{
                 backgroundColor: 'var(--accent)',
-                color: '#0e0e17',
+                color: 'var(--text-on-accent)',
                 boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(232,184,68,0.2)',
               }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--accent-hover)'; }}
@@ -285,7 +285,7 @@ const ResetPasswordPage: React.FC = () => {
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
             >
-              ← Back to sign in
+               Back to sign in
             </Link>
           </div>
         )}
@@ -295,3 +295,4 @@ const ResetPasswordPage: React.FC = () => {
 };
 
 export default ResetPasswordPage;
+

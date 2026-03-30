@@ -14,6 +14,26 @@ export interface StreamCallbacks {
 }
 
 /**
+ * Build a WebSocket URL for the real-time transcription endpoint.
+ * Example: http://localhost:5001/api -> ws://localhost:5001/api/transcribe-stream
+ */
+export function buildTranscriptionStreamUrl(apiUrl: string, token: string, language?: string): string {
+  const url = new URL(apiUrl);
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+
+  const basePath = url.pathname.endsWith('/')
+    ? url.pathname.slice(0, -1)
+    : url.pathname;
+
+  url.pathname = `${basePath}/transcribe-stream`;
+  url.searchParams.set('token', token);
+  if (language) {
+    url.searchParams.set('language', language);
+  }
+  return url.toString();
+}
+
+/**
  * Initialize a pre-warmed Gemini chat session for CV + job context.
  * Call this BEFORE any recording to pre-seed the conversation.
  */

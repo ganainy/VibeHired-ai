@@ -4,9 +4,10 @@ export interface AuthPayload {
   token: string;
   jobId: string;
   apiUrl: string;
+  jobLanguage?: string;
 }
 
-export type HotkeyAction = 'push-to-talk-start' | 'push-to-talk-stop' | 'clear-answer';
+export type HotkeyAction = 'push-to-talk-start' | 'push-to-talk-stop' | 'clear-answer' | 'ask-ai' | 'toggle-listening';
 
 // Expose a minimal, typed API to the renderer — no direct Node/Electron access.
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -25,4 +26,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   /** Toggle window visibility from the renderer. */
   toggleVisibility: () => ipcRenderer.invoke('toggle-visibility'),
+
+  /** Close the overlay window and quit the desktop app. */
+  closeWindow: () => ipcRenderer.invoke('close-window'),
+
+  /** Read whether overlay capture protection is currently enabled. */
+  getContentProtection: () => ipcRenderer.invoke('get-content-protection') as Promise<boolean>,
+
+  /** Toggle whether this window is excluded from screenshots/screen-share. */
+  setContentProtection: (enabled: boolean) => ipcRenderer.invoke('set-content-protection', enabled) as Promise<boolean>,
+
+  /** Resize the overlay window to explicit dimensions. */
+  resizeWindow: (width: number, height: number) => ipcRenderer.invoke('resize-window', width, height),
 });

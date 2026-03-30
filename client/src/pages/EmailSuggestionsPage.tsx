@@ -18,7 +18,7 @@ import {
 import { getGoogleConnectUrl } from '../services/googleCalendarApi';
 import EditSuggestionModal from '../components/email-suggestions/EditSuggestionModal';
 
-// ── Icons ─────────────────────────────────────────────────────────────────────
+//  Icons 
 
 const InboxIcon = () => (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -110,10 +110,10 @@ const ExternalLinkIcon = () => (
 
 const GmailLinkIcon = () => (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        {/* envelope — offset left/down so the arrow doesn't overlap */}
+        {/* envelope  offset left/down so the arrow doesn't overlap */}
         <rect x="1" y="9" width="14" height="12" rx="1.5" />
         <polyline points="1 10 8 15 15 10" />
-        {/* external-link arrow — top-right corner, clear of the envelope */}
+        {/* external-link arrow  top-right corner, clear of the envelope */}
         <polyline points="15 3 21 3 21 9" />
         <line x1="12" y1="11" x2="21" y2="3" />
     </svg>
@@ -145,7 +145,7 @@ function formatRelativeTime(iso: string | null | undefined): string {
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 
 const STATUS_COLORS: Record<string, string> = {
     Interview: '#3b82f6',
@@ -190,7 +190,7 @@ function StatusPill({ status }: { status: string | null }) {
     );
 }
 
-// ── How it works steps ────────────────────────────────────────────────────────
+//  How it works steps 
 
 const HOW_IT_WORKS = [
     {
@@ -211,21 +211,21 @@ const HOW_IT_WORKS = [
     {
         icon: ShieldIcon,
         title: 'You confirm each change',
-        description: 'Nothing is applied automatically. You review each suggestion and click Apply — or Dismiss if it\'s wrong.',
+        description: 'Nothing is applied automatically. You review each suggestion and click Apply  or Dismiss if it\'s wrong.',
     },
 ];
 
 function buildPollToast(r: PollNowResult): string {
     if (r.scanned === 0) return 'No new emails to scan.';
     const scannedPart = `Scanned ${r.scanned} email${r.scanned !== 1 ? 's' : ''}`;
-    if ((r.applicationResponses + r.jobLeads) === 0) return `${scannedPart} — no job-related emails found.`;
+    if ((r.applicationResponses + r.jobLeads) === 0) return `${scannedPart}  no job-related emails found.`;
     const parts: string[] = [];
     if (r.applicationResponses > 0) parts.push(`${r.applicationResponses} application response${r.applicationResponses !== 1 ? 's' : ''}`);
     if (r.jobLeads > 0) parts.push(`${r.jobLeads} job lead${r.jobLeads !== 1 ? 's' : ''}`);
-    return `${scannedPart} — found ${parts.join(' and ')}.`;
+    return `${scannedPart}  found ${parts.join(' and ')}.`;
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+//  Main Page 
 
 const EmailSuggestionsPage: React.FC = () => {
     const { refreshUsage } = useAuth();
@@ -303,7 +303,7 @@ const EmailSuggestionsPage: React.FC = () => {
             } else if (s.suggestedStatus) {
                 showToast(
                     `Status updated to "${s.suggestedStatus}" for ${s.matchedCompanyName ?? 'job'}.` +
-                    (result.calendarEventCreated ? ' · Calendar event created.' : ''),
+                    (result.calendarEventCreated ? '  Calendar event created.' : ''),
                     'ok'
                 );
             } else if (result.calendarEventCreated) {
@@ -398,7 +398,7 @@ const EmailSuggestionsPage: React.FC = () => {
             <div className="max-w-3xl mx-auto px-4 md:px-6">
                 <div className="py-6 md:py-8 pb-16 space-y-5">
 
-                    {/* ── Page header ── */}
+                    {/*  Page header  */}
                     <div className="flex flex-col gap-1.5">
                         <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
@@ -442,8 +442,8 @@ const EmailSuggestionsPage: React.FC = () => {
                                     className="btn-primary flex items-center gap-2"
                                 >
                                     <RefreshIcon spinning={polling} />
-                                    {polling ? `Scanning last ${scanLimit} emails…` : 'Scan inbox'}
-                                    {!polling && <span className="text-[10px] font-bold ml-0.5 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 Credit</span>}
+                                    {polling ? `Scanning last ${scanLimit} emails` : 'Scan inbox'}
+                                    {!polling && <span className="text-[10px] font-bold ml-0.5 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>1 Credit</span>}
                                 </button>
                             </div>
                         </div>
@@ -452,7 +452,7 @@ const EmailSuggestionsPage: React.FC = () => {
                         </p>
                     </div>
 
-                    {/* ── Settings panel ── */}
+                    {/*  Settings panel  */}
                     {settingsOpen && (
                         <div className="card px-3 py-2 sm:px-4 sm:py-3 flex flex-wrap items-center gap-x-5 gap-y-3">
                             <div className="flex items-center gap-2">
@@ -524,7 +524,7 @@ const EmailSuggestionsPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── How it works (collapsed by default) ── */}
+                    {/*  How it works (collapsed by default)  */}
                     <div>
                         <button
                             type="button"
@@ -562,7 +562,7 @@ const EmailSuggestionsPage: React.FC = () => {
                         )}
                     </div>
 
-                    {/* ── Gmail not connected ── */}
+                    {/*  Gmail not connected  */}
                     {hasScope === false && (
                         <div
                             className="flex items-center gap-3 px-4 py-3 rounded-xl"
@@ -588,7 +588,7 @@ const EmailSuggestionsPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── Action error banner ── */}
+                    {/*  Action error banner  */}
                     {actionError && (
                         <div
                             className="rounded-xl px-4 py-3 flex items-start gap-3"
@@ -608,18 +608,18 @@ const EmailSuggestionsPage: React.FC = () => {
                                     {actionError.upgrade && (
                                         PAYMENTS_ENABLED
                                             ? <a href="/subscriptions" className="text-[12px] font-semibold underline mt-0.5 inline-block" style={{ color: 'var(--accent)' }}>
-                                                View upgrade options →
+                                                View upgrade options 
                                               </a>
                                             : <span className="text-[12px] mt-0.5 inline-block" style={{ color: 'var(--text-muted)' }}>
                                                 Paid plans coming soon
                                               </span>
                                     )}
                                 </div>
-                                <button onClick={() => setActionError(null)} className="text-xs opacity-50 hover:opacity-100 transition-opacity shrink-0" style={{ color: 'var(--text-muted)' }}>✕</button>
+                                <button onClick={() => setActionError(null)} className="text-xs opacity-50 hover:opacity-100 transition-opacity shrink-0" style={{ color: 'var(--text-muted)' }}></button>
                         </div>
                     )}
 
-                    {/* ── Tabs ── */}
+                    {/*  Tabs  */}
                     {(() => {
                         const appCount = suggestions.filter(s => (s.emailCategory ?? 'application_response') === 'application_response').length;
                         const offerCount = suggestions.filter(s => s.emailCategory === 'job_offer').length;
@@ -665,7 +665,7 @@ const EmailSuggestionsPage: React.FC = () => {
                         );
                     })()}
 
-                    {/* ── Loading skeletons ── */}
+                    {/*  Loading skeletons  */}
                     {loading && (
                         <div className="space-y-3">
                             {[0, 1, 2].map((i) => (
@@ -688,7 +688,7 @@ const EmailSuggestionsPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── Empty state (no suggestions at all) ── */}
+                    {/*  Empty state (no suggestions at all)  */}
                     {!loading && suggestions.length === 0 && (
                         <div className="card p-6 sm:p-10 flex flex-col items-center text-center">
                             <div
@@ -724,7 +724,7 @@ const EmailSuggestionsPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── Empty current tab (but other tab has items) ── */}
+                    {/*  Empty current tab (but other tab has items)  */}
                     {!loading && suggestions.length > 0 && suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length === 0 && (
                         <div className="card p-6 sm:p-8 text-center">
                             <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
@@ -736,7 +736,7 @@ const EmailSuggestionsPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── Suggestion cards ── */}
+                    {/*  Suggestion cards  */}
                     {!loading && (
                         <div className="space-y-3">
                             {suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).map((s) => {
@@ -759,7 +759,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                         )}
 
                                         <div className="p-4 space-y-3">
-                                            {/* ── Header: avatar + company + status + time ── */}
+                                            {/*  Header: avatar + company + status + time  */}
                                             <div className="flex items-start gap-3">
                                                 <div
                                                     className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-sm font-bold"
@@ -814,7 +814,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            {/* ── Email preview block ── */}
+                                            {/*  Email preview block  */}
                                             <div
                                                 className="rounded-lg px-3 py-2.5"
                                                 style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
@@ -834,7 +834,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                                 )}
                                             </div>
 
-                                            {/* ── AI note ── */}
+                                            {/*  AI note  */}
                                             {s.suggestedNote && (
                                                 <div
                                                     className="rounded-lg px-3 py-2.5"
@@ -851,7 +851,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                                 </div>
                                             )}
 
-                                            {/* ── Calendar event chip ── */}
+                                            {/*  Calendar event chip  */}
                                             {hasCalEvent && (
                                                 <div
                                                     className="flex items-center gap-2.5 rounded-lg px-3 py-2.5"
@@ -892,13 +892,13 @@ const EmailSuggestionsPage: React.FC = () => {
                                                             className="text-[11px] font-semibold shrink-0 underline"
                                                             style={{ color: 'var(--accent)' }}
                                                         >
-                                                            Connect calendar →
+                                                            Connect calendar 
                                                         </button>
                                                     )}
                                                 </div>
                                             )}
 
-                                            {/* ── Footer: match info + email link toggle + action buttons ── */}
+                                            {/*  Footer: match info + email link toggle + action buttons  */}
                                             <div className="flex items-center gap-2 pt-0.5 flex-wrap">
                                                 {s.emailCategory !== 'job_offer' && (
                                                     <div className="flex-1 min-w-0 text-[11.5px] truncate" style={{ color: 'var(--text-muted)' }}>
@@ -906,7 +906,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                                             <>
                                                                 <span>Matched: </span>
                                                                 <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
-                                                                    {job.companyName} — {job.jobTitle}
+                                                                    {job.companyName}  {job.jobTitle}
                                                                 </span>
                                                                 <span
                                                                     className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1.5"
@@ -916,7 +916,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                                                 </span>
                                                             </>
                                                         ) : (
-                                                            <span style={{ color: 'rgba(251,191,36,0.85)' }}>⚠ No matching job found</span>
+                                                            <span style={{ color: 'rgba(251,191,36,0.85)' }}> No matching job found</span>
                                                         )}
                                                     </div>
                                                 )}
@@ -984,7 +984,7 @@ const EmailSuggestionsPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── Edit modal ── */}
+                    {/*  Edit modal  */}
                     {editingSuggestion && (
                         <EditSuggestionModal
                             suggestion={editingSuggestion}
@@ -993,14 +993,14 @@ const EmailSuggestionsPage: React.FC = () => {
                         />
                     )}
 
-                    {/* ── Toast ── */}
+                    {/*  Toast  */}
                     {toast && (
                         <div
                             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-xl text-sm font-medium shadow-xl whitespace-nowrap"
                             style={{
                                 background: toast.type === 'err' ? 'rgba(244,100,100,0.12)' : 'var(--bg-elevated)',
                                 border: `1px solid ${toast.type === 'err' ? 'rgba(244,100,100,0.3)' : 'var(--border)'}`,
-                                color: toast.type === 'err' ? 'var(--rose, #f46464)' : 'var(--text-primary)',
+                                color: toast.type === 'err' ? 'var(--rose, var(--error))' : 'var(--text-primary)',
                                 animation: 'fadeUp 200ms ease',
                             }}
                         >
@@ -1022,3 +1022,4 @@ const EmailSuggestionsPage: React.FC = () => {
 };
 
 export default EmailSuggestionsPage;
+

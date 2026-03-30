@@ -57,6 +57,7 @@ Create a `.env.local` file in this (`client/`) directory or set the variable in 
 |---|---|---|
 | `VITE_BACKEND_URL` | Production only | Absolute URL of the deployed backend API. Leave unset for local dev (proxied via Vite). |
 | `VITE_PAYMENTS_ENABLED` | Optional | Feature flag for paid plans UI. Set to `false` to hide Stripe checkout/upgrade CTAs and show "coming soon" messaging. |
+| `VITE_COMPANION_DOWNLOAD_URL` | Optional | Public URL shown in Interview Buddy when the desktop companion is not detected (for example a GitHub Releases page). |
 
 ## Available Scripts
 

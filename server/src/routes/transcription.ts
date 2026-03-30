@@ -24,7 +24,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     console.log(`[TranscriptionRoute] Converted to buffer: ${buffer.length} bytes`);
 
     // transcribeAudio uses server's ASSEMBLYAI_API_KEY from environment
-    const result = await transcribeAudio(buffer, language || 'en');
+    const result = await transcribeAudio(buffer, language);
 
     res.json(result);
   } catch (error) {

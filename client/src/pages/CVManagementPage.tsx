@@ -1,4 +1,4 @@
-﻿// client/src/pages/CVManagementPage.tsx
+// client/src/pages/CVManagementPage.tsx
 import React, { useState, ChangeEvent, FormEvent, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -44,7 +44,7 @@ const CVManagementPage: React.FC = () => {
   const [currentCvData, setCurrentCvData] = useState<JsonResumeSchema | null>(null);
   const [masterCvId, setMasterCvId] = useState<string | null>(null); // Store master CV's MongoDB ID
 
-  // Dynamic (AI-driven) editor state â€” the live editing payload for the active CV
+  // Dynamic (AI-driven) editor state  the live editing payload for the active CV
   const [liveCvDescriptor, setLiveCvDescriptor] = useState<CvSectionDescriptor[] | null>(null);
   const [liveCvData, setLiveCvData] = useState<Record<string, any> | null>(null);
   const [isLoadingCv, setIsLoadingCv] = useState<boolean>(true);
@@ -967,13 +967,13 @@ const CVManagementPage: React.FC = () => {
             CV Library
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Your base resumes — the starting point for tailored job applications
+            Your base resumes  the starting point for tailored job applications
           </p>
         </div>
       )}
 
       {allCvs.length === 0 && !showMockTour && !isLoadingCv && !currentCvData ? (
-        /* ── Zero-CV hero ── */
+        /*  Zero-CV hero  */
         <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
           <div className="w-full max-w-lg px-4 sm:px-6 py-8 sm:py-12">
             <div className="text-center mb-10">
@@ -993,7 +993,7 @@ const CVManagementPage: React.FC = () => {
             {/* Educational Banner */}
             <div className="mb-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-5">
               <p className="text-sm text-indigo-800 dark:text-indigo-200 mb-4 text-center font-medium">
-                Your base resume is the foundation. When you apply to jobs, we create AI-tailored copies — your original stays untouched.
+                Your base resume is the foundation. When you apply to jobs, we create AI-tailored copies  your original stays untouched.
               </p>
               <div className="flex items-center justify-center gap-3 sm:gap-6">
                 <div className="flex flex-col items-center gap-2">
@@ -1111,10 +1111,10 @@ const CVManagementPage: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {showMockTour ? (
-          /* â”€â”€ Demo Tour â€” Mock CV Editor â”€â”€ */
+          /*  Demo Tour  Mock CV Editor  */
           <div className="flex flex-col flex-1 min-h-0 gap-3">
             {showTour && <TourBanner pageLabel="CV Workspace" onDismiss={dismissCvTour} />}
-            {/* Mock editor panel â€” mirrors CvEditorPanel layout */}
+            {/* Mock editor panel  mirrors CvEditorPanel layout */}
             <div className="flex-1 min-h-0 flex flex-col rounded-xl border overflow-hidden pointer-events-none select-none"
               style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
               {/* Toolbar */}
@@ -1136,7 +1136,7 @@ const CVManagementPage: React.FC = () => {
               </div>
               {/* Split view */}
               <div className="flex-1 min-h-0 flex overflow-hidden">
-                {/* Left â€“ editor */}
+                {/* Left  editor */}
                 <div className="w-[45%] flex-shrink-0 overflow-y-auto p-5 flex flex-col gap-4 border-r" style={{ borderColor: 'var(--border)' }}>
                   {/* Personal Info section */}
                   <div className="rounded-xl border p-4 flex flex-col gap-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
@@ -1160,8 +1160,8 @@ const CVManagementPage: React.FC = () => {
                   <div className="rounded-xl border p-4 flex flex-col gap-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
                     <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Work Experience</p>
                     {[
-                      { title: 'Senior Frontend Engineer', company: 'TechCorp Inc.', period: 'Jan 2022 â€“ Present', desc: 'Led migration from Angular to React 18, reducing bundle size by 40%.' },
-                      { title: 'Frontend Developer', company: 'Startup GmbH', period: 'Mar 2019 â€“ Dec 2021', desc: 'Built and maintained 3 SaaS product dashboards used by 10k+ users.' },
+                      { title: 'Senior Frontend Engineer', company: 'TechCorp Inc.', period: 'Jan 2022  Present', desc: 'Led migration from Angular to React 18, reducing bundle size by 40%.' },
+                      { title: 'Frontend Developer', company: 'Startup GmbH', period: 'Mar 2019  Dec 2021', desc: 'Built and maintained 3 SaaS product dashboards used by 10k+ users.' },
                     ].map((job) => (
                       <div key={job.title} className="flex flex-col gap-1.5 pb-3 border-b last:border-0 last:pb-0" style={{ borderColor: 'var(--border)' }}>
                         <div className="h-9 rounded-lg px-3 flex items-center text-sm font-medium" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>{job.title}</div>
@@ -1179,18 +1179,18 @@ const CVManagementPage: React.FC = () => {
                     <div className="h-9 rounded-lg px-3 flex items-center text-sm font-medium" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>B.Sc. Computer Science</div>
                     <div className="flex gap-2">
                       <div className="flex-1 h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>TU Berlin</div>
-                      <div className="h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>2015 â€“ 2019</div>
+                      <div className="h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>2015  2019</div>
                     </div>
                   </div>
                 </div>
-                {/* Right â€“ CV preview */}
+                {/* Right  CV preview */}
                 <div className="flex-1 min-w-0 overflow-y-auto p-6 flex items-start justify-center" style={{ background: 'var(--bg-base)' }}>
                   <div className="w-[210mm] max-w-full rounded-xl border p-7 flex flex-col gap-5 shadow-sm shrink-0" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                     {/* Header */}
                     <div className="text-center flex flex-col items-center gap-1 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
                       <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Alex Johnson</h2>
                       <p className="text-sm font-medium" style={{ color: 'var(--accent)' }}>Senior Frontend Developer</p>
-                      <p className="text-xs mt-1 flex flex-wrap justify-center gap-1 break-all" style={{ color: 'var(--text-muted)' }}>alex@example.com Â· +49 170 123 4567 Â· Berlin, Germany</p>
+                      <p className="text-xs mt-1 flex flex-wrap justify-center gap-1 break-all" style={{ color: 'var(--text-muted)' }}>alex@example.com  +49 170 123 4567  Berlin, Germany</p>
                     </div>
                     {/* Summary */}
                     <div className="flex flex-col gap-1.5">
@@ -1203,8 +1203,8 @@ const CVManagementPage: React.FC = () => {
                     <div className="flex flex-col gap-2">
                       <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Experience</p>
                       {[
-                        { title: 'Senior Frontend Engineer', company: 'TechCorp Inc.', period: 'Jan 2022 â€“ Present', desc: 'Led migration from Angular to React 18, reducing bundle size by 40%. Mentored 3 junior developers.' },
-                        { title: 'Frontend Developer', company: 'Startup GmbH', period: 'Mar 2019 â€“ Dec 2021', desc: 'Built and maintained 3 SaaS product dashboards used by 10k+ monthly active users.' },
+                        { title: 'Senior Frontend Engineer', company: 'TechCorp Inc.', period: 'Jan 2022  Present', desc: 'Led migration from Angular to React 18, reducing bundle size by 40%. Mentored 3 junior developers.' },
+                        { title: 'Frontend Developer', company: 'Startup GmbH', period: 'Mar 2019  Dec 2021', desc: 'Built and maintained 3 SaaS product dashboards used by 10k+ monthly active users.' },
                       ].map((job) => (
                         <div key={job.title} className="flex flex-col gap-0.5">
                           <div className="flex items-baseline justify-between">
@@ -1221,7 +1221,7 @@ const CVManagementPage: React.FC = () => {
                       <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Education</p>
                       <div className="flex items-baseline justify-between">
                         <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>B.Sc. Computer Science</span>
-                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>2015 â€“ 2019</span>
+                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>2015  2019</span>
                       </div>
                       <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>TU Berlin</span>
                     </div>
@@ -1240,7 +1240,7 @@ const CVManagementPage: React.FC = () => {
             </div>
           </div>
         ) : (!currentCvData || isReplacing) && !isLoadingCv ? (
-          /* â"€â"€ Upload / Create Overlay â"€â"€ */
+          /* "" Upload / Create Overlay "" */
           <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
             {allCvs.length > 0 && (
               <button
@@ -1343,7 +1343,7 @@ const CVManagementPage: React.FC = () => {
             cvData={liveCvData}
             onDynamicChange={handleDynamicChange}
           />
-          {/* Used in Jobs section — only for base CVs */}
+          {/* Used in Jobs section  only for base CVs */}
           {isBaseCv && (
             <div className="flex-shrink-0 border-t" style={{ borderColor: 'var(--border)' }}>
               <button

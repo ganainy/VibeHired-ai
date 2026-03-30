@@ -9,7 +9,7 @@ import { VibeHiredLogo } from '../components/VibeHiredLogo';
 
 
 
-// ── Icons ────────────────────────────────────────────────────────────────────
+//  Icons 
 const EyeIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3" /><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z" />
@@ -34,7 +34,7 @@ const MoonIcon = () => (
   </svg>
 );
 
-// ── Password strength ────────────────────────────────────────────────────────
+//  Password strength 
 type PasswordStrength = 'weak' | 'fair' | 'good' | 'strong';
 
 const calculatePasswordStrength = (password: string): PasswordStrength => {
@@ -53,13 +53,13 @@ const calculatePasswordStrength = (password: string): PasswordStrength => {
 };
 
 const strengthConfig: Record<PasswordStrength, { label: string; color: string; segments: number }> = {
-  weak: { label: 'Weak', color: 'var(--rose, #f46464)', segments: 1 },
-  fair: { label: 'Fair', color: 'var(--ember, #f07e38)', segments: 2 },
+  weak: { label: 'Weak', color: 'var(--rose, var(--error))', segments: 1 },
+  fair: { label: 'Fair', color: 'var(--ember, var(--warning))', segments: 2 },
   good: { label: 'Good', color: 'var(--accent)', segments: 3 },
-  strong: { label: 'Strong', color: 'var(--jade, #2dd4a0)', segments: 4 },
+  strong: { label: 'Strong', color: 'var(--jade, var(--success))', segments: 4 },
 };
 
-// ── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -155,7 +155,7 @@ const RegisterPage: React.FC = () => {
   };
 
   const FieldError = ({ msg }: { msg: string | null | undefined }) =>
-    msg ? <p className="mt-1.5 text-xs" style={{ color: 'var(--rose, #f46464)' }}>{msg}</p> : null;
+    msg ? <p className="mt-1.5 text-xs" style={{ color: 'var(--rose, var(--error))' }}>{msg}</p> : null;
 
   // Early return: show check-email screen after successful registration
   if (registrationSuccess) {
@@ -178,12 +178,12 @@ const RegisterPage: React.FC = () => {
           </button>
         </div>
         <div className="w-full max-w-[420px] rounded-2xl p-8 text-center" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-          {/* Success confirmation — always shown regardless of email delivery status */}
+          {/* Success confirmation  always shown regardless of email delivery status */}
           <div className="rounded-xl p-3 mb-6 flex items-center justify-center gap-2" style={{ backgroundColor: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.25)' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--jade, #2dd4a0)" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--jade, var(--success))" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            <span className="text-sm font-semibold" style={{ color: 'var(--jade, #2dd4a0)' }}>Account created successfully!</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--jade, var(--success))' }}>Account created successfully!</span>
           </div>
 
           <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
@@ -198,7 +198,7 @@ const RegisterPage: React.FC = () => {
           </h1>
           {emailSendFailed ? (
             <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-              We couldn't send the verification email to <span className="font-semibold break-all" style={{ color: 'var(--text-primary)' }}>{registeredEmail}</span>. Click below to try again — you must verify your email before signing in.
+              We couldn't send the verification email to <span className="font-semibold break-all" style={{ color: 'var(--text-primary)' }}>{registeredEmail}</span>. Click below to try again  you must verify your email before signing in.
             </p>
           ) : (
             <>
@@ -210,12 +210,12 @@ const RegisterPage: React.FC = () => {
             </>
           )}
           {resendStatus === 'sent' && (
-            <div className="rounded-lg p-3 text-sm mb-4" style={{ backgroundColor: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.25)', color: 'var(--jade, #2dd4a0)' }}>
-              New verification email sent — check your inbox!
+            <div className="rounded-lg p-3 text-sm mb-4" style={{ backgroundColor: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.25)', color: 'var(--jade, var(--success))' }}>
+              New verification email sent  check your inbox!
             </div>
           )}
           {resendStatus === 'error' && (
-            <div className="rounded-lg p-3 text-sm mb-4" style={{ backgroundColor: 'rgba(244,100,100,0.08)', border: '1px solid rgba(244,100,100,0.2)', color: 'var(--rose, #f46464)' }}>
+            <div className="rounded-lg p-3 text-sm mb-4" style={{ backgroundColor: 'rgba(244,100,100,0.08)', border: '1px solid rgba(244,100,100,0.2)', color: 'var(--rose, var(--error))' }}>
               Could not resend. Please try again later.
             </div>
           )}
@@ -225,13 +225,13 @@ const RegisterPage: React.FC = () => {
             className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all mb-4"
             style={{
               backgroundColor: emailSendFailed ? 'var(--accent)' : 'var(--bg-elevated)',
-              color: emailSendFailed ? '#0e0e17' : 'var(--text-secondary)',
+              color: emailSendFailed ? 'var(--text-on-accent)' : 'var(--text-secondary)',
               border: '1px solid var(--border)',
               opacity: resendStatus === 'loading' || resendStatus === 'sent' ? 0.6 : 1,
               cursor: resendStatus === 'loading' || resendStatus === 'sent' ? 'not-allowed' : 'pointer',
             }}
           >
-            {resendStatus === 'loading' ? 'Sending…' : resendStatus === 'sent' ? '✓ Sent' : 'Resend verification email'}
+            {resendStatus === 'loading' ? 'Sending' : resendStatus === 'sent' ? ' Sent' : 'Resend verification email'}
           </button>
           <Link to="/login" className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
             Go to Sign In
@@ -246,7 +246,7 @@ const RegisterPage: React.FC = () => {
       className="min-h-screen flex flex-col md:flex-row"
       style={{ backgroundColor: 'var(--bg-base)' }}
     >
-      {/* ── Left panel ── */}
+      {/*  Left panel  */}
       <div
         className="hidden md:flex flex-col justify-between flex-1 p-12 xl:p-16 relative overflow-hidden"
         style={{ backgroundColor: 'var(--bg-surface)', borderRight: '1px solid var(--border)' }}
@@ -262,7 +262,7 @@ const RegisterPage: React.FC = () => {
             </defs>
             <rect width="100%" height="100%" fill="url(#dots2)" />
           </svg>
-          <div className="absolute -bottom-28 -right-16 w-72 h-72 rounded-full opacity-[0.04]" style={{ backgroundColor: 'var(--jade, #2dd4a0)' }} />
+          <div className="absolute -bottom-28 -right-16 w-72 h-72 rounded-full opacity-[0.04]" style={{ backgroundColor: 'var(--jade, var(--success))' }} />
         </div>
 
         {/* Brand */}
@@ -280,7 +280,7 @@ const RegisterPage: React.FC = () => {
             <span style={{ color: 'var(--accent)' }}>in one place.</span>
           </h1>
           <p className="text-base leading-relaxed max-w-sm" style={{ color: 'var(--text-secondary)' }}>
-            Tailored CVs, cover letters, application tracking, calendar reminders, and stats — everything your search needs, in a single dashboard.
+            Tailored CVs, cover letters, application tracking, calendar reminders, and stats  everything your search needs, in a single dashboard.
           </p>
 
           {/* Steps */}
@@ -303,10 +303,10 @@ const RegisterPage: React.FC = () => {
           </ol>
         </div>
 
-        <p className="relative z-10 text-xs" style={{ color: 'var(--text-muted)' }}>Free to get started — no credit card required</p>
+        <p className="relative z-10 text-xs" style={{ color: 'var(--text-muted)' }}>Free to get started  no credit card required</p>
       </div>
 
-      {/* ── Right form panel ── */}
+      {/*  Right form panel  */}
       <div
         className="flex flex-col justify-center w-full md:w-[480px] lg:w-[520px] flex-shrink-0 p-8 md:p-12 overflow-y-auto"
         style={{ backgroundColor: 'var(--bg-base)' }}
@@ -338,7 +338,7 @@ const RegisterPage: React.FC = () => {
 
         {/* Error alert */}
         {(authError || localError) && !registrationSuccess && (
-          <div className="mb-6 flex items-start gap-2.5 rounded-lg p-3.5 text-sm" style={{ backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))', border: '1px solid rgba(244,100,100,0.2)', color: 'var(--rose, #f46464)' }}>
+          <div className="mb-6 flex items-start gap-2.5 rounded-lg p-3.5 text-sm" style={{ backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))', border: '1px solid rgba(244,100,100,0.2)', color: 'var(--rose, var(--error))' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5">
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
@@ -478,7 +478,7 @@ const RegisterPage: React.FC = () => {
             className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all mt-2"
             style={{
               backgroundColor: 'var(--accent)',
-              color: '#0e0e17',
+              color: 'var(--text-on-accent)',
               boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(232,184,68,0.2)',
               opacity: (isSubmitting || registrationSuccess) ? 0.7 : 1,
               cursor: (isSubmitting || registrationSuccess) ? 'not-allowed' : 'pointer',
@@ -497,10 +497,10 @@ const RegisterPage: React.FC = () => {
             {isSubmitting ? (
               <>
                 <Spinner size="xs" />
-                <span>Connecting…</span>
+                <span>Connecting</span>
               </>
             ) : registrationSuccess ? (
-              <span>✓ Account created!</span>
+              <span> Account created!</span>
             ) : (
               'Create account'
             )}
@@ -516,7 +516,7 @@ const RegisterPage: React.FC = () => {
               style={{
                 backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))',
                 border: '1px solid rgba(244,100,100,0.2)',
-                color: 'var(--rose, #f46464)',
+                color: 'var(--rose, var(--error))',
               }}
             >
               <span>{googleError}</span>
@@ -545,7 +545,7 @@ const RegisterPage: React.FC = () => {
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}
           >
             {googleLoading ? (
-              <><Spinner /><span>Connecting…</span></>
+              <><Spinner /><span>Connecting</span></>
             ) : (
               <>
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -580,3 +580,4 @@ const RegisterPage: React.FC = () => {
 };
 
 export default RegisterPage;
+

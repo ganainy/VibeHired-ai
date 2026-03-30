@@ -99,12 +99,12 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-70">
       <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">{title}</h3>
-        <p className="text-zinc-600 dark:text-zinc-400 mb-6">{message}</p>
+        <h3 className="text-lg font-semibold text-primary-color mb-2">{title}</h3>
+        <p className="text-secondary-color mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg font-medium transition-colors"
+            className="px-4 py-2 text-secondary-color bg-zinc-100 dark:bg-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg font-medium transition-colors"
           >
             {cancelText}
           </button>
@@ -304,7 +304,7 @@ const SettingsPage: React.FC = () => {
               Settings & Integrations
             </h1>
           </div>
-          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 ml-12">
+          <p className="text-sm sm:text-base text-secondary-color ml-12">
             Manage your account connections and view usage statistics
           </p>
         </div>
@@ -337,7 +337,7 @@ const SettingsPage: React.FC = () => {
           {/* Active Plan Card */}
           <div className="xl:col-span-2 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700 p-6">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.16em]">Active Plan</h3>
+              <h3 className="text-xs font-semibold text-secondary-color uppercase tracking-[0.16em]">Active Plan</h3>
               <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${user?.plan === 'pro' || user?.plan === 'premium' ? 'bg-gold-500/20 text-gold-700 dark:text-gold-400' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300'}`}>
                 {user?.plan || 'Free'}
               </span>
@@ -346,19 +346,19 @@ const SettingsPage: React.FC = () => {
             <div className="grid grid-cols-3 gap-3 mb-5">
               <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
                 <p className="text-[11px] uppercase tracking-wide text-zinc-500">Remaining</p>
-                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{creditsRemaining}</p>
+                <p className="text-xl font-bold text-primary-color">{creditsRemaining}</p>
               </div>
               <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
                 <p className="text-[11px] uppercase tracking-wide text-zinc-500">Used</p>
-                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{creditsUsed}</p>
+                <p className="text-xl font-bold text-primary-color">{creditsUsed}</p>
               </div>
               <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
                 <p className="text-[11px] uppercase tracking-wide text-zinc-500">Limit</p>
-                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{creditLimit}</p>
+                <p className="text-xl font-bold text-primary-color">{creditLimit}</p>
               </div>
             </div>
 
-            <div className="mb-2 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="mb-2 flex items-center justify-between text-xs text-secondary-color">
               <span>Credit pool</span>
               <span>{Math.round(creditsRemainingPct)}% remaining</span>
             </div>
@@ -374,7 +374,7 @@ const SettingsPage: React.FC = () => {
                 <button
                   onClick={handleManageSubscription}
                   disabled={isCreatingPortal}
-                  className="w-full py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-600 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-600 text-xs font-semibold text-secondary-color hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
                 >
                   {isCreatingPortal ? <Spinner size="sm" /> : 'Manage Subscription'}
                 </button>
@@ -407,8 +407,8 @@ const SettingsPage: React.FC = () => {
           <div className="xl:col-span-3 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700 p-6">
             <div className="flex items-start justify-between mb-5 gap-4">
               <div>
-                <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.16em]">Quick Stats</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Actions used in the current billing cycle</p>
+                <h3 className="text-xs font-semibold text-secondary-color uppercase tracking-[0.16em]">Quick Stats</h3>
+                <p className="text-sm text-secondary-color mt-1">Actions used in the current billing cycle</p>
               </div>
               <div className="px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200">
                 {totalActionsThisCycle} total actions
@@ -429,9 +429,9 @@ const SettingsPage: React.FC = () => {
                     <div key={item.label} className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-2.5">
                       <div className="flex items-center justify-between text-xs mb-2">
                         <span className="text-zinc-600 dark:text-zinc-300">
-                          {item.label} <span className="text-zinc-400">· {item.cost}</span>
+                          {item.label} <span className="text-zinc-400"> {item.cost}</span>
                         </span>
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">{item.count}</span>
+                        <span className="font-semibold text-primary-color">{item.count}</span>
                       </div>
                       <div className="h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
                         <div className="h-full rounded-full bg-gold-500/80" style={{ width: `${widthPct}%` }} />
@@ -478,7 +478,7 @@ const SettingsPage: React.FC = () => {
                     <CheckIcon />
                     Centralized AI Access
                   </h3>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  <p className="text-sm text-secondary-color">
                     You no longer need to manage complex API keys for job discovery. We handle all technical integrations server-side. Simply configure your preferences in the Auto Jobs section and you're ready to go!
                   </p>
                 </div>
@@ -503,7 +503,7 @@ const SettingsPage: React.FC = () => {
                     <h3 className="text-lg font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
                       Google Calendar
                     </h3>
-                    <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+                    <p className="text-xs sm:text-sm text-secondary-color">
                       Sync job reminders and interviews directly to your calendar
                     </p>
                   </div>
@@ -517,7 +517,7 @@ const SettingsPage: React.FC = () => {
                       Connected
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-600 text-zinc-600 dark:text-zinc-400">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-600 text-secondary-color">
                       Not Connected
                     </span>
                   )}
@@ -528,9 +528,9 @@ const SettingsPage: React.FC = () => {
               {googleCalConnected ? (
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-zinc-700 dark:text-zinc-300 font-medium">Connected account</p>
+                    <p className="text-sm text-secondary-color font-medium">Connected account</p>
                     {googleCalEmail && (
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{googleCalEmail}</p>
+                      <p className="text-xs text-secondary-color mt-0.5">{googleCalEmail}</p>
                     )}
                   </div>
                   <button
@@ -544,7 +544,7 @@ const SettingsPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  <p className="text-sm text-secondary-color">
                     Keep track of your applications by automatically syncing reminders (e.g. "Follow up in one week")
                     directly to your primary Google Calendar.
                   </p>
@@ -585,4 +585,5 @@ const SettingsPage: React.FC = () => {
 };
 
 export default SettingsPage;
+
 

@@ -63,7 +63,7 @@ const MockJobReviewPage: React.FC = () => {
                     <div className="flex-1 min-w-0">
                         <button
                             onClick={() => navigate('/dashboard')}
-                            className="inline-flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors mb-2"
+                            className="inline-flex items-center gap-1 text-sm text-secondary-color hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors mb-2"
                         >
                             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
                             Dashboard
@@ -79,11 +79,11 @@ const MockJobReviewPage: React.FC = () => {
                             >
                                 demo
                             </span>
-                            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                            <h1 className="text-2xl font-bold text-primary-color">
                                 Product Manager
                             </h1>
                         </div>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-secondary-color mt-1.5">
                             <span className="inline-flex items-center gap-1.5">
                                 <span className="material-symbols-outlined text-[18px]">apartment</span>
                                 Acme Corp
@@ -113,7 +113,7 @@ const MockJobReviewPage: React.FC = () => {
                 </div>
 
                 {/* Tabs Navigation */}
-                <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-4">
+                <div className="mb-6 bg-surface rounded-xl shadow-sm border border-theme p-4">
                     <div className="relative flex items-center justify-between w-full max-w-4xl mx-auto">
                         <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-200 dark:bg-gray-600 -z-10 transform -translate-y-1/2" />
 
@@ -272,14 +272,14 @@ const MockJobReviewPage: React.FC = () => {
                 {/* Tab Content */}
                 <div className="px-0 py-6">
 
-                    {/* ── Tab 1: Job Details ── */}
+                    {/*  Tab 1: Job Details  */}
                     {activeTab === 'job-description' && (
                         <div className="w-full space-y-6">
                             {/* Job Details Card */}
-                            <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-5">
+                            <div className="bg-surface rounded-xl shadow-sm border border-theme p-5">
                                 <div className="flex items-center gap-2 mb-4">
                                     <span className="material-symbols-outlined text-primary">work</span>
-                                    <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                                    <h2 className="text-lg font-bold text-primary-color">
                                         Job Details
                                     </h2>
                                     <span
@@ -291,50 +291,50 @@ const MockJobReviewPage: React.FC = () => {
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pointer-events-none select-none">
                                     <div>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-0.5">
+                                        <p className="text-xs text-secondary-color uppercase tracking-wider mb-0.5">
                                             Job Title
                                         </p>
-                                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        <p className="text-sm font-medium text-primary-color">
                                             Product Manager
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-0.5">
+                                        <p className="text-xs text-secondary-color uppercase tracking-wider mb-0.5">
                                             Company
                                         </p>
-                                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        <p className="text-sm font-medium text-primary-color">
                                             Acme Corp
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-0.5">
+                                        <p className="text-xs text-secondary-color uppercase tracking-wider mb-0.5">
                                             Type
                                         </p>
-                                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        <p className="text-sm font-medium text-primary-color">
                                             Full-time
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-0.5">
+                                        <p className="text-xs text-secondary-color uppercase tracking-wider mb-0.5">
                                             Salary
                                         </p>
-                                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                            $60,000 – $80,000
+                                        <p className="text-sm font-medium text-primary-color">
+                                            $60,000  $80,000
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-0.5">
+                                        <p className="text-xs text-secondary-color uppercase tracking-wider mb-0.5">
                                             Status
                                         </p>
-                                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        <p className="text-sm font-medium text-primary-color">
                                             Applied
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-0.5">
+                                        <p className="text-xs text-secondary-color uppercase tracking-wider mb-0.5">
                                             Language
                                         </p>
-                                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        <p className="text-sm font-medium text-primary-color">
                                             English
                                         </p>
                                     </div>
@@ -342,10 +342,10 @@ const MockJobReviewPage: React.FC = () => {
                             </div>
 
                             {/* Job Description Card */}
-                            <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-5">
+                            <div className="bg-surface rounded-xl shadow-sm border border-theme p-5">
                                 <div className="flex items-center gap-2 mb-4">
                                     <span className="material-symbols-outlined text-primary">description</span>
-                                    <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                                    <h2 className="text-lg font-bold text-primary-color">
                                         Job Description
                                     </h2>
                                     <span
@@ -355,7 +355,7 @@ const MockJobReviewPage: React.FC = () => {
                                         demo
                                     </span>
                                 </div>
-                                <div className="text-sm text-zinc-700 dark:text-zinc-300 space-y-4 leading-relaxed pointer-events-none select-none">
+                                <div className="text-sm text-secondary-color space-y-4 leading-relaxed pointer-events-none select-none">
                                     <p>
                                         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Acme Corp is
                                         seeking a motivated <strong>Product Manager</strong> to join our growing
@@ -385,7 +385,7 @@ const MockJobReviewPage: React.FC = () => {
                                     <div>
                                         <p className="font-semibold mb-1">What we offer:</p>
                                         <ul className="list-disc list-inside space-y-1">
-                                            <li>Competitive salary: $60,000 – $80,000 depending on experience</li>
+                                            <li>Competitive salary: $60,000  $80,000 depending on experience</li>
                                             <li>Lorem ipsum dolor sit amet flexible working arrangements</li>
                                             <li>Comprehensive benefits package and paid time off</li>
                                             <li>Ongoing learning and development opportunities</li>
@@ -396,16 +396,16 @@ const MockJobReviewPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── Tab 2: Tailored CV ── */}
+                    {/*  Tab 2: Tailored CV  */}
                     {activeTab === 'cv' && (
                         <div className="pointer-events-none select-none">
                             <div className="flex flex-col lg:flex-row gap-6">
                                 {/* Left: CV Sections */}
-                                <div className="flex-1 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-5 space-y-5">
+                                <div className="flex-1 bg-surface rounded-xl shadow-sm border border-theme p-5 space-y-5">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <span className="material-symbols-outlined text-primary">article</span>
-                                            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                                            <h2 className="text-lg font-bold text-primary-color">
                                                 Tailored CV
                                             </h2>
                                         </div>
@@ -423,31 +423,31 @@ const MockJobReviewPage: React.FC = () => {
 
                                     {/* Basics */}
                                     <div className="space-y-2">
-                                        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700 pb-1">
+                                        <h3 className="text-xs font-semibold text-secondary-color uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700 pb-1">
                                             Personal Info
                                         </h3>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800">
                                                 <p className="text-[10px] text-zinc-400 mb-0.5">Full Name</p>
-                                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                                <p className="text-sm font-medium text-primary-color">
                                                     John Doe
                                                 </p>
                                             </div>
                                             <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800">
                                                 <p className="text-[10px] text-zinc-400 mb-0.5">Location</p>
-                                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                                <p className="text-sm font-medium text-primary-color">
                                                     City, Country
                                                 </p>
                                             </div>
                                             <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800">
                                                 <p className="text-[10px] text-zinc-400 mb-0.5">Email</p>
-                                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                                <p className="text-sm font-medium text-primary-color">
                                                     john.doe@example.com
                                                 </p>
                                             </div>
                                             <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800">
                                                 <p className="text-[10px] text-zinc-400 mb-0.5">Phone</p>
-                                                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                                <p className="text-sm font-medium text-primary-color">
                                                     +1 (555) 000-0000
                                                 </p>
                                             </div>
@@ -456,36 +456,36 @@ const MockJobReviewPage: React.FC = () => {
 
                                     {/* Work Experience */}
                                     <div className="space-y-2">
-                                        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700 pb-1">
+                                        <h3 className="text-xs font-semibold text-secondary-color uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700 pb-1">
                                             Work Experience
                                         </h3>
                                         <div className="space-y-2">
                                             <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
                                                 <div className="flex justify-between items-start mb-1">
-                                                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                                    <p className="text-sm font-semibold text-primary-color">
                                                         Product Manager
                                                     </p>
-                                                    <span className="text-[10px] text-zinc-400">2022 – Present</span>
+                                                    <span className="text-[10px] text-zinc-400">2022  Present</span>
                                                 </div>
-                                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+                                                <p className="text-xs text-secondary-color mb-1">
                                                     Acme Corp, New York
                                                 </p>
-                                                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                                                <p className="text-xs text-secondary-color">
                                                     Lorem ipsum dolor sit amet consectetur adipiscing elit sed do
                                                     eiusmod tempor incididunt ut labore et dolore magna aliqua.
                                                 </p>
                                             </div>
                                             <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
                                                 <div className="flex justify-between items-start mb-1">
-                                                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                                    <p className="text-sm font-semibold text-primary-color">
                                                         Business Analyst
                                                     </p>
-                                                    <span className="text-[10px] text-zinc-400">2019 – 2022</span>
+                                                    <span className="text-[10px] text-zinc-400">2019  2022</span>
                                                 </div>
-                                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+                                                <p className="text-xs text-secondary-color mb-1">
                                                     Lorem Corp, Boston
                                                 </p>
-                                                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                                                <p className="text-xs text-secondary-color">
                                                     Ut enim ad minim veniam quis nostrud exercitation ullamco laboris.
                                                 </p>
                                             </div>
@@ -494,17 +494,17 @@ const MockJobReviewPage: React.FC = () => {
 
                                     {/* Education */}
                                     <div className="space-y-2">
-                                        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700 pb-1">
+                                        <h3 className="text-xs font-semibold text-secondary-color uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700 pb-1">
                                             Education
                                         </h3>
                                         <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
                                             <div className="flex justify-between items-start">
-                                                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                                <p className="text-sm font-semibold text-primary-color">
                                                     B.Sc. Information Technology
                                                 </p>
-                                                <span className="text-[10px] text-zinc-400">2015 – 2019</span>
+                                                <span className="text-[10px] text-zinc-400">2015  2019</span>
                                             </div>
-                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                            <p className="text-xs text-secondary-color mt-0.5">
                                                 State University
                                             </p>
                                         </div>
@@ -512,7 +512,7 @@ const MockJobReviewPage: React.FC = () => {
 
                                     {/* Skills */}
                                     <div className="space-y-2">
-                                        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700 pb-1">
+                                        <h3 className="text-xs font-semibold text-secondary-color uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700 pb-1">
                                             Skills
                                         </h3>
                                         <div className="flex flex-wrap gap-1.5">
@@ -536,10 +536,10 @@ const MockJobReviewPage: React.FC = () => {
                                 </div>
 
                                 {/* Right: CV Preview */}
-                                <div className="w-full lg:w-[400px] xl:w-[480px] flex-shrink-0 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                                <div className="w-full lg:w-[400px] xl:w-[480px] flex-shrink-0 bg-surface rounded-xl shadow-sm border border-theme overflow-hidden">
                                     <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 flex items-center gap-2">
                                         <span className="material-symbols-outlined text-zinc-400 text-sm">preview</span>
-                                        <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                                        <span className="text-sm font-medium text-secondary-color">
                                             CV Preview
                                         </span>
                                         <span
@@ -552,22 +552,22 @@ const MockJobReviewPage: React.FC = () => {
                                     <div className="p-6 space-y-4">
                                         {/* Header */}
                                         <div className="border-b-2 border-zinc-800 dark:border-zinc-300 pb-3">
-                                            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                                            <h2 className="text-xl font-bold text-primary-color">
                                                 John Doe
                                             </h2>
-                                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                            <p className="text-sm text-secondary-color">
                                                 Product Manager
                                             </p>
                                             <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1">
-                                                john.doe@example.com · City, Country · +1 (555) 000-0000
+                                                john.doe@example.com  City, Country  +1 (555) 000-0000
                                             </p>
                                         </div>
                                         {/* Summary */}
                                         <div>
-                                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
+                                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-secondary-color mb-1">
                                                 Summary
                                             </h3>
-                                            <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                                            <p className="text-xs text-secondary-color">
                                                 Lorem ipsum dolor sit amet consectetur adipiscing elit sed do
                                                 eiusmod tempor incididunt ut labore et dolore magna aliqua ut
                                                 enim ad minim veniam.
@@ -575,16 +575,16 @@ const MockJobReviewPage: React.FC = () => {
                                         </div>
                                         {/* Experience */}
                                         <div>
-                                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-2">
+                                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-secondary-color mb-2">
                                                 Experience
                                             </h3>
                                             <div className="space-y-2.5">
                                                 <div>
                                                     <div className="flex justify-between">
-                                                        <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                                                        <p className="text-xs font-semibold text-primary-color">
                                                             Product Manager
                                                         </p>
-                                                        <p className="text-[10px] text-zinc-500">2022 – Present</p>
+                                                        <p className="text-[10px] text-zinc-500">2022  Present</p>
                                                     </div>
                                                     <p className="text-[11px] text-zinc-500">Acme Corp, New York</p>
                                                     <p className="text-[11px] text-zinc-500 dark:text-zinc-500 mt-0.5">
@@ -593,10 +593,10 @@ const MockJobReviewPage: React.FC = () => {
                                                 </div>
                                                 <div>
                                                     <div className="flex justify-between">
-                                                        <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                                                        <p className="text-xs font-semibold text-primary-color">
                                                             Business Analyst
                                                         </p>
-                                                        <p className="text-[10px] text-zinc-500">2019 – 2022</p>
+                                                        <p className="text-[10px] text-zinc-500">2019  2022</p>
                                                     </div>
                                                     <p className="text-[11px] text-zinc-500">Lorem Corp, Boston</p>
                                                     <p className="text-[11px] text-zinc-500 dark:text-zinc-500 mt-0.5">
@@ -607,24 +607,24 @@ const MockJobReviewPage: React.FC = () => {
                                         </div>
                                         {/* Education */}
                                         <div>
-                                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
+                                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-secondary-color mb-1">
                                                 Education
                                             </h3>
                                             <div className="flex justify-between">
-                                                <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                                                <p className="text-xs font-semibold text-primary-color">
                                                     B.Sc. Information Technology
                                                 </p>
-                                                <p className="text-[10px] text-zinc-500">2015 – 2019</p>
+                                                <p className="text-[10px] text-zinc-500">2015  2019</p>
                                             </div>
                                             <p className="text-[11px] text-zinc-500">State University</p>
                                         </div>
                                         {/* Skills */}
                                         <div>
-                                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
+                                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-secondary-color mb-1">
                                                 Skills
                                             </h3>
-                                            <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                                                Communication · Project Management · Data Analysis · Agile · SQL
+                                            <p className="text-[11px] text-secondary-color">
+                                                Communication  Project Management  Data Analysis  Agile  SQL
                                             </p>
                                         </div>
                                     </div>
@@ -633,12 +633,12 @@ const MockJobReviewPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── Tab 3: Cover Letter ── */}
+                    {/*  Tab 3: Cover Letter  */}
                     {activeTab === 'cover-letter' && (
-                        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                        <div className="bg-surface rounded-xl shadow-sm border border-theme overflow-hidden">
                             <div className="bg-zinc-50 dark:bg-zinc-800 px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                                    <h2 className="text-lg font-semibold text-primary-color">
                                         Cover Letter
                                     </h2>
                                     <span
@@ -653,18 +653,18 @@ const MockJobReviewPage: React.FC = () => {
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2 pointer-events-none opacity-50">
-                                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300">
+                                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 bg-surface text-secondary-color">
                                         <span className="material-symbols-outlined text-sm">content_copy</span>
                                         Copy
                                     </button>
-                                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300">
+                                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 bg-surface text-secondary-color">
                                         <span className="material-symbols-outlined text-sm">download</span>
                                         Download
                                     </button>
                                 </div>
                             </div>
                             <div className="p-6 lg:p-10 max-w-3xl mx-auto pointer-events-none select-none">
-                                <div className="text-sm text-zinc-700 dark:text-zinc-300 space-y-4 leading-relaxed">
+                                <div className="text-sm text-secondary-color space-y-4 leading-relaxed">
                                     <p>
                                         City, Country
                                         <br />
@@ -716,7 +716,7 @@ const MockJobReviewPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── Tab 4: Mock Interview ── */}
+                    {/*  Tab 4: Mock Interview  */}
                     {activeTab === 'mock-interview' && (
                         <div className="w-full max-w-3xl mx-auto space-y-6 pointer-events-none select-none">
                             {/* Header */}
@@ -738,13 +738,13 @@ const MockJobReviewPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Idle phase card — mirrors real MockInterviewPanel */}
-                            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-slate-800 p-8 text-center space-y-6 shadow-sm">
+                            {/* Idle phase card  mirrors real MockInterviewPanel */}
+                            <div className="bg-surface rounded-2xl border border-zinc-100 dark:border-slate-800 p-8 text-center space-y-6 shadow-sm">
                                 <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'var(--accent-bg)' }}>
                                     <span className="material-symbols-outlined text-4xl" style={{ color: 'var(--accent)' }}>record_voice_over</span>
                                 </div>
                                 <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed max-w-md mx-auto">
-                                    The AI will generate tailored interview questions based on the job description. Answer each one — by typing or using your microphone — and get instant feedback.
+                                    The AI will generate tailored interview questions based on the job description. Answer each one  by typing or using your microphone  and get instant feedback.
                                 </p>
                                 <div className="flex flex-col items-center gap-3">
                                     <button
@@ -753,7 +753,7 @@ const MockJobReviewPage: React.FC = () => {
                                     >
                                         <span className="material-symbols-outlined text-base">play_arrow</span>
                                         Start Interview
-                                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>5 Credit</span>
+                                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>5 Credit</span>
                                     </button>
 
                                     {/* Copy prompts for external AI */}
@@ -770,7 +770,7 @@ const MockJobReviewPage: React.FC = () => {
                                             >
                                                 <span className="material-symbols-outlined text-xl" style={{ color: 'var(--jade)' }}>waving_hand</span>
                                                 <span className="font-semibold text-xs">1st Interview</span>
-                                                <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--text-muted)' }}>General · Behavioural · Culture fit</span>
+                                                <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--text-muted)' }}>General  Behavioural  Culture fit</span>
                                             </button>
                                             {/* Second interview prompt */}
                                             <button
@@ -780,7 +780,7 @@ const MockJobReviewPage: React.FC = () => {
                                             >
                                                 <span className="material-symbols-outlined text-xl" style={{ color: 'var(--rose)' }}>terminal</span>
                                                 <span className="font-semibold text-xs">2nd Interview</span>
-                                                <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--text-muted)' }}>Technical · Deep-dive · Problem-solving</span>
+                                                <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--text-muted)' }}>Technical  Deep-dive  Problem-solving</span>
                                             </button>
                                         </div>
                                     </div>
@@ -789,7 +789,7 @@ const MockJobReviewPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── Tab 5: Reminders ── */}
+                    {/*  Tab 5: Reminders  */}
                     {activeTab === 'reminders' && (
                         <div className="max-w-2xl space-y-4">
                             <div className="flex items-center justify-between mb-2">
@@ -797,7 +797,7 @@ const MockJobReviewPage: React.FC = () => {
                                     <span className="material-symbols-outlined text-amber-500">
                                         notifications
                                     </span>
-                                    <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                                    <h2 className="text-lg font-bold text-primary-color">
                                         Reminders
                                     </h2>
                                     <span
@@ -821,7 +821,7 @@ const MockJobReviewPage: React.FC = () => {
                             </div>
 
                             <ul className="space-y-2 pointer-events-none select-none">
-                                <li className="relative flex items-start gap-3 p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+                                <li className="relative flex items-start gap-3 p-3.5 rounded-xl border border-theme bg-surface overflow-hidden">
                                     {/* Left accent bar */}
                                     <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-green-500" />
                                     {/* Date badge */}
@@ -835,13 +835,13 @@ const MockJobReviewPage: React.FC = () => {
                                     </div>
                                     {/* Content */}
                                     <div className="flex-1 min-w-0 space-y-1">
-                                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                        <p className="text-sm font-semibold text-primary-color">
                                             Follow up with Acme Corp
                                         </p>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                            {reminderDateStr}, 10:00 AM · notify 30 min before
+                                        <p className="text-xs text-secondary-color">
+                                            {reminderDateStr}, 10:00 AM  notify 30 min before
                                         </p>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                        <p className="text-xs text-secondary-color">
                                             Send a follow-up email regarding your application status.
                                         </p>
                                         <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
@@ -854,10 +854,10 @@ const MockJobReviewPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* ── Tab 6: Prep Materials ── */}
+                    {/*  Tab 6: Prep Materials  */}
                     {activeTab === 'materials' && (
                         <div className="space-y-5 pointer-events-none select-none">
-                            {/* Header — mirrors real InterviewMaterialsPanel */}
+                            {/* Header  mirrors real InterviewMaterialsPanel */}
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="material-symbols-outlined" style={{ color: 'var(--accent)' }}>library_books</span>
@@ -888,7 +888,7 @@ const MockJobReviewPage: React.FC = () => {
                                 >
                                     <span className="material-symbols-outlined text-3xl" style={{ color: 'var(--text-muted)' }}>cloud_upload</span>
                                     <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Drag &amp; drop files, or click to browse</p>
-                                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>PDF, DOCX, PNG, JPG, TXT, MD — up to 30 MB each</p>
+                                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>PDF, DOCX, PNG, JPG, TXT, MD  up to 30 MB each</p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     <button
@@ -918,7 +918,7 @@ const MockJobReviewPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Material cards — MaterialCard style */}
+                            {/* Material cards  MaterialCard style */}
                             <div className="space-y-2">
                                 <div
                                     className="flex items-start gap-2.5 p-3 rounded-xl border"
@@ -951,7 +951,7 @@ const MockJobReviewPage: React.FC = () => {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
-                                                <p className="text-sm font-medium leading-snug truncate" style={{ color: 'var(--text-primary)' }}>Acme Corp – About Us</p>
+                                                <p className="text-sm font-medium leading-snug truncate" style={{ color: 'var(--text-primary)' }}>Acme Corp  About Us</p>
                                                 <div className="flex flex-wrap items-center gap-2 mt-1">
                                                     <span className="text-xs px-1.5 py-0.5 rounded-md capitalize font-medium" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}>link</span>
                                                     <span className="text-xs truncate max-w-[220px] underline" style={{ color: 'var(--accent)' }}>https://example.com/about</span>
@@ -1049,3 +1049,4 @@ const MockJobReviewPage: React.FC = () => {
 };
 
 export default MockJobReviewPage;
+

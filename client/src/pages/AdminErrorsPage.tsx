@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { getErrorStats, getErrorLogs, resolveError, bulkResolveErrors, deleteErrorLog, ErrorStats, ErrorLogEntry } from '../services/errorApi';
 import Spinner from '../components/common/Spinner';
 import Toast from '../components/common/Toast';
@@ -131,7 +131,7 @@ const AdminErrorsPage: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-display">Error Logs</h1>
+                    <h1 className="text-3xl font-bold text-primary-color font-display">Error Logs</h1>
                     <p className="text-zinc-500 mt-1">Track and manage application errors.</p>
                 </div>
                 {selectedErrors.length > 0 && (
@@ -156,11 +156,11 @@ const AdminErrorsPage: React.FC = () => {
             )}
 
             {/* Filters */}
-            <div className="flex flex-wrap gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
+            <div className="flex flex-wrap gap-4 bg-surface p-4 rounded-xl border border-theme">
                 <select
                     value={filters.errorType}
                     onChange={(e) => { setFilters(f => ({ ...f, errorType: e.target.value as any })); setPage(1); }}
-                    className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm"
+                    className="px-3 py-2 rounded-lg border border-theme bg-white dark:bg-zinc-800 text-sm"
                 >
                     <option value="">All Types</option>
                     <option value="frontend">Frontend</option>
@@ -170,7 +170,7 @@ const AdminErrorsPage: React.FC = () => {
                 <select
                     value={filters.severity}
                     onChange={(e) => { setFilters(f => ({ ...f, severity: e.target.value as any })); setPage(1); }}
-                    className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm"
+                    className="px-3 py-2 rounded-lg border border-theme bg-white dark:bg-zinc-800 text-sm"
                 >
                     <option value="">All Severities</option>
                     <option value="critical">Critical</option>
@@ -181,7 +181,7 @@ const AdminErrorsPage: React.FC = () => {
                 <select
                     value={filters.resolved}
                     onChange={(e) => { setFilters(f => ({ ...f, resolved: e.target.value as any })); setPage(1); }}
-                    className="px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm"
+                    className="px-3 py-2 rounded-lg border border-theme bg-white dark:bg-zinc-800 text-sm"
                 >
                     <option value="">All Status</option>
                     <option value="false">Unresolved</option>
@@ -190,7 +190,7 @@ const AdminErrorsPage: React.FC = () => {
             </div>
 
             {/* Error Logs Table */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+            <div className="bg-surface rounded-xl border border-theme overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
@@ -306,14 +306,14 @@ const AdminErrorsPage: React.FC = () => {
                                                     <div className="space-y-3">
                                                         <div>
                                                             <strong className="text-xs uppercase text-zinc-500">Full Message:</strong>
-                                                            <pre className="mt-1 text-sm whitespace-pre-wrap break-words bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-200 dark:border-zinc-700 max-h-40 overflow-auto">
+                                                            <pre className="mt-1 text-sm whitespace-pre-wrap break-words bg-surface p-3 rounded border border-zinc-200 dark:border-zinc-700 max-h-40 overflow-auto">
                                                                 {error.message}
                                                             </pre>
                                                         </div>
                                                         {error.stack && (
                                                             <div>
                                                                 <strong className="text-xs uppercase text-zinc-500">Stack Trace:</strong>
-                                                                <pre className="mt-1 text-xs whitespace-pre-wrap break-words bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-200 dark:border-zinc-700 max-h-60 overflow-auto font-mono">
+                                                                <pre className="mt-1 text-xs whitespace-pre-wrap break-words bg-surface p-3 rounded border border-zinc-200 dark:border-zinc-700 max-h-60 overflow-auto font-mono">
                                                                     {error.stack}
                                                                 </pre>
                                                             </div>
@@ -371,14 +371,14 @@ const AdminErrorsPage: React.FC = () => {
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
-                                className="px-3 py-1 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 disabled:opacity-50"
+                                className="px-3 py-1 text-sm rounded-lg border border-theme disabled:opacity-50"
                             >
                                 Previous
                             </button>
                             <button
                                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
-                                className="px-3 py-1 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 disabled:opacity-50"
+                                className="px-3 py-1 text-sm rounded-lg border border-theme disabled:opacity-50"
                             >
                                 Next
                             </button>
@@ -402,7 +402,7 @@ const StatCard: React.FC<{ label: string; value: number; color: string }> = ({ l
     };
 
     return (
-        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4">
+        <div className="bg-surface rounded-xl border border-theme p-4">
             <p className="text-zinc-500 text-sm">{label}</p>
             <p className={`text-2xl font-bold mt-1 ${colors[color]}`}>{value}</p>
         </div>
@@ -410,3 +410,4 @@ const StatCard: React.FC<{ label: string; value: number; color: string }> = ({ l
 };
 
 export default AdminErrorsPage;
+

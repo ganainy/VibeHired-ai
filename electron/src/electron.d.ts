@@ -3,15 +3,20 @@ export interface AuthPayload {
   token: string;
   jobId: string;
   apiUrl: string;
+  jobLanguage?: string;
 }
 
-export type HotkeyAction = 'push-to-talk-start' | 'push-to-talk-stop' | 'clear-answer';
+export type HotkeyAction = 'push-to-talk-start' | 'push-to-talk-stop' | 'clear-answer' | 'ask-ai' | 'toggle-listening';
 
 interface ElectronAPI {
   signalReady: () => Promise<void>;
   onAuthPayload: (cb: (payload: AuthPayload) => void) => void;
   onHotkey: (cb: (action: HotkeyAction) => void) => void;
   toggleVisibility: () => Promise<void>;
+  closeWindow: () => Promise<void>;
+  getContentProtection: () => Promise<boolean>;
+  setContentProtection: (enabled: boolean) => Promise<boolean>;
+  resizeWindow: (width: number, height: number) => Promise<void>;
 }
 
 declare global {

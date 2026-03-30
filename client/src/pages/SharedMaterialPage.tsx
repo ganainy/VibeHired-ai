@@ -26,13 +26,13 @@ function iconForType(type: MaterialType): string {
 
 function colorForType(type: MaterialType): string {
     switch (type) {
-        case 'pdf': return 'text-red-500';
-        case 'image': return 'text-purple-500';
-        case 'docx': return 'text-blue-500';
-        case 'text': return 'text-green-500';
-        case 'markdown': return 'text-cyan-500';
-        case 'link': return 'text-amber-500';
-        default: return 'text-gray-400';
+        case 'pdf': return 'var(--error)';
+        case 'image': return 'var(--accent)';
+        case 'docx': return 'var(--info)';
+        case 'text': return 'var(--success)';
+        case 'markdown': return 'var(--text-secondary)';
+        case 'link': return 'var(--warning)';
+        default: return 'var(--text-muted)';
     }
 }
 
@@ -129,7 +129,7 @@ const SharedMaterialPage: React.FC = () => {
                 >
                     <div className="flex items-start gap-4 mb-4">
                         <div className="flex-shrink-0 mt-0.5">
-                            <span className={`material-symbols-outlined text-3xl ${colorForType(material.type)}`}>
+                            <span className="material-symbols-outlined text-3xl" style={{ color: colorForType(material.type) }}>
                                 {iconForType(material.type)}
                             </span>
                         </div>
@@ -165,7 +165,7 @@ const SharedMaterialPage: React.FC = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
-                            style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-base)' }}
+                            style={{ backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)' }}
                         >
                             <span className="material-symbols-outlined text-base">open_in_new</span>
                             Open Link
@@ -240,7 +240,7 @@ const SharedMaterialPage: React.FC = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
-                                style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-base)' }}
+                                style={{ backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)' }}
                             >
                                 <span className="material-symbols-outlined text-base">open_in_new</span>
                                 View File

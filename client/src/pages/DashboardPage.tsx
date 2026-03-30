@@ -281,7 +281,7 @@ const DashboardPage: React.FC = () => {
     const fetchCvs = async () => {
       setIsLoadingCvs(true);
       try {
-        const fetchedCvs = await getCvBranches();
+        const fetchedCvs = await getCvBranches({ lite: true });
         setCvs(fetchedCvs.branches);
       } catch (err: any) {
         console.error("Failed to fetch CVs:", err);
@@ -386,7 +386,7 @@ const DashboardPage: React.FC = () => {
           // Extract numeric salary for comparison
           const extractSalary = (salary: string | undefined): number => {
             if (!salary) return 0;
-            // Try to extract numbers from the salary string (e.g., "€50,000" -> 50000)
+            // Try to extract numbers from the salary string (e.g., "50,000" -> 50000)
             const numbers = salary.replace(/[^0-9]/g, '');
             return numbers ? parseInt(numbers, 10) : 0;
           };
@@ -943,17 +943,17 @@ const DashboardPage: React.FC = () => {
               <div className="flex flex-col gap-0.5 text-xs">
                 {job.contactEmail && (
                   <a href={`mailto:${job.contactEmail}`} className="hover:underline truncate block" style={{ color: 'var(--accent)' }} title={`Email: ${job.contactEmail}`}>
-                    📧 {job.contactEmail.length > 12 ? job.contactEmail.substring(0, 12) + '...' : job.contactEmail}
+                     {job.contactEmail.length > 12 ? job.contactEmail.substring(0, 12) + '...' : job.contactEmail}
                   </a>
                 )}
                 {job.contactPhone && (
                   <span className="truncate block" title={`Phone: ${job.contactPhone}`}>
-                    📞 {job.contactPhone.length > 12 ? job.contactPhone.substring(0, 12) + '...' : job.contactPhone}
+                     {job.contactPhone.length > 12 ? job.contactPhone.substring(0, 12) + '...' : job.contactPhone}
                   </span>
                 )}
                 {job.hiringManagerName && (
                   <span className="truncate block text-slate-500 dark:text-slate-400" title={`Contact: ${job.hiringManagerName}`}>
-                    👤 {job.hiringManagerName.length > 12 ? job.hiringManagerName.substring(0, 12) + '...' : job.hiringManagerName}
+                     {job.hiringManagerName.length > 12 ? job.hiringManagerName.substring(0, 12) + '...' : job.hiringManagerName}
                   </span>
                 )}
               </div>
@@ -1185,7 +1185,7 @@ const DashboardPage: React.FC = () => {
 
 
         {/* Add Job Section */}
-        <div className="bg-white dark:bg-zinc-900 p-3 sm:p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+        <div className="bg-surface p-3 sm:p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800">
           {/* Mobile Header - always visible, collapsible */}
           <div className="sm:hidden flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Add New Job</h2>
@@ -1219,13 +1219,13 @@ const DashboardPage: React.FC = () => {
                     <label htmlFor="cvBranch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       CV Branch
                     </label>
-                    {/* Existing CV dropdown – hidden when a file is chosen */}
+                    {/* Existing CV dropdown  hidden when a file is chosen */}
                     {!preExtractionCvFile && (
                       <select
                         id="cvBranch"
                         value={selectedCvBranchId || ''}
                         onChange={(e) => setSelectedCvBranchId(e.target.value || null)}
-                        className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500"
+                        className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-primary-color placeholder:text-zinc-400 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500"
                         disabled={isCreatingFromText}
                       >
                         <option value="">Select CV (optional)</option>
@@ -1237,7 +1237,7 @@ const DashboardPage: React.FC = () => {
                       </select>
                     )}
 
-                    {/* File chosen – show name and remove button */}
+                    {/* File chosen  show name and remove button */}
                     {preExtractionCvFile && (
                       <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
                         <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--accent)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1289,7 +1289,7 @@ const DashboardPage: React.FC = () => {
                         setPreExtractionJobUrl(normalized);
                       }}
                       placeholder="https://example.com/job-posting"
-                      className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white focus:border-transparent transition-all"
+                      className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-primary-color placeholder:text-zinc-400 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white focus:border-transparent transition-all"
                       disabled={isCreatingFromText}
                     />
                     <p className="mt-1.5 text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500">
@@ -1306,7 +1306,7 @@ const DashboardPage: React.FC = () => {
                       id="status"
                       value={preExtractionStatus}
                       onChange={(e) => setPreExtractionStatus(e.target.value)}
-                      className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white focus:border-transparent transition-all"
+                      className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-primary-color focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white focus:border-transparent transition-all"
                       disabled={isCreatingFromText}
                     >
                       <option value="Not Applied">Not Applied</option>
@@ -1327,7 +1327,7 @@ const DashboardPage: React.FC = () => {
                       id="jobType"
                       value={preExtractionJobType}
                       onChange={(e) => setPreExtractionJobType(e.target.value)}
-                      className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white focus:border-transparent transition-all"
+                      className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-primary-color focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white focus:border-transparent transition-all"
                       disabled={isCreatingFromText}
                     >
                       <option value="">Auto-detect</option>
@@ -1351,7 +1351,7 @@ const DashboardPage: React.FC = () => {
                     onChange={(e) => { setJobTextInput(e.target.value); setCreateFromTextError(null); }}
                     placeholder="Paste job description here..."
                     title="Ctrl+A to select all, Ctrl+C to copy from job site, then Ctrl+V here"
-                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-white focus:ring-zinc-900 dark:focus:ring-white rounded-xl pl-12 py-4 pr-4 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 disabled:opacity-50 resize-y min-h-[160px] sm:min-h-[160px] transition-all"
+                    className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-white focus:ring-zinc-900 dark:focus:ring-white rounded-xl pl-12 py-4 pr-4 text-primary-color placeholder:text-zinc-400 dark:placeholder:text-zinc-500 disabled:opacity-50 resize-y min-h-[160px] sm:min-h-[160px] transition-all"
                     rows={6}
                     disabled={isCreatingFromText}
                   />
@@ -1390,7 +1390,7 @@ const DashboardPage: React.FC = () => {
                       <>
                         <SparklesIcon />
                         <span>Extract with AI</span>
-                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 Credit</span>
+                        <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>1 Credit</span>
                       </>
                     )}
                   </button>
@@ -1477,7 +1477,7 @@ const DashboardPage: React.FC = () => {
                     id="filter-title"
                     value={filterText}
                     onChange={(e) => setFilterText(e.target.value)}
-                    placeholder="Title, company or contact name…"
+                    placeholder="Title, company or contact name"
                     className="input-base w-full pl-9 h-10 text-sm"
                     aria-label="Search jobs by title, company, or contact name"
                   />
@@ -1533,7 +1533,7 @@ const DashboardPage: React.FC = () => {
                         : 'border-transparent hover:opacity-80'
                         }`}
                       style={filterFavorite
-                        ? { background: 'var(--accent)', color: '#0e0e17' }
+                        ? { background: 'var(--accent)', color: 'var(--text-on-accent)' }
                         : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                       title="Favorites only"
                       aria-label="Toggle favorites filter"
@@ -1550,7 +1550,7 @@ const DashboardPage: React.FC = () => {
                       onClick={() => setFilterHasNotes(!filterHasNotes)}
                       className="inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all hover:opacity-80"
                       style={filterHasNotes
-                        ? { background: 'var(--accent)', color: '#0e0e17', border: '1px solid transparent' }
+                        ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
                         : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                       title="Only show jobs with notes"
                       aria-label="Toggle notes filter"
@@ -1568,7 +1568,7 @@ const DashboardPage: React.FC = () => {
                       disabled={needsFollowUpCount === 0}
                       className="inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       style={showOnlyDueFollowUps
-                        ? { background: 'var(--accent)', color: '#0e0e17', border: '1px solid transparent' }
+                        ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
                         : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                       title={needsFollowUpCount > 0 ? 'Show jobs that need a follow-up email' : 'No jobs currently need a follow-up email'}
                       aria-label="Toggle follow-up filter"
@@ -1610,7 +1610,7 @@ const DashboardPage: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      {/* ── Demo Tour Section: show mock only while tour is active ── */}
+                      {/*  Demo Tour Section: show mock only while tour is active  */}
                       {showJobTour && (<div className="py-6 px-4 space-y-3">
                         <TourBanner pageLabel="Job Dashboard" onDismiss={dismissJobTour} />
                           <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--border)' }}>
@@ -1669,7 +1669,7 @@ const DashboardPage: React.FC = () => {
                                       <span className="text-xs font-medium">{MOCK_JOB.salary}</span>
                                     </div>
                                   </td>
-                                  <td className="p-4 text-slate-400 dark:text-slate-500">—</td>
+                                  <td className="p-4 text-slate-400 dark:text-slate-500"></td>
                                   <td className="p-4">
                                     <div className="flex items-center justify-end gap-1">
                                       <button className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-slate-400 dark:text-slate-500" aria-label="Add to favorites (demo)">
@@ -1716,7 +1716,7 @@ const DashboardPage: React.FC = () => {
                           onClick={() => setCurrentPage(page)}
                           className={`flex items-center justify-center w-10 h-10 rounded-xl text-sm font-semibold transition-all ${currentPage === page
                             ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
-                            : 'border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
+                            : 'border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-secondary-color'
                             }`}
                         >
                           {page}
@@ -2096,4 +2096,5 @@ const DashboardPage: React.FC = () => {
 };
 
 export default DashboardPage;
+
 

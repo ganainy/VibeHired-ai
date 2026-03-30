@@ -63,7 +63,7 @@ const SortableProjectItem: React.FC<SortableProjectItemProps> = ({ project, onTo
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-move"
+      className="flex items-center justify-between p-4 border border-theme rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-move"
     >
       <div className="flex items-center gap-3 flex-1">
         <div
@@ -572,7 +572,7 @@ const PortfolioSetupPage: React.FC = () => {
     );
   }
 
-  // Simplified: only 2 tabs – Setup (0) and Community (1)
+  // Simplified: only 2 tabs  Setup (0) and Community (1)
   const setupTab = activeTab <= 3 ? 0 : 1;
 
   return (
@@ -580,15 +580,15 @@ const PortfolioSetupPage: React.FC = () => {
       <main className="flex-grow flex justify-center py-6 lg:py-8 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-3xl mx-auto flex flex-col gap-8">
 
-          {/* ── Page Header ─────────────────────────────────── */}
+          {/*  Page Header  */}
           <div>
             <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Your Portfolio</h1>
-            <p className="mt-1 text-zinc-500 dark:text-zinc-400 text-sm">
-              Connect your accounts, curate your projects and profile, then go live — all in one place.
+            <p className="mt-1 text-secondary-color text-sm">
+              Connect your accounts, curate your projects and profile, then go live  all in one place.
             </p>
           </div>
 
-          {/* ── Tabs ────────────────────────────────────────── */}
+          {/*  Tabs  */}
           <div className="flex border-b border-gray-200 dark:border-gray-700 gap-6">
             <button
               onClick={() => { setActiveTab(0); setSearchParams({ tab: '0' }); }}
@@ -612,19 +612,19 @@ const PortfolioSetupPage: React.FC = () => {
 
           {error && <div className="mb-2"><ErrorAlert message={error} /></div>}
 
-          {/* ══════════════════════════════════════════════════
+          {/* 
               SETUP TAB
-          ══════════════════════════════════════════════════ */}
+           */}
           {setupTab === 0 && (
             <div className="flex flex-col gap-8">
 
-              {/* ── Step 1: Connect ─────────────────────────── */}
+              {/*  Step 1: Connect  */}
               <section className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                   <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">1</span>
                   <div>
                     <h2 className="text-base font-bold text-gray-900 dark:text-white">Connect Your Accounts</h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">We pull your projects and experience directly — no copy-pasting.</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">We pull your projects and experience directly  no copy-pasting.</p>
                   </div>
                 </div>
 
@@ -678,7 +678,7 @@ const PortfolioSetupPage: React.FC = () => {
                       className="flex items-center justify-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {isImporting ? (
-                        <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Importing…</>
+                        <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Importing</>
                       ) : isGitHubConnected ? (
                         <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Refresh from GitHub</>
                       ) : (
@@ -719,7 +719,7 @@ const PortfolioSetupPage: React.FC = () => {
                         }`}>
                         {linkedInError}
                         {isApiKeyError(linkedInError) && (
-                          <Link to="/settings" className="block mt-1.5 underline font-medium">Go to Settings →</Link>
+                          <Link to="/settings" className="block mt-1.5 underline font-medium">Go to Settings </Link>
                         )}
                       </div>
                     )}
@@ -731,7 +731,7 @@ const PortfolioSetupPage: React.FC = () => {
                       style={{ background: 'var(--accent)' }}
                     >
                       {isSyncing ? (
-                        <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Syncing…</>
+                        <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Syncing</>
                       ) : isLinkedInConnected ? (
                         <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Refresh from LinkedIn</>
                       ) : (
@@ -742,14 +742,14 @@ const PortfolioSetupPage: React.FC = () => {
                 </div>
               </section>
 
-              {/* ── Step 2: Projects ────────────────────────── */}
+              {/*  Step 2: Projects  */}
               <section className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">2</span>
                     <div>
                       <h2 className="text-base font-bold text-gray-900 dark:text-white">Choose Projects to Display</h2>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Drag to reorder · toggle the switch to show or hide each project.</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Drag to reorder  toggle the switch to show or hide each project.</p>
                     </div>
                   </div>
                   {isGitHubConnected && (
@@ -759,7 +759,7 @@ const PortfolioSetupPage: React.FC = () => {
                       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-40"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                      {isImporting ? 'Refreshing…' : 'Refresh'}
+                      {isImporting ? 'Refreshing' : 'Refresh'}
                     </button>
                   )}
                 </div>
@@ -784,14 +784,14 @@ const PortfolioSetupPage: React.FC = () => {
                 </div>
               </section>
 
-              {/* ── Step 3: Profile Info ─────────────────────── */}
+              {/*  Step 3: Profile Info  */}
               <section className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">3</span>
                     <div>
                       <h2 className="text-base font-bold text-gray-900 dark:text-white">Edit Your Profile Info</h2>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Auto-filled from LinkedIn — you can edit anything before publishing.</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Auto-filled from LinkedIn  you can edit anything before publishing.</p>
                     </div>
                   </div>
                   {isLinkedInConnected && (
@@ -801,7 +801,7 @@ const PortfolioSetupPage: React.FC = () => {
                       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-40"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                      {isSyncing ? 'Refreshing…' : 'Refresh from LinkedIn'}
+                      {isSyncing ? 'Refreshing' : 'Refresh from LinkedIn'}
                     </button>
                   )}
                 </div>
@@ -830,7 +830,7 @@ const PortfolioSetupPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Bio / Summary</label>
-                    <textarea value={linkedInData.bio} onChange={(e) => setLinkedInData({ ...linkedInData, bio: e.target.value })} rows={4} placeholder="A short intro about yourself…" className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+                    <textarea value={linkedInData.bio} onChange={(e) => setLinkedInData({ ...linkedInData, bio: e.target.value })} rows={4} placeholder="A short intro about yourself" className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
                   </div>
                 </div>
 
@@ -857,12 +857,12 @@ const PortfolioSetupPage: React.FC = () => {
 
                 <div className="flex justify-end">
                   <button onClick={handleSaveLinkedInData} disabled={isSaving} className="flex items-center gap-2 h-9 px-5 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-40">
-                    {isSaving ? <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Saving…</> : 'Save Profile Info'}
+                    {isSaving ? <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Saving</> : 'Save Profile Info'}
                   </button>
                 </div>
               </section>
 
-              {/* ── Step 4: Publish ──────────────────────────── */}
+              {/*  Step 4: Publish  */}
               <section className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                   <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center">4</span>
@@ -897,7 +897,7 @@ const PortfolioSetupPage: React.FC = () => {
                       </a>
                     )}
                     {!portfolioUsername && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">⚠ No username set — contact support or set one during registration.</p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2"> No username set  contact support or set one during registration.</p>
                     )}
                   </div>
 
@@ -907,7 +907,7 @@ const PortfolioSetupPage: React.FC = () => {
                     className={`flex-shrink-0 flex items-center justify-center gap-2 h-10 px-6 rounded-lg text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${profile?.isPublished ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-primary text-white hover:bg-primary/90'}`}
                   >
                     {isTogglingPublish ? (
-                      <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Working…</>
+                      <><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Working</>
                     ) : profile?.isPublished ? (
                       'Unpublish'
                     ) : (
@@ -920,9 +920,9 @@ const PortfolioSetupPage: React.FC = () => {
             </div>
           )}
 
-          {/* ══════════════════════════════════════════════════
+          {/* 
               COMMUNITY TAB
-          ══════════════════════════════════════════════════ */}
+           */}
           {setupTab === 1 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {publishedProfiles.map((prof) => (
@@ -973,3 +973,4 @@ const PortfolioSetupPage: React.FC = () => {
 };
 
 export default PortfolioSetupPage;
+

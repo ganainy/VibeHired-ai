@@ -18,6 +18,11 @@ interface LaunchPayload {
   token: string;
   jobId: string;
   apiUrl: string;
+  jobLanguage?: string;
+}
+
+function findDeepLinkArg(argv: string[]): string | undefined {
+  return argv.find((arg) => arg.startsWith('vibehired://'));
 }
 
 function parseDeepLink(rawUrl: string): LaunchPayload | null {
@@ -26,17 +31,27 @@ function parseDeepLink(rawUrl: string): LaunchPayload | null {
     const token = u.searchParams.get('token') ?? '';
     const jobId = u.searchParams.get('jobId') ?? '';
     const apiUrl = u.searchParams.get('apiUrl') ?? 'http://localhost:5001/api';
+    const jobLanguage = (u.searchParams.get('jobLanguage') ?? '').toLowerCase();
     if (!token || !jobId) return null;
-    return { token, jobId, apiUrl };
+    return { token, jobId, apiUrl, jobLanguage };
   } catch {
     return null;
   }
 }
 
 // ── Singleton lock ────────────────────────────────────────────────────────────
+// Always enforce a single instance so deep-link launches route to the
+// existing Interview Buddy window instead of creating another process.
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
+}
+
+// Route Chromium cache to a writable temp folder in dev to reduce
+// "Unable to create cache" errors on Windows machines with restricted folders.
+if (!app.isPackaged) {
+  const tempBase = process.env.TEMP || process.env.TMP || process.cwd();
+  app.commandLine.appendSwitch('disk-cache-dir', path.join(tempBase, 'interview-buddy-dev-cache'));
 }
 
 // ── Register custom protocol BEFORE app is ready ─────────────────────────────
@@ -51,25 +66,50 @@ if (process.defaultApp) {
 }
 
 nativeTheme.themeSource = 'dark';
+app.setName('Interview Buddy');
 
 let win: BrowserWindow | null = null;
 let pendingPayload: LaunchPayload | null = null;
+let contentProtectionEnabled = true;
+
+// Windows can deliver protocol URLs to the first launched instance via argv.
+// Capture early so renderer-ready can consume it after window bootstraps.
+if (process.platform === 'win32') {
+  const startupUrl = findDeepLinkArg(process.argv);
+  if (startupUrl) {
+    const startupPayload = parseDeepLink(startupUrl);
+    if (startupPayload) {
+      pendingPayload = startupPayload;
+    }
+  }
+}
 
 // ── Create the stealth overlay window ────────────────────────────────────────
 function createWindow() {
+  const windowIconPath = path.join(app.getAppPath(), 'assets', 'icon.png');
+
+  const isDev = !app.isPackaged;
+
   win = new BrowserWindow({
     width: 480,
     height: 520,
+    minWidth: 400,
+    minHeight: 420,
     x: 40,
     y: 40,
-    show: false,             // start hidden; shown only after deep-link auth
+    // In dev, show immediately so local runs are visible without deep-link auth.
+    show: isDev,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: true,       // invisible on taskbar / dock
     focusable: true,
     resizable: true,
+    // Keep a native resize frame on Windows even when frameless.
+    // This allows edge/corner resize gestures to work reliably.
+    thickFrame: process.platform === 'win32',
     hasShadow: false,
+    icon: windowIconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -81,9 +121,8 @@ function createWindow() {
   // setContentProtection(true) is cross-platform in Electron 35+:
   //   Windows → SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE): invisible to Zoom, Teams, OBS
   //   macOS   → prevents any screen recording tool from capturing this window
-  win.setContentProtection(true);
+  win.setContentProtection(contentProtectionEnabled);
 
-  const isDev = !app.isPackaged;
   if (isDev) {
     // Use 127.0.0.1 instead of localhost to avoid CORS issues with Speech API
     win.loadURL('http://127.0.0.1:5174');
@@ -92,32 +131,6 @@ function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   }
-
-  let pushToTalkHeld = false;
-  win.webContents.on('before-input-event', (event, input) => {
-    if (input.code !== 'Space') return;
-
-    const isHoldShortcut = input.control && input.shift && !input.alt && !input.meta;
-    if (!isHoldShortcut) return;
-
-    event.preventDefault();
-
-    if (input.type === 'keyDown' && !input.isAutoRepeat && !pushToTalkHeld) {
-      pushToTalkHeld = true;
-      win?.webContents.send('hotkey', 'push-to-talk-start');
-    }
-
-    if (input.type === 'keyUp' && pushToTalkHeld) {
-      pushToTalkHeld = false;
-      win?.webContents.send('hotkey', 'push-to-talk-stop');
-    }
-  });
-
-  win.on('blur', () => {
-    if (!pushToTalkHeld) return;
-    pushToTalkHeld = false;
-    win?.webContents.send('hotkey', 'push-to-talk-stop');
-  });
 
   win.on('closed', () => {
     win = null;
@@ -146,7 +159,7 @@ app.whenReady().then(() => {
 
 // Windows: deep link arrives as a second-instance argument
 app.on('second-instance', (_event, argv) => {
-  const rawUrl = argv.find((arg) => arg.startsWith('vibehired://'));
+  const rawUrl = findDeepLinkArg(argv);
   if (rawUrl) {
     const payload = parseDeepLink(rawUrl);
     if (payload) deliverPayload(payload);
@@ -184,6 +197,33 @@ ipcMain.handle('toggle-visibility', () => {
   win.isVisible() ? win.hide() : win.show();
 });
 
+ipcMain.handle('close-window', () => {
+  if (!win) return;
+  win.close();
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+ipcMain.handle('get-content-protection', () => {
+  return contentProtectionEnabled;
+});
+
+ipcMain.handle('set-content-protection', (_event, enabled: boolean) => {
+  contentProtectionEnabled = Boolean(enabled);
+  if (win) {
+    win.setContentProtection(contentProtectionEnabled);
+  }
+  return contentProtectionEnabled;
+});
+
+ipcMain.handle('resize-window', (_event, width: number, height: number) => {
+  if (!win) return;
+  const nextWidth = Math.max(400, Math.round(width));
+  const nextHeight = Math.max(420, Math.round(height));
+  win.setSize(nextWidth, nextHeight, true);
+});
+
 // ── Global shortcuts (OS-level, undetectable by web apps) ───────────────────
 function registerGlobalShortcuts() {
   // Hide / show overlay
@@ -192,9 +232,19 @@ function registerGlobalShortcuts() {
     win.isVisible() ? win.hide() : win.show();
   });
 
+  // Toggle listening mode
+  globalShortcut.register('CommandOrControl+Shift+L', () => {
+    win?.webContents.send('hotkey', 'toggle-listening');
+  });
+
   // Clear current answer
   globalShortcut.register('CommandOrControl+Shift+C', () => {
     win?.webContents.send('hotkey', 'clear-answer');
+  });
+
+  // Submit captured questions to AI
+  globalShortcut.register('CommandOrControl+Shift+Enter', () => {
+    win?.webContents.send('hotkey', 'ask-ai');
   });
 }
 

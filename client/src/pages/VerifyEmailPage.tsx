@@ -97,7 +97,7 @@ const VerifyEmailPage: React.FC = () => {
                                 className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
                                 style={{ backgroundColor: 'rgba(45,212,160,0.12)', border: '1px solid rgba(45,212,160,0.25)' }}
                             >
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2dd4a0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
                             </div>
@@ -115,7 +115,7 @@ const VerifyEmailPage: React.FC = () => {
                                 className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all"
                                 style={{
                                     backgroundColor: 'var(--accent)',
-                                    color: '#0e0e17',
+                                    color: 'var(--text-on-accent)',
                                     boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(232,184,68,0.2)',
                                 }}
                             >
@@ -130,7 +130,7 @@ const VerifyEmailPage: React.FC = () => {
                                 className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
                                 style={{ backgroundColor: 'rgba(244,100,100,0.12)', border: '1px solid rgba(244,100,100,0.25)' }}
                             >
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f46464" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--error)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                                 </svg>
                             </div>
@@ -140,7 +140,7 @@ const VerifyEmailPage: React.FC = () => {
                             >
                                 Verification Failed
                             </h1>
-                            <p className="text-sm mb-6" style={{ color: 'var(--rose, #f46464)' }}>
+                            <p className="text-sm mb-6" style={{ color: 'var(--rose, var(--error))' }}>
                                 {message}
                             </p>
 
@@ -158,10 +158,10 @@ const VerifyEmailPage: React.FC = () => {
                                     onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
                                 />
                                 {resendState === 'sent' && (
-                                    <p className="text-xs mb-2" style={{ color: 'var(--jade, #2dd4a0)' }}>New link sent — check your inbox!</p>
+                                    <p className="text-xs mb-2" style={{ color: 'var(--jade, var(--success))' }}>New link sent  check your inbox!</p>
                                 )}
                                 {resendState === 'error' && (
-                                    <p className="text-xs mb-2" style={{ color: 'var(--rose, #f46464)' }}>Could not send. Please try again.</p>
+                                    <p className="text-xs mb-2" style={{ color: 'var(--rose, var(--error))' }}>Could not send. Please try again.</p>
                                 )}
                                 <button
                                     onClick={handleResend}
@@ -175,7 +175,7 @@ const VerifyEmailPage: React.FC = () => {
                                         cursor: (!resendEmail || resendState === 'loading' || resendState === 'sent') ? 'not-allowed' : 'pointer',
                                     }}
                                 >
-                                    {resendState === 'loading' ? 'Sending…' : resendState === 'sent' ? '✓ Link sent' : 'Send new verification link'}
+                                    {resendState === 'loading' ? 'Sending' : resendState === 'sent' ? ' Link sent' : 'Send new verification link'}
                                 </button>
                             </div>
 
@@ -199,3 +199,4 @@ const VerifyEmailPage: React.FC = () => {
 };
 
 export default VerifyEmailPage;
+

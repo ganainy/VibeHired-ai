@@ -5,13 +5,13 @@ import { getJobs, JobApplication } from '../services/jobApi';
 const COMPANION_DOWNLOAD_URL: string | null =
   import.meta.env.VITE_COMPANION_DOWNLOAD_URL || null;
 
-// ── Feature card data ─────────────────────────────────────────────────────────
+//  Feature card data 
 const stealth = [
   {
     num: '01',
     title: 'Invisible on taskbar & dock',
     body:
-      'No presence on macOS Dock or Windows taskbar — the session runs as a background utility so nothing shows up next to the apps you are sharing.',
+      'No presence on macOS Dock or Windows taskbar  the session runs as a background utility so nothing shows up next to the apps you are sharing.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="11" width="18" height="11" rx="2" />
@@ -35,7 +35,7 @@ const stealth = [
     num: '03',
     title: 'Invisible on tab switch',
     body:
-      'Alt/Cmd + Tab never reveals the overlay — there is no preview tile or highlighted window while you keep multitasking.',
+      'Alt/Cmd + Tab never reveals the overlay  there is no preview tile or highlighted window while you keep multitasking.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 18 15 12 9 6" />
@@ -46,7 +46,7 @@ const stealth = [
     num: '04',
     title: 'Invisible on screen share',
     body:
-      'The answer overlay is excluded from Zoom, Teams, and any screen-capture tool at the OS level using display affinity APIs — your interviewer never sees it.',
+      'The answer overlay is excluded from Zoom, Teams, and any screen-capture tool at the OS level using display affinity APIs  your interviewer never sees it.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2z" />
@@ -58,12 +58,13 @@ const stealth = [
 ];
 
 const hotkeys = [
-  { keys: ['Ctrl', 'Shift', 'Space'], action: 'Toggle microphone listening' },
+  { keys: ['Ctrl', 'Shift', 'L'], action: 'Toggle microphone listening (on/off)' },
+  { keys: ['Ctrl', 'Shift', 'Enter'], action: 'Send detected questions to Ask AI' },
   { keys: ['Ctrl', 'Shift', 'H'], action: 'Hide / show the answer overlay' },
   { keys: ['Ctrl', 'Shift', 'C'], action: 'Clear the current answer' },
 ];
 
-// ── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 const InterviewBuddyPage: React.FC = () => {
   const [jobs, setJobs] = useState<JobApplication[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>('');
@@ -87,7 +88,9 @@ const InterviewBuddyPage: React.FC = () => {
     if (!selectedJobId) return;
     const token = localStorage.getItem('authToken') ?? '';
     const apiUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api';
-    const deepLink = `vibehired://launch?token=${encodeURIComponent(token)}&jobId=${encodeURIComponent(selectedJobId)}&apiUrl=${encodeURIComponent(apiUrl)}`;
+    const selectedJob = jobs.find((job) => job._id === selectedJobId);
+    const jobLanguage = selectedJob?.language ?? 'en';
+    const deepLink = `vibehired://launch?token=${encodeURIComponent(token)}&jobId=${encodeURIComponent(selectedJobId)}&apiUrl=${encodeURIComponent(apiUrl)}&jobLanguage=${encodeURIComponent(jobLanguage)}`;
 
     setLaunching(true);
     setCompanionStatus('unknown');
@@ -95,7 +98,7 @@ const InterviewBuddyPage: React.FC = () => {
     // Use window.open instead of window.location.href so the current tab's URL
     // is never modified. If window.location.href is used, Chrome may defer the
     // external-protocol permission dialog across page navigations (e.g. an OAuth
-    // redirect) and replay it at the next login — making the dialog appear at an
+    // redirect) and replay it at the next login  making the dialog appear at an
     // unexpected time. Firing the deep link via window.open keeps it scoped to a
     // separate browsing context; the permission prompt appears immediately on
     // this click and is never deferred into the login flow.
@@ -126,7 +129,7 @@ const InterviewBuddyPage: React.FC = () => {
   return (
     <div className="min-h-screen px-6 py-10 max-w-4xl mx-auto" style={{ color: 'var(--text-primary)' }}>
 
-      {/* Mobile-only notice — hidden on sm+ */}
+      {/* Mobile-only notice  hidden on sm+ */}
       <div className="sm:hidden flex flex-col items-center justify-center text-center gap-4 py-20">
         <span className="material-symbols-outlined text-5xl" style={{ color: 'var(--accent)' }}>computer</span>
         <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>Desktop Only</h2>
@@ -135,10 +138,10 @@ const InterviewBuddyPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Desktop content — hidden on mobile */}
+      {/* Desktop content  hidden on mobile */}
       <div className="hidden sm:block">
 
-      {/* ── Header ── */}
+      {/*  Header  */}
       <div className="mb-10">
         <div className="flex items-center gap-3 mb-3">
           <div
@@ -169,7 +172,7 @@ const InterviewBuddyPage: React.FC = () => {
         </p>
       </div>
 
-      {/* ── Stealth feature grid ── */}
+      {/*  Stealth feature grid  */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
         {stealth.map((f) => (
           <div
@@ -200,7 +203,7 @@ const InterviewBuddyPage: React.FC = () => {
         ))}
       </div>
 
-      {/* ── Hotkeys ── */}
+      {/*  Hotkeys  */}
       <div
         className="rounded-xl p-5 mb-10"
         style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
@@ -245,18 +248,43 @@ const InterviewBuddyPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Launch panel ── */}
+      {/*  Launch panel  */}
       <div
         className="rounded-xl p-6"
         style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
       >
         <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-          Launch a session
+          Install and launch a session
         </h2>
         <p className="text-[13px] mb-5" style={{ color: 'var(--text-secondary)' }}>
-          Select the job you are interviewing for. The companion will use the job description and your
-          prep materials to craft tailored answers.
+          Use this order in production: <strong style={{ color: 'var(--text-primary)' }}>1) install the desktop companion</strong>, then <strong style={{ color: 'var(--text-primary)' }}>2) launch it from this page</strong>.
+          The companion will use the selected job and your prep materials to craft tailored answers, default the transcription language from the selected job, and let you edit transcript text before sending to AI.
         </p>
+
+        <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div
+            className="rounded-lg px-3 py-2"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+          >
+            <p className="text-[11px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+              Step 1
+            </p>
+            <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+              Download and install the companion app on your computer.
+            </p>
+          </div>
+          <div
+            className="rounded-lg px-3 py-2"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+          >
+            <p className="text-[11px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+              Step 2
+            </p>
+            <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+              Choose an active job, then launch the installed companion.
+            </p>
+          </div>
+        </div>
 
         {/* Job selector */}
         <div className="mb-4">
@@ -297,50 +325,79 @@ const InterviewBuddyPage: React.FC = () => {
                   value={j._id}
                   style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}
                 >
-                  {j.jobTitle} — {j.companyName}
+                  {j.jobTitle}  {j.companyName}
                 </option>
               ))}
             </select>
           )}
         </div>
 
-        {/* Launch button */}
-        <button
-          onClick={handleLaunch}
-          disabled={!selectedJobId || launching}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-150"
-          style={{
-            background: selectedJobId && !launching ? 'var(--accent)' : 'var(--bg-elevated)',
-            color: selectedJobId && !launching ? '#0e0e17' : 'var(--text-muted)',
-            cursor: selectedJobId && !launching ? 'pointer' : 'not-allowed',
-            border: 'none',
-          }}
-          onMouseEnter={(e) => {
-            if (selectedJobId && !launching)
-              (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent-hover)';
-          }}
-          onMouseLeave={(e) => {
-            if (selectedJobId && !launching)
-              (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent)';
-          }}
-        >
-          {launching ? (
-            <>
-              <span
-                className="inline-block w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
-                style={{ borderColor: 'var(--text-muted)', borderTopColor: 'var(--text-primary)' }}
-              />
-              Launching…
-            </>
-          ) : (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3" />
+        {/* Install + Launch actions */}
+        <div className="flex flex-wrap items-center gap-2">
+          {COMPANION_DOWNLOAD_URL ? (
+            <a
+              href={COMPANION_DOWNLOAD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              style={{
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--accent)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--border)'; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Launch Interview Buddy
-            </>
-          )}
-        </button>
+              Download companion app
+            </a>
+          ) : null}
+
+          <button
+            onClick={handleLaunch}
+            disabled={!selectedJobId || launching}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-150"
+            style={{
+              background: selectedJobId && !launching ? 'var(--accent)' : 'var(--bg-elevated)',
+              color: selectedJobId && !launching ? 'var(--text-on-accent)' : 'var(--text-muted)',
+              cursor: selectedJobId && !launching ? 'pointer' : 'not-allowed',
+              border: 'none',
+            }}
+            onMouseEnter={(e) => {
+              if (selectedJobId && !launching)
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent-hover)';
+            }}
+            onMouseLeave={(e) => {
+              if (selectedJobId && !launching)
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent)';
+            }}
+          >
+            {launching ? (
+              <>
+                <span
+                  className="inline-block w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
+                  style={{ borderColor: 'var(--text-muted)', borderTopColor: 'var(--text-primary)' }}
+                />
+                Launching
+              </>
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                Launch installed companion
+              </>
+            )}
+          </button>
+        </div>
+
+        <p className="text-[12px] mt-3" style={{ color: 'var(--text-muted)' }}>
+          First-time setup takes about a minute. After installation, keep this page open and click launch.
+        </p>
 
         {/* Status feedback */}
         {companionStatus === 'available' && (
@@ -365,7 +422,7 @@ const InterviewBuddyPage: React.FC = () => {
             </p>
             <p className="text-[13px] mb-3" style={{ color: 'var(--text-secondary)' }}>
               The Interview Buddy overlay requires the companion desktop app to be running.
-              {COMPANION_DOWNLOAD_URL ? ' Download and install it, then click Launch again.' : ' Start it locally with:'}
+              {COMPANION_DOWNLOAD_URL ? ' Download and install it first, then click "Launch installed companion" again.' : ' Start it locally with:'}
             </p>
             {COMPANION_DOWNLOAD_URL ? (
               <div className="flex gap-2 flex-wrap">
@@ -374,7 +431,7 @@ const InterviewBuddyPage: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                  style={{ background: 'var(--accent)', color: '#0e0e17' }}
+                  style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = 'var(--accent-hover)'; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = 'var(--accent)'; }}
                 >
@@ -412,7 +469,7 @@ const InterviewBuddyPage: React.FC = () => {
         )}
       </div>
 
-      {/* ── How it works ── */}
+      {/*  How it works  */}
       <div className="mt-8 mb-2">
         <h2 className="text-sm font-black uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
           How it works
@@ -421,10 +478,10 @@ const InterviewBuddyPage: React.FC = () => {
           {[
             'Install the companion app on your machine (one-time setup).',
             'Click "Launch Interview Buddy" and select the job you are interviewing for.',
-            `Press ${navigator.platform.startsWith('Mac') ? '⌘' : 'Ctrl'}+Shift+Space to start listening — the mic icon lights up.`,
-            'The interviewer asks a question. The companion transcribes it in real time.',
-            'After a brief pause, a structured answer appears in the floating overlay — only visible to you.',
-            'Read the answer naturally. Press Ctrl+Shift+C to clear and get ready for the next question.',
+            `Press ${navigator.platform.startsWith('Mac') ? 'Cmd' : 'Ctrl'}+Shift+L to toggle listening on/off.`,
+            'Select your transcription language (defaults to the selected job language), then speak and optionally edit transcript text directly in the overlay.',
+            `Press ${navigator.platform.startsWith('Mac') ? 'Cmd' : 'Ctrl'}+Shift+Enter or click Ask AI to send only detected questions for answering.`,
+            'Read the answer naturally. Use the bottom-right resize handle to resize the overlay, and press Ctrl+Shift+C to clear for the next turn.',
           ].map((step, i) => (
             <li key={i} className="flex gap-3 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
               <span
@@ -445,3 +502,4 @@ const InterviewBuddyPage: React.FC = () => {
 };
 
 export default InterviewBuddyPage;
+

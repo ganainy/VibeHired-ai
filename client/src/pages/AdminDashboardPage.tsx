@@ -174,7 +174,7 @@ const AdminDashboardPage: React.FC = () => {
         <div className="space-y-4 md:space-y-8">
             {/* Header */}
             <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-display">Admin Dashboard</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-primary-color font-display">Admin Dashboard</h1>
                 <p className="text-zinc-500 mt-1 text-sm md:text-base">System-wide overview and performance metrics.</p>
             </div>
 
@@ -193,7 +193,7 @@ const AdminDashboardPage: React.FC = () => {
                                 {errorStats.unresolved} unresolved error{errorStats.unresolved !== 1 ? 's' : ''}
                             </p>
                             <p className="text-sm text-red-700 dark:text-red-300">
-                                {errorStats.critical > 0 && `${errorStats.critical} critical • `}
+                                {errorStats.critical > 0 && `${errorStats.critical} critical  `}
                                 Click to view details
                             </p>
                         </div>
@@ -260,7 +260,7 @@ const AdminDashboardPage: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
-                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                        <div className="bg-surface rounded-2xl border border-theme p-4 md:p-6 shadow-sm">
                             <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                                 <ActivityIcon /> Calls by Provider
                             </h3>
@@ -277,7 +277,7 @@ const AdminDashboardPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                        <div className="bg-surface rounded-2xl border border-theme p-4 md:p-6 shadow-sm">
                             <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                                 <PieChartIcon /> Top AI Models
                             </h3>
@@ -294,7 +294,7 @@ const AdminDashboardPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                        <div className="bg-surface rounded-2xl border border-theme p-4 md:p-6 shadow-sm">
                             <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                                 <TrendingUpIcon /> Call Health
                             </h3>
@@ -319,7 +319,7 @@ const AdminDashboardPage: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                    <div className="bg-surface rounded-2xl border border-theme p-4 md:p-6 shadow-sm">
                         <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                             <ClockIcon /> AI & Apify Calls
                         </h3>
@@ -333,7 +333,7 @@ const AdminDashboardPage: React.FC = () => {
                                 value={externalCallsUserSearch}
                                 onChange={(e) => setExternalCallsUserSearch(e.target.value)}
                                 placeholder="Search by user email or ID"
-                                className="w-full sm:max-w-sm px-3 py-2 text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                className="w-full sm:max-w-sm px-3 py-2 text-sm rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-primary-color placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                             />
                         </div>
                         <TableOrCards
@@ -420,7 +420,7 @@ const AdminDashboardPage: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
                 {/* Tier Distribution */}
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                <div className="bg-surface rounded-2xl border border-theme p-4 md:p-6 shadow-sm">
                     <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                         <PieChartIcon /> User Tiers
                     </h3>
@@ -446,7 +446,7 @@ const AdminDashboardPage: React.FC = () => {
                 </div>
 
                 {/* Recent Payments */}
-                <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 md:p-6 shadow-sm">
+                <div className="lg:col-span-2 bg-surface rounded-2xl border border-theme p-4 md:p-6 shadow-sm">
                     <h3 className="text-base md:text-lg font-bold mb-3 md:mb-6 flex items-center gap-2">
                         <ClockIcon /> Recent Payments
                     </h3>
@@ -502,14 +502,14 @@ const StatCard: React.FC<{ label: string; value: string | number; icon: React.Re
     };
 
     return (
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3 md:p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-surface rounded-2xl border border-theme p-3 md:p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-2 md:gap-4">
                 <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${colors[color]}`}>
                     {icon}
                 </div>
                 <div className="min-w-0">
                     <p className="text-zinc-500 text-xs md:text-sm font-medium truncate">{label}</p>
-                    <p className="text-lg md:text-2xl font-bold text-zinc-900 dark:text-zinc-100 leading-none mt-0.5 md:mt-1">{value}</p>
+                    <p className="text-lg md:text-2xl font-bold text-primary-color leading-none mt-0.5 md:mt-1">{value}</p>
                 </div>
             </div>
         </div>
@@ -570,3 +570,4 @@ const ChevronRightIcon = () => (
 );
 
 export default AdminDashboardPage;
+

@@ -159,7 +159,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
                         lastSavedCvDataRef.current = JSON.stringify(EMPTY_CV_DATA);
                     }
                 } else {
-                    // No CV document — clear all CV state first
+                    // No CV document  clear all CV state first
                     setCurrentCvId(null);
                     setCurrentCvFilename(null);
                     setLiveCvDescriptor(null);
@@ -294,7 +294,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
     useEffect(() => {
         getGoogleCalendarStatus()
             .then((s) => setGoogleCalConnected(s.connected))
-            .catch(() => { /* Google Calendar not configured — not a fatal error */ });
+            .catch(() => { /* Google Calendar not configured  not a fatal error */ });
     }, []);
 
     // Reset initial load flag after data is loaded
@@ -548,7 +548,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
             setAppliedAtsSuggestions(newApplied);
             await updateJob(jobId!, { appliedAtsSuggestions: newApplied });
             const count = items.length;
-            showToast(`CV updated — ${count} ATS improvement${count !== 1 ? 's' : ''} applied ✓`, 'success');
+            showToast(`CV updated  ${count} ATS improvement${count !== 1 ? 's' : ''} applied `, 'success');
             try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
         } catch (error: any) {
             console.error('Error applying ATS suggestions:', error);
@@ -618,7 +618,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
                     <div className="mb-4">
                         <button
                             onClick={() => navigate('/dashboard')}
-                            className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 mb-4"
+                            className="flex items-center gap-2 text-secondary-color hover:text-zinc-900 dark:hover:text-zinc-100 mb-4"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -969,4 +969,5 @@ const JobApplicationWorkspacePage: React.FC = () => {
 };
 
 export default JobApplicationWorkspacePage;
+
 

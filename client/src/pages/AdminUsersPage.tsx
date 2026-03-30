@@ -57,7 +57,7 @@ const AdminUsersPage: React.FC = () => {
             {/* Header & Search */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-display">User Management</h1>
+                    <h1 className="text-3xl font-bold text-primary-color font-display">User Management</h1>
                     <p className="text-zinc-500 mt-1">View and manage all registered users.</p>
                 </div>
                 <div className="relative w-full md:w-80">
@@ -67,7 +67,7 @@ const AdminUsersPage: React.FC = () => {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         aria-label="Search users by email or username"
-                        className="w-full pl-10 pr-4 py-3 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 text-sm focus:ring-2 focus:ring-gold-500/50 outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-3 bg-surface rounded-2xl border border-theme text-sm focus:ring-2 focus:ring-gold-500/50 outline-none transition-all"
                     />
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400">
                         <SearchIcon />
@@ -85,7 +85,7 @@ const AdminUsersPage: React.FC = () => {
 
             {/* Users Table/Cards */}
             {isInitialLoad && isLoading ? (
-                <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm min-h-[400px] flex items-center justify-center">
+                <div className="bg-surface rounded-3xl border border-theme shadow-sm min-h-[400px] flex items-center justify-center">
                     <Spinner size="lg" />
                 </div>
             ) : (
@@ -98,11 +98,11 @@ const AdminUsersPage: React.FC = () => {
                             label: 'User',
                             render: (u: AdminUser) => (
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-bold text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                                    <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-bold text-secondary-color border border-zinc-200 dark:border-zinc-700">
                                         {u.email.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{u.username}</p>
+                                        <p className="text-sm font-bold text-primary-color truncate">{u.username}</p>
                                         <p className="text-xs text-zinc-500 truncate">{u.email}</p>
                                     </div>
                                 </div>
@@ -113,7 +113,7 @@ const AdminUsersPage: React.FC = () => {
                             label: 'Plan & Role',
                             render: (u: AdminUser) => (
                                 <div className="flex flex-col gap-1">
-                                    <span className={`inline-flex w-fit px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${u.plan === 'pro' || u.plan === 'premium' ? 'bg-gold-500 text-gold-950' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'}`}>
+                                    <span className={`inline-flex w-fit px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${u.plan === 'pro' || u.plan === 'premium' ? 'bg-gold-500 text-gold-950' : 'bg-zinc-200 dark:bg-zinc-800 text-secondary-color'}`}>
                                         {u.plan}
                                     </span>
                                     {u.role && u.role !== 'user' && (
@@ -180,7 +180,7 @@ const AdminUsersPage: React.FC = () => {
                             text: u.plan,
                             className: u.plan === 'pro' || u.plan === 'premium'
                                 ? 'bg-gold-500 text-gold-950'
-                                : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                                : 'bg-zinc-200 dark:bg-zinc-800 text-secondary-color'
                         }),
                         fields: [
                             {
@@ -216,14 +216,14 @@ const AdminUsersPage: React.FC = () => {
             {total > PAGE_SIZE && (
                 <div className="flex items-center justify-between text-sm">
                     <p className="text-zinc-500">
-                        Showing <span className="font-semibold text-zinc-900 dark:text-zinc-100">{startItem}–{endItem}</span> of <span className="font-semibold text-zinc-900 dark:text-zinc-100">{total}</span> users
+                        Showing <span className="font-semibold text-primary-color">{startItem}{endItem}</span> of <span className="font-semibold text-primary-color">{total}</span> users
                     </p>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                             disabled={page === 1}
                             aria-label="Previous page"
-                            className="px-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl font-medium disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                            className="px-4 py-2 bg-surface border border-theme rounded-xl font-medium disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                         >
                             Previous
                         </button>
@@ -232,7 +232,7 @@ const AdminUsersPage: React.FC = () => {
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                             disabled={page === totalPages}
                             aria-label="Next page"
-                            className="px-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl font-medium disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                            className="px-4 py-2 bg-surface border border-theme rounded-xl font-medium disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                         >
                             Next
                         </button>
@@ -260,3 +260,4 @@ const SearchIcon = () => (
 );
 
 export default AdminUsersPage;
+

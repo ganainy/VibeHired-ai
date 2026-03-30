@@ -9,7 +9,7 @@ import { VibeHiredLogo } from '../components/VibeHiredLogo';
 
 
 
-// ── Icons ───────────────────────────────────────────────────────────────────
+//  Icons 
 const EyeIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3" />
@@ -36,7 +36,7 @@ const MoonIcon = () => (
   </svg>
 );
 
-// ── Component ────────────────────────────────────────────────────────────────
+//  Component 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -195,7 +195,7 @@ const LoginPage: React.FC = () => {
       className="min-h-screen flex flex-col md:flex-row"
       style={{ backgroundColor: 'var(--bg-base)' }}
     >
-      {/* ── Left editorial panel (desktop only) ── */}
+      {/*  Left editorial panel (desktop only)  */}
       <div
         className="hidden md:flex flex-col justify-between flex-1 p-12 xl:p-16 relative overflow-hidden"
         style={{ backgroundColor: 'var(--bg-surface)', borderRight: '1px solid var(--border)' }}
@@ -242,7 +242,7 @@ const LoginPage: React.FC = () => {
               className="mt-4 text-base leading-relaxed max-w-sm"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Generate tailored CVs and cover letters for every role, track every application and interview, and get insights on your progress — all from one dashboard.
+              Generate tailored CVs and cover letters for every role, track every application and interview, and get insights on your progress  all from one dashboard.
             </p>
           </div>
 
@@ -270,7 +270,7 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Right form panel ── */}
+      {/*  Right form panel  */}
       <div
         className="flex flex-col justify-center w-full md:w-[440px] lg:w-[480px] xl:w-[520px] flex-shrink-0 p-8 md:p-12"
         style={{ backgroundColor: 'var(--bg-base)' }}
@@ -312,7 +312,7 @@ const LoginPage: React.FC = () => {
             style={{
               backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))',
               border: '1px solid rgba(244,100,100,0.2)',
-              color: 'var(--rose, #f46464)',
+              color: 'var(--rose, var(--error))',
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5">
@@ -323,7 +323,7 @@ const LoginPage: React.FC = () => {
               {(showResendOption) && (
                 <div className="mt-2">
                   {verificationSent ? (
-                    <span className="text-green-500">✓ Verification email sent! Check your inbox.</span>
+                    <span className="text-green-500"> Verification email sent! Check your inbox.</span>
                   ) : (
                     <button
                       type="button"
@@ -372,7 +372,7 @@ const LoginPage: React.FC = () => {
               }}
             />
             {touched.email && emailError && (
-              <p className="mt-1.5 text-xs" style={{ color: 'var(--rose, #f46464)' }}>{emailError}</p>
+              <p className="mt-1.5 text-xs" style={{ color: 'var(--rose, var(--error))' }}>{emailError}</p>
             )}
           </div>
 
@@ -434,7 +434,7 @@ const LoginPage: React.FC = () => {
             className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all"
             style={{
               backgroundColor: 'var(--accent)',
-              color: '#0e0e17',
+              color: 'var(--text-on-accent)',
               boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(232,184,68,0.2)',
               opacity: isLoading ? 0.7 : 1,
               cursor: isLoading ? 'not-allowed' : 'pointer',
@@ -453,7 +453,7 @@ const LoginPage: React.FC = () => {
             {isLoading ? (
               <>
                 <Spinner size="xs" />
-                <span>Connecting…</span>
+                <span>Connecting</span>
               </>
             ) : (
               'Sign in'
@@ -468,7 +468,7 @@ const LoginPage: React.FC = () => {
             style={{
               backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))',
               border: '1px solid rgba(244,100,100,0.2)',
-              color: 'var(--rose, #f46464)',
+              color: 'var(--rose, var(--error))',
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5">
@@ -502,7 +502,7 @@ const LoginPage: React.FC = () => {
           onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}
         >
           {googleLoading ? (
-            <><Spinner /><span>Connecting…</span></>
+            <><Spinner /><span>Connecting</span></>
           ) : (
             <>
               {/* Google logo */}
@@ -538,3 +538,4 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
+

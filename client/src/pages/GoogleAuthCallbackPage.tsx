@@ -41,7 +41,7 @@ const GoogleAuthCallbackPage: React.FC = () => {
           className="inline-block w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
           style={{ borderColor: 'var(--border)', borderTopColor: 'var(--accent)' }}
         />
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Signing you in…</p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Signing you in</p>
       </div>
     </div>
   );

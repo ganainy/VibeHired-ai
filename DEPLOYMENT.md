@@ -428,6 +428,86 @@ Replace `your-app-name-backend` with your actual Heroku app name.
 - **Unique:** Automatically handles duplicate usernames
 - **No data loss:** Only adds usernames, doesn't modify existing data
 
+## Part 9: Interview Buddy Companion (Production)
+
+The Interview Buddy overlay is a desktop capability and cannot run inside Netlify/Heroku.
+In production, the hosted website launches a locally installed Electron app via the `vibehired://` protocol.
+
+### Step 1: Build desktop installers
+
+From the repository root:
+
+```bash
+cd electron
+npm install
+```
+
+Build Windows installer (NSIS `.exe`):
+
+```bash
+npm run dist:win
+```
+
+Build macOS installer (`.dmg`) on macOS:
+
+```bash
+npm run dist:mac
+```
+
+Output files are generated under `electron/release/`.
+
+### Step 2: Host installers publicly
+
+Upload installer artifacts to a public URL users can access, for example:
+
+- GitHub Releases
+- S3 / CloudFront
+- Cloudflare R2
+
+Use either:
+
+- A single download page URL (recommended)
+- A direct installer URL if you only support one platform
+
+### Step 3: Configure Netlify environment variable
+
+In Netlify Dashboard:
+
+1. Site settings
+2. Environment variables
+3. Add/update:
+
+| Key | Value |
+|---|---|
+| `VITE_COMPANION_DOWNLOAD_URL` | Public URL from Step 2 |
+
+Example:
+
+```text
+VITE_COMPANION_DOWNLOAD_URL=https://github.com/your-org/interview-buddy/releases/latest
+```
+
+### Step 4: Redeploy frontend
+
+Trigger a Netlify deploy after setting the variable:
+
+- Push a commit to the connected branch, or
+- Deploys -> Trigger deploy -> Deploy site
+
+### Step 5: Verify end-to-end flow on hosted site
+
+1. Open `/interview-buddy` on the production website.
+2. Click **Launch Interview Buddy**.
+3. If companion is not installed, the page should show a download button using `VITE_COMPANION_DOWNLOAD_URL`.
+4. Install the companion app.
+5. Click **Launch Interview Buddy** again and confirm the desktop overlay opens.
+
+### Notes
+
+- The NSIS installer registers the `vibehired://` protocol automatically on Windows.
+- The manual script `npm run register-protocol` is only for unpacked/dev builds.
+- Browser-only hosting cannot provide OS-level overlay, global shortcuts, or screen-share exclusion.
+
 ## Troubleshooting
 
 ### Frontend Issues

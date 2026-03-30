@@ -9,7 +9,7 @@ import { usePageTour } from '../hooks/usePageTour';
 import GlobalMaterialCard from '../components/interview-materials/GlobalMaterialCard';
 import { MOCK_MATERIAL } from '../data/mockTourData';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function formatBytes(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
@@ -53,7 +53,7 @@ function getJobId(material: InterviewMaterial): string | null {
     return (material.jobApplicationId as MaterialJobRef)._id;
 }
 
-// ── Add Form Types ─────────────────────────────────────────────────────────────
+//  Add Form Types 
 
 type AddMode = 'idle' | 'file' | 'bulk' | 'text' | 'markdown' | 'link';
 
@@ -64,7 +64,7 @@ interface AddFormState {
     url: string;
 }
 
-// ── Grouped view ───────────────────────────────────────────────────────────────
+//  Grouped view 
 
 interface JobGroup {
     jobId: string;
@@ -204,7 +204,7 @@ const GroupedView: React.FC<{
     );
 };
 
-// ── Page ───────────────────────────────────────────────────────────────────────
+//  Page 
 
 type ViewMode = 'grouped' | 'flat';
 
@@ -255,7 +255,7 @@ const InterviewMaterialsPage: React.FC = () => {
 
     useEffect(() => { load(); }, [load]);
 
-    // ── Filter ──────────────────────────────────────────────────────────────
+    //  Filter 
 
     const filtered = useMemo(() => {
         let result = materials;
@@ -274,7 +274,7 @@ const InterviewMaterialsPage: React.FC = () => {
         });
     }, [materials, search, showFavoritesOnly]);
 
-    // ── Build groups ─────────────────────────────────────────────────────────
+    //  Build groups 
 
     const groups = useMemo<JobGroup[]>(() => {
         const map = new Map<string, JobGroup>();
@@ -299,7 +299,7 @@ const InterviewMaterialsPage: React.FC = () => {
         );
     }, [filtered]);
 
-    // ── Actions ───────────────────────────────────────────────────────────────
+    //  Actions 
 
     const setUpdating = (id: string, value: boolean) => {
         setUpdatingIds(prev => {
@@ -409,7 +409,7 @@ const InterviewMaterialsPage: React.FC = () => {
         }
     };
 
-    // ── Form helpers ─────────────────────────────────────────────────────────
+    //  Form helpers 
 
     const resetForm = () => {
         setForm({ title: '', description: '', content: '', url: '' });
@@ -525,7 +525,7 @@ const InterviewMaterialsPage: React.FC = () => {
         }
     };
 
-    // ── Render ────────────────────────────────────────────────────────────────
+    //  Render 
 
     return (
         <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 overflow-hidden">
@@ -541,7 +541,7 @@ const InterviewMaterialsPage: React.FC = () => {
                     </h1>
                 </div>
                 <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                    All interview preparation materials you've marked to share across jobs — PDFs, notes, links, and more.
+                    All interview preparation materials you've marked to share across jobs  PDFs, notes, links, and more.
                 </p>
             </div>
 
@@ -567,7 +567,7 @@ const InterviewMaterialsPage: React.FC = () => {
                         type="text"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        placeholder="Search materials, jobs…"
+                        placeholder="Search materials, jobs"
                         className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400"
                         style={{
                             backgroundColor: 'var(--bg-elevated)',
@@ -630,11 +630,11 @@ const InterviewMaterialsPage: React.FC = () => {
                 )}
             </div>
 
-            {/* ── Demo Tour Section ────────────────────────────────── */}
+            {/*  Demo Tour Section  */}
             {showMaterialTour && materials.length === 0 && (
                 <div className="space-y-3">
                     <TourBanner pageLabel="Prep Library" onDismiss={dismissMaterialTour} />
-                    {/* Mock material card — matches GlobalMaterialCard normal-view structure */}
+                    {/* Mock material card  matches GlobalMaterialCard normal-view structure */}
                     <div
                         className="group relative flex flex-col gap-2 p-3.5 rounded-xl border opacity-80 select-none pointer-events-none"
                         style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
@@ -688,7 +688,7 @@ const InterviewMaterialsPage: React.FC = () => {
                 </div>
             )}
 
-            {/* ── Drop zone / Add buttons ── */}
+            {/*  Drop zone / Add buttons  */}
             {addMode === 'idle' && (
                 <div className="space-y-3">
                     {/* Drag-drop upload zone */}
@@ -713,7 +713,7 @@ const InterviewMaterialsPage: React.FC = () => {
                             Drag & drop files, or click to browse
                         </p>
                         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                            PDF, DOCX, PNG, JPG, TXT, MD — up to 30 MB each
+                            PDF, DOCX, PNG, JPG, TXT, MD  up to 30 MB each
                         </p>
                         <input
                             ref={fileInputRef}
@@ -756,7 +756,7 @@ const InterviewMaterialsPage: React.FC = () => {
                 </div>
             )}
 
-            {/* ── Bulk Upload Queue ── */}
+            {/*  Bulk Upload Queue  */}
             {addMode === 'bulk' && (
                 <div
                     className="rounded-xl border p-4 space-y-3"
@@ -789,7 +789,7 @@ const InterviewMaterialsPage: React.FC = () => {
                     {bulkProgress && (
                         <div className="space-y-1.5">
                             <div className="flex justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
-                                <span>Uploading…</span>
+                                <span>Uploading</span>
                                 <span>{bulkProgress.done} / {bulkProgress.total}</span>
                             </div>
                             <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-surface)' }}>
@@ -819,7 +819,7 @@ const InterviewMaterialsPage: React.FC = () => {
                             {isSubmitting ? (
                                 <>
                                     <span className="inline-block w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin" />
-                                    Uploading…
+                                    Uploading
                                 </>
                             ) : (
                                 <>
@@ -832,7 +832,7 @@ const InterviewMaterialsPage: React.FC = () => {
                 </div>
             )}
 
-            {/* ── Add Form ── */}
+            {/*  Add Form  */}
             {addMode !== 'idle' && addMode !== 'bulk' && (
                 <div
                     className="rounded-xl border p-4 space-y-3"
@@ -917,7 +917,7 @@ const InterviewMaterialsPage: React.FC = () => {
                             <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                                 Content <span className="text-red-500">*</span>
                                 {addMode === 'markdown' && (
-                                    <span style={{ color: 'var(--text-muted)' }}> — Markdown supported</span>
+                                    <span style={{ color: 'var(--text-muted)' }}>  Markdown supported</span>
                                 )}
                             </label>
                             <textarea
@@ -975,7 +975,7 @@ const InterviewMaterialsPage: React.FC = () => {
                             {isSubmitting ? (
                                 <>
                                     <span className="inline-block w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin" />
-                                    Saving…
+                                    Saving
                                 </>
                             ) : (
                                 <>
@@ -995,7 +995,7 @@ const InterviewMaterialsPage: React.FC = () => {
                         className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin"
                         style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
                     />
-                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading your prep library…</p>
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading your prep library</p>
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center py-16 gap-3 text-center">

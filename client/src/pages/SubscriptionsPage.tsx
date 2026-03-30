@@ -54,7 +54,7 @@ const PLANS = [
             '~250 CV analyses or ATS scans',
             '~165 cover letters per month',
             'All features included',
-            '2× AI request rate',
+            '2 AI request rate',
         ],
         popular: true,
     },
@@ -71,7 +71,7 @@ const PLANS = [
             '~750 CV analyses or ATS scans',
             '~500 cover letters per month',
             'All features included',
-            '4× AI request rate',
+            '4 AI request rate',
         ],
         popular: false,
     },
@@ -109,12 +109,12 @@ const PlanCard: React.FC<{
     }
 
     return (
-        <div className={`relative flex flex-col bg-white dark:bg-zinc-900 rounded-2xl border transition-all duration-200
+        <div className={`relative flex flex-col bg-surface rounded-2xl border transition-all duration-200
             ${isCurrentPlan
                 ? 'border-gold-500 dark:border-gold-500 ring-1 ring-gold-500/30'
                 : plan.popular
                     ? 'border-zinc-300 dark:border-zinc-600 shadow-md'
-                    : 'border-zinc-200 dark:border-zinc-800'
+                    : 'border-theme'
             }`}
         >
             {/* Badges */}
@@ -136,17 +136,17 @@ const PlanCard: React.FC<{
             <div className="p-6 flex flex-col flex-1">
                 {/* Header */}
                 <div className="mb-5">
-                    <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">{plan.name}</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{plan.description}</p>
+                    <h3 className="text-base font-bold text-primary-color">{plan.name}</h3>
+                    <p className="text-xs text-secondary-color mt-0.5">{plan.description}</p>
                 </div>
 
                 {/* Price */}
                 <div className="mb-5">
                     {plan.price === 0 ? (
-                        <span className="text-3xl font-black text-zinc-900 dark:text-zinc-100">Free</span>
+                        <span className="text-3xl font-black text-primary-color">Free</span>
                     ) : (
                         <div className="flex items-baseline gap-1">
-                            <span className="text-3xl font-black text-zinc-900 dark:text-zinc-100">${plan.price}</span>
+                            <span className="text-3xl font-black text-primary-color">${plan.price}</span>
                             <span className="text-sm text-zinc-500">/ {plan.period}</span>
                         </div>
                     )}
@@ -158,7 +158,7 @@ const PlanCard: React.FC<{
                 {/* Features */}
                 <ul className="space-y-2 mb-6 flex-1">
                     {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+                        <li key={i} className="flex items-start gap-2 text-xs text-secondary-color">
                             <span className="text-emerald-500 mt-0.5"><CheckIcon /></span>
                             {feature}
                         </li>
@@ -207,7 +207,7 @@ const SubscriptionsPage: React.FC = () => {
                 try {
                     await syncSubscription();
                 } catch {
-                    // Non-fatal — just continue polling
+                    // Non-fatal  just continue polling
                 }
                 let attempts = 0;
                 const poll = async () => {
@@ -269,16 +269,16 @@ const SubscriptionsPage: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-display">Plans & Billing</h1>
+                    <h1 className="text-3xl font-bold text-primary-color font-display">Plans & Billing</h1>
                     <p className="text-zinc-500 mt-1">Manage your subscription and credit usage.</p>
                 </div>
                 {PAYMENTS_ENABLED && user?.plan && user.plan !== 'free' && (
                     <button
                         onClick={() => handleSelectPlan(user.plan!)}
                         disabled={isProcessing}
-                        className="shrink-0 px-4 py-2 text-sm font-bold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                        className="shrink-0 px-4 py-2 text-sm font-bold bg-surface border border-theme rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                     >
-                        Manage Billing →
+                        Manage Billing 
                     </button>
                 )}
             </div>
@@ -290,7 +290,7 @@ const SubscriptionsPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <p className="text-sm text-amber-800 dark:text-amber-200">
-                        <span className="font-bold">Paid plans coming soon</span> — enjoy your free credits in the meantime. Subscriptions will be available shortly.
+                        <span className="font-bold">Paid plans coming soon</span>  enjoy your free credits in the meantime. Subscriptions will be available shortly.
                     </p>
                 </div>
             )}
@@ -312,25 +312,25 @@ const SubscriptionsPage: React.FC = () => {
             )}
 
             {/* Current Usage */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+            <div className="bg-surface rounded-2xl border border-theme p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                     <div>
                         <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">Current Plan</p>
-                        <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{currentPlanName}</p>
+                        <p className="text-xl font-bold text-primary-color">{currentPlanName}</p>
                     </div>
                     {!isLoadingUsage && usageInfo && (
                         <div className="flex items-center gap-6 text-center">
                             <div>
-                                <p className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{usageInfo.usage.remaining}</p>
+                                <p className="text-2xl font-black text-primary-color">{usageInfo.usage.remaining}</p>
                                 <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">Remaining</p>
                             </div>
                             <div className="h-10 w-px bg-zinc-100 dark:bg-zinc-800" />
                             <div>
-                                <p className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{usageInfo.usage.creditsUsed}</p>
+                                <p className="text-2xl font-black text-primary-color">{usageInfo.usage.creditsUsed}</p>
                                 <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">Used</p>
                             </div>
                             <div>
-                                <p className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{usageInfo.usage.creditLimit}</p>
+                                <p className="text-2xl font-black text-primary-color">{usageInfo.usage.creditLimit}</p>
                                 <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">Total</p>
                             </div>
                         </div>
@@ -367,9 +367,9 @@ const SubscriptionsPage: React.FC = () => {
             </div>
 
             {/* FAQ */}
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+            <div className="bg-surface rounded-2xl border border-theme shadow-sm overflow-hidden">
                 <div className="px-6 py-5 border-b border-zinc-100 dark:border-zinc-800">
-                    <h2 className="font-bold text-zinc-900 dark:text-zinc-100">Frequently Asked Questions</h2>
+                    <h2 className="font-bold text-primary-color">Frequently Asked Questions</h2>
                 </div>
                 <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     <FAQItem
@@ -382,15 +382,15 @@ const SubscriptionsPage: React.FC = () => {
                     />
                     <FAQItem
                         question="Do unused credits roll over?"
-                        answer="No — credits reset at the start of each billing cycle. On the Free tier, the 20 credits are one-time and never expire until used."
+                        answer="No  credits reset at the start of each billing cycle. On the Free tier, the 20 credits are one-time and never expire until used."
                     />
                     <FAQItem
                         question="What's the real difference between plans?"
-                        answer="Credits and AI rate limits. Every plan unlocks all features — the tiers simply give you more credits per month (150 / 500 / 1,500) and raise the cap on how many AI requests you can make in a short window, which matters when scanning large email batches or running multiple generations back-to-back."
+                        answer="Credits and AI rate limits. Every plan unlocks all features  the tiers simply give you more credits per month (150 / 500 / 1,500) and raise the cap on how many AI requests you can make in a short window, which matters when scanning large email batches or running multiple generations back-to-back."
                     />
                     <FAQItem
                         question="Can I upgrade or downgrade at any time?"
-                        answer="Yes — open the Manage Billing portal to switch plans or cancel. Upgrades take effect immediately with prorated billing; downgrades apply at the end of the current billing period."
+                        answer="Yes  open the Manage Billing portal to switch plans or cancel. Upgrades take effect immediately with prorated billing; downgrades apply at the end of the current billing period."
                     />
                     <FAQItem
                         question="What happens when I run out of credits?"
@@ -420,7 +420,7 @@ const FAQItem: React.FC<{ question: string; answer: string }> = ({ question, ans
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
             >
-                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{question}</span>
+                <span className="text-sm font-semibold text-primary-color">{question}</span>
                 <svg
                     className={`w-4 h-4 text-zinc-400 transition-transform shrink-0 ml-4 ${isOpen ? 'rotate-180' : ''}`}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -430,7 +430,7 @@ const FAQItem: React.FC<{ question: string; answer: string }> = ({ question, ans
             </button>
             {isOpen && (
                 <div className="px-6 pb-4">
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">{answer}</p>
+                    <p className="text-sm text-secondary-color">{answer}</p>
                 </div>
             )}
         </div>
@@ -438,3 +438,4 @@ const FAQItem: React.FC<{ question: string; answer: string }> = ({ question, ans
 };
 
 export default SubscriptionsPage;
+

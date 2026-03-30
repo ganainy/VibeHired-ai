@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+﻿import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
 import { CvSectionDescriptor, CvDynamicPayload } from '../../../types/cvDescriptor';
@@ -236,7 +236,7 @@ export const CvEditorTab: React.FC<CvEditorTabProps> = ({
                 >
                     {/* Tailoring Changes Panel */}
                     {tailoringChanges !== null && (
-                        <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <div className="mb-6 bg-surface rounded-xl border border-theme shadow-sm overflow-hidden">
                             <details className="group">
                                 <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-transparent group-open:border-zinc-100 dark:group-open:border-zinc-800">
                                     <div className="flex items-center gap-3">
@@ -245,7 +245,7 @@ export const CvEditorTab: React.FC<CvEditorTabProps> = ({
                                         </div>
                                         <div>
                                             <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100">Tailoring Changes</h3>
-                                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                            <p className="text-xs text-secondary-color">
                                                 {tailoringChanges.length > 0
                                                     ? `${tailoringChanges.length} modification${tailoringChanges.length !== 1 ? 's' : ''} recorded`
                                                     : 'No section-level change details were provided for this version'}
@@ -298,14 +298,14 @@ export const CvEditorTab: React.FC<CvEditorTabProps> = ({
                                                             <div className="mt-2 space-y-2">
                                                                 {change.before && (
                                                                     <div>
-                                                                        <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-1">Before</p>
-                                                                        <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">{change.before}</p>
+                                                                        <p className="text-[10px] font-bold uppercase tracking-wide text-secondary-color mb-1">Before</p>
+                                                                        <p className="text-xs text-secondary-color whitespace-pre-wrap break-words">{change.before}</p>
                                                                     </div>
                                                                 )}
                                                                 {change.after && (
                                                                     <div>
-                                                                        <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-1">After</p>
-                                                                        <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">{change.after}</p>
+                                                                        <p className="text-[10px] font-bold uppercase tracking-wide text-secondary-color mb-1">After</p>
+                                                                        <p className="text-xs text-secondary-color whitespace-pre-wrap break-words">{change.after}</p>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -321,7 +321,7 @@ export const CvEditorTab: React.FC<CvEditorTabProps> = ({
                     )}
 
                     {/* ATS Analysis Card */}
-                    <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                    <div className="mb-6 bg-surface rounded-xl border border-theme shadow-sm overflow-hidden">
                         <details className="group">
                             <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-transparent group-open:border-zinc-100 dark:group-open:border-zinc-800">
                                 <div className="flex items-center gap-3">
@@ -330,7 +330,7 @@ export const CvEditorTab: React.FC<CvEditorTabProps> = ({
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100">ATS Analysis</h3>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                        <p className="text-xs text-secondary-color">
                                             {isScanningAts ? 'Scanning...' : atsScores ? (() => {
                                                 const total =
                                                     (atsScores.complianceDetails?.actionableFeedback?.length ?? 0) +
@@ -360,7 +360,7 @@ export const CvEditorTab: React.FC<CvEditorTabProps> = ({
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                             </svg>
                                             Re-scan
-                                            <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credit</span>
+                                            <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>2 Credit</span>
                                         </button>
                                     )}
                                     <span className="text-zinc-400 group-open:rotate-180 transition-transform duration-200">
@@ -658,3 +658,4 @@ export const CvEditorTab: React.FC<CvEditorTabProps> = ({
 };
 
 export default CvEditorTab;
+

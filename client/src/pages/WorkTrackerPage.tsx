@@ -68,7 +68,7 @@ import { useAuth } from '../context/AuthContext';
 import TourBanner from '../components/onboarding/TourBanner';
 import { usePageTour } from '../hooks/usePageTour';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -105,7 +105,7 @@ function groupEntriesByDate(entries: WorkEntry[]): Map<string, WorkEntry[]> {
   return map;
 }
 
-// ── Calendar integration helpers ──────────────────────────────────────────
+//  Calendar integration helpers 
 
 type TimeLogItem =
   | { kind: 'entry'; data: WorkEntry }
@@ -157,7 +157,7 @@ function groupItemsByDate(
   return map;
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+//  Sub-components 
 
 const EmployerAvatar: React.FC<{ employer: { name: string; logoUrl?: string | null }; size?: number }> = ({
   employer,
@@ -236,7 +236,7 @@ const EmployerSelect = ({
             <span className="truncate" style={{ color: 'var(--text-primary)' }}>{selected.name}</span>
           </div>
         ) : (
-          <span style={{ color: 'var(--text-muted)' }}>Select employer…</span>
+          <span style={{ color: 'var(--text-muted)' }}>Select employer</span>
         )}
         <svg
           className={`w-4 h-4 transition-transform flex-shrink-0 ml-2 ${isOpen ? 'transform rotate-180' : ''}`}
@@ -266,7 +266,7 @@ const EmployerSelect = ({
                 onClick={() => { onChange(''); setIsOpen(false); }}
               >
                 <div style={{ width: 20, height: 20 }} className="flex-shrink-0" />
-                <span className="truncate flex-1" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Select employer…</span>
+                <span className="truncate flex-1" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Select employer</span>
               </button>
               {employers.map((emp) => (
                 <button
@@ -333,7 +333,7 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, sub, icon, accent }) 
   </div>
 );
 
-// ── AI Schedule Import Modal ──────────────────────────────────────────────────
+//  AI Schedule Import Modal 
 
 type ImportStep = 'upload' | 'review' | 'saving' | 'done';
 
@@ -668,8 +668,8 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
               <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>AI Schedule Import</p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {step === 'upload' && 'Upload an image, PDF, or paste your work schedule'}
-                {step === 'review' && `Review ${entries.length} extracted entr${entries.length === 1 ? 'y' : 'ies'} — edit or deselect before saving`}
-                {step === 'saving' && 'Saving…'}
+                {step === 'review' && `Review ${entries.length} extracted entr${entries.length === 1 ? 'y' : 'ies'}  edit or deselect before saving`}
+                {step === 'saving' && 'Saving'}
                 {step === 'done' && `${savedCount} ${savedCount === 1 ? 'entry' : 'entries'} added to your tracker`}
               </p>
             </div>
@@ -682,7 +682,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
 
-          {/* ── STEP: UPLOAD ── */}
+          {/*  STEP: UPLOAD  */}
           {step === 'upload' && (
             <div className="p-5 space-y-5">
               {importError && (
@@ -765,7 +765,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
                     <MapPin size={10} className="inline mr-1" />Sub-location (optional)
                   </label>
                   <select className="input-base w-full" value={subLocationId} onChange={(e) => setSubLocationId(e.target.value)}>
-                    <option value="">None — general</option>
+                    <option value="">None  general</option>
                     {selectedEmployerImport!.subLocations.map((sl) => (
                       <option key={sl._id} value={sl._id}>{sl.name}</option>
                     ))}
@@ -837,7 +837,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
                       <FileText size={32} style={{ color: 'var(--jade)' }} />
                       <div className="text-center">
                         <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{file.name}</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{(file.size / 1024).toFixed(0)} KB · {file.type}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{(file.size / 1024).toFixed(0)} KB  {file.type}</p>
                         <button onClick={(e) => { e.stopPropagation(); setFile(null); }} className="text-xs mt-2 underline" style={{ color: 'var(--text-muted)' }}>Remove</button>
                       </div>
                     </>
@@ -846,7 +846,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
                       <Upload size={28} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
                       <div className="text-center">
                         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Drag & drop or click to upload</p>
-                        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Images (JPG, PNG, WebP) or PDF · up to 10 MB</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Images (JPG, PNG, WebP) or PDF  up to 10 MB</p>
                       </div>
                     </>
                   )}
@@ -858,7 +858,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
                 <textarea
                   className="input-base w-full font-mono text-xs"
                   rows={9}
-                  placeholder={`Paste your work schedule here…\n\nExample:\nMon 02/03 - 09:00-17:00\nWed 04/03 - 14:00-22:00\nFri 06/03 - Night shift 22:00-06:00`}
+                  placeholder={`Paste your work schedule here\n\nExample:\nMon 02/03 - 09:00-17:00\nWed 04/03 - 14:00-22:00\nFri 06/03 - Night shift 22:00-06:00`}
                   value={scheduleText}
                   onChange={(e) => setScheduleText(e.target.value)}
                   style={{ resize: 'vertical', lineHeight: 1.6 }}
@@ -899,7 +899,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
                         Stop recording
                       </button>
                       <span className="text-xs font-medium" style={{ color: micDetected === false ? 'var(--rose)' : 'var(--text-secondary)' }}>
-                        {micDetected === false ? 'Microphone not detected' : micDetected === true ? 'Microphone detected' : 'Checking microphone…'}
+                        {micDetected === false ? 'Microphone not detected' : micDetected === true ? 'Microphone detected' : 'Checking microphone'}
                       </span>
                     </div>
 
@@ -938,7 +938,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
             </div>
           )}
 
-          {/* ── STEP: REVIEW ── */}
+          {/*  STEP: REVIEW  */}
           {step === 'review' && (
             <div className="p-5 space-y-3">
               {importError && (
@@ -989,7 +989,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
                 </div>
               )}
               <div className="flex items-center justify-between">
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{selectedCount} of {entries.length} selected · Edit or deselect rows before confirming</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{selectedCount} of {entries.length} selected  Edit or deselect rows before confirming</p>
                 <div className="flex gap-1.5">
                   <button onClick={() => setEntries((p) => p.map((e) => ({ ...e, selected: true })))} className="text-xs px-2 py-1 rounded" style={{ color: 'var(--text-muted)', background: 'var(--bg-raised)' }}>All</button>
                   <button onClick={() => setEntries((p) => p.map((e) => ({ ...e, selected: false })))} className="text-xs px-2 py-1 rounded" style={{ color: 'var(--text-muted)', background: 'var(--bg-raised)' }}>None</button>
@@ -1054,7 +1054,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
                             </select>
                           </td>
                           <td className="p-2"><span className={`badge ${isPast ? 'badge-jade' : 'badge-ember'} text-[10px]`}>{isPast ? 'done' : 'planned'}</span></td>
-                          <td className="p-1.5"><input type="text" className="input-base text-xs p-1 h-7 w-28" value={entry.notes} placeholder="—" onChange={(e) => patchReviewEntry(entry.id, { notes: e.target.value })} /></td>
+                          <td className="p-1.5"><input type="text" className="input-base text-xs p-1 h-7 w-28" value={entry.notes} placeholder="" onChange={(e) => patchReviewEntry(entry.id, { notes: e.target.value })} /></td>
                           <td className="p-1.5"><button onClick={() => removeReviewEntry(entry.id)} className="p-1 rounded" style={{ color: 'var(--text-muted)' }} title="Remove row"><X size={12} /></button></td>
                         </tr>
                       );
@@ -1065,15 +1065,15 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
             </div>
           )}
 
-          {/* ── STEP: SAVING ── */}
+          {/*  STEP: SAVING  */}
           {step === 'saving' && (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <div className="w-10 h-10 rounded-full border-2 animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Saving entries…</p>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Saving entries</p>
             </div>
           )}
 
-          {/* ── STEP: DONE ── */}
+          {/*  STEP: DONE  */}
           {step === 'done' && (
             <div className="flex flex-col items-center justify-center py-20 gap-5 text-center">
               <div style={{ width: 60, height: 60, borderRadius: 16, background: 'var(--jade-bg)', border: '1px solid var(--jade-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--jade)' }}>
@@ -1096,7 +1096,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
             className="btn-ghost text-sm px-3 py-2"
             style={{ color: 'var(--text-muted)' }}
           >
-            {step === 'done' ? 'Close' : step === 'review' ? '← Back' : 'Cancel'}
+            {step === 'done' ? 'Close' : step === 'review' ? ' Back' : 'Cancel'}
           </button>
 
           {step === 'upload' && (
@@ -1106,8 +1106,8 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
               className="btn-primary flex items-center gap-2 text-sm disabled:opacity-40"
             >
               {parsing
-                ? <><div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: 'currentColor', borderTopColor: 'transparent' }} />Extracting…</>
-                : <><Sparkles size={15} />Extract with AI<span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 Credit</span></>}
+                ? <><div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: 'currentColor', borderTopColor: 'transparent' }} />Extracting</>
+                : <><Sparkles size={15} />Extract with AI<span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>1 Credit</span></>}
             </button>
           )}
 
@@ -1128,7 +1128,7 @@ const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({ employers, ap
   );
 };
 
-// ── Add/Edit Entry Modal ──────────────────────────────────────────────────────
+//  Add/Edit Entry Modal 
 
 interface EntryModalProps {
   employers: Employer[];
@@ -1330,7 +1330,7 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
                 value={subLocationId}
                 onChange={(e) => setSubLocationId(e.target.value)}
               >
-                <option value="">None — general</option>
+                <option value="">None  general</option>
                 {selectedEmployer!.subLocations.map((sl) => (
                   <option key={sl._id} value={sl._id}>{sl.name}</option>
                 ))}
@@ -1344,7 +1344,7 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
             <input
               className="input-base w-full"
               type="text"
-              placeholder={type === 'shift' ? 'e.g. Morning shift, Night shift…' : 'e.g. Team standup, Doctor…'}
+              placeholder={type === 'shift' ? 'e.g. Morning shift, Night shift' : 'e.g. Team standup, Doctor'}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -1443,14 +1443,14 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
                   title={isNotesListening ? 'Stop recording' : 'Record notes with voice'}
                 >
                   <Mic size={12} className={isNotesListening ? 'animate-pulse' : ''} />
-                  {isNotesListening ? 'Recording…' : 'Voice input'}
+                  {isNotesListening ? 'Recording' : 'Voice input'}
                 </button>
               )}
             </div>
             <textarea
               className="input-base w-full resize-none"
               rows={3}
-              placeholder="Any notes about this entry…"
+              placeholder="Any notes about this entry"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
@@ -1494,7 +1494,7 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
           <div className="flex gap-3 pt-1">
             <button type="button" className="btn-secondary flex-1" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn-primary flex-1" disabled={saving || employers.length === 0}>
-              {saving ? 'Saving…' : editEntry ? 'Save changes' : 'Add entry'}
+              {saving ? 'Saving' : editEntry ? 'Save changes' : 'Add entry'}
             </button>
           </div>
         </form>
@@ -1503,7 +1503,7 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
   );
 };
 
-// ── Employer Card (with inline sub-location management) ───────────────────────
+//  Employer Card (with inline sub-location management) 
 
 interface EmployerCardProps {
   emp: Employer & { totalHours: number; entryCount: number };
@@ -1586,7 +1586,7 @@ const EmployerCard: React.FC<EmployerCardProps> = ({ emp, deletingEmployerId, on
             onClick={onDelete}
             className="p-1.5 rounded-lg transition-all"
             style={{ color: isConfirmDelete ? 'var(--rose)' : 'var(--text-muted)', background: isConfirmDelete ? 'var(--rose-bg)' : 'var(--bg-raised)' }}
-            title={isConfirmDelete ? 'Click again to confirm — will delete all entries' : 'Delete employer'}
+            title={isConfirmDelete ? 'Click again to confirm  will delete all entries' : 'Delete employer'}
           >
             {isConfirmDelete ? <span className="text-[10px] font-mono font-bold px-0.5">sure?</span> : <Trash2 size={14} />}
           </button>
@@ -1682,7 +1682,7 @@ const EmployerCard: React.FC<EmployerCardProps> = ({ emp, deletingEmployerId, on
         <div className="flex gap-1.5 mt-1">
           <input
             className="input-base text-xs flex-1 py-1 px-2 h-7"
-            placeholder="Add department / sub-location…"
+            placeholder="Add department / sub-location"
             value={newSubName}
             onChange={(e) => setNewSubName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleAddSub(); }}
@@ -1703,7 +1703,7 @@ const EmployerCard: React.FC<EmployerCardProps> = ({ emp, deletingEmployerId, on
   );
 };
 
-// ── Add/Edit Employer Modal ───────────────────────────────────────────────────
+//  Add/Edit Employer Modal 
 
 interface EmployerModalProps {
   editEmployer?: Employer | null;
@@ -1782,7 +1782,7 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
             <input
               className="input-base w-full"
               type="text"
-              placeholder="e.g. Starbucks, NHS Trust, Freelance…"
+              placeholder="e.g. Starbucks, NHS Trust, Freelance"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -1829,7 +1829,7 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Drag & drop or click to upload</p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>PNG, JPG, WebP — max 5 MB</p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>PNG, JPG, WebP  max 5 MB</p>
                   </div>
                 </>
               )}
@@ -1846,7 +1846,7 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
           <div className="flex gap-3 pt-1">
             <button type="button" className="btn-secondary flex-1" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn-primary flex-1" disabled={saving}>
-              {saving ? 'Saving…' : editEmployer ? 'Save changes' : 'Add employer'}
+              {saving ? 'Saving' : editEmployer ? 'Save changes' : 'Add employer'}
             </button>
           </div>
         </form>
@@ -1855,13 +1855,13 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
   );
 };
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+//  Main Page 
 
 const WorkTrackerPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'timelog' | 'employers' | 'appointments'>('timelog');
   const [entryTypeFilter, setEntryTypeFilter] = useState<'all' | 'shifts' | 'appointments' | 'calendar'>('all');
 
-  // ── Data state ────────────────────────────────────────────────────────────
+  //  Data state 
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [employers, setEmployers] = useState<Employer[]>([]);
 
@@ -1874,18 +1874,18 @@ const WorkTrackerPage: React.FC = () => {
   const [loadingAppointmentTypes, setLoadingAppointmentTypes] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
 
-  // ── Calendar events (inline in Time Log) ────────────────────────────────
+  //  Calendar events (inline in Time Log) 
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [loadingCalendarEvents, setLoadingCalendarEvents] = useState(false);
   const showMockWorkTour = showWorkTour && entries.length === 0 && calendarEvents.length === 0 && !loadingCalendarEvents && !loadingEntries;
 
-  // ── Month navigation ──────────────────────────────────────────────────────
+  //  Month navigation 
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getUTCFullYear());
   const [viewMonth, setViewMonth] = useState(now.getUTCMonth() + 1); // 1-indexed
 
-  // ── Modal state ───────────────────────────────────────────────────────────
+  //  Modal state 
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<WorkEntry | null>(null);
   const [showEmployerModal, setShowEmployerModal] = useState(false);
@@ -1894,7 +1894,7 @@ const WorkTrackerPage: React.FC = () => {
   const [showAppointmentTypeModal, setShowAppointmentTypeModal] = useState(false);
   const [editingAppointmentType, setEditingAppointmentType] = useState<PopulatedAppointmentType | null>(null);
 
-  // ── Entry form state ────────────────────
+  //  Entry form state 
   const [entryType, setEntryType] = useState<WorkEntryType>('shift');
   const [entryEmployerId, setEntryEmployerId] = useState('');
   const [entryAppointmentTypeId, setEntryAppointmentTypeId] = useState('');
@@ -1905,7 +1905,7 @@ const WorkTrackerPage: React.FC = () => {
   const [entryEndTime, setEntryEndTime] = useState('17:00');
   const [entryNotes, setEntryNotes] = useState('');
 
-  // ── Inline action state (delete confirm, remind loading) ──────────────────
+  //  Inline action state (delete confirm, remind loading) 
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [deletingEmployerId, setDeletingEmployerId] = useState<string | null>(null);
   const [deletingAppointmentTypeId, setDeletingAppointmentTypeId] = useState<string | null>(null);
@@ -1947,7 +1947,7 @@ const WorkTrackerPage: React.FC = () => {
     };
   };
 
-  // ── Fetch data ────────────────────────────────────────────────────────────
+  //  Fetch data 
   const fetchEntries = useCallback(async () => {
     setLoadingEntries(true);
     try {
@@ -2015,7 +2015,7 @@ const WorkTrackerPage: React.FC = () => {
       const events = await listUpcomingEvents({ maxResults: 100, timeMin, timeMax });
       setCalendarEvents(events);
     } catch {
-      // Silently fail — calendar integration is optional
+      // Silently fail  calendar integration is optional
       setCalendarEvents([]);
     } finally {
       setLoadingCalendarEvents(false);
@@ -2029,7 +2029,7 @@ const WorkTrackerPage: React.FC = () => {
   useEffect(() => { fetchAppointmentTypes(); }, [fetchAppointmentTypes]);
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
-  // ── Month navigation ──────────────────────────────────────────────────────
+  //  Month navigation 
   const prevMonth = () => {
     if (viewMonth === 1) { setViewYear((y) => y - 1); setViewMonth(12); }
     else setViewMonth((m) => m - 1);
@@ -2039,7 +2039,7 @@ const WorkTrackerPage: React.FC = () => {
     else setViewMonth((m) => m + 1);
   };
 
-  // ── Entry actions ─────────────────────────────────────────────────────────
+  //  Entry actions 
   const handleToggleDone = async (entry: WorkEntry) => {
     setTogglingId(entry._id);
     try {
@@ -2142,7 +2142,7 @@ const WorkTrackerPage: React.FC = () => {
     fetchStats();
   };
 
-  // ── Employer actions ──────────────────────────────────────────────────────
+  //  Employer actions 
   const handleEmployerSaved = (emp: Employer) => {
     setShowEmployerModal(false);
     setEditingEmployer(null);
@@ -2169,7 +2169,7 @@ const WorkTrackerPage: React.FC = () => {
     setEmployers((prev) => prev.map((e) => e._id === empId ? { ...e, subLocations: subs } : e));
   };
 
-  // ── AppointmentType actions ────────────────────────────────────────────────
+  //  AppointmentType actions 
   const handleAppointmentTypeSaved = (apt: PopulatedAppointmentType) => {
     setShowAppointmentTypeModal(false);
     setEditingAppointmentType(null);
@@ -2190,7 +2190,7 @@ const WorkTrackerPage: React.FC = () => {
     } catch { /* ignore */ }
   };
 
-  // ── Computed ──────────────────────────────────────────────────────────────
+  //  Computed 
   const monthHours = Math.round(entries.reduce((s, e) => s + (e.type === 'shift' ? e.hours : 0), 0) * 10) / 10;
   const monthDoneHours = Math.round(entries.reduce((s, e) => s + (e.status === 'done' && e.type === 'shift' ? e.hours : 0), 0) * 10) / 10;
   const monthPlanned = entries.filter((e) => e.status === 'planned' && e.type === 'shift').length;
@@ -2204,15 +2204,15 @@ const WorkTrackerPage: React.FC = () => {
   const filteredEntries = entryTypeFilter === 'all' ? entries
     : entryTypeFilter === 'shifts' ? entries.filter((e) => e.type === 'shift')
     : entryTypeFilter === 'appointments' ? entries.filter((e) => e.type === 'appointment')
-    : []; // 'calendar' — no work entries
+    : []; // 'calendar'  no work entries
   const filteredCalendarEvents = (entryTypeFilter === 'all' || entryTypeFilter === 'calendar') ? calendarEvents : [];
   // Planned: work entries + calendar events for the month
   const plannedGrouped = groupItemsByDate(filteredEntries.filter((e) => e.status === 'planned'), filteredCalendarEvents);
   // Done: work entries only (calendar events have no status)
   const doneGrouped = groupItemsByDate(filteredEntries.filter((e) => e.status === 'done'), []);
   const sortedDateKeys = Array.from(grouped.keys()).sort();
-  const plannedDateKeys = Array.from(plannedGrouped.keys()).sort(); // ascending — soonest first
-  const doneDateKeys = Array.from(doneGrouped.keys()).sort().reverse(); // descending — most recent first
+  const plannedDateKeys = Array.from(plannedGrouped.keys()).sort(); // ascending  soonest first
+  const doneDateKeys = Array.from(doneGrouped.keys()).sort().reverse(); // descending  most recent first
 
   // Per-employer summary from entries in current view
   type EmployerSummary = { totalHours: number; planned: number; done: number; lastDate: string | null };
@@ -2254,7 +2254,7 @@ const WorkTrackerPage: React.FC = () => {
               const endStr = event.end.dateTime ? formatCalendarTime(event.end.dateTime) : null;
               return (
                 <li key={`cal-${event.id}`} className="flex items-start gap-3 px-4 py-3 transition-colors" style={{ background: 'rgba(99,102,241,0.025)' }}>
-                  {/* Spacer matching the toggle button width — calendar rows are read-only */}
+                  {/* Spacer matching the toggle button width  calendar rows are read-only */}
                   <div className="mt-0.5 shrink-0 flex items-center justify-center" style={{ width: 20, height: 20, color: 'var(--accent)', opacity: 0.55 }}>
                     <CalendarDays size={15} />
                   </div>
@@ -2285,13 +2285,13 @@ const WorkTrackerPage: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  {/* No action buttons — read-only calendar rows */}
+                  {/* No action buttons  read-only calendar rows */}
                   <div style={{ width: 28 }} />
                 </li>
               );
             }
 
-            // ── Work entry row (unchanged) ───────────────────────────────────
+            //  Work entry row (unchanged) 
             const entry = item.data;
             const isDone = entry.status === 'done';
             const isToggling = togglingId === entry._id;
@@ -2382,12 +2382,12 @@ const WorkTrackerPage: React.FC = () => {
     );
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  //  Render 
   return (
     <div className="h-full overflow-y-auto custom-scrollbar px-2" style={{ background: 'var(--bg-base)' }}>
       <div className="py-6 md:py-8 space-y-6 md:space-y-8">
 
-        {/* ── Page header ─────────────────────────────────────────────────── */}
+        {/*  Page header  */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-display font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
@@ -2423,36 +2423,36 @@ const WorkTrackerPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Stats bar ───────────────────────────────────────────────────── */}
+        {/*  Stats bar  */}
         <div className="flex flex-wrap gap-4">
           <StatCard
             label="Total hours"
-            value={loadingEntries ? '—' : showMockWorkTour ? '24h' : `${monthHours}h`}
-            sub={loadingEntries ? undefined : showMockWorkTour ? '16h done · 4 entries' : `${monthDoneHours}h done · ${entries.length} entries`}
+            value={loadingEntries ? '' : showMockWorkTour ? '24h' : `${monthHours}h`}
+            sub={loadingEntries ? undefined : showMockWorkTour ? '16h done  4 entries' : `${monthDoneHours}h done  ${entries.length} entries`}
             icon={<Clock size={18} />}
             accent
           />
           <StatCard
             label="Employers"
-            value={loadingEntries ? '—' : showMockWorkTour ? 2 : monthEmployers}
+            value={loadingEntries ? '' : showMockWorkTour ? 2 : monthEmployers}
             sub={showMockWorkTour ? '2 registered' : `${employers.length} registered`}
             icon={<Building2 size={18} />}
           />
           <StatCard
             label="Shifts"
-            value={loadingEntries ? '—' : showMockWorkTour ? '3' : `${monthPlanned + monthDone}`}
-            sub={showMockWorkTour ? '1 planned · 2 done' : `${monthPlanned} planned · ${monthDone} done`}
+            value={loadingEntries ? '' : showMockWorkTour ? '3' : `${monthPlanned + monthDone}`}
+            sub={showMockWorkTour ? '1 planned  2 done' : `${monthPlanned} planned  ${monthDone} done`}
             icon={<Briefcase size={18} />}
           />
           <StatCard
             label="Appointments"
-            value={loadingEntries ? '—' : showMockWorkTour ? 1 : monthAppointments}
+            value={loadingEntries ? '' : showMockWorkTour ? 1 : monthAppointments}
             sub={monthLabel}
             icon={<CalendarDays size={18} />}
           />
         </div>
 
-        {/* ═══════ TIME LOG TAB ════════════════════════════════════════════ */}
+        {/*  TIME LOG TAB  */}
         {activeTab === 'timelog' && (
           <div className="space-y-6">
 
@@ -2504,7 +2504,7 @@ const WorkTrackerPage: React.FC = () => {
                   style={{ color: 'var(--text-muted)' }}
                   aria-label="Dismiss reminder feedback"
                 >
-                  ✕
+                  
                 </button>
               </div>
             )}
@@ -2535,7 +2535,7 @@ const WorkTrackerPage: React.FC = () => {
                 <button
                   onClick={() => setShowImportModal(true)}
                   className="group flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all"
-                  style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                  style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-dim)' }}
                   title="Import with AI"
                 >
                   <Sparkles size={15} />
@@ -2543,7 +2543,7 @@ const WorkTrackerPage: React.FC = () => {
                     <span className="text-sm font-semibold">Import with AI</span>
                     <span className="text-[11px] opacity-80 hidden md:inline">Parse image, PDF, or pasted text</span>
                   </span>
-                  <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 Credit</span>
+                  <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>1 Credit</span>
                 </button>
 
                 <button
@@ -2578,7 +2578,7 @@ const WorkTrackerPage: React.FC = () => {
               </div>
             </div>
 
-            {/* ── Type filter pills ─────────────────────────────────── */}
+            {/*  Type filter pills  */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {([
                 { key: 'all',          label: 'All',         icon: <Clock size={13} /> },
@@ -2601,13 +2601,13 @@ const WorkTrackerPage: React.FC = () => {
               ))}
             </div>
 
-            {/* ── Demo Tour Section ────────────────────────────────────── */}
+            {/*  Demo Tour Section  */}
             {showMockWorkTour && (
               <div className="space-y-4">
                 <TourBanner pageLabel="Time Tracker" onDismiss={dismissWorkTour} />
                 <div className="opacity-80 select-none pointer-events-none">
 
-                {/* ── Planned section ── */}
+                {/*  Planned section  */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <p className="label-overline flex items-center gap-1.5"><Circle size={10} /> Planned</p>
@@ -2650,7 +2650,7 @@ const WorkTrackerPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ── Done section ── */}
+                {/*  Done section  */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <p className="label-overline flex items-center gap-1.5"><CheckCircle2 size={10} /> Done</p>
@@ -2749,7 +2749,7 @@ const WorkTrackerPage: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* ── Planned section ── */}
+                  {/*  Planned section  */}
                   {plannedDateKeys.length > 0 && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
@@ -2764,7 +2764,7 @@ const WorkTrackerPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* ── Done section ── */}
+                  {/*  Done section  */}
                   {doneDateKeys.length > 0 && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
@@ -2786,7 +2786,7 @@ const WorkTrackerPage: React.FC = () => {
             {entries.length > 0 && (
               <div>
                 <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>
-                  Workplace breakdown — {MONTH_NAMES[viewMonth - 1]}
+                  Workplace breakdown  {MONTH_NAMES[viewMonth - 1]}
                 </h2>
                 <div className="space-y-2">
                   {Array.from(employerSummary.entries()).map(([empId, summary]) => {
@@ -2826,7 +2826,7 @@ const WorkTrackerPage: React.FC = () => {
                             <div>
                               <p className="label-overline">Last entry</p>
                               <p className="font-mono text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                                {summary.lastDate ? formatDate(summary.lastDate) : '—'}
+                                {summary.lastDate ? formatDate(summary.lastDate) : ''}
                               </p>
                             </div>
                           </div>
@@ -2840,7 +2840,7 @@ const WorkTrackerPage: React.FC = () => {
           </div>
         )}
 
-        {/* ═══════ EMPLOYERS TAB ═══════════════════════════════════════════ */}
+        {/*  EMPLOYERS TAB  */}
         {activeTab === 'employers' && (
           <div className="space-y-5">
             <div className="flex items-center justify-between">
@@ -2890,7 +2890,7 @@ const WorkTrackerPage: React.FC = () => {
           </div>
         )}
 
-        {/* ═══════ APPOINTMENTS TAB ════════════════════════════════════════════ */}
+        {/*  APPOINTMENTS TAB  */}
         {activeTab === 'appointments' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -2958,7 +2958,7 @@ const WorkTrackerPage: React.FC = () => {
 
       </div>
 
-      {/* ── Modals ──────────────────────────────────────────────────────── */}
+      {/*  Modals  */}
       {showImportModal && (
         <ScheduleImportModal
           employers={employers}
@@ -3009,7 +3009,7 @@ const WorkTrackerPage: React.FC = () => {
   );
 };
 
-// ── AppointmentTypeModal Component ───────────────────────────────────────────
+//  AppointmentTypeModal Component 
 interface AppointmentTypeModalProps {
   editAppointmentType?: PopulatedAppointmentType | null;
   onClose: () => void;
@@ -3064,7 +3064,7 @@ const AppointmentTypeModal: React.FC<AppointmentTypeModalProps> = ({ editAppoint
           <div className="flex gap-3 pt-1">
             <button type="button" className="btn-secondary flex-1" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn-primary flex-1" disabled={saving}>
-              {saving ? 'Saving…' : editAppointmentType ? 'Save changes' : 'Add type'}
+              {saving ? 'Saving' : editAppointmentType ? 'Save changes' : 'Add type'}
             </button>
           </div>
         </form>
@@ -3074,6 +3074,7 @@ const AppointmentTypeModal: React.FC<AppointmentTypeModalProps> = ({ editAppoint
 };
 
 export default WorkTrackerPage;
+
 
 
 

@@ -37,3 +37,6 @@ mcp-install/brave.json
 
 # GSD
 .gsd/
+
+# Local Netlify folder
+.netlify

@@ -690,7 +690,7 @@ const AutoJobsPage: React.FC = () => {
                                     <span>{isTriggering ? 'Starting...' : 'Running...'}</span>
                                 </>
                             ) : (
-                                <>🚀 Run Now <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>3 base + 0.25 Credits/job</span></>
+                                <> Run Now <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>3 base + 0.25 Credits/job</span></>
                             )}
                         </button>
                     </div>
@@ -755,7 +755,7 @@ const AutoJobsPage: React.FC = () => {
                                 maxLength={200}
                                 className="input-base w-full"
                             />
-                            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            <p className="mt-1 text-xs text-secondary-color">
                                 Enter job search keywords (required if location not provided). Max 200 characters.
                             </p>
                         </div>
@@ -801,7 +801,7 @@ const AutoJobsPage: React.FC = () => {
                                     ))}
                                 </div>
                             )}
-                            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            <p className="mt-1 text-xs text-secondary-color">
                                 Enter location to filter jobs (optional). Start typing to see suggestions. Max 100 characters.
                             </p>
                         </div>
@@ -828,11 +828,11 @@ const AutoJobsPage: React.FC = () => {
                                             }}
                                             className="mr-2 rounded accent-gold-500"
                                         />
-                                        <span className="text-sm text-zinc-700 dark:text-zinc-300 capitalize">{type.replace('-', ' ')}</span>
+                                        <span className="text-sm text-secondary-color capitalize">{type.replace('-', ' ')}</span>
                                     </label>
                                 ))}
                             </div>
-                            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            <p className="mt-1 text-xs text-secondary-color">
                                 Select 1-5 job types (optional). Leave empty to include all types.
                             </p>
                         </div>
@@ -859,11 +859,11 @@ const AutoJobsPage: React.FC = () => {
                                             }}
                                             className="mr-2 rounded accent-gold-500"
                                         />
-                                        <span className="text-sm text-zinc-700 dark:text-zinc-300 capitalize">{level}</span>
+                                        <span className="text-sm text-secondary-color capitalize">{level}</span>
                                     </label>
                                 ))}
                             </div>
-                            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            <p className="mt-1 text-xs text-secondary-color">
                                 Select 1-5 experience levels (optional). Leave empty to include all levels.
                             </p>
                         </div>
@@ -889,7 +889,7 @@ const AutoJobsPage: React.FC = () => {
                                 <option value="past week">Past Week</option>
                                 <option value="past month">Past Month</option>
                             </select>
-                            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            <p className="mt-1 text-xs text-secondary-color">
                                 Filter jobs by posting date (optional).
                             </p>
                         </div>
@@ -897,7 +897,7 @@ const AutoJobsPage: React.FC = () => {
                         {/* Max Jobs Slider */}
                         <div>
                             <div className="flex justify-between items-center mb-1">
-                                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                <label className="block text-sm font-medium text-secondary-color">
                                     Jobs to Retrieve
                                 </label>
                                 <span className="text-sm font-semibold">
@@ -912,7 +912,7 @@ const AutoJobsPage: React.FC = () => {
                                 onChange={handleMaxJobsChange}
                                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600 accent-gold-500"
                             />
-                            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            <p className="mt-1 text-xs text-secondary-color">
                                 Maximum number of jobs to process per run (20-1000, default: 100)
                             </p>
                         </div>
@@ -920,8 +920,8 @@ const AutoJobsPage: React.FC = () => {
                         {/* Avoid Duplicates */}
                         <div className="flex items-center justify-between">
                             <div>
-                                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Avoid Duplicates</label>
-                                <p className="text-xs text-zinc-500 dark:text-zinc-400">Skip already scraped jobs across runs</p>
+                                <label className="text-sm font-medium text-secondary-color">Avoid Duplicates</label>
+                                <p className="text-xs text-secondary-color">Skip already scraped jobs across runs</p>
                             </div>
                             <button
                                 onClick={() => {
@@ -960,7 +960,7 @@ const AutoJobsPage: React.FC = () => {
                                                 'Running Auto Jobs'}
                                 </h2>
                                 {workflowProgress.status === 'running' && workflowProgress.progress.currentStep && (
-                                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                    <p className="text-sm text-secondary-color">
                                         {workflowProgress.progress.currentStep}
                                     </p>
                                 )}
@@ -1131,10 +1131,10 @@ const AutoJobsPage: React.FC = () => {
                         <table className="w-full">
                             <thead className="bg-gray-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-700">
                                 <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">JOB</th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">LOCATION</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-color uppercase tracking-wider">JOB</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-secondary-color uppercase tracking-wider">LOCATION</th>
                                     <th
-                                        className="px-6 py-4 text-left text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider cursor-pointer hover:text-gold-500 dark:hover:text-gold-400 transition-colors group"
+                                        className="px-6 py-4 text-left text-xs font-semibold text-secondary-color uppercase tracking-wider cursor-pointer hover:text-gold-500 dark:hover:text-gold-400 transition-colors group"
                                         onClick={() => handleSort('postDate')}
                                     >
                                         <span className="flex items-center">
@@ -1143,7 +1143,7 @@ const AutoJobsPage: React.FC = () => {
                                         </span>
                                     </th>
                                     <th
-                                        className="px-6 py-4 text-left text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider cursor-pointer hover:text-gold-500 dark:hover:text-gold-400 transition-colors group"
+                                        className="px-6 py-4 text-left text-xs font-semibold text-secondary-color uppercase tracking-wider cursor-pointer hover:text-gold-500 dark:hover:text-gold-400 transition-colors group"
                                         onClick={() => handleSort('skillMatch')}
                                     >
                                         <span className="flex items-center">
@@ -1151,7 +1151,7 @@ const AutoJobsPage: React.FC = () => {
                                             <SortIndicator column="skillMatch" />
                                         </span>
                                     </th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">ACTIONS</th>
+                                    <th className="px-6 py-4 text-right text-xs font-semibold text-secondary-color uppercase tracking-wider">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white dark:bg-zinc-800 divide-y divide-slate-200 dark:divide-slate-700">
@@ -1159,7 +1159,7 @@ const AutoJobsPage: React.FC = () => {
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center">
                                             <div className="flex flex-col items-center gap-3">
-                                                <p className="text-zinc-500 dark:text-zinc-400 text-base">
+                                                <p className="text-secondary-color text-base">
                                                     {workflowProgress?.status === 'completed' && workflowProgress.stats.jobsFound === 0 ? (
                                                         <>
                                                             No jobs found matching your search criteria.
@@ -1188,14 +1188,14 @@ const AutoJobsPage: React.FC = () => {
                                                     >
                                                         {job.jobTitle}
                                                     </a>
-                                                    <span className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">{job.companyName}</span>
+                                                    <span className="text-sm text-secondary-color mt-0.5">{job.companyName}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
                                                     {job.extractedData?.location ? (
                                                         <>
-                                                            <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                                                            <span className="text-sm text-secondary-color">
                                                                 {job.extractedData.location}
                                                             </span>
                                                             {job.extractedData?.remoteOption && (
@@ -1225,7 +1225,7 @@ const AutoJobsPage: React.FC = () => {
                                                             );
                                                         }
                                                         return (
-                                                            <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                                                            <span className="text-sm text-secondary-color">
                                                                 {postDate.toLocaleDateString('en-US', {
                                                                     year: 'numeric',
                                                                     month: 'short',
@@ -1315,7 +1315,7 @@ const AutoJobsPage: React.FC = () => {
 
                     {/* Pagination */}
                     <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-900/50 border-t border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
-                        <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                        <div className="text-sm text-secondary-color">
                             Showing {total === 0 ? 0 : Math.min((currentPage - 1) * pageSize + 1, total)} to {Math.min(currentPage * pageSize, total)} of {total} entries
                         </div>
                         {totalPages > 1 && (
@@ -1367,4 +1367,5 @@ const AutoJobsPage: React.FC = () => {
 };
 
 export default AutoJobsPage;
+
 

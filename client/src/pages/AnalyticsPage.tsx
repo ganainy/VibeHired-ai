@@ -262,7 +262,7 @@ const AnalyticsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── Demo Tour Banner ─────────────────────────────────────────── */}
+            {/*  Demo Tour Banner  */}
             {isDemo && (
                 <div className="mb-6">
                     <TourBanner pageLabel="Analytics Dashboard" onDismiss={dismissAnalyticsTour} />

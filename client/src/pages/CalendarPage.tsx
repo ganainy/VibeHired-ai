@@ -35,7 +35,7 @@ import TourBanner from '../components/onboarding/TourBanner';
 import { usePageTour } from '../hooks/usePageTour';
 import { MOCK_CALENDAR_EVENT } from '../data/mockTourData';
 
-// ── Types ──
+//  Types 
 
 export type TimeFilter =
     | '7d'
@@ -63,7 +63,7 @@ const FILTER_OPTIONS: FilterOption[] = [
     { id: 'nextYear', label: 'Next Year' },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function getFilterRange(filter: TimeFilter): { timeMin: string; timeMax?: string } {
     const now = new Date();
@@ -154,7 +154,7 @@ function isToday(dateKey: string): boolean {
     return dateKey === formatDateKey(new Date());
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+//  Sub-components 
 
 interface EventRowProps {
     event: CalendarEvent;
@@ -225,7 +225,7 @@ const LoadingSkeleton: React.FC = () => (
     </div>
 );
 
-// ── Modal Sub-component ───────────────────────────────────────────────────────
+//  Modal Sub-component 
 
 interface EventModalProps {
     event?: CalendarEvent | null;
@@ -352,7 +352,7 @@ const EventModal: React.FC<EventModalProps> = ({ event, onClose, onSave }) => {
                             <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                             <input
                                 className="input-base pl-9"
-                                placeholder="Add location…"
+                                placeholder="Add location"
                                 value={location}
                                 onChange={(e) => setLocation(e.target.value)}
                             />
@@ -363,7 +363,7 @@ const EventModal: React.FC<EventModalProps> = ({ event, onClose, onSave }) => {
                         <label className="label-overline">Description</label>
                         <textarea
                             className="input-base resize-none min-h-[100px]"
-                            placeholder="Add details, notes, or links…"
+                            placeholder="Add details, notes, or links"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                         />
@@ -392,7 +392,7 @@ const EventModal: React.FC<EventModalProps> = ({ event, onClose, onSave }) => {
     );
 };
 
-// ── CalendarIcon for Sidebar (exported for reuse) ─────────────────────────────
+//  CalendarIcon for Sidebar (exported for reuse) 
 export const CalendarSvgIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -402,7 +402,7 @@ export const CalendarSvgIcon = () => (
     </svg>
 );
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+//  Main Page 
 
 const CalendarPage: React.FC = () => {
     const [connected, setConnected] = useState<boolean | null>(null);
@@ -581,7 +581,7 @@ const CalendarPage: React.FC = () => {
     const grouped = groupEventsByDate(events);
     const sortedDateKeys = Array.from(grouped.keys()).sort();
 
-    // ── Render ────────────────────────────────────────────────────────────────
+    //  Render 
 
     return (
         <div className="space-y-8">
@@ -659,17 +659,17 @@ const CalendarPage: React.FC = () => {
                 </div>
             )}
 
-            {/* ── Demo Tour Section ─────────────────────────────────────────── */}
+            {/*  Demo Tour Section  */}
             {/* (shown inside the connected+empty state below) */}
 
             {/* Status loading */}
             {statusLoading ? (
                 <div className="flex items-center justify-center py-24 gap-3" style={{ color: 'var(--text-muted)' }}>
                     <Loader2 size={22} className="animate-spin" />
-                    <span className="text-sm">Checking connection…</span>
+                    <span className="text-sm">Checking connection</span>
                 </div>
             ) : !connected ? (
-                /* ── NOT CONNECTED ─────────────────────────────────────────── */
+                /*  NOT CONNECTED  */
                 <div className="flex items-center justify-center py-10">
                     <div
                         className="card p-6 sm:p-10 flex flex-col items-center text-center gap-6"
@@ -726,7 +726,7 @@ const CalendarPage: React.FC = () => {
                             {connecting ? (
                                 <>
                                     <Loader2 size={16} className="animate-spin" />
-                                    Redirecting to Google…
+                                    Redirecting to Google
                                 </>
                             ) : (
                                 <>
@@ -742,7 +742,7 @@ const CalendarPage: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                /* ── CONNECTED ─────────────────────────────────────────────── */
+                /*  CONNECTED  */
                 <div className="space-y-6">
                     {/* Connection status bar */}
                     <div
@@ -800,10 +800,10 @@ const CalendarPage: React.FC = () => {
                         <LoadingSkeleton />
                     ) : sortedDateKeys.length === 0 ? (
                         showCalTour ? (
-                            /* ── Demo Tour Section ── */
+                            /*  Demo Tour Section  */
                             <div className="space-y-3 animate-in fade-in duration-300">
                                 <TourBanner pageLabel="Calendar" onDismiss={dismissCalTour} />
-                                {/* Date group heading — matches the real grouped list style */}
+                                {/* Date group heading  matches the real grouped list style */}
                                 <div>
                                     <div className="flex items-center gap-3 mb-3">
                                         <p
@@ -815,7 +815,7 @@ const CalendarPage: React.FC = () => {
                                         <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
                                         <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>1 event</span>
                                     </div>
-                                    {/* Mock event row — matches EventRow structure exactly */}
+                                    {/* Mock event row  matches EventRow structure exactly */}
                                     <div
                                         className="relative flex gap-3 py-3 px-4 rounded-xl opacity-80 select-none pointer-events-none"
                                         style={{ border: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}
