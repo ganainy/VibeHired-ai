@@ -108,15 +108,26 @@ export async function consumeCredits(
         autoJobsWorkflow: 'autoJobsWorkflow',
         cvParsing: 'cvParsing',
         analysis: 'analysis',
-        interview: 'interview'
+        interview: 'interview',
+        interviewGenerateQuestions: 'interviewGenerateQuestions',
+        interviewEvaluate: 'interviewEvaluate',
+        interviewAnswer: 'interviewAnswer',
+        interviewStreamAnswer: 'interviewStreamAnswer'
     };
 
     const fieldName = actionMap[action];
     if (fieldName) {
-        update.$inc = {
+        const nextInc: Record<string, number> = {
             'credits.used': weight,
             [`actions.${fieldName}`]: 1
         };
+
+        // Keep the legacy aggregate interview counter populated for existing dashboards.
+        if (action.startsWith('interview') && action !== 'interview') {
+            nextInc['actions.interview'] = 1;
+        }
+
+        update.$inc = nextInc;
     }
 
     const updatedRecord = await UsageRecord.findByIdAndUpdate(

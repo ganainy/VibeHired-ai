@@ -138,7 +138,7 @@ function App() {
         <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute><AdminUsersPage /></ProtectedRoute>} />
         <Route path="/admin/errors" element={<ProtectedRoute><AdminRoute><AdminErrorsPage /></AdminRoute></ProtectedRoute>} />
-        <Route path="/interview-buddy" element={<ProtectedRoute><AdminRoute><InterviewBuddyPage /></AdminRoute></ProtectedRoute>} />
+        <Route path="/interview-buddy" element={<ProtectedRoute><InterviewBuddyPage /></ProtectedRoute>} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

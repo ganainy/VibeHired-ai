@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { parseApiErrorMessage } from '../utils/parseApiError';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api';
 
@@ -21,8 +22,8 @@ export async function generateInterviewQuestions(
             { level, questionCount }
         );
         return data.questions;
-    } catch (error: any) {
-        throw new Error(error?.response?.data?.message || 'Failed to generate interview questions');
+    } catch (error) {
+        throw new Error(parseApiErrorMessage(error) || 'Failed to generate interview questions');
     }
 }
 
@@ -40,8 +41,8 @@ export async function answerQuestion(
     try {
         const { data } = await axios.post<AnswerResult>(`${API_BASE_URL}/interview/${jobId}/answer-question`, { question });
         return data;
-    } catch (error: any) {
-        throw new Error(error?.response?.data?.message || 'Failed to generate answer');
+    } catch (error) {
+        throw new Error(parseApiErrorMessage(error) || 'Failed to generate answer');
     }
 }
 
@@ -54,7 +55,7 @@ export async function evaluateAnswer(
     try {
         const { data } = await axios.post<EvaluationResult>(`${API_BASE_URL}/interview/${jobId}/evaluate`, { question, answer });
         return data;
-    } catch (error: any) {
-        throw new Error(error?.response?.data?.message || 'Failed to evaluate answer');
+    } catch (error) {
+        throw new Error(parseApiErrorMessage(error) || 'Failed to evaluate answer');
     }
 }

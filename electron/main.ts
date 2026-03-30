@@ -114,6 +114,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Ensure DevTools cannot be opened in production builds.
+      devTools: isDev,
     },
   });
 
@@ -130,6 +132,18 @@ function createWindow() {
     win.webContents.openDevTools({ mode: 'detach' });
   } else {
     win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+
+    // Defense-in-depth: ignore common DevTools shortcuts in production.
+    win.webContents.on('before-input-event', (event, input) => {
+      const key = input.key.toLowerCase();
+      const opensDevToolsShortcut =
+        key === 'f12' ||
+        ((input.control || input.meta) && input.shift && key === 'i');
+
+      if (opensDevToolsShortcut) {
+        event.preventDefault();
+      }
+    });
   }
 
   win.on('closed', () => {

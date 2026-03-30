@@ -20,6 +20,10 @@ export interface IUsageRecord extends Document {
         cvParsing: number;
         analysis: number;
         interview: number;
+        interviewGenerateQuestions: number;
+        interviewEvaluate: number;
+        interviewAnswer: number;
+        interviewStreamAnswer: number;
     };
     history: Array<{
         action: string;
@@ -65,6 +69,10 @@ const UsageRecordSchema: Schema = new Schema(
             cvParsing: { type: Number, default: 0 },
             analysis: { type: Number, default: 0 },
             interview: { type: Number, default: 0 },
+            interviewGenerateQuestions: { type: Number, default: 0 },
+            interviewEvaluate: { type: Number, default: 0 },
+            interviewAnswer: { type: Number, default: 0 },
+            interviewStreamAnswer: { type: Number, default: 0 },
         },
         history: [
             {

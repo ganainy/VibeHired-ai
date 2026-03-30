@@ -164,6 +164,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
         { path: '/email-suggestions', label: 'Inbox', icon: InboxIcon, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
         { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon, disabled: true },
         { path: '/interview-materials', label: 'Prep Library', icon: PrepLibraryIcon },
+        { path: '/interview-buddy', label: 'Interview Buddy', icon: InterviewBuddyIcon },
         { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
         { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
         { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
@@ -177,6 +178,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
         '/manage-cv': 'nav-manage-cv',
         '/email-suggestions': 'nav-email-suggestions',
         '/interview-materials': 'nav-interview-materials',
+        '/interview-buddy': 'nav-interview-buddy',
         '/work-tracker': 'nav-work-tracker',
         '/calendar': 'nav-calendar',
         '/analytics': 'nav-analytics',
@@ -324,7 +326,6 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                                 { path: '/admin', label: 'Admin Dashboard', icon: AnalyticsIcon },
                                 { path: '/admin/users', label: 'User Management', icon: PortfolioIcon },
                                 { path: '/admin/errors', label: 'Error Logs', icon: AlertIcon },
-                                { path: '/interview-buddy', label: 'Interview Buddy', icon: InterviewBuddyIcon },
                             ].map((item) => {
                                 const isActive = isActiveRoute(item.path);
                                 return (

@@ -168,6 +168,7 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
         { path: '/email-suggestions', label: 'Inbox', icon: InboxIconMobile, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
         { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon, disabled: true },
         { path: '/interview-materials', label: 'Prep Library', icon: PrepLibraryIcon },
+        { path: '/interview-buddy', label: 'Interview Buddy', icon: InterviewBuddyIcon },
         { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
         { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
         { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
@@ -179,7 +180,6 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
     const adminNavItems = [
         { path: '/admin', label: 'Admin Dashboard', icon: AnalyticsIcon },
         { path: '/admin/users', label: 'User Management', icon: PortfolioIcon },
-        { path: '/interview-buddy', label: 'Interview Buddy', icon: InterviewBuddyIcon },
     ];
 
     const mobileOnboardingNavByPath: Record<string, string> = {
@@ -187,6 +187,7 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
         '/manage-cv': 'mobile-nav-manage-cv',
         '/email-suggestions': 'mobile-nav-email-suggestions',
         '/interview-materials': 'mobile-nav-interview-materials',
+        '/interview-buddy': 'mobile-nav-interview-buddy',
         '/work-tracker': 'mobile-nav-work-tracker',
         '/calendar': 'mobile-nav-calendar',
         '/analytics': 'mobile-nav-analytics',

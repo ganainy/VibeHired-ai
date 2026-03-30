@@ -143,27 +143,14 @@ const InterviewBuddyPage: React.FC = () => {
 
       {/*  Header  */}
       <div className="mb-10">
-        <div className="flex items-center gap-3 mb-3">
-          <div
-            className="flex items-center justify-center w-10 h-10 rounded-xl"
-            style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2a3 3 0 013 3v5a3 3 0 01-6 0V5a3 3 0 013-3z" />
-              <path d="M19 10a7 7 0 01-14 0" />
-              <line x1="12" y1="19" x2="12" y2="23" />
-              <line x1="8" y1="23" x2="16" y2="23" />
-            </svg>
-          </div>
-          <span
-            className="text-[11px] font-black uppercase tracking-widest font-mono px-2 py-0.5 rounded"
-            style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-          >
-            Admin Preview
-          </span>
-        </div>
-        <h1 className="text-3xl font-semibold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
-          AI Interview Buddy
+        <h1 className="text-3xl font-semibold tracking-tight mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 2a3 3 0 013 3v5a3 3 0 01-6 0V5a3 3 0 013-3z" />
+            <path d="M19 10a7 7 0 01-14 0" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+          <span>AI Interview Buddy</span>
         </h1>
         <p className="text-base max-w-xl" style={{ color: 'var(--text-secondary)' }}>
           A stealth desktop companion that listens to your interviewer, then shows AI-generated answers
@@ -259,7 +246,21 @@ const InterviewBuddyPage: React.FC = () => {
         <p className="text-[13px] mb-5" style={{ color: 'var(--text-secondary)' }}>
           Use this order in production: <strong style={{ color: 'var(--text-primary)' }}>1) install the desktop companion</strong>, then <strong style={{ color: 'var(--text-primary)' }}>2) launch it from this page</strong>.
           The companion will use the selected job and your prep materials to craft tailored answers, default the transcription language from the selected job, and let you edit transcript text before sending to AI.
+          Session warm-up is free.
         </p>
+
+        <div
+          className="mb-5 rounded-lg px-3 py-3"
+          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-bright)' }}
+        >
+          <p className="text-[11px] font-black uppercase tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>
+            Credit Cost
+          </p>
+          <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+            <strong style={{ color: 'var(--text-primary)' }}>2 credits</strong> are charged each time you press Ask AI (button or Ctrl/Cmd+Shift+Enter).
+            Listening, live transcription, transcript editing, and session initialization are free.
+          </p>
+        </div>
 
         <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div
@@ -480,7 +481,7 @@ const InterviewBuddyPage: React.FC = () => {
             'Click "Launch Interview Buddy" and select the job you are interviewing for.',
             `Press ${navigator.platform.startsWith('Mac') ? 'Cmd' : 'Ctrl'}+Shift+L to toggle listening on/off.`,
             'Select your transcription language (defaults to the selected job language), then speak and optionally edit transcript text directly in the overlay.',
-            `Press ${navigator.platform.startsWith('Mac') ? 'Cmd' : 'Ctrl'}+Shift+Enter or click Ask AI to send only detected questions for answering.`,
+            `Press ${navigator.platform.startsWith('Mac') ? 'Cmd' : 'Ctrl'}+Shift+Enter or click Ask AI to send only detected questions for answering (2 credits per Ask AI request).`,
             'Read the answer naturally. Use the bottom-right resize handle to resize the overlay, and press Ctrl+Shift+C to clear for the next turn.',
           ].map((step, i) => (
             <li key={i} className="flex gap-3 text-[13px]" style={{ color: 'var(--text-secondary)' }}>

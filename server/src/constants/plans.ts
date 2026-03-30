@@ -37,7 +37,11 @@ export const CREDIT_WEIGHTS = {
     coverLetter: 3,
     cvParsing: 2,
     analysis: 2,
-    interview: 5,
+    interview: 5, // Backward-compatible umbrella action
+    interviewGenerateQuestions: 5,
+    interviewEvaluate: 1,
+    interviewAnswer: 2,
+    interviewStreamAnswer: 2,
     autoJobsWorkflow: 0.25, // Cost per job retrieved (e.g., 100 jobs = 25 credits + base fee)
     autoJobsBaseFee: 3, // Base fee for job list retrieval and server overhead
 } as const;

@@ -424,7 +424,8 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
         review: isEnglish ? 'Review Answers' : 'Antworten überprüfen',
         addMore: isEnglish ? 'Add More Questions' : 'Weitere Fragen hinzufügen',
         questionCount: isEnglish ? '5 questions' : '5 Fragen',
-        credits: isEnglish ? '5 Credits' : '5 Credits',
+        startCredits: isEnglish ? '5 Credits' : '5 Credits',
+        evalCredits: isEnglish ? '1 Credit / answer' : '1 Credit / Antwort',
         generating: isEnglish ? 'Generating your interview questions…' : 'Interviewfragen werden generiert…',
         evaluating: isEnglish ? 'Evaluating your answer…' : 'Antwort wird bewertet…',
         endInterview: isEnglish ? 'End Interview' : 'Interview beenden',
@@ -479,7 +480,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                                 onClick={() => { setLevel('first'); startInterview(); }}
                                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all relative ${level === 'first' ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20' : 'border-zinc-200 dark:border-slate-700 hover:border-gold-300'}`}
                             >
-                                <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gold-500 text-ink-950">{labels.credits}</span>
+                                <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gold-500 text-ink-950">{labels.startCredits}</span>
                                 <span className="material-symbols-outlined text-2xl" style={{color: 'var(--jade)'}}>waving_hand</span>
                                 <span className="font-semibold text-sm">{labels.firstInterviewLabel}</span>
                                 <span className="text-xs text-center text-gray-500 dark:text-gray-400">{labels.firstLevelDesc}</span>
@@ -488,7 +489,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                                 onClick={() => { setLevel('second'); startInterview(); }}
                                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all relative ${level === 'second' ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20' : 'border-zinc-200 dark:border-slate-700 hover:border-gold-300'}`}
                             >
-                                <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gold-500 text-ink-950">{labels.credits}</span>
+                                <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gold-500 text-ink-950">{labels.startCredits}</span>
                                 <span className="material-symbols-outlined text-2xl" style={{color: 'var(--rose)'}}>terminal</span>
                                 <span className="font-semibold text-sm">{labels.secondInterviewLabel}</span>
                                 <span className="text-xs text-center text-gray-500 dark:text-gray-400">{labels.secondLevelDesc}</span>
@@ -638,14 +639,19 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                             ) : <div />}
 
                             {phase === 'question' && (
-                                <button
-                                    onClick={submitAnswer}
-                                    disabled={!answer.trim()}
-                                    className="btn-primary text-sm rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    <span className="material-symbols-outlined text-base">send</span>
-                                    {labels.submit}
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>
+                                        {labels.evalCredits}
+                                    </span>
+                                    <button
+                                        onClick={submitAnswer}
+                                        disabled={!answer.trim()}
+                                        className="btn-primary text-sm rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        <span className="material-symbols-outlined text-base">send</span>
+                                        {labels.submit}
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -751,7 +757,7 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                         <button onClick={() => setPhase('select-level')} className="btn-primary rounded-xl">
                             <span className="material-symbols-outlined text-base">replay</span>
                             {labels.retake}
-                            <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>{labels.credits}</span>
+                            <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>{labels.startCredits}</span>
                         </button>
                     </div>
 
