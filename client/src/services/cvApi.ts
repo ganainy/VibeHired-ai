@@ -11,6 +11,26 @@ import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
 
 const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api'}/cvs`;
 
+const CV_BRANCHES_CACHE_TTL_MS = 5 * 60 * 1000;
+let cvBranchesCacheByMode: Record<'full' | 'lite', { data: GetCvBranchesResponse; fetchedAt: number } | null> = {
+    full: null,
+    lite: null,
+};
+let cvBranchesInFlightByMode: Record<'full' | 'lite', Promise<GetCvBranchesResponse> | null> = {
+    full: null,
+    lite: null,
+};
+
+const isCvBranchesCacheFresh = (mode: 'full' | 'lite'): boolean => {
+    const cacheEntry = cvBranchesCacheByMode[mode];
+    if (!cacheEntry) return false;
+    return Date.now() - cacheEntry.fetchedAt < CV_BRANCHES_CACHE_TTL_MS;
+};
+
+const setCvBranchesCache = (mode: 'full' | 'lite', payload: GetCvBranchesResponse): void => {
+    cvBranchesCacheByMode[mode] = { data: payload, fetchedAt: Date.now() };
+};
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -154,10 +174,30 @@ export interface GetCvUsageResponse {
 /**
  * Get all CV branches for the current user
  */
-export const getCvBranches = async (): Promise<GetCvBranchesResponse> => {
+export const getCvBranches = async (options?: { lite?: boolean }): Promise<GetCvBranchesResponse> => {
     try {
-        const response = await axios.get<GetCvBranchesResponse>(`${API_BASE_URL}/branches`);
-        return response.data;
+        const mode: 'full' | 'lite' = options?.lite ? 'lite' : 'full';
+
+        if (isCvBranchesCacheFresh(mode)) {
+            return cvBranchesCacheByMode[mode]!.data;
+        }
+
+        if (cvBranchesInFlightByMode[mode]) {
+            return cvBranchesInFlightByMode[mode];
+        }
+
+        cvBranchesInFlightByMode[mode] = axios.get<GetCvBranchesResponse>(`${API_BASE_URL}/branches`, {
+            params: mode === 'lite' ? { lite: 1 } : undefined,
+        })
+            .then((response) => {
+                setCvBranchesCache(mode, response.data);
+                return response.data;
+            })
+            .finally(() => {
+                cvBranchesInFlightByMode[mode] = null;
+            });
+
+        return cvBranchesInFlightByMode[mode]!;
     } catch (error: any) {
         console.error('Get CV branches API error:', error);
         if (axios.isAxiosError(error) && error.response) {

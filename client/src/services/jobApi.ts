@@ -5,6 +5,27 @@ import { JsonResumeSchema } from '../../../server/src/types/jsonresume'; // Adju
 // Define the base URL for your backend API
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api'; // Your backend URL
 
+const JOBS_CACHE_TTL_MS = 60 * 1000;
+let jobsCache: { data: JobApplication[]; fetchedAt: number } | null = null;
+let jobsInFlightRequest: Promise<JobApplication[]> | null = null;
+
+const isJobsCacheFresh = (): boolean => {
+    if (!jobsCache) return false;
+    return Date.now() - jobsCache.fetchedAt < JOBS_CACHE_TTL_MS;
+};
+
+const setJobsCache = (jobs: JobApplication[]): void => {
+    jobsCache = { data: jobs, fetchedAt: Date.now() };
+};
+
+const updateCachedJob = (jobId: string, updater: (job: JobApplication) => JobApplication): void => {
+    if (!jobsCache) return;
+    jobsCache = {
+        data: jobsCache.data.map((job) => (job._id === jobId ? updater(job) : job)),
+        fetchedAt: Date.now(),
+    };
+};
+
 
 // Define the expected structure of a job application (matching backend)
 // It's often useful to have this type definition accessible in the frontend
@@ -118,9 +139,25 @@ export interface JobDraftData {
 // Function to get all job applications
 export const getJobs = async (): Promise<JobApplication[]> => {
     try {
-        // Use axios directly - Auth header is set by AuthProvider
-        const response = await axios.get(`${API_BASE_URL}/job-applications`); // Corrected endpoint
-        return response.data;
+        if (isJobsCacheFresh()) {
+            return jobsCache!.data;
+        }
+
+        if (jobsInFlightRequest) {
+            return jobsInFlightRequest;
+        }
+
+        jobsInFlightRequest = axios.get(`${API_BASE_URL}/job-applications`)
+            .then((response) => {
+                const jobs = response.data as JobApplication[];
+                setJobsCache(jobs);
+                return jobs;
+            })
+            .finally(() => {
+                jobsInFlightRequest = null;
+            });
+
+        return jobsInFlightRequest;
     }
     catch (error) {
         console.error("Error fetching jobs:", error);
@@ -134,7 +171,11 @@ export const getJobs = async (): Promise<JobApplication[]> => {
 export const createJob = async (jobData: CreateJobPayload): Promise<JobApplication> => {
     try {
         const response = await axios.post(`${API_BASE_URL}/job-applications`, jobData); // Corrected endpoint
-        return response.data;
+        const createdJob = response.data as JobApplication;
+        if (jobsCache) {
+            setJobsCache([createdJob, ...jobsCache.data]);
+        }
+        return createdJob;
     } catch (error) {
         console.error("Error creating job:", error);
         throw error;
@@ -146,7 +187,9 @@ export const createJob = async (jobData: CreateJobPayload): Promise<JobApplicati
 export const updateJob = async (id: string, updates: UpdateJobPayload): Promise<JobApplication> => {
     try {
         const response = await axios.put(`${API_BASE_URL}/job-applications/${id}`, updates); // Corrected endpoint
-        return response.data;
+        const updatedJob = response.data as JobApplication;
+        updateCachedJob(id, () => updatedJob);
+        return updatedJob;
     } catch (error) {
         console.error(`Error updating job ${id}:`, error);
         throw error;
@@ -159,6 +202,9 @@ export const updateJob = async (id: string, updates: UpdateJobPayload): Promise<
 export const deleteJob = async (id: string): Promise<DeleteResponse> => {
     try {
         const response = await axios.delete(`${API_BASE_URL}/job-applications/${id}`); // Corrected endpoint
+        if (jobsCache) {
+            setJobsCache(jobsCache.data.filter((job) => job._id !== id));
+        }
         return response.data;
     } catch (error) {
         console.error(`Error deleting job ${id}:`, error);
@@ -229,7 +275,11 @@ export const createJobFromTextApi = async (text: string, options?: CreateJobFrom
     try {
         const payload: any = { text, ...options };
         const response = await axios.post<JobApplication>(`${API_BASE_URL}/job-applications/create-from-text`, payload);
-        return response.data;
+        const createdJob = response.data;
+        if (jobsCache) {
+            setJobsCache([createdJob, ...jobsCache.data]);
+        }
+        return createdJob;
     } catch (error: any) {
         console.error(`Error creating job from pasted text:`, error);
         if (axios.isAxiosError(error) && error.response) {

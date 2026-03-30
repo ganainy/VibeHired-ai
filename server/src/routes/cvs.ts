@@ -292,6 +292,7 @@ No text, explanation, or commentary before or after the JSON block.
  */
 router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id as string;
+    const lite = req.query.lite === '1' || req.query.lite === 'true';
 
     const branches = await CV.getBaseCvs(userId);
 
@@ -320,15 +321,15 @@ router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
             category: cv.category,
             displayName: cv.displayName,
             jobApplicationId: cv.jobApplicationId,
-            cvJson: cv.cvJson,
+            cvJson: lite ? undefined : cv.cvJson,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
             extractionMode: cv.extractionMode ?? null,
             extractionTimestamp: cv.extractionTimestamp ?? null,
-            cvDescriptor: cv.cvDescriptor ?? null,
-            cvData: cv.cvData ?? null,
+            cvDescriptor: lite ? null : (cv.cvDescriptor ?? null),
+            cvData: lite ? null : (cv.cvData ?? null),
             templateId: cv.templateId,
             filename: cv.filename,
-            analysisCache: cv.analysisCache,
+            analysisCache: lite ? null : cv.analysisCache,
             usedByJobCount: usageByBaseCv.get(String(cv._id)) || 0,
             createdAt: cv.createdAt,
             updatedAt: cv.updatedAt,

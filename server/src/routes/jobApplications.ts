@@ -104,7 +104,9 @@ const getJobsHandler: RequestHandler = async (req, res) => {
     const jobs = await JobApplication.find({
       userId: userId,
       showInDashboard: true
-    }).sort({ createdAt: -1 });
+    })
+      .select('-draftCvJson -draftCoverLetterText -jobDescriptionText -chatHistory')
+      .sort({ createdAt: -1 });
     res.status(200).json(jobs);
   } catch (error) {
     console.error("Error fetching jobs:", error);
