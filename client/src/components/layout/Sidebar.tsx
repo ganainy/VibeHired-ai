@@ -158,19 +158,39 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
         return location.pathname.startsWith(path);
     };
 
-    const navItems = [
-        { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-        { path: '/manage-cv', label: 'CV Library', icon: WorkIcon },
-        { path: '/email-suggestions', label: 'Inbox', icon: InboxIcon, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
-        { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon, disabled: true },
-        { path: '/interview-materials', label: 'Prep Library', icon: PrepLibraryIcon },
-        { path: '/interview-buddy', label: 'Interview Buddy', icon: InterviewBuddyIcon },
-        { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
-        { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
-        { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
-        { path: '/portfolio-setup', label: 'Portfolio', icon: PortfolioIcon },
-        { path: '/settings', label: 'Settings', icon: SettingsIcon },
-        { path: '/subscriptions', label: 'Subscription', icon: CreditCardIcon },
+    const navSections = [
+        {
+            label: 'Workspace',
+            items: [
+                { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+                { path: '/manage-cv', label: 'CV Library', icon: WorkIcon },
+                { path: '/email-suggestions', label: 'Inbox', icon: InboxIcon, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
+            ],
+        },
+        {
+            label: 'Interview',
+            items: [
+                { path: '/interview-materials', label: 'Prep Library', icon: PrepLibraryIcon },
+                { path: '/interview-buddy', label: 'Interview Buddy', icon: InterviewBuddyIcon },
+            ],
+        },
+        {
+            label: 'Productivity',
+            items: [
+                { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon, disabled: true },
+                { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
+                { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
+                { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
+            ],
+        },
+        {
+            label: 'Account',
+            items: [
+                { path: '/portfolio-setup', label: 'Portfolio', icon: PortfolioIcon },
+                { path: '/settings', label: 'Settings', icon: SettingsIcon },
+                { path: '/subscriptions', label: 'Subscription', icon: CreditCardIcon },
+            ],
+        },
     ];
 
     const onboardingNavByPath: Record<string, string> = {
@@ -222,99 +242,108 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
 
             {/* ── Navigation ── */}
             <nav className="flex-1 py-5 overflow-y-auto overflow-x-hidden">
-                <div className={`space-y-0.5 ${isCollapsed ? 'px-2.5' : 'px-3'}`}>
-                    {navItems.map((item) => {
-                        const isActive = isActiveRoute(item.path);
-                        const isDisabled = !!(item as any).disabled;
+                <div className={`${isCollapsed ? 'px-2.5' : 'px-3'}`}>
+                    {navSections.map((section, sectionIndex) => (
+                        <div key={section.label} className={sectionIndex === 0 ? '' : 'mt-4'}>
+                            {!isCollapsed && (
+                                <p className="px-4 mb-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                    {section.label}
+                                </p>
+                            )}
+                            <div className="space-y-0.5">
+                                {section.items.map((item) => {
+                                    const isActive = isActiveRoute(item.path);
+                                    const isDisabled = !!(item as any).disabled;
 
-                        if (isDisabled) {
-                            return (
-                                <div
-                                    key={item.path}
-                                    title={isCollapsed ? `${item.label} (coming soon)` : undefined}
-                                    className="flex items-center rounded-lg relative cursor-not-allowed select-none"
-                                    style={{
-                                        padding: isCollapsed ? '10px' : '9px 12px',
-                                        justifyContent: isCollapsed ? 'center' : 'flex-start',
-                                        gap: isCollapsed ? '0' : '10px',
-                                        opacity: 0.45,
-                                        color: 'var(--text-muted)',
-                                    }}
-                                >
-                                    <item.icon />
-                                    {!isCollapsed && (
-                                        <>
-                                            <span className="text-[0.875rem] font-medium tracking-[-0.01em]">{item.label}</span>
-                                            <span
-                                                className="ml-auto text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded"
-                                                style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)' }}
+                                    if (isDisabled) {
+                                        return (
+                                            <div
+                                                key={item.path}
+                                                title={isCollapsed ? `${item.label} (coming soon)` : undefined}
+                                                className="flex items-center rounded-lg relative cursor-not-allowed select-none"
+                                                style={{
+                                                    padding: isCollapsed ? '10px' : '9px 12px',
+                                                    justifyContent: isCollapsed ? 'center' : 'flex-start',
+                                                    gap: isCollapsed ? '0' : '10px',
+                                                    opacity: 0.45,
+                                                    color: 'var(--text-muted)',
+                                                }}
                                             >
-                                                Soon
-                                            </span>
-                                        </>
-                                    )}
-                                </div>
-                            );
-                        }
+                                                <item.icon />
+                                                {!isCollapsed && (
+                                                    <>
+                                                        <span className="text-[0.875rem] font-medium tracking-[-0.01em]">{item.label}</span>
+                                                        <span
+                                                            className="ml-auto text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded"
+                                                            style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)' }}
+                                                        >
+                                                            Soon
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        );
+                                    }
 
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                title={isCollapsed ? item.label : undefined}
-                                data-onboarding={onboardingNavByPath[item.path]}
-                                className="flex items-center rounded-lg transition-all duration-150 group relative"
-                                style={{
-                                    padding: isCollapsed ? '10px' : '9px 12px',
-                                    justifyContent: isCollapsed ? 'center' : 'flex-start',
-                                    gap: isCollapsed ? '0' : '10px',
-                                    backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.09))' : 'transparent',
-                                    color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (!isActive) {
-                                        (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-elevated)';
-                                        (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)';
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!isActive) {
-                                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                                        (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
-                                    }
-                                }}
-                            >
-                                {/* Active indicator pill */}
-                                {isActive && (
-                                    <span
-                                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
-                                        style={{ backgroundColor: 'var(--accent)' }}
-                                    />
-                                )}
-                                <item.icon />
-                                {!isCollapsed && (
-                                    <span className="text-[0.875rem] font-medium tracking-[-0.01em]">{item.label}</span>
-                                )}
-                                {/* Pending badge */}
-                                {!isCollapsed && (item as any).badge && (
-                                    <span
-                                        className="ml-auto min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold px-1"
-                                        style={{ backgroundColor: 'var(--accent)', color: '#000' }}
-                                    >
-                                        {(item as any).badge > 9 ? '9+' : (item as any).badge}
-                                    </span>
-                                )}
-                                {isCollapsed && (item as any).badge && (
-                                    <span
-                                        className="absolute top-0.5 right-0.5 min-w-[14px] h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold px-0.5"
-                                        style={{ backgroundColor: 'var(--accent)', color: '#000' }}
-                                    >
-                                        {(item as any).badge > 9 ? '9+' : (item as any).badge}
-                                    </span>
-                                )}
-                            </Link>
-                        );
-                    })}
+                                    return (
+                                        <Link
+                                            key={item.path}
+                                            to={item.path}
+                                            title={isCollapsed ? item.label : undefined}
+                                            data-onboarding={onboardingNavByPath[item.path]}
+                                            className="flex items-center rounded-lg transition-all duration-150 group relative"
+                                            style={{
+                                                padding: isCollapsed ? '10px' : '9px 12px',
+                                                justifyContent: isCollapsed ? 'center' : 'flex-start',
+                                                gap: isCollapsed ? '0' : '10px',
+                                                backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.09))' : 'transparent',
+                                                color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (!isActive) {
+                                                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-elevated)';
+                                                    (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (!isActive) {
+                                                    (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                                    (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
+                                                }
+                                            }}
+                                        >
+                                            {isActive && (
+                                                <span
+                                                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
+                                                    style={{ backgroundColor: 'var(--accent)' }}
+                                                />
+                                            )}
+                                            <item.icon />
+                                            {!isCollapsed && (
+                                                <span className="text-[0.875rem] font-medium tracking-[-0.01em]">{item.label}</span>
+                                            )}
+                                            {!isCollapsed && (item as any).badge && (
+                                                <span
+                                                    className="ml-auto min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold px-1"
+                                                    style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+                                                >
+                                                    {(item as any).badge > 9 ? '9+' : (item as any).badge}
+                                                </span>
+                                            )}
+                                            {isCollapsed && (item as any).badge && (
+                                                <span
+                                                    className="absolute top-0.5 right-0.5 min-w-[14px] h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold px-0.5"
+                                                    style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+                                                >
+                                                    {(item as any).badge > 9 ? '9+' : (item as any).badge}
+                                                </span>
+                                            )}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
 
                     {/* Admin Section */}
                     {(user?.role === 'admin' || user?.role === 'owner') && (

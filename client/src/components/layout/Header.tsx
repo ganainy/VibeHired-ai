@@ -162,19 +162,39 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
         return location.pathname.startsWith(path);
     };
 
-    const navItems = [
-        { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-        { path: '/manage-cv', label: 'CV Library', icon: WorkIcon },
-        { path: '/email-suggestions', label: 'Inbox', icon: InboxIconMobile, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
-        { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon, disabled: true },
-        { path: '/interview-materials', label: 'Prep Library', icon: PrepLibraryIcon },
-        { path: '/interview-buddy', label: 'Interview Buddy', icon: InterviewBuddyIcon },
-        { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
-        { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
-        { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
-        { path: '/portfolio-setup', label: 'Portfolio', icon: PortfolioIcon },
-        { path: '/settings', label: 'Settings', icon: SettingsIcon },
-        { path: '/subscriptions', label: 'Subscription', icon: CreditCardIcon },
+    const navSections = [
+        {
+            label: 'Workspace',
+            items: [
+                { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+                { path: '/manage-cv', label: 'CV Library', icon: WorkIcon },
+                { path: '/email-suggestions', label: 'Inbox', icon: InboxIconMobile, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
+            ],
+        },
+        {
+            label: 'Interview',
+            items: [
+                { path: '/interview-materials', label: 'Prep Library', icon: PrepLibraryIcon },
+                { path: '/interview-buddy', label: 'Interview Buddy', icon: InterviewBuddyIcon },
+            ],
+        },
+        {
+            label: 'Productivity',
+            items: [
+                { path: '/auto-jobs', label: 'Auto Jobs', icon: AutoJobsIcon, disabled: true },
+                { path: '/work-tracker', label: 'Time Tracker', icon: TimeTrackerIcon },
+                { path: '/calendar', label: 'Calendar', icon: CalendarIcon },
+                { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
+            ],
+        },
+        {
+            label: 'Account',
+            items: [
+                { path: '/portfolio-setup', label: 'Portfolio', icon: PortfolioIcon },
+                { path: '/settings', label: 'Settings', icon: SettingsIcon },
+                { path: '/subscriptions', label: 'Subscription', icon: CreditCardIcon },
+            ],
+        },
     ];
 
     const adminNavItems = [
@@ -268,63 +288,72 @@ const Header: React.FC<HeaderProps> = ({ pendingEmailCount = 0 }) => {
                         </div>
 
                         {/* Nav items */}
-                        <nav className="flex-1 px-4 py-6 space-y-1.5">
-                            {navItems.map((item) => {
-                                const isActive = isActiveRoute(item.path);
-                                const isDisabled = !!(item as any).disabled;
+                        <nav className="flex-1 px-4 py-6">
+                            {navSections.map((section, sectionIndex) => (
+                                <div key={section.label} className={sectionIndex === 0 ? '' : 'mt-6'}>
+                                    <p className="px-4 mb-2 text-[10px] font-black uppercase tracking-[0.15em] opacity-50" style={{ color: 'var(--text-muted)' }}>
+                                        {section.label}
+                                    </p>
+                                    <div className="space-y-1.5">
+                                        {section.items.map((item) => {
+                                            const isActive = isActiveRoute(item.path);
+                                            const isDisabled = !!(item as any).disabled;
 
-                                if (isDisabled) {
-                                    return (
-                                        <div
-                                            key={item.path}
-                                            className="flex items-center gap-4 px-4 py-3.5 rounded-xl text-[0.9375rem] font-medium cursor-not-allowed select-none opacity-40"
-                                            style={{ color: 'var(--text-muted)' }}
-                                        >
-                                            <div className="w-5 h-5 flex items-center justify-center">
-                                                <item.icon />
-                                            </div>
-                                            {item.label}
-                                            <span
-                                                className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800"
-                                                style={{ color: 'var(--text-muted)' }}
-                                            >
-                                                Coming Soon
-                                            </span>
-                                        </div>
-                                    );
-                                }
+                                            if (isDisabled) {
+                                                return (
+                                                    <div
+                                                        key={item.path}
+                                                        className="flex items-center gap-4 px-4 py-3.5 rounded-xl text-[0.9375rem] font-medium cursor-not-allowed select-none opacity-40"
+                                                        style={{ color: 'var(--text-muted)' }}
+                                                    >
+                                                        <div className="w-5 h-5 flex items-center justify-center">
+                                                            <item.icon />
+                                                        </div>
+                                                        {item.label}
+                                                        <span
+                                                            className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800"
+                                                            style={{ color: 'var(--text-muted)' }}
+                                                        >
+                                                            Coming Soon
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
 
-                                return (
-                                    <Link
-                                        key={item.path}
-                                        to={item.path}
-                                        data-onboarding={mobileOnboardingNavByPath[item.path]}
-                                        className="flex items-center gap-4 px-4 py-3.5 rounded-xl text-[0.9375rem] font-semibold transition-all duration-200 active:scale-95"
-                                        style={{
-                                            backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.12))' : 'transparent',
-                                            color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                                        }}
-                                    >
-                                        <div className={`w-5 h-5 flex items-center justify-center transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
-                                            <item.icon />
-                                        </div>
-                                        {item.label}
-                                        {(item as any).badge ? (
-                                            <span
-                                                className="ml-auto min-w-[20px] h-[20px] rounded-full flex items-center justify-center text-[10px] font-black px-1.5 shadow-sm"
-                                                style={{ backgroundColor: 'var(--accent)', color: '#000' }}
-                                            >
-                                                {(item as any).badge > 9 ? '9+' : (item as any).badge}
-                                            </span>
-                                        ) : isActive ? (
-                                            <span
-                                                className="ml-auto w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(232,184,68,0.6)]"
-                                                style={{ backgroundColor: 'var(--accent)' }}
-                                            />
-                                        ) : null}
-                                    </Link>
-                                );
-                            })}
+                                            return (
+                                                <Link
+                                                    key={item.path}
+                                                    to={item.path}
+                                                    data-onboarding={mobileOnboardingNavByPath[item.path]}
+                                                    className="flex items-center gap-4 px-4 py-3.5 rounded-xl text-[0.9375rem] font-semibold transition-all duration-200 active:scale-95"
+                                                    style={{
+                                                        backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.12))' : 'transparent',
+                                                        color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                                                    }}
+                                                >
+                                                    <div className={`w-5 h-5 flex items-center justify-center transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
+                                                        <item.icon />
+                                                    </div>
+                                                    {item.label}
+                                                    {(item as any).badge ? (
+                                                        <span
+                                                            className="ml-auto min-w-[20px] h-[20px] rounded-full flex items-center justify-center text-[10px] font-black px-1.5 shadow-sm"
+                                                            style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+                                                        >
+                                                            {(item as any).badge > 9 ? '9+' : (item as any).badge}
+                                                        </span>
+                                                    ) : isActive ? (
+                                                        <span
+                                                            className="ml-auto w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(232,184,68,0.6)]"
+                                                            style={{ backgroundColor: 'var(--accent)' }}
+                                                        />
+                                                    ) : null}
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
 
                             {/* Admin Section */}
                             {(user?.role === 'admin' || user?.role === 'owner') && (
