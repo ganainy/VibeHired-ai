@@ -111,7 +111,13 @@ const App: React.FC = () => {
 
       // Pre-warm the Gemini session immediately upon auth
       if (payload.apiUrl && payload.token && payload.jobId) {
-        initializeSession(payload.apiUrl, payload.token, payload.jobId)
+        initializeSession(
+          payload.apiUrl,
+          payload.token,
+          payload.jobId,
+          payload.referenceMaterialIds ?? [],
+          payload.activeCvId,
+        )
           .then(() => {
             setSessionReady(true);
             console.log('[App] Interview session initialized');
@@ -174,6 +180,8 @@ const App: React.FC = () => {
           currentAuth.token,
           currentAuth.jobId,
           question,
+          currentAuth.referenceMaterialIds ?? [],
+          currentAuth.activeCvId,
         );
         if (!res.body) {
           throw new Error('No response body');
@@ -247,10 +255,8 @@ const App: React.FC = () => {
   const askAiFromTranscript = useCallback(async () => {
     if (!authRef.current || loading) return;
 
-    let capturedText = `${transcriptRef.current} ${interimTranscriptRef.current}`.trim();
-    if (isListeningRef.current) {
-      capturedText = (await stopAudioRecording()).trim();
-    }
+    const wasListening = isListeningRef.current;
+    const capturedText = `${transcriptRef.current} ${interimTranscriptRef.current}`.trim();
 
     const questions = extractQuestionsFromText(capturedText);
     if (questions.length === 0) {
@@ -258,10 +264,17 @@ const App: React.FC = () => {
       return;
     }
 
+    // Keep listening while clearing the already-submitted transcript from the UI.
+    if (wasListening) {
+      resetTranscript();
+      transcriptRef.current = '';
+      interimTranscriptRef.current = '';
+    }
+
     setError(null);
     const prompt = questions.join('\n');
     await triggerStreamingAnswer(authRef.current, prompt);
-  }, [loading, stopAudioRecording, triggerStreamingAnswer]);
+  }, [loading, resetTranscript, triggerStreamingAnswer]);
 
   const clearAll = useCallback(() => {
     resetTranscript();

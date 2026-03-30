@@ -1,6 +1,10 @@
 // client/src/pages/InterviewBuddyPage.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { getJobs, JobApplication } from '../services/jobApi';
+import { getGlobalMaterials } from '../services/interviewMaterialsApi';
+import { InterviewMaterial } from '../types/interviewMaterial';
+import { CVDocument, getCvBranches, getJobCv } from '../services/cvApi';
+import { Badge } from '../components/ui/badge';
 
 const COMPANION_DOWNLOAD_URL: string | null =
   import.meta.env.VITE_COMPANION_DOWNLOAD_URL || null;
@@ -11,7 +15,7 @@ const stealth = [
     num: '01',
     title: 'Invisible on taskbar & dock',
     body:
-      'No presence on macOS Dock or Windows taskbar  the session runs as a background utility so nothing shows up next to the apps you are sharing.',
+      'Runs in the background without appearing in the Dock or taskbar.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="11" width="18" height="11" rx="2" />
@@ -23,7 +27,7 @@ const stealth = [
     num: '02',
     title: 'Invisible in task manager',
     body:
-      'The process is aliased so it blends in with routine background services inside Activity Monitor or Task Manager.',
+      'Process identity blends in with normal background services.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
@@ -35,7 +39,7 @@ const stealth = [
     num: '03',
     title: 'Invisible on tab switch',
     body:
-      'Alt/Cmd + Tab never reveals the overlay  there is no preview tile or highlighted window while you keep multitasking.',
+      'No preview tile appears in Alt/Cmd + Tab while you multitask.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 18 15 12 9 6" />
@@ -46,7 +50,7 @@ const stealth = [
     num: '04',
     title: 'Invisible on screen share',
     body:
-      'The answer overlay is excluded from Zoom, Teams, and any screen-capture tool at the OS level using display affinity APIs  your interviewer never sees it.',
+      'Overlay is excluded from Zoom, Teams, and major screen-capture tools.',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2z" />
@@ -58,17 +62,42 @@ const stealth = [
 ];
 
 const hotkeys = [
-  { keys: ['Ctrl', 'Shift', 'L'], action: 'Toggle microphone listening (on/off)' },
-  { keys: ['Ctrl', 'Shift', 'Enter'], action: 'Send detected questions to Ask AI' },
-  { keys: ['Ctrl', 'Shift', 'H'], action: 'Hide / show the answer overlay' },
+  { keys: ['Ctrl', 'Shift', 'L'], action: 'Toggle listening' },
+  { keys: ['Ctrl', 'Shift', 'Enter'], action: 'Ask AI (2 credits)' },
+  { keys: ['Ctrl', 'Shift', 'H'], action: 'Hide / show overlay' },
   { keys: ['Ctrl', 'Shift', 'C'], action: 'Clear the current answer' },
 ];
+
+function formatMaterialSize(material: InterviewMaterial): string {
+  if (typeof material.fileSize === 'number' && material.fileSize > 0) {
+    const bytes = material.fileSize;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  if (typeof material.content === 'string' && material.content.trim()) {
+    const approxBytes = material.content.length;
+    if (approxBytes < 1024) return `${approxBytes} B (text)`;
+    return `${(approxBytes / 1024).toFixed(1)} KB (text)`;
+  }
+
+  return 'Size unavailable';
+}
 
 //  Component 
 const InterviewBuddyPage: React.FC = () => {
   const [jobs, setJobs] = useState<JobApplication[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>('');
   const [jobsLoading, setJobsLoading] = useState(true);
+  const [materials, setMaterials] = useState<InterviewMaterial[]>([]);
+  const [materialsLoading, setMaterialsLoading] = useState(true);
+  const [selectedMaterialIds, setSelectedMaterialIds] = useState<string[]>([]);
+  const [cvBranches, setCvBranches] = useState<CVDocument[]>([]);
+  const [jobCv, setJobCv] = useState<CVDocument | null>(null);
+  const [cvLoading, setCvLoading] = useState(true);
+  const [selectedActiveCvId, setSelectedActiveCvId] = useState<string>('');
+  const [showReferenceSection, setShowReferenceSection] = useState(false);
   const [launching, setLaunching] = useState(false);
   const [companionStatus, setCompanionStatus] = useState<'unknown' | 'available' | 'not-installed'>('unknown');
   const launchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -82,15 +111,77 @@ const InterviewBuddyPage: React.FC = () => {
       })
       .catch(() => {})
       .finally(() => setJobsLoading(false));
+
+    getGlobalMaterials()
+      .then((data) => {
+        setMaterials(data);
+      })
+      .catch(() => {})
+      .finally(() => setMaterialsLoading(false));
+
+    getCvBranches({ lite: true })
+      .then((response) => {
+        setCvBranches(response.branches || []);
+      })
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!selectedJobId) {
+      setJobCv(null);
+      setSelectedActiveCvId('');
+      setCvLoading(false);
+      return;
+    }
+
+    setCvLoading(true);
+    getJobCv(selectedJobId)
+      .then((response) => {
+        const nextJobCv = response.cv || null;
+        setJobCv(nextJobCv);
+
+        const job = jobs.find((item) => item._id === selectedJobId);
+        const defaultCvId = nextJobCv?._id || job?.baseCvId || '';
+        setSelectedActiveCvId(defaultCvId);
+      })
+      .catch(() => {
+        setJobCv(null);
+        const job = jobs.find((item) => item._id === selectedJobId);
+        setSelectedActiveCvId(job?.baseCvId || '');
+      })
+      .finally(() => setCvLoading(false));
+  }, [selectedJobId, jobs]);
+
+  const selectedJob = jobs.find((job) => job._id === selectedJobId);
+  const apiUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api';
+  const selectedJobLanguage = selectedJob?.language ?? 'en';
+  const selectedJobLabel = selectedJob
+    ? `${selectedJob.jobTitle} at ${selectedJob.companyName}`
+    : '';
+  const selectedReferenceIdsParam = selectedMaterialIds.join(',');
+
+  const activeCvOptions = [
+    ...(jobCv ? [{ value: jobCv._id, label: 'Job CV (default for this role)' }] : []),
+    ...cvBranches
+      .filter((cv) => cv._id !== jobCv?._id)
+      .map((cv) => ({
+        value: cv._id,
+        label: cv.displayName || cv.category || 'Unnamed CV',
+      })),
+  ];
+
+  const toggleMaterialSelection = (materialId: string) => {
+    setSelectedMaterialIds((prev) => (
+      prev.includes(materialId)
+        ? prev.filter((id) => id !== materialId)
+        : [...prev, materialId]
+    ));
+  };
 
   const handleLaunch = () => {
     if (!selectedJobId) return;
     const token = localStorage.getItem('authToken') ?? '';
-    const apiUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api';
-    const selectedJob = jobs.find((job) => job._id === selectedJobId);
-    const jobLanguage = selectedJob?.language ?? 'en';
-    const deepLink = `vibehired://launch?token=${encodeURIComponent(token)}&jobId=${encodeURIComponent(selectedJobId)}&apiUrl=${encodeURIComponent(apiUrl)}&jobLanguage=${encodeURIComponent(jobLanguage)}`;
+    const deepLink = `vibehired://launch?token=${encodeURIComponent(token)}&jobId=${encodeURIComponent(selectedJobId)}&apiUrl=${encodeURIComponent(apiUrl)}&jobLanguage=${encodeURIComponent(selectedJobLanguage)}&jobLabel=${encodeURIComponent(selectedJobLabel)}&referenceMaterialIds=${encodeURIComponent(selectedReferenceIdsParam)}&activeCvId=${encodeURIComponent(selectedActiveCvId)}`;
 
     setLaunching(true);
     setCompanionStatus('unknown');
@@ -153,9 +244,7 @@ const InterviewBuddyPage: React.FC = () => {
           <span>AI Interview Buddy</span>
         </h1>
         <p className="text-base max-w-xl" style={{ color: 'var(--text-secondary)' }}>
-          A stealth desktop companion that listens to your interviewer, then shows AI-generated answers
-          in an overlay that is <strong style={{ color: 'var(--text-primary)' }}>completely invisible</strong> to
-          Zoom, Teams, and any screen-capture tool.
+          A desktop companion that listens, drafts answers, and shows them in a stealth overlay while you interview.
         </p>
       </div>
 
@@ -190,79 +279,248 @@ const InterviewBuddyPage: React.FC = () => {
         ))}
       </div>
 
-      {/*  Hotkeys  */}
-      <div
-        className="rounded-xl p-5 mb-10"
-        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="6" width="20" height="13" rx="2" />
-            <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8" />
-          </svg>
-          <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-            OS-Level Hotkey Registration
-          </span>
-        </div>
-        <p className="text-[13px] mb-4" style={{ color: 'var(--text-secondary)' }}>
-          Hotkeys are registered at the operating-system level using global shortcuts, not browser listeners.
-          Keystrokes never propagate to websites or web apps, making them invisible to browsers,
-          screen-sharing tools, and online detection systems.
-        </p>
-        <div className="space-y-2">
-          {hotkeys.map((hk) => (
-            <div key={hk.action} className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                {hk.keys.map((k) => (
-                  <kbd
-                    key={k}
-                    className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold"
-                    style={{
-                      background: 'var(--bg-elevated)',
-                      border: '1px solid var(--border-bright)',
-                      color: 'var(--text-primary)',
-                    }}
-                  >
-                    {k}
-                  </kbd>
-                ))}
-              </div>
-              <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-                {hk.action}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/*  Launch panel  */}
       <div
         className="rounded-xl p-6"
         style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
       >
         <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-          Install and launch a session
+          Get started in 3 steps
         </h2>
         <p className="text-[13px] mb-5" style={{ color: 'var(--text-secondary)' }}>
-          Use this order in production: <strong style={{ color: 'var(--text-primary)' }}>1) install the desktop companion</strong>, then <strong style={{ color: 'var(--text-primary)' }}>2) launch it from this page</strong>.
-          The companion will use the selected job and your prep materials to craft tailored answers, default the transcription language from the selected job, and let you edit transcript text before sending to AI.
-          Session warm-up is free.
+          Install once, choose context for this launch, then start the companion.
         </p>
 
+        <div className="mb-5 flex items-center flex-wrap gap-2">
+          <Badge
+            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border-0 shadow-none"
+            style={{ background: '#e8b844', color: '#0e0e17' }}
+          >
+            2 Credit
+          </Badge>
+          <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+            charged each time you press Ask AI (button or Ctrl/Cmd+Shift+Enter); listening and transcription are free.
+          </span>
+        </div>
+
         <div
-          className="mb-5 rounded-lg px-3 py-3"
-          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-bright)' }}
+          className="mb-5 rounded-lg p-3"
+          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
         >
-          <p className="text-[11px] font-black uppercase tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>
-            Credit Cost
+          <p className="text-[11px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+            AI Context
           </p>
-          <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-            <strong style={{ color: 'var(--text-primary)' }}>2 credits</strong> are charged each time you press Ask AI (button or Ctrl/Cmd+Shift+Enter).
-            Listening, live transcription, transcript editing, and session initialization are free.
+
+          {/* Job selector */}
+          <div className="mb-4">
+            <label
+              htmlFor="job-select"
+              className="block text-[11px] font-black uppercase tracking-widest mb-2"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Active Job
+            </label>
+            {jobsLoading ? (
+              <div
+                className="h-10 rounded-lg animate-pulse"
+                style={{ background: 'var(--bg-surface)' }}
+              />
+            ) : jobs.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                No active job applications found. Add a job first.
+              </p>
+            ) : (
+                <div className="relative">
+                  <select
+                    id="job-select"
+                    value={selectedJobId}
+                    onChange={(e) => setSelectedJobId(e.target.value)}
+                    className="w-full rounded-lg px-3 py-2.5 pr-10 text-sm outline-none transition-colors"
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'inherit',
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                    }}
+                    onFocus={(e) => { (e.target as HTMLSelectElement).style.borderColor = 'var(--accent)'; }}
+                    onBlur={(e) => { (e.target as HTMLSelectElement).style.borderColor = 'var(--border)'; }}
+                  >
+                    {jobs.map((j) => (
+                      <option
+                        key={j._id}
+                        value={j._id}
+                        style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
+                      >
+                        {j.jobTitle}  {j.companyName}
+                      </option>
+                    ))}
+                  </select>
+                  <span
+                    className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-base"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    expand_more
+                  </span>
+                </div>
+            )}
+          </div>
+
+          <div className="mb-4">
+            <label
+              htmlFor="active-cv-select"
+              className="block text-[11px] font-black uppercase tracking-widest mb-2"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Active CV
+            </label>
+            {cvLoading ? (
+              <div
+                className="h-10 rounded-lg animate-pulse"
+                style={{ background: 'var(--bg-surface)' }}
+              />
+            ) : activeCvOptions.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                No CV found. Add or generate a CV first.
+              </p>
+            ) : (
+                <div className="relative">
+                  <select
+                    id="active-cv-select"
+                    value={selectedActiveCvId}
+                    onChange={(e) => setSelectedActiveCvId(e.target.value)}
+                    className="w-full rounded-lg px-3 py-2.5 pr-10 text-sm outline-none transition-colors"
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'inherit',
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                    }}
+                    onFocus={(e) => { (e.target as HTMLSelectElement).style.borderColor = 'var(--accent)'; }}
+                    onBlur={(e) => { (e.target as HTMLSelectElement).style.borderColor = 'var(--border)'; }}
+                  >
+                    {activeCvOptions.map((option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                        style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
+                      >
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span
+                    className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-base"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    expand_more
+                  </span>
+                </div>
+            )}
+          </div>
+
+          <div className="mb-2">
+            <label
+              className="block text-[11px] font-black uppercase tracking-widest mb-2"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Reference Documents (Prep Library)
+            </label>
+            <div
+              className="rounded-lg"
+              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowReferenceSection((prev) => !prev)}
+                className="w-full rounded-lg px-3 py-2.5 text-sm flex items-center justify-between text-left"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                <span style={{ color: 'var(--text-primary)' }}>
+                  {selectedMaterialIds.length} attached
+                </span>
+                <span className="material-symbols-outlined text-base" style={{ color: 'var(--text-muted)' }}>
+                  {showReferenceSection ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+
+              {showReferenceSection && (
+                <div className="px-3 pb-3 border-t" style={{ borderColor: 'var(--border)' }}>
+
+              {materialsLoading ? (
+                <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+                  Loading Prep Library documents...
+                </p>
+              ) : materials.length === 0 ? (
+                <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+                  No Prep Library documents found.
+                </p>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <button
+                      type="button"
+                      className="text-[11px] px-2 py-1 rounded-md"
+                      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                      onClick={() => setSelectedMaterialIds(materials.map((m) => m._id))}
+                    >
+                      Attach all
+                    </button>
+                    <button
+                      type="button"
+                      className="text-[11px] px-2 py-1 rounded-md"
+                      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                      onClick={() => setSelectedMaterialIds([])}
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
+                    {materials.map((material) => {
+                      const checked = selectedMaterialIds.includes(material._id);
+                      return (
+                        <label
+                          key={material._id}
+                          className="flex items-start gap-2 rounded-md px-2 py-2 cursor-pointer"
+                          style={{ background: checked ? 'var(--bg-surface)' : 'transparent' }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleMaterialSelection(material._id)}
+                            className="mt-0.5"
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-[13px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                              {material.title}
+                            </span>
+                            <span className="block text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                              {material.type.toUpperCase()} • {formatMaterialSize(material)}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <p className="text-[12px] mt-2" style={{ color: 'var(--text-muted)' }}>
+            Selected data is sent to AI each time you launch and can be changed before any new launch.
           </p>
         </div>
 
-        <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="mb-5 grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div
             className="rounded-lg px-3 py-2"
             style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
@@ -271,7 +529,21 @@ const InterviewBuddyPage: React.FC = () => {
               Step 1
             </p>
             <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-              Download and install the companion app on your computer.
+              {COMPANION_DOWNLOAD_URL ? (
+                <>
+                  <a
+                    href={COMPANION_DOWNLOAD_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+                  >
+                    Download
+                  </a>{' '}
+                  and install the companion app (one-time).
+                </>
+              ) : (
+                <>Download and install the companion app (one-time).</>
+              )}
             </p>
           </div>
           <div
@@ -282,55 +554,20 @@ const InterviewBuddyPage: React.FC = () => {
               Step 2
             </p>
             <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-              Choose an active job, then launch the installed companion.
+              Set AI context for this run using Active Job, Active CV, and optional reference documents.
             </p>
           </div>
-        </div>
-
-        {/* Job selector */}
-        <div className="mb-4">
-          <label
-            htmlFor="job-select"
-            className="block text-[11px] font-black uppercase tracking-widest mb-2"
-            style={{ color: 'var(--text-muted)' }}
+          <div
+            className="rounded-lg px-3 py-2"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
           >
-            Active Job
-          </label>
-          {jobsLoading ? (
-            <div
-              className="h-10 rounded-lg animate-pulse"
-              style={{ background: 'var(--bg-elevated)' }}
-            />
-          ) : jobs.length === 0 ? (
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              No active job applications found. Add a job first.
+            <p className="text-[11px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+              Step 3
             </p>
-          ) : (
-            <select
-              id="job-select"
-              value={selectedJobId}
-              onChange={(e) => setSelectedJobId(e.target.value)}
-              className="w-full rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
-              style={{
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-primary)',
-                fontFamily: 'inherit',
-              }}
-              onFocus={(e) => { (e.target as HTMLSelectElement).style.borderColor = 'var(--accent)'; }}
-              onBlur={(e) => { (e.target as HTMLSelectElement).style.borderColor = 'var(--border)'; }}
-            >
-              {jobs.map((j) => (
-                <option
-                  key={j._id}
-                  value={j._id}
-                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}
-                >
-                  {j.jobTitle}  {j.companyName}
-                </option>
-              ))}
-            </select>
-          )}
+            <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+              Click Launch installed companion to start your interview session.
+            </p>
+          </div>
         </div>
 
         {/* Install + Launch actions */}
@@ -395,11 +632,6 @@ const InterviewBuddyPage: React.FC = () => {
             )}
           </button>
         </div>
-
-        <p className="text-[12px] mt-3" style={{ color: 'var(--text-muted)' }}>
-          First-time setup takes about a minute. After installation, keep this page open and click launch.
-        </p>
-
         {/* Status feedback */}
         {companionStatus === 'available' && (
           <div
@@ -468,33 +700,6 @@ const InterviewBuddyPage: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
-
-      {/*  How it works  */}
-      <div className="mt-8 mb-2">
-        <h2 className="text-sm font-black uppercase tracking-widest mb-4" style={{ color: 'var(--text-muted)' }}>
-          How it works
-        </h2>
-        <ol className="space-y-3">
-          {[
-            'Install the companion app on your machine (one-time setup).',
-            'Click "Launch Interview Buddy" and select the job you are interviewing for.',
-            `Press ${navigator.platform.startsWith('Mac') ? 'Cmd' : 'Ctrl'}+Shift+L to toggle listening on/off.`,
-            'Select your transcription language (defaults to the selected job language), then speak and optionally edit transcript text directly in the overlay.',
-            `Press ${navigator.platform.startsWith('Mac') ? 'Cmd' : 'Ctrl'}+Shift+Enter or click Ask AI to send only detected questions for answering (2 credits per Ask AI request).`,
-            'Read the answer naturally. Use the bottom-right resize handle to resize the overlay, and press Ctrl+Shift+C to clear for the next turn.',
-          ].map((step, i) => (
-            <li key={i} className="flex gap-3 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-              <span
-                className="shrink-0 font-mono font-bold text-[11px] w-5 h-5 rounded flex items-center justify-center mt-0.5"
-                style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-              >
-                {i + 1}
-              </span>
-              {step}
-            </li>
-          ))}
-        </ol>
       </div>
 
       </div>{/* end hidden sm:block desktop wrapper */}

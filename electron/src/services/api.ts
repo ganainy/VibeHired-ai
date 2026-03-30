@@ -41,6 +41,8 @@ export async function initializeSession(
   apiUrl: string,
   token: string,
   jobId: string,
+  referenceMaterialIds: string[] = [],
+  activeCvId?: string,
 ): Promise<{ sessionId: string }> {
   const res = await fetch(`${apiUrl}/interview/${jobId}/initialize-session`, {
     method: 'POST',
@@ -48,6 +50,7 @@ export async function initializeSession(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
+    body: JSON.stringify({ referenceMaterialIds, activeCvId }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -64,6 +67,8 @@ export async function fetchStreamingAnswer(
   token: string,
   jobId: string,
   question: string,
+  referenceMaterialIds: string[] = [],
+  activeCvId?: string,
 ): Promise<Response> {
   const res = await fetch(`${apiUrl}/interview/${jobId}/stream-answer`, {
     method: 'POST',
@@ -71,7 +76,7 @@ export async function fetchStreamingAnswer(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, referenceMaterialIds, activeCvId }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -90,7 +95,9 @@ export async function fetchAnswer(
   apiUrl: string,
   token: string,
   jobId: string,
-  question: string
+  question: string,
+  referenceMaterialIds: string[] = [],
+  activeCvId?: string,
 ): Promise<AnswerResult> {
   const res = await fetch(`${apiUrl}/interview/${jobId}/answer-question`, {
     method: 'POST',
@@ -98,7 +105,7 @@ export async function fetchAnswer(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, referenceMaterialIds, activeCvId }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

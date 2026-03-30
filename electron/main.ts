@@ -19,6 +19,8 @@ interface LaunchPayload {
   jobId: string;
   apiUrl: string;
   jobLanguage?: string;
+  referenceMaterialIds?: string[];
+  activeCvId?: string;
 }
 
 function findDeepLinkArg(argv: string[]): string | undefined {
@@ -32,8 +34,14 @@ function parseDeepLink(rawUrl: string): LaunchPayload | null {
     const jobId = u.searchParams.get('jobId') ?? '';
     const apiUrl = u.searchParams.get('apiUrl') ?? 'http://localhost:5001/api';
     const jobLanguage = (u.searchParams.get('jobLanguage') ?? '').toLowerCase();
+    const activeCvId = (u.searchParams.get('activeCvId') ?? '').trim();
+    const referenceMaterialIds = (u.searchParams.get('referenceMaterialIds') ?? '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .slice(0, 30);
     if (!token || !jobId) return null;
-    return { token, jobId, apiUrl, jobLanguage };
+    return { token, jobId, apiUrl, jobLanguage, referenceMaterialIds, activeCvId };
   } catch {
     return null;
   }

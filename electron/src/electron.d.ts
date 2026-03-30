@@ -4,6 +4,8 @@ export interface AuthPayload {
   jobId: string;
   apiUrl: string;
   jobLanguage?: string;
+  referenceMaterialIds?: string[];
+  activeCvId?: string;
 }
 
 export type HotkeyAction = 'push-to-talk-start' | 'push-to-talk-stop' | 'clear-answer' | 'ask-ai' | 'toggle-listening';

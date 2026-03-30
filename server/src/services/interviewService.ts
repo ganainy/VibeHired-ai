@@ -2,6 +2,7 @@ import { generateStructuredResponse } from '../utils/aiService';
 import JobApplication from '../models/JobApplication';
 import { NotFoundError, AuthorizationError } from '../utils/errors/AppError';
 import CV from '../models/CV';
+import InterviewMaterial from '../models/InterviewMaterial';
 import { convertJsonResumeToText } from '../utils/cvTextExtractor';
 import { GoogleGenerativeAI, ChatSession } from '@google/generative-ai';
 import { GEMINI_FLASH } from '../constants/geminiModels';
@@ -36,15 +37,15 @@ async function getOwnedJob(jobId: string, userId: string) {
 
 // ─────────────────────────────────────────────────────────────
 // In-memory chat session store
-// Key: `${userId}:${jobId}` → { chatSession, createdAt }
+// Key: `${userId}:${jobId}:${activeCvId||'job-default'}` → { chatSession, createdAt }
 // ─────────────────────────────────────────────────────────────
 
 const chatSessions = new Map<string, { chatSession: ChatSession; createdAt: number }>();
 
 const SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
-function sessionKey(userId: string, jobId: string): string {
-    return `${userId}:${jobId}`;
+function sessionKey(userId: string, jobId: string, activeCvId?: string): string {
+    return `${userId}:${jobId}:${activeCvId || 'job-default'}`;
 }
 
 function cleanupExpiredSessions(): void {
@@ -76,6 +77,7 @@ function buildSystemPrompt(
     jobContext: string,
     cvText: string | null,
     languageName: string,
+    referenceContext: string | null,
 ): string {
     let prompt = `You are an expert interview coach helping a candidate answer a live interview question.
 The candidate will READ your answer aloud to the interviewer, so it must sound natural and confident.
@@ -91,21 +93,86 @@ ${cvText.slice(0, 3000)}
 `;
     }
 
+    if (referenceContext) {
+        prompt += `
+Reference Documents from Prep Library (use these as additional factual context):
+${referenceContext}
+`;
+    }
+
     prompt += `
 Rules:
 1. Answer ONLY the question asked — no preamble, no filler, no summary paragraph at the end.
 2. Keep the total answer concise — about 30–45 seconds to say aloud.
 3. Sound natural — avoid robotic phrases like "I believe" or "As a candidate".
 4. If relevant, briefly reference a specific experience from the CV.
-5. ALL text must be in ${languageName}.
-6. Respond with plain text only — no bullet points, no headers, no formatting.`;
+5. If relevant, reference facts from the attached Prep Library documents.
+6. ALL text must be in ${languageName}.
+7. Respond with plain text only — no bullet points, no headers, no formatting.`;
 
     return prompt;
+}
+
+async function getReferenceMaterialsContext(
+    userId: string,
+    referenceMaterialIds: string[],
+): Promise<string | null> {
+    if (!referenceMaterialIds.length) return null;
+
+    const materials = await InterviewMaterial.find({
+        _id: { $in: referenceMaterialIds },
+        userId,
+        isGlobal: true,
+    })
+        .sort({ updatedAt: -1 })
+        .limit(12)
+        .lean();
+
+    if (!materials.length) return null;
+
+    return materials
+        .map((material, index) => {
+            const type = String(material.type || '').toUpperCase();
+            const contentExcerpt = typeof material.content === 'string' ? material.content.slice(0, 700) : '';
+            const descriptionExcerpt = typeof material.description === 'string' ? material.description.slice(0, 280) : '';
+            const urlLine = typeof material.url === 'string' && material.url.trim()
+                ? `Source URL: ${material.url.trim()}`
+                : '';
+
+            const details = [descriptionExcerpt, contentExcerpt, urlLine]
+                .filter(Boolean)
+                .join('\n');
+
+            return `Document ${index + 1}: ${material.title} (${type})\n${details || 'No extra text content provided.'}`;
+        })
+        .join('\n\n');
+}
+
+async function getCvTextForInterviewContext(
+    userId: string,
+    jobId: string,
+    activeCvId?: string,
+): Promise<string | null> {
+    if (activeCvId) {
+        const selectedCv = await CV.findOne({ _id: activeCvId, userId }).lean();
+        if (selectedCv?.cvJson) {
+            return convertJsonResumeToText(selectedCv.cvJson as any);
+        }
+    }
+
+    const jobCv = await CV.getJobCv(jobId);
+    if (jobCv?.cvJson) {
+        return convertJsonResumeToText(jobCv.cvJson);
+    }
+
+    return null;
 }
 
 export async function initializeInterviewSession(
     userId: string,
     jobId: string,
+    referenceMaterialIds: string[] = [],
+    activeCvId?: string,
 ): Promise<string> {
     // Cleanup old sessions
     cleanupExpiredSessions();
@@ -128,14 +195,12 @@ export async function initializeInterviewSession(
         .join('\n\n');
 
     // Extract CV text
-    let cvText: string | null = null;
-    const cv = await CV.getJobCv(jobId);
-    if (cv?.cvJson) {
-        cvText = convertJsonResumeToText(cv.cvJson);
-    }
+    const cvText = await getCvTextForInterviewContext(userId, jobId, activeCvId);
+
+    const referenceContext = await getReferenceMaterialsContext(userId, referenceMaterialIds);
 
     // Build system prompt
-    const systemPrompt = buildSystemPrompt(jobContext, cvText, languageName);
+    const systemPrompt = buildSystemPrompt(jobContext, cvText, languageName, referenceContext);
 
     // Create Gemini chat session
     const genAI = new GoogleGenerativeAI(getGeminiApiKey());
@@ -166,7 +231,7 @@ export async function initializeInterviewSession(
     });
 
     // Store session
-    const key = sessionKey(userId, jobId);
+    const key = sessionKey(userId, jobId, activeCvId);
     chatSessions.set(key, { chatSession, createdAt: Date.now() });
 
     return key;
@@ -181,8 +246,10 @@ export async function streamAnswerToResponse(
     jobId: string,
     question: string,
     res: Response,
+    _referenceMaterialIds: string[] = [],
+    activeCvId?: string,
 ): Promise<void> {
-    const key = sessionKey(userId, jobId);
+    const key = sessionKey(userId, jobId, activeCvId);
     const session = chatSessions.get(key);
 
     if (!session) {
@@ -393,6 +460,8 @@ export async function generateAnswer(
     userId: string,
     jobId: string,
     question: string,
+    referenceMaterialIds: string[] = [],
+    activeCvId?: string,
 ): Promise<AnswerResponse> {
     const job = await getOwnedJob(jobId, userId);
 
@@ -410,11 +479,18 @@ export async function generateAnswer(
         .filter(Boolean)
         .join('\n\n');
 
+    const referenceContext = await getReferenceMaterialsContext(userId, referenceMaterialIds);
+    const cvText = await getCvTextForInterviewContext(userId, jobId, activeCvId);
+
     const prompt = `You are an expert interview coach helping a candidate answer a live interview question.
 The candidate will READ your answer aloud to the interviewer, so it must sound natural and confident.
 
 Job Context:
 ${jobContext}
+
+${referenceContext ? `Reference Documents from Prep Library:\n${referenceContext}\n` : ''}
+
+${cvText ? `Active CV Context:\n${cvText.slice(0, 3000)}\n` : ''}
 
 Interview Question:
 "${question}"

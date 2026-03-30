@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import { ValidatedRequest } from '../middleware/validateRequest';
 import { AuthorizationError } from '../utils/errors/AppError';
 import {
@@ -8,6 +9,23 @@ import {
   initializeInterviewSession,
   streamAnswerToResponse,
 } from '../services/interviewService';
+
+function normalizeReferenceMaterialIds(value: unknown): string[] {
+        if (!Array.isArray(value)) return [];
+        return value
+                .filter((id): id is string => typeof id === 'string')
+                .map((id) => id.trim())
+                .filter(Boolean)
+                .slice(0, 30);
+}
+
+function normalizeActiveCvId(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    if (!mongoose.Types.ObjectId.isValid(trimmed)) return undefined;
+    return trimmed;
+}
 
 /**
  * POST /api/interview/:jobId/questions
@@ -56,13 +74,19 @@ export const answerInterviewQuestion = async (req: ValidatedRequest, res: Respon
     if (!userId) throw new AuthorizationError('User not authenticated');
 
     const { jobId } = req.params;
-    const { question } = req.body as { question: string };
+    const { question, referenceMaterialIds, activeCvId } = req.body as { question: string; referenceMaterialIds?: string[]; activeCvId?: string };
 
     if (!question || typeof question !== 'string' || !question.trim()) {
         throw new Error('question is required');
     }
 
-    const result = await generateAnswer(userId, jobId, question.trim());
+    const result = await generateAnswer(
+        userId,
+        jobId,
+        question.trim(),
+        normalizeReferenceMaterialIds(referenceMaterialIds),
+        normalizeActiveCvId(activeCvId),
+    );
     res.json(result);
 };
 
@@ -75,7 +99,13 @@ export const initializeSession = async (req: ValidatedRequest, res: Response) =>
     if (!userId) throw new AuthorizationError('User not authenticated');
 
     const { jobId } = req.params;
-    const sessionId = await initializeInterviewSession(userId, jobId);
+    const { referenceMaterialIds, activeCvId } = req.body as { referenceMaterialIds?: string[]; activeCvId?: string };
+    const sessionId = await initializeInterviewSession(
+        userId,
+        jobId,
+        normalizeReferenceMaterialIds(referenceMaterialIds),
+        normalizeActiveCvId(activeCvId),
+    );
     res.json({ sessionId });
 };
 
@@ -88,11 +118,18 @@ export const streamAnswer = async (req: ValidatedRequest, res: Response) => {
     if (!userId) throw new AuthorizationError('User not authenticated');
 
     const { jobId } = req.params;
-    const { question } = req.body as { question: string };
+    const { question, referenceMaterialIds, activeCvId } = req.body as { question: string; referenceMaterialIds?: string[]; activeCvId?: string };
 
     if (!question || typeof question !== 'string' || !question.trim()) {
         throw new Error('question is required');
     }
 
-    await streamAnswerToResponse(userId, jobId, question.trim(), res);
+    await streamAnswerToResponse(
+        userId,
+        jobId,
+        question.trim(),
+        res,
+        normalizeReferenceMaterialIds(referenceMaterialIds),
+        normalizeActiveCvId(activeCvId),
+    );
 };

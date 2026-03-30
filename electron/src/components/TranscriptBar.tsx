@@ -38,6 +38,7 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
   selectedDeviceId,
   onDeviceChange,
 }) => {
+  const [showSettings, setShowSettings] = React.useState(false);
   const displayText = transcript;
   const interimPreview = interimTranscript.trim();
 
@@ -143,76 +144,33 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
           {isAsking ? 'ASKING...' : 'ASK AI'}
         </button>
 
-        {/* Microphone selector */}
-        <select
+        <button
+          onClick={() => setShowSettings((prev) => !prev)}
           className="no-drag"
-          value={selectedLanguage}
-          onChange={(e) => onLanguageChange(e.target.value)}
-          title="Select transcription language"
+          title="Open audio settings"
           style={{
             height: 32,
-            fontSize: 10,
-            fontFamily: 'inherit',
-            background: 'var(--bg-raised)',
+            borderRadius: 8,
             border: '1px solid var(--border)',
-            borderRadius: 6,
+            background: 'var(--bg-raised)',
             color: 'var(--text-secondary)',
-            padding: '0 6px',
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.04em',
             cursor: 'pointer',
+            padding: '0 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
             flexShrink: 0,
-            minWidth: 138,
-            maxWidth: 200,
-            outline: 'none',
             WebkitAppRegion: 'no-drag',
           }}
         >
-          {languageOptions.map((lang) => (
-            <option
-              key={lang.value}
-              value={lang.value}
-              style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}
-            >
-              {lang.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Microphone selector */}
-        <select
-          className="no-drag"
-          value={selectedDeviceId ?? 'default'}
-          onChange={(e) => onDeviceChange(e.target.value === 'default' ? null : e.target.value)}
-          title="Select microphone"
-          style={{
-            height: 32,
-            fontSize: 10,
-            fontFamily: 'inherit',
-            background: 'var(--bg-raised)',
-            border: '1px solid var(--border)',
-            borderRadius: 6,
-            color: 'var(--text-secondary)',
-            padding: '0 6px',
-            cursor: 'pointer',
-            flexShrink: 0,
-            minWidth: 140,
-            maxWidth: 220,
-            outline: 'none',
-            WebkitAppRegion: 'no-drag',
-          }}
-        >
-          <option value="default" style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}>
-            Default mic
-          </option>
-          {microphones.map((mic) => (
-            <option
-              key={mic.deviceId}
-              value={mic.deviceId}
-              style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}
-            >
-              {mic.label || `Microphone (${mic.deviceId.slice(0, 8)})`}
-            </option>
-          ))}
-        </select>
+          SETTINGS
+          <span style={{ fontSize: 10, opacity: 0.8 }}>
+            {showSettings ? '▲' : '▼'}
+          </span>
+        </button>
 
         {displayText && (
           <button
@@ -243,6 +201,104 @@ const TranscriptBar: React.FC<TranscriptBarProps> = ({
           </button>
         )}
       </div>
+
+      {showSettings && (
+        <div
+          style={{
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            background: 'var(--bg-raised)',
+            padding: '8px 10px',
+            display: 'grid',
+            gap: 8,
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em', fontWeight: 700 }}>
+            SETTINGS
+          </p>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 150 }}>
+              <label style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em', fontWeight: 700 }}>
+                Transcription language
+              </label>
+              <select
+                className="no-drag"
+                value={selectedLanguage}
+                onChange={(e) => onLanguageChange(e.target.value)}
+                title="Select transcription language"
+                style={{
+                  height: 32,
+                  fontSize: 10,
+                  fontFamily: 'inherit',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-secondary)',
+                  padding: '0 8px',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  minWidth: 150,
+                  maxWidth: 220,
+                  outline: 'none',
+                  WebkitAppRegion: 'no-drag',
+                }}
+              >
+                {languageOptions.map((lang) => (
+                  <option
+                    key={lang.value}
+                    value={lang.value}
+                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}
+                  >
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 180 }}>
+              <label style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em', fontWeight: 700 }}>
+                Input microphone
+              </label>
+              <select
+                className="no-drag"
+                value={selectedDeviceId ?? 'default'}
+                onChange={(e) => onDeviceChange(e.target.value === 'default' ? null : e.target.value)}
+                title="Select microphone"
+                style={{
+                  height: 32,
+                  fontSize: 10,
+                  fontFamily: 'inherit',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  color: 'var(--text-secondary)',
+                  padding: '0 8px',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  minWidth: 180,
+                  maxWidth: 280,
+                  outline: 'none',
+                  WebkitAppRegion: 'no-drag',
+                }}
+              >
+                <option value="default" style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}>
+                  Default mic
+                </option>
+                {microphones.map((mic) => (
+                  <option
+                    key={mic.deviceId}
+                    value={mic.deviceId}
+                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}
+                  >
+                    {mic.label || `Microphone (${mic.deviceId.slice(0, 8)})`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Speech recognition error ── */}
       {recognitionError && !displayText && (
