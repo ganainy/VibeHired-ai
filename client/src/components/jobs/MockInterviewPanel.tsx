@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Button } from '../common';
 import { JobApplication } from '../../services/jobApi';
 import { generateInterviewQuestions, evaluateAnswer, EvaluationResult } from '../../services/interviewApi';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
@@ -537,13 +538,13 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                     </div>
 
                     <div className="space-y-3">
-                        <button
+                        <Button
                             onClick={continueInterview}
-                            className="w-full btn-primary font-semibold rounded-xl"
+                            className="w-full font-semibold rounded-xl"
                         >
                             <span className="material-symbols-outlined text-base">play_arrow</span>
                             {labels.continueInterview}
-                        </button>
+                        </Button>
                         <button
                             onClick={regenerateInterview}
                             className="w-full px-4 py-2.5 rounded-xl text-sm font-medium border border-zinc-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all"
@@ -643,14 +644,14 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>
                                         {labels.evalCredits}
                                     </span>
-                                    <button
+                                    <Button
                                         onClick={submitAnswer}
                                         disabled={!answer.trim()}
-                                        className="btn-primary text-sm rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="text-sm rounded-xl"
                                     >
                                         <span className="material-symbols-outlined text-base">send</span>
                                         {labels.submit}
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
                         </div>
@@ -732,12 +733,12 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                         </div>
 
                         <div className="flex justify-end">
-                            <button onClick={handleNext} className="btn-primary text-sm rounded-xl">
+                            <Button onClick={handleNext} className="text-sm rounded-xl">
                                 <span className="material-symbols-outlined text-base">
                                     {currentIndex + 1 >= totalQuestions ? 'flag' : 'arrow_forward'}
                                 </span>
                                 {currentIndex + 1 >= totalQuestions ? labels.finish : labels.nextQuestion}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -754,11 +755,11 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
                                 {overallScore}<span className="text-2xl text-gray-400 dark:text-gray-500">/10</span>
                             </div>
                         </div>
-                        <button onClick={() => setPhase('select-level')} className="btn-primary rounded-xl">
+                        <Button onClick={() => setPhase('select-level')} className="rounded-xl">
                             <span className="material-symbols-outlined text-base">replay</span>
                             {labels.retake}
                             <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>{labels.startCredits}</span>
-                        </button>
+                        </Button>
                     </div>
 
                     <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-4">
@@ -852,10 +853,10 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
 
             {/* ── ADD MORE QUESTIONS BUTTON ── */}
             {phase === 'finished' && (
-                <button onClick={addMoreQuestions} className="w-full btn-secondary rounded-xl py-3">
+                <Button variant="secondary" onClick={addMoreQuestions} className="w-full rounded-xl py-3">
                     <span className="material-symbols-outlined text-base">add</span>
                     {labels.addMore}
-                </button>
+                </Button>
             )}
         </div>
     );

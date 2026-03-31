@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Button } from './common';
 
 interface NotesModalProps {
     isOpen: boolean;
@@ -116,17 +117,18 @@ const NotesModal: React.FC<NotesModalProps> = ({
 
                 {/* Footer */}
                 <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-                    <button
+                    <Button
+                        variant="secondary"
                         onClick={handleCancel}
                         disabled={isSaving}
-                        className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="px-4 py-2"
                     >
                         Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="flex items-center gap-2"
                     >
                         {isSaving ? (
                             <>
@@ -144,7 +146,7 @@ const NotesModal: React.FC<NotesModalProps> = ({
                                 Save Notes
                             </>
                         )}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

@@ -1,7 +1,8 @@
 
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { JobApplication } from '../../services/jobApi';
 import { MoreHorizontal } from 'lucide-react';
+import { Button } from '../common';
+import { JobApplication } from '../../services/jobApi';
 
 interface WeeklyGoalWidgetProps {
     jobs: JobApplication[];
@@ -101,18 +102,17 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
                             autoFocus
                         />
                         <div className="flex gap-2">
-                            <button
+                            <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => setIsEditing(false)}
-                                className="px-3 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                             >
                                 Cancel
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                className="btn-primary text-xs rounded-md px-3 py-1"
-                            >
+                            </Button>
+                            <Button size="sm" onClick={handleSave}>
                                 Save
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 ) : (

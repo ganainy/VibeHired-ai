@@ -7,6 +7,7 @@ import {
     updatePromptTemplates,
     PromptTemplate
 } from '../../services/settingsApi';
+import { Button } from './index';
 
 interface PromptCustomizerProps {
     type: 'cv' | 'coverLetter';
@@ -370,10 +371,10 @@ const PromptCustomizer: React.FC<PromptCustomizerProps> = ({
                                     {saveStatus === 'error' && (
                                         <span className="text-sm text-red-600 dark:text-red-400">Failed to save</span>
                                     )}
-                                    <button
+                                    <Button
                                         onClick={handleSave}
                                         disabled={isSaving}
-                                        className="btn-primary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        className="rounded-lg flex items-center gap-2"
                                     >
                                         {isSaving ? (
                                             <>
@@ -386,7 +387,7 @@ const PromptCustomizer: React.FC<PromptCustomizerProps> = ({
                                         ) : (
                                             <span>Save & Apply Prompt</span>
                                         )}
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
 

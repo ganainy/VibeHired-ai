@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { postChatMessage, getChatHistory, ChatMessage } from '../../services/chatApi';
 import { useAuth } from '../../context/AuthContext';
+import { Button } from '../common';
 import Spinner from '../common/Spinner';
 import ErrorAlert from '../common/ErrorAlert';
 
@@ -210,10 +211,10 @@ const JobChatWindow: React.FC<JobChatWindowProps> = ({
                         rows={2}
                         className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                     />
-                    <button
+                    <Button
                         type="submit"
                         disabled={!inputText.trim() || isLoading}
-                        className="btn-primary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 justify-center flex-shrink-0 px-3 min-w-[96px]"
+                        className="rounded-lg flex items-center gap-1.5 justify-center flex-shrink-0 px-3 min-w-[96px]"
                         title="Send message (1 credit)"
                     >
                         {isLoading ? (
@@ -232,7 +233,7 @@ const JobChatWindow: React.FC<JobChatWindowProps> = ({
                                 <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 Credit</span>
                             </>
                         )}
-                    </button>
+                    </Button>
                 </form>
             </div>
         </div>

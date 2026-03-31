@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Input } from '../common';
 import { CVDocument } from '../../services/cvApi';
 
 interface SidebarProps {
@@ -222,12 +223,17 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </span>
-                        <input
+                        <Input
                             type="text"
                             placeholder="Filter CVs..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="input-base w-full py-1.5 pl-8 pr-3 text-[11px] font-medium focus:ring-gold-500/30"
+                            className="w-full py-1.5 pl-8 pr-3 text-[11px] font-medium focus:ring-gold-500/30"
+                            icon={
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            }
                         />
                     </div>
                 </div>

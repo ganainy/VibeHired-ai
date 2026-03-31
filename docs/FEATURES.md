@@ -2,7 +2,7 @@
 
 Per-page breakdown of every screen in the application: route, authentication requirement, default state, key interactions, and which AI providers/features are used.
 
-For architecture and file layout details see [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md).  
+For architecture and file layout details see [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md).  
 For deployment see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ---
@@ -427,8 +427,6 @@ Also accessible per-job via `/jobs/:jobId/review/materials` tab (component: `Int
 | TXT | MongoDB `content` field (no Cloudinary) | Plain `<pre>` |
 | MD | MongoDB `content` field (no Cloudinary) | `<ReactMarkdown>` |
 | Link | URL only, no upload | Opens in new tab on click |
-
----
 
 ---
 

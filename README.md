@@ -13,7 +13,7 @@ VibeHired is an AI-powered job application assistant that transforms your job se
 
 ## Core Features
 
-> For detailed per-feature documentation see [FEATURES.md](./FEATURES.md).
+> For detailed per-feature documentation see [FEATURES.md](./docs/FEATURES.md).
 
 | Feature | Summary |
 |---|---|
@@ -48,20 +48,23 @@ VibeHired is an AI-powered job application assistant that transforms your job se
 - **Payments:** Stripe (for subscription plans and checkout)
 - **Desktop App:** Electron (for AI Interview Buddy companion app)
 
-## Setup & Running (Development)
+## 📚 Documentation
 
-📖 **See [DEVELOPMENT.md](./DEVELOPMENT.md) for the full local development setup guide.**
+All project documentation is centralized in the `/docs` folder for easy navigation:
 
-## Deployment
+- **[Design System](./docs/DESIGN_SYSTEM.md)** — Obsidian Intelligence design language with colors, typography, spacing, components, and responsive patterns
+- **[Features Reference](./docs/FEATURES.md)** — Per-page feature documentation with routes, AI features, and API endpoints
+- **[Development Setup](./docs/DEVELOPMENT.md)** — Local development environment configuration
+- **[Deployment Guide](./docs/DEPLOYMENT.md)** — Netlify & Heroku deployment with auto-deploy setup
 
-📖 **See [DEPLOYMENT.md](./DEPLOYMENT.md) for the complete deployment guide with automatic deployment setup for Netlify and Heroku.**
+**Figma Design System:** [VibeHired - Obsidian Intelligence Design System](https://www.figma.com/design/AuGzY3MIec89UbJpF98mVF)
 
 ## Contributing
 
 Contributions are welcome! Here is how to get involved:
 
 1. **Fork** the repository and create your branch from `main`.
-2. Follow the [DEVELOPMENT.md](./DEVELOPMENT.md) guide to get a local environment working.
+2. Follow the [Development Setup](./docs/DEVELOPMENT.md) guide to get a local environment working.
 3. Make your changes — keep PRs focused on a single concern.
 4. Open a Pull Request with a clear description of the problem and solution.
 

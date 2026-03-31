@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import CoverLetterEditor from '../CoverLetterEditor';
+import { Button, Card, Input, Select, Textarea } from '../common';
 import ErrorAlert from '../common/ErrorAlert';
 import Spinner from '../common/Spinner';
 import PromptChecklist from '../common/PromptChecklist';
@@ -175,9 +176,10 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                 {/* Download Buttons Group */}
                                 <div className="flex items-center gap-2">
                                     {/* Copy Button */}
-                                    <button
+                                    <Button
+                                        variant="secondary"
                                         onClick={handleCopyCoverLetter}
-                                        className="group flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-900 text-gray-700 dark:text-gray-200 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 active:bg-gray-100 dark:active:bg-zinc-700 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
+                                        className="group flex items-center gap-2 px-3 py-2 text-xs"
                                         title="Copy to clipboard"
                                     >
                                         {isClCopied ? (
@@ -186,13 +188,13 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                             <span className="material-symbols-outlined text-sm">content_copy</span>
                                         )}
                                         <span>{isClCopied ? 'Copied' : 'Copy'}</span>
-                                    </button>
+                                    </Button>
 
                                     {/* Download PDF Button */}
-                                    <button
+                                    <Button
                                         onClick={finalPdfFiles.cl ? () => handleDownload(finalPdfFiles.cl as string) : handleGenerateCoverLetterPdf}
                                         disabled={isRenderingCoverLetterPdf}
-                                        className="btn-primary group flex items-center gap-2 px-3 py-2 text-xs disabled:opacity-70 disabled:cursor-not-allowed"
+                                        className="group flex items-center gap-2 px-3 py-2 text-xs"
                                         title="Download as PDF"
                                     >
                                         {isRenderingCoverLetterPdf ? (
@@ -203,39 +205,41 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                             </svg>
                                         )}
                                         <span>PDF</span>
-                                    </button>
+                                    </Button>
 
                                     {/* Download Word Button */}
-                                    <button
+                                    <Button
+                                        variant="secondary"
                                         onClick={handleDownloadWord}
-                                        className="btn-secondary group flex items-center gap-2 px-3 py-2 text-xs"
+                                        className="group flex items-center gap-2 px-3 py-2 text-xs"
                                         title="Download as Word Document"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                         </svg>
                                         <span>Word</span>
-                                    </button>
+                                    </Button>
 
                                     {/* Email Format Button */}
-                                    <button
+                                    <Button
                                         onClick={() => setIsEmailModalOpen(true)}
-                                        className="group flex items-center gap-2 px-3 py-2 bg-emerald-500 dark:bg-emerald-600 text-white rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-700 active:bg-emerald-700 dark:active:bg-emerald-800 transition-all duration-200 font-medium text-xs shadow-sm hover:shadow-md"
+                                        className="group flex items-center gap-2 px-3 py-2 text-xs bg-emerald-500 dark:bg-emerald-600 text-white hover:bg-emerald-600 dark:hover:bg-emerald-700"
                                         title="View as Email Format"
                                     >
                                         <span className="material-symbols-outlined text-sm">mail</span>
                                         <span>Email</span>
-                                    </button>
+                                    </Button>
                                 </div>
 
                                 {/* Delete Cover Letter Button */}
-                                <button
+                                <Button
+                                    variant="danger"
                                     onClick={handleDeleteCoverLetter}
-                                    className="group flex items-center gap-2.5 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md"
+                                    className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm"
                                     title="Delete cover letter to regenerate with new instructions"
                                 >
                                     <span className="material-symbols-outlined text-sm">delete</span>
-                                </button>
+                                </Button>
                             </div>
                         </div>
 
@@ -319,20 +323,21 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
 
                                 {/* Actions */}
                                 <div className="flex gap-2">
-                                    <button
+                                    <Button
                                         onClick={handleApplyBaseCoverLetter}
                                         disabled={isApplyingBaseCl || (!selectedBaseClId && !clUploadFile)}
-                                        className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex items-center gap-2"
                                     >
                                         {isApplyingBaseCl ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
                                         Attach to Job
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
                                         onClick={() => { setShowClLibraryPanel(false); setApplyClError(null); }}
-                                        className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                                        className="px-4 py-2 text-sm"
                                     >
                                         Cancel
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         )}
@@ -420,7 +425,7 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
 
                     {/* Option B form: Import / Upload */}
                     {clCreationMode === 'import' && (
-                        <div className="card p-8 space-y-6">
+                        <Card padding="none" className="p-8 space-y-6">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                 <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>folder_open</span>
                                 Attach Cover Letter
@@ -474,17 +479,17 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select from your library</label>
                                 <div className="relative">
-                                    <select
+                                    <Select
                                         value={selectedBaseClId}
                                         onChange={(e) => { setSelectedBaseClId(e.target.value); setClUploadFile(null); if (clUploadFileRef.current) clUploadFileRef.current.value = ''; }}
                                         disabled={!!clUploadFile || isApplyingBaseCl}
-                                        className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 input-base disabled:opacity-50"
+                                        className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 disabled:opacity-50"
                                     >
                                         <option value="">— choose a saved cover letter —</option>
                                         {baseCoverLetters.map(cl => (
                                             <option key={cl._id} value={cl._id}>{cl.displayName}</option>
                                         ))}
-                                    </select>
+                                    </Select>
                                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
                                         <span className="material-symbols-outlined">expand_more</span>
                                     </div>
@@ -501,22 +506,22 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
 
                             {/* Actions */}
                             <div className="flex items-center justify-end gap-3 pt-2">
-                                <button
+                                <Button
+                                    variant="ghost"
                                     onClick={() => { setClCreationMode('ai'); setApplyClError(null); setClUploadFile(null); setSelectedBaseClId(''); }}
-                                    className="px-5 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-colors"
+                                    className="px-5 py-2.5 text-sm"
                                 >
                                     Switch to AI Generate
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     onClick={handleApplyBaseCoverLetter}
                                     disabled={isApplyingBaseCl || (!selectedBaseClId && !clUploadFile)}
-                                    className="flex items-center gap-2 px-6 py-2.5 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                    icon={isApplyingBaseCl ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
                                 >
-                                    {isApplyingBaseCl ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
                                     Attach to Job
-                                </button>
+                                </Button>
                             </div>
-                        </div>
+                        </Card>
                     )}
 
                     {/* Option A form: AI Generate */}
@@ -531,7 +536,7 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                 </div>
                             )}
 
-                            <div className="card p-8 space-y-8">
+                            <Card padding="none" className="p-8 space-y-8">
                                 {/* Target Role Section */}
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 mb-2">
@@ -543,11 +548,11 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Job Title
                                             </label>
-                                            <input
+                                            <Input
                                                 type="text"
                                                 value={tailoredJobTitle}
                                                 onChange={(e) => setTailoredJobTitle(e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
+                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600"
                                                 placeholder="e.g. Senior Product Manager"
                                             />
                                         </div>
@@ -555,11 +560,11 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Company Name
                                             </label>
-                                            <input
+                                            <Input
                                                 type="text"
                                                 value={tailoredCompanyName}
                                                 onChange={(e) => setTailoredCompanyName(e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
+                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600"
                                                 placeholder="e.g. Acme Innovations"
                                             />
                                         </div>
@@ -575,12 +580,12 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                         </div>
                                     </div>
                                     <div className="relative">
-                                        <textarea
+                                        <Textarea
                                             value={tailoredJobDescription}
                                             onChange={(e) => setTailoredJobDescription(e.target.value)}
-                                            className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base min-h-[200px]"
+                                            className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 min-h-[200px]"
                                             placeholder="Paste the full job description here... Our AI will analyze key requirements."
-                                        ></textarea>
+                                        />
                                     </div>
                                 </div>
 
@@ -592,10 +597,10 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Base Resume</h3>
                                         </div>
                                         <div className="relative">
-                                            <select
+                                            <Select
                                                 value={selectedClBaseCvId}
                                                 onChange={(e) => handleSelectedClBaseCvIdChange(e.target.value)}
-                                                className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
+                                                className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300"
                                             >
                                                 {currentCvId && hasLocalCv && (
                                                     <option value="__job_cv__">📄 This Job's CV (attached)</option>
@@ -604,7 +609,7 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                                     <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
                                                 ))}
                                                 {availableCvs.length === 0 && <option value="master">Loading CVs...</option>}
-                                            </select>
+                                            </Select>
                                             <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
                                                 <span className="material-symbols-outlined">expand_more</span>
                                             </div>
@@ -623,16 +628,17 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
 
                                 {/* Footer Actions */}
                                 <div className="mt-8 flex items-center justify-end gap-4">
-                                    <button
+                                    <Button
+                                        variant="ghost"
                                         onClick={() => navigate('/dashboard')}
-                                        className="px-6 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                                        className="px-6 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-gray-200"
                                     >
                                         Cancel
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         onClick={handleGenerateCoverLetter}
                                         disabled={isGeneratingCoverLetter || !hasMasterCv || !tailoredJobDescription}
-                                        className="btn-primary font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                                        className="font-semibold shadow-md hover:shadow-lg"
                                     >
                                         {isGeneratingCoverLetter ? (
                                             <>
@@ -646,7 +652,7 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                                 <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>3 Credit</span>
                                             </>
                                         )}
-                                    </button>
+                                    </Button>
                                 </div>
 
                                 {!hasMasterCv && (
@@ -656,7 +662,7 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                         </p>
                                     </div>
                                 )}
-                            </div>
+                            </Card>
                         </>
                     )}
                 </div>

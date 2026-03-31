@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button, Card } from './';
 import { AlertCircle, CalendarDays, X, Info, CheckCircle2 } from 'lucide-react';
 
 interface ConfirmModalProps {
@@ -60,8 +61,9 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             style={{ background: 'rgba(5, 5, 8, 0.85)', backdropFilter: 'blur(4px)' }}
             onClick={onClose}
         >
-            <div
-                className="card w-full max-w-sm overflow-hidden animate-in zoom-in duration-200"
+            <Card
+                padding="none"
+                className="w-full max-w-sm overflow-hidden animate-in zoom-in duration-200"
                 style={{
                     background: 'var(--bg-elevated)',
                     border: '1px solid var(--border)',
@@ -104,18 +106,20 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
                     </div>
                     <div className="flex gap-3 mt-2">
                         {!isAlert && !isInfo && (
-                            <button className="btn-secondary flex-1" onClick={onClose}>{cancelLabel}</button>
+                            <Button variant="secondary" className="flex-1" onClick={onClose}>
+                                {cancelLabel}
+                            </Button>
                         )}
-                        <button
-                            className="btn-primary flex-1"
-                            style={danger ? { background: '#ef4444', borderColor: '#ef4444', color: 'white' } : {}}
+                        <Button
+                            variant={danger ? 'danger' : 'primary'}
+                            className="flex-1"
                             onClick={() => { onConfirm(); onClose(); }}
                         >
                             {isAlert || isInfo ? 'Got it' : confirmLabel}
-                        </button>
+                        </Button>
                     </div>
                 </div>
-            </div>
+            </Card>
         </div>
     );
 };

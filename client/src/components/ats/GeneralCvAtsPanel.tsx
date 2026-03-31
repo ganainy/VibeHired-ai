@@ -1,5 +1,6 @@
 // General CV ATS Analysis Panel - for CV analysis without job description
 import React, { useState, useMemo } from 'react';
+import { Card } from '../common';
 import { AtsScores } from '../../services/atsApi';
 import { SectionAnalysisResult } from '../../services/analysisApi';
 import SimpleLoader from '../common/SimpleLoader';
@@ -96,9 +97,9 @@ const GeneralCvAtsPanel: React.FC<GeneralCvAtsPanelProps> = ({ atsScores, analys
 
     if (isLoading) {
         return (
-            <div className="p-12 card flex flex-col items-center justify-center min-h-[300px]">
+            <Card padding="none" className="p-12 flex flex-col items-center justify-center min-h-[300px]">
                 <SimpleLoader message="Analyzing your CV for ATS compatibility..." height="auto" />
-            </div>
+            </Card>
         );
     }
 

@@ -1,5 +1,6 @@
 // client/src/components/portfolio/About.tsx
 import React from 'react';
+import { Badge } from '../common';
 import { AggregatedProfile } from '../../services/portfolioApi';
 
 // Helper: country code from language name (for language badge labels)
@@ -42,9 +43,13 @@ const About: React.FC<AboutProps> = ({ profile }) => {
                   <p className="label-overline mb-4">Programming Languages</p>
                   <div className="flex flex-wrap gap-2">
                     {skills.programmingLanguages.map((lang: string, index: number) => (
-                      <span key={`lang-${index}`} className="badge badge-gold transition-all duration-200 hover:scale-105 cursor-default">
+                      <Badge
+                        key={`lang-${index}`}
+                        variant="gold"
+                        className="transition-all duration-200 hover:scale-105 cursor-default"
+                      >
                         {lang}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -63,9 +68,13 @@ const About: React.FC<AboutProps> = ({ profile }) => {
                         <p className="label-overline mb-4">Frameworks & Libraries</p>
                         <div className="flex flex-wrap gap-2">
                           {frameworks.map((skill: string, index: number) => (
-                            <span key={`framework-${index}`} className="badge badge-ink transition-all duration-200 hover:scale-105 cursor-default">
+                            <Badge
+                              key={`framework-${index}`}
+                              variant="ink"
+                              className="transition-all duration-200 hover:scale-105 cursor-default"
+                            >
                               {skill}
-                            </span>
+                            </Badge>
                           ))}
                         </div>
                       </div>
@@ -75,9 +84,13 @@ const About: React.FC<AboutProps> = ({ profile }) => {
                         <p className="label-overline mb-4">Tools & Technologies</p>
                         <div className="flex flex-wrap gap-2">
                           {tools.map((skill: string, index: number) => (
-                            <span key={`tool-${index}`} className="badge badge-ink transition-all duration-200 hover:scale-105 cursor-default">
+                            <Badge
+                              key={`tool-${index}`}
+                              variant="ink"
+                              className="transition-all duration-200 hover:scale-105 cursor-default"
+                            >
                               {skill}
-                            </span>
+                            </Badge>
                           ))}
                         </div>
                       </div>
@@ -125,9 +138,13 @@ const About: React.FC<AboutProps> = ({ profile }) => {
             <h2 className="text-3xl font-bold text-center mb-10" style={{ fontFamily: 'var(--font-display)' }}>LinkedIn Skills</h2>
             <div className="flex flex-wrap gap-2 justify-center">
               {linkedInSkills.map((skill: string, index: number) => (
-                <span key={`linkedin-skill-${index}`} className="badge badge-ink transition-all duration-200 hover:scale-105 cursor-default">
+                <Badge
+                  key={`linkedin-skill-${index}`}
+                  variant="ink"
+                  className="transition-all duration-200 hover:scale-105 cursor-default"
+                >
                   {skill}
-                </span>
+                </Badge>
               ))}
             </div>
           </div>
@@ -144,9 +161,10 @@ const About: React.FC<AboutProps> = ({ profile }) => {
                 const languageName = lang.language || lang;
                 const countryCode = getCountryCode(languageName);
                 return (
-                  <span
+                  <Badge
                     key={`linkedin-lang-${index}`}
-                    className="badge badge-jade flex items-center gap-2 transition-all duration-200 hover:scale-105 cursor-default"
+                    variant="jade"
+                    className="flex items-center gap-2 transition-all duration-200 hover:scale-105 cursor-default"
                   >
                     {countryCode && (
                       <span
@@ -160,7 +178,7 @@ const About: React.FC<AboutProps> = ({ profile }) => {
                       {languageName}
                       {lang.proficiency && ` (${lang.proficiency})`}
                     </span>
-                  </span>
+                  </Badge>
                 );
               })}
             </div>

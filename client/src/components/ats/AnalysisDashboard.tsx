@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Card } from '../common';
 import { AtsScores } from '../../services/atsApi';
 import { SectionAnalysisResult } from '../../services/analysisApi';
 import SimpleLoader from '../common/SimpleLoader';
@@ -58,9 +59,9 @@ const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
     if (isLoading) {
         return (
-            <div className="py-20 card flex flex-col items-center justify-center min-h-[300px]">
+            <Card padding="none" className="py-20 flex flex-col items-center justify-center min-h-[300px]">
                 <SimpleLoader message="Lade Dashboard-Analyse..." height="auto" />
-            </div>
+            </Card>
         );
     }
 

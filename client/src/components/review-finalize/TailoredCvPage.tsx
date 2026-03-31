@@ -7,6 +7,7 @@ import { CvSectionDescriptor } from '../../types/cvDescriptor';
 import AtsInlinePanel from '../ats/AtsInlinePanel';
 import CvPreviewModal from '../cv-editor/CvPreviewModal';
 import ConfirmModal from '../common/ConfirmModal';
+import { Button, Card, Input, Select, Textarea } from '../common';
 import ErrorAlert from '../common/ErrorAlert';
 import Spinner from '../common/Spinner';
 import SimpleLoader from '../common/SimpleLoader';
@@ -233,8 +234,9 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button
+                        <Button
                             type="button"
+                            variant="secondary"
                             disabled={isLoadingRawPdf}
                             onClick={async () => {
                                 setIsLoadingRawPdf(true);
@@ -259,7 +261,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                     setIsLoadingRawPdf(false);
                                 }
                             }}
-                            className="btn-secondary text-sm disabled:opacity-50"
+                            className="text-sm"
                         >
                             {isLoadingRawPdf ? (
                                 <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
@@ -267,15 +269,16 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                 <span className="material-symbols-outlined text-base">visibility</span>
                             )}
                             Preview PDF
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="button"
+                            variant="danger"
                             onClick={() => setShowRemoveCvConfirm(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors"
+                            className="text-sm"
                         >
                             <span className="material-symbols-outlined text-base">delete</span>
                             Remove &amp; re-attach
-                        </button>
+                        </Button>
                     </div>
                 </div>
             ) : hasLocalCv ? (
@@ -530,7 +533,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
 
                     {/* ── Option B form: Import / Upload ── */}
                     {cvCreationMode === 'import' && (
-                        <div className="card p-8 space-y-6">
+                        <Card padding="none" className="p-8 space-y-6">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                 <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>folder_open</span>
                                 Attach CV
@@ -584,17 +587,17 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select from your library</label>
                                 <div className="relative">
-                                    <select
+                                    <Select
                                         value={selectedBaseCvIdForImport}
                                         onChange={(e) => { setSelectedBaseCvIdForImport(e.target.value); setCvImportFile(null); if (cvImportFileRef.current) cvImportFileRef.current.value = ''; }}
                                         disabled={!!cvImportFile || isApplyingBaseCv}
-                                        className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 input-base disabled:opacity-50"
+                                        className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 disabled:opacity-50"
                                     >
                                         <option value="">— choose a saved CV —</option>
                                         {availableCvs.map(cv => (
                                             <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
                                         ))}
-                                    </select>
+                                    </Select>
                                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
                                         <span className="material-symbols-outlined">expand_more</span>
                                     </div>
@@ -611,22 +614,22 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
 
                             {/* Actions */}
                             <div className="flex items-center justify-end gap-3 pt-2">
-                                <button
+                                <Button
+                                    variant="ghost"
                                     onClick={() => { setCvCreationMode('ai'); setApplyCvError(null); setCvImportFile(null); setSelectedBaseCvIdForImport(''); }}
-                                    className="px-5 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-medium transition-colors"
+                                    className="px-5 py-2.5 text-sm"
                                 >
                                     Switch to AI Generate
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     onClick={handleApplyBaseCv}
                                     disabled={isApplyingBaseCv || (!selectedBaseCvIdForImport && !cvImportFile)}
-                                    className="flex items-center gap-2 px-6 py-2.5 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                    icon={isApplyingBaseCv ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
                                 >
-                                    {isApplyingBaseCv ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
                                     Attach to Job
-                                </button>
+                                </Button>
                             </div>
-                        </div>
+                        </Card>
                     )}
 
                     {/* ── Option A form: AI Generate ── */}
@@ -641,7 +644,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                 </div>
                             )}
 
-                            <div className="card p-8 space-y-8">
+                            <Card padding="none" className="p-8 space-y-8">
                                 {/* Target Role Section */}
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 mb-2">
@@ -653,11 +656,11 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Job Title
                                             </label>
-                                            <input
+                                            <Input
                                                 type="text"
                                                 value={tailoredJobTitle}
                                                 onChange={(e) => setTailoredJobTitle(e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
+                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600"
                                                 placeholder="e.g. Senior Product Manager"
                                             />
                                         </div>
@@ -665,11 +668,11 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                                 Company Name
                                             </label>
-                                            <input
+                                            <Input
                                                 type="text"
                                                 value={tailoredCompanyName}
                                                 onChange={(e) => setTailoredCompanyName(e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base"
+                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600"
                                                 placeholder="e.g. Acme Innovations"
                                             />
                                         </div>
@@ -685,12 +688,12 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                         </div>
                                     </div>
                                     <div className="relative">
-                                        <textarea
+                                        <Textarea
                                             value={tailoredJobDescription}
                                             onChange={(e) => setTailoredJobDescription(e.target.value)}
-                                            className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 input-base min-h-[200px]"
+                                            className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 min-h-[200px]"
                                             placeholder="Paste the full job description here... Our AI will analyze key requirements and skills."
-                                        ></textarea>
+                                        />
                                     </div>
                                 </div>
 
@@ -703,17 +706,17 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                                 <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Base Resume</h3>
                                             </div>
                                             <div className="relative">
-                                                <select
+                                                <Select
                                                     value={selectedBaseCvId}
                                                     onChange={(e) => handleSelectedBaseCvIdChange(e.target.value)}
-                                                    className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 input-base"
+                                                    className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300"
                                                 >
                                                     <option value="">— Not selected —</option>
                                                     {availableCvs.map(cv => (
                                                         <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
                                                     ))}
                                                     {availableCvs.length === 0 && <option value="master">Loading CVs...</option>}
-                                                </select>
+                                                </Select>
                                                 <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
                                                     <span className="material-symbols-outlined">expand_more</span>
                                                 </div>
@@ -730,20 +733,21 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                         onChange={setCustomInstructions}
                                     />
                                 </div>
-                            </div>
+                            </Card>
 
                             {/* Footer Actions */}
                             <div className="mt-8 flex items-center justify-end gap-4">
-                                <button
+                                <Button
+                                    variant="ghost"
                                     onClick={() => setCvCreationMode('import')}
-                                    className="px-6 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+                                    className="px-6 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-gray-200"
                                 >
                                     Switch to Import
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     onClick={handleGenerateSpecificCv}
                                     disabled={isGeneratingCv || !hasMasterCv || !tailoredJobDescription}
-                                    className="btn-primary font-semibold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                                    className="font-semibold shadow-md hover:shadow-lg"
                                 >
                                     {isGeneratingCv ? (
                                         <>
@@ -756,7 +760,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                             <span>Generate Tailored CV</span>
                                         </>
                                     )}
-                                </button>
+                                </Button>
                             </div>
 
                             {!hasMasterCv && (

@@ -4,6 +4,7 @@ import {
     updatePromptTemplates,
     PromptTemplate
 } from '../../services/settingsApi';
+import { Button } from './index';
 import Spinner from './Spinner';
 
 interface PromptTemplateSelectorProps {
@@ -336,12 +337,9 @@ export const PromptTemplateSelector: React.FC<PromptTemplateSelectorProps> = ({
                             </pre>
                         </div>
                         <div className="flex justify-end p-4 border-t border-gray-200 dark:border-gray-700">
-                            <button
-                                onClick={() => setShowPromptModal(false)}
-                                className="btn-primary rounded-lg"
-                            >
+                            <Button onClick={() => setShowPromptModal(false)}>
                                 Close
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

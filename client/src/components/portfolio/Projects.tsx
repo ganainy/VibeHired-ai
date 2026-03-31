@@ -1,6 +1,7 @@
 // client/src/components/portfolio/Projects.tsx
 import React, { useState, useMemo } from 'react';
 import { GitFork, Star } from 'lucide-react';
+import { Badge, Button, Card } from '../common';
 import { Project } from '../../services/portfolioApi';
 
 interface ProjectsProps {
@@ -204,26 +205,23 @@ const Projects: React.FC<ProjectsProps> = ({ projects }) => {
       {/* Load More Button */}
       {filteredProjects.length > 6 && !showAll && (
         <div className="mt-12 text-center">
-          <button
-            onClick={() => setShowAll(true)}
-            className="btn-primary"
-          >
+          <Button onClick={() => setShowAll(true)}>
             Load More Projects
-          </button>
+          </Button>
         </div>
       )}
 
       {showAll && filteredProjects.length > 6 && (
         <div className="mt-12 text-center">
-          <button
+          <Button
+            variant="secondary"
             onClick={() => {
               setShowAll(false);
               window.scrollTo({ top: document.getElementById('work')?.offsetTop || 0, behavior: 'smooth' });
             }}
-            className="btn-secondary"
           >
             Show Less
-          </button>
+          </Button>
         </div>
       )}
     </section>
@@ -245,9 +243,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
   const forks = Number(project.forks ?? 0);
 
   return (
-    <div
-      className="card rounded-xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group"
+    <Card
+      className="rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-2 group"
       style={{ border: '1px solid var(--border)' }}
+      hoverable
     >
       {/* Project Image / Placeholder */}
       <div className="h-48 flex items-center justify-center transition-transform duration-300 group-hover:scale-105" style={placeholderStyle}>
@@ -293,15 +292,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
         {project.technologies && project.technologies.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-1.5">
             {project.technologies.slice(0, 4).map((tech, techIndex) => (
-              <span
-                key={techIndex}
-                className="badge badge-ink text-xs"
-              >
+              <Badge key={techIndex} variant="ink" size="sm">
                 {tech}
-              </span>
+              </Badge>
             ))}
             {project.technologies.length > 4 && (
-              <span className="badge badge-ink text-xs">+{project.technologies.length - 4}</span>
+              <Badge variant="ink" size="sm">+{project.technologies.length - 4}</Badge>
             )}
           </div>
         )}
@@ -320,17 +316,21 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
           </div>
         )}
         {(project.projectUrl || project.githubUrl) && (
-          <a
-            href={project.githubUrl || project.projectUrl || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-ghost mt-5 block w-full text-center text-sm"
+          <Button
+            variant="ghost"
+            onClick={() => {
+              const url = project.githubUrl || project.projectUrl;
+              if (url) {
+                window.open(url, '_blank', 'noopener,noreferrer');
+              }
+            }}
+            className="mt-5 block w-full text-center text-sm"
           >
             {project.githubUrl ? 'View Code' : 'View Project'}
-          </a>
+          </Button>
         )}
       </div>
-    </div>
+    </Card>
   );
 };
 

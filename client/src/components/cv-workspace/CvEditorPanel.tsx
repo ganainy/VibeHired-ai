@@ -5,6 +5,7 @@ import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
 import { CvSectionDescriptor, CvDynamicPayload } from '../../types/cvDescriptor';
 import { TemplateConfig, getAllTemplates } from '../../templates/config';
 import { ResumeBuilder } from '../resume-builder';
+import { Button, Select } from '../common';
 import CvLivePreview from '../cv-editor/CvLivePreview';
 import DynamicCvForm from '../cv-editor/dynamic/DynamicCvForm';
 import FreeformCvEditor from '../cv-freeform/FreeformCvEditor';
@@ -177,16 +178,17 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
 
             {/* Template selector — only show when more than one template is available */}
             {availableTemplates.length > 1 && (
-              <select
+              <Select
                 value={templateId}
                 onChange={(e) => onTemplateChange(e.target.value)}
                 disabled={isFreeformJson}
-                className="input-base px-3 py-1.5 text-sm min-w-[140px] sm:min-w-[160px] focus:ring-gold-500/50"
+                containerClassName="w-auto"
+                className="px-3 py-1.5 text-sm min-w-[140px] sm:min-w-[160px] focus:ring-gold-500/50"
               >
                 {availableTemplates.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
-              </select>
+              </Select>
             )}
 
             {/* Save status pill */}
@@ -201,13 +203,10 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
 
           <div className="flex items-center gap-2 flex-wrap">
             {/* Save button */}
-            <button
+            <Button
               onClick={onSave}
               disabled={!hasUnsavedChanges || saveStatus === 'saving'}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${hasUnsavedChanges && saveStatus !== 'saving'
-                ? 'btn-primary hover:bg-primaryLight'
-                : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed rounded-lg px-3 sm:px-4 py-1.5 text-sm font-semibold'
-                }`}
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-semibold"
             >
               {saveStatus === 'saving' ? (
                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -220,32 +219,32 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                 </svg>
               )}
               <span className="hidden sm:inline">{saveStatus === 'saving' ? 'Saving…' : 'Save'}</span>
-            </button>
+            </Button>
 
             {/* Download PDF button */}
-            <button
+            <Button
               onClick={() => handlePrint()}
-              disabled={false}
-              className="btn-primary flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 text-sm"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 text-sm"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <span className="hidden sm:inline">Download PDF</span>
-            </button>
+            </Button>
 
             {/* Delete button (Tailored CVs only) */}
             {onDelete && (
               <>
                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" />
-                <button
+                <Button
+                  variant="danger"
                   onClick={onDelete}
-                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-all border border-red-100 dark:border-red-900/30"
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-medium"
                   title="Delete this tailored CV to regenerate with new instructions"
                 >
                   <span className="material-symbols-outlined text-[18px]">delete</span>
                   <span className="hidden sm:inline">Delete</span>
-                </button>
+                </Button>
               </>
             )}
           </div>

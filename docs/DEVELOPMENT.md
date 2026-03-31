@@ -103,4 +103,4 @@ After starting the application:
 
 ## Environment Variable Reference
 
-See [`env.example`](./env.example) for a full annotated list of every supported environment variable, including optional integrations (Google OAuth, SMTP email, Stripe, Apify).
+See [`env.example`](../env.example) for a full annotated list of every supported environment variable, including optional integrations (Google OAuth, SMTP email, Stripe, Apify).

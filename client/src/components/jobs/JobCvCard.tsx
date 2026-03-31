@@ -1,10 +1,11 @@
 // Component for displaying individual job-specific CV cards with editing and ATS analysis
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { JobApplication } from '../../services/jobApi';
 import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
 import { getJobCv, updateCv, createJobCv, getAllCvs, createJobCvFromBase, uploadCvForJob, CVDocument } from '../../services/cvApi';
 import CvFormEditor from '../cv-editor/CvFormEditor';
+import { Button, Select } from '../common';
 import GeneralCvAtsPanel from '../ats/GeneralCvAtsPanel';
 import { scanAts, getAtsScores, AtsScores } from '../../services/atsApi';
 
@@ -14,6 +15,7 @@ interface JobCvCardProps {
 }
 
 const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
+    const navigate = useNavigate();
     const [cvData, setCvData] = useState<JsonResumeSchema>(jobApplication.draftCvJson || { basics: {} });
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -317,15 +319,15 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
                         </button>
 
                         {/* Link to Full Review Page */}
-                        <Link
-                            to={`/jobs/${jobApplication._id}/workspace/`}
-                            className="btn-primary rounded-lg font-medium text-sm flex items-center gap-2"
+                        <Button
+                            onClick={() => navigate(`/jobs/${jobApplication._id}/workspace/`)}
+                            className="rounded-lg font-medium text-sm flex items-center gap-2"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
                             Full Details
-                        </Link>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -348,16 +350,16 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
                         <div className="flex items-center justify-between mb-4">
                             <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">ATS Analysis</h4>
                             {!isScanningAts && (
-                                <button
+                                <Button
                                     onClick={handleScanAts}
                                     disabled={isScanningAts}
-                                    className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm flex items-center gap-2"
+                                    className="px-4 py-2 rounded-lg text-sm flex items-center gap-2"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
                                     {atsScores ? 'Rescan' : 'Scan ATS'}
-                                </button>
+                                </Button>
                             )}
                         </div>
                         <GeneralCvAtsPanel atsScores={atsScores} isLoading={isScanningAts} />
@@ -369,20 +371,22 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
                             <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit CV</h4>
                             <div className="flex items-center gap-2">
                                 {/* Replace CV button */}
-                                <button
+                                <Button
+                                    variant="secondary"
                                     onClick={() => { setShowAttachCvPanel(v => !v); setAttachCvError(null); }}
-                                    className="rounded-lg transition-colors text-sm flex items-center gap-1.5 px-3 py-2 border font-medium" style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)", color:"var(--accent)"}}
+                                    className="rounded-lg text-sm flex items-center gap-1.5 px-3 py-2 border font-medium"
+                                    style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)", color:"var(--accent)"}}
                                     title="Replace this job's CV with a base CV or uploaded file"
                                 >
                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                     </svg>
                                     Replace with Base CV
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     onClick={() => handleSaveCv(undefined, false)}
                                     disabled={isSaving}
-                                    className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm flex items-center gap-2"
+                                    className="px-4 py-2 rounded-lg text-sm flex items-center gap-2"
                                 >
                                     {isSaving ? (
                                         <>
@@ -400,7 +404,7 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
                                             Save Changes
                                         </>
                                     )}
-                                </button>
+                                </Button>
                             </div>
                         </div>
 
@@ -419,10 +423,10 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
                                 {/* Select base CV */}
                                 <div>
                                     <label className="block text-xs font-medium mb-1" style={{color:"var(--accent)"}}>From existing base CV</label>
-                                    <select
+                                    <Select
                                         value={selectedBaseCvId}
                                         onChange={(e) => { setSelectedBaseCvId(e.target.value); setCvAttachFile(null); if (attachCvFileRef.current) attachCvFileRef.current.value = ''; }}
-                                        className="w-full bg-white dark:bg-gray-800 input-base text-sm text-gray-900 dark:text-gray-100"
+                                        className="w-full bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100"
                                     >
                                         <option value="">-- Select base CV --</option>
                                         {baseCvList.map(cv => (
@@ -430,7 +434,7 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
                                                 {cv.displayName || cv.category || 'CV'}
                                             </option>
                                         ))}
-                                    </select>
+                                    </Select>
                                 </div>
 
                                 {/* Divider */}
@@ -461,15 +465,15 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
                                 </p>
 
                                 <div className="flex gap-2 pt-1">
-                                    <button
+                                    <Button
                                         onClick={handleAttachCv}
                                         disabled={isAttachingCv || (!selectedBaseCvId && !cvAttachFile)}
-                                        className="btn-primary rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                        className="rounded-lg text-sm font-medium flex items-center gap-2"
                                     >
                                         {isAttachingCv ? (
                                             <><svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>Attaching…</>
                                         ) : 'Attach CV'}
-                                    </button>
+                                    </Button>
                                     <button
                                         onClick={() => { setShowAttachCvPanel(false); setAttachCvError(null); setCvAttachFile(null); setSelectedBaseCvId(''); }}
                                         className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-600"
