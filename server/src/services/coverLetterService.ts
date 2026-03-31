@@ -139,6 +139,18 @@ Return ONLY the JSON object, no additional text or markdown.`;
         // Normalize paragraph structure so the editor/PDF don't show one giant block.
         coverLetterData.coverLetterText = normalizeCoverLetterFormatting(coverLetterData.coverLetterText, language);
 
+        // Second pass: rewrite the drafted letter to sound more human while preserving facts.
+        coverLetterData.coverLetterText = await humanizeCoverLetterText(
+            userId,
+            coverLetterData.coverLetterText,
+            jobDescription,
+            jobTitle,
+            companyName,
+            language,
+            cvJson,
+            rawCvText
+        );
+
         // Ensure fileName has proper format
         if (!coverLetterData.fileName || !coverLetterData.fileName.endsWith('.pdf')) {
             coverLetterData.fileName = `${firstName}_${lastName}_${suggestedDocLabel}_${sanitizeForFilename(jobTitle)}_${sanitizeForFilename(companyName)}.pdf`;
@@ -289,4 +301,72 @@ function normalizeCoverLetterFormatting(text: string, language: 'en' | 'de'): st
     }
 
     return normalized;
+}
+
+async function humanizeCoverLetterText(
+    userId: string,
+    draftedCoverLetter: string,
+    jobDescription: string,
+    jobTitle: string,
+    companyName: string,
+    language: 'en' | 'de',
+    cvJson?: JsonResumeSchema | null,
+    rawCvText?: string
+): Promise<string> {
+    const languageName = language === 'de' ? 'German' : 'English';
+
+    const prompt = `You are a professional writing editor. Rewrite the cover letter so it reads naturally human, specific, and sincere.
+
+STRICT RULES:
+- Keep the same core facts and claims. Do not invent achievements, years, tools, or responsibilities.
+- Keep language in ${languageName}.
+- Keep the same target role and company.
+- Keep professional tone, but avoid robotic phrasing.
+- Remove common AI patterns: inflated significance language, vague attributions, formulaic list-like rhythm, excessive hedging, and repetitive transition words.
+- Prefer concrete phrasing over abstract buzzwords.
+- Vary sentence rhythm naturally.
+- Keep plain text only. No markdown, no bullet points, no emojis.
+- Start with salutation and keep paragraph breaks.
+- Stay concise (max 250 words).
+
+CONTEXT FOR FACT CHECKING:
+JOB TITLE: ${jobTitle}
+COMPANY: ${companyName}
+
+JOB DESCRIPTION:
+---
+${jobDescription}
+---
+
+CV SOURCE:
+${rawCvText
+        ? `\n\
+\
+${rawCvText}`
+        : JSON.stringify(cvJson ?? {}, null, 2)}
+
+DRAFT COVER LETTER TO REWRITE:
+---
+${draftedCoverLetter}
+---
+
+Return ONLY the rewritten cover letter text.`;
+
+    try {
+        const result = await generateContent(userId, prompt);
+        const rewritten = String(result?.text || '')
+            .trim()
+            .replace(/^```[a-zA-Z]*\s*/g, '')
+            .replace(/\s*```$/g, '')
+            .trim();
+
+        if (!rewritten || rewritten.length < 100) {
+            return draftedCoverLetter;
+        }
+
+        return normalizeCoverLetterFormatting(rewritten, language);
+    } catch (error) {
+        console.warn('Humanization pass failed. Returning drafted cover letter.', error);
+        return draftedCoverLetter;
+    }
 }
