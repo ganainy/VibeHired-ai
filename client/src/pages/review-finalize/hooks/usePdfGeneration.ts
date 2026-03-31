@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
+import { JsonResumeSchema } from '../../../../../server/src/types/jsonresume';
 import { renderFinalPdfs, renderCvPdf, renderCoverLetterPdf, getDownloadUrl } from '../../../services/generatorApi';
-import { getCvOriginalPdf } from '../../../services/cvApi';
 import axios from 'axios';
-import { Document, Packer } from 'docx';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { getPdfFilename } from '../utils/filenameHelpers';
 
@@ -18,7 +17,6 @@ export const usePdfGeneration = (jobId: string | undefined, cvData: JsonResumeSc
     const [isRenderingClPdf, setIsRenderingClPdf] = useState(false);
     const [renderError, setRenderError] = useState<string | null>(null);
     const [isLoadingRawPdf, setIsLoadingRawPdf] = useState(false);
-    const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
     const [finalPdfFiles, setFinalPdfFiles] = useState<PdfFiles>({ cv: null, cl: null });
 
     const handleGenerateFinalPdfs = async () => {
@@ -28,20 +26,11 @@ export const usePdfGeneration = (jobId: string | undefined, cvData: JsonResumeSc
         setRenderError(null);
 
         try {
-            const updatePayload: any = {};
-            const currentStatus = { cvData: cvData, coverLetterText: coverLetterText } as any;
-            const newCvResponse = await fetch('/api/jobs/' + jobId + '/cv', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cvJson: cvData }),
-            });
             const result = await renderFinalPdfs(jobId);
-            if (result.cv || result.cl) {
-                setFinalPdfFiles({
-                    cv: result.cv || null,
-                    cl: result.cl || null
-                });
-            }
+            setFinalPdfFiles({
+                cv: result.cvFilename || null,
+                cl: result.coverLetterFilename || null,
+            });
         } catch (error: any) {
             console.error('Error generating PDFs:', error);
             setRenderError(error.response?.data instanceof Blob
@@ -59,8 +48,8 @@ export const usePdfGeneration = (jobId: string | undefined, cvData: JsonResumeSc
         setRenderError(null);
 
         try {
-            const updatePayload: any = {};
             const result = await renderCvPdf(jobId);
+            setFinalPdfFiles((prev) => ({ ...prev, cv: result.cvFilename || prev.cv }));
         } catch (error: any) {
             console.error('Error generating CV PDF:', error);
             setRenderError(error.response?.data instanceof Blob
@@ -79,6 +68,7 @@ export const usePdfGeneration = (jobId: string | undefined, cvData: JsonResumeSc
 
         try {
             const result = await renderCoverLetterPdf(jobId);
+            setFinalPdfFiles((prev) => ({ ...prev, cl: result.coverLetterFilename || prev.cl }));
         } catch (error: any) {
             console.error('Error generating CL PDF:', error);
             setRenderError(error.response?.data instanceof Blob
@@ -153,6 +143,7 @@ export const usePdfGeneration = (jobId: string | undefined, cvData: JsonResumeSc
         isRenderingCvPdf,
         isRenderingClPdf,
         renderError,
+        isLoadingRawPdf,
         finalPdfFiles,
         handleGenerateFinalPdfs,
         handleGenerateCvPdf,

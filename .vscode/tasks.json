@@ -1,0 +1,134 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "test",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "test:client",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test",
+				"--workspace=client"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "test:client",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test",
+				"--workspace=client"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "typecheck:client",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"typecheck",
+				"--workspace=client"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "typecheck:client",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"typecheck",
+				"--workspace=client"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "typecheck:client",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"typecheck",
+				"--workspace=client"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "typecheck:client",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"typecheck",
+				"--workspace=client"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "typecheck:client",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"typecheck",
+				"--workspace=client"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "typecheck:client",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"typecheck",
+				"--workspace=client"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "typecheck:server",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build",
+				"--workspace=server"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

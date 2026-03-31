@@ -1,29 +1,25 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { scanAts, getAtsScores, AtsScores, deleteAtsAnalysis } from '../../../services/atsApi';
 import { applyAtsSuggestion } from '../../../services/generatorApi';
 
 const ATS_POLLING_INTERVAL_MS = 3000;
 const ATS_POLLING_TIMEOUT_MS = 120000;
 
-export const useAtsAnalysis = (jobId: string | undefined, appliedSuggestions: string[]) => {
+export const useAtsAnalysis = (jobId: string | undefined, initialAppliedSuggestions: string[]) => {
     const [scores, setScores] = useState<AtsScores | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
     const [analysisId, setAnalysisId] = useState<string | null>(null);
     const [progressMessage, setProgressMessage] = useState('');
-    const [isApplyingBatch, setIsApplyingBatch] = useState(false);
-    const [appliedSuggestions, setAppliedSuggestions] = useState<string[]>(appliedSuggestions);
+    const [isApplyingBatch] = useState(false);
+    const [appliedSuggestions, setAppliedSuggestions] = useState<string[]>(initialAppliedSuggestions);
 
-    const [pollingIntervalId, setPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
+    const pollingIntervalId = useRef<NodeJS.Timeout | null>(null);
 
-    const pollAtsScores = useCallback(async (analysisIdToPoll: string, startTime: number, intervalIdRef: NodeJS.Timeout | null) => {
+    const pollAtsScores = useCallback(async (analysisIdToPoll: string, startTime: number) => {
         try {
             const response = await getAtsScores(analysisIdToPoll);
-            const hasScores = response.atsScores && (
-                Object.keys(response.atsScores).length > 0 ||
-                (response.atsScores.work_skills && response.atsScores.work_skills.length > 0) ||
-                (response.atsScores.education && response.atsScores.education.length > 0)
-            );
+            const hasScores = response.atsScores && Object.keys(response.atsScores).length > 0;
 
             if (hasScores) {
                 setScores(response.atsScores);
@@ -62,10 +58,10 @@ export const useAtsAnalysis = (jobId: string | undefined, appliedSuggestions: st
             setAnalysisId(response.analysisId);
 
             const intervalId = setInterval(async () => {
-                await pollAtsScores(response.analysisId, startTime, intervalId);
+                await pollAtsScores(response.analysisId, startTime);
             }, ATS_POLLING_INTERVAL_MS);
 
-            setPollingIntervalId(intervalId);
+            pollingIntervalId.current = intervalId;
 
             // Set timeout to stop polling after 2 minutes
             setTimeout(() => {
@@ -81,15 +77,11 @@ export const useAtsAnalysis = (jobId: string | undefined, appliedSuggestions: st
         }
     };
 
-    const handleApplySuggestion = async (suggestion: string, index: number) => {
+    const handleApplySuggestion = async (suggestion: string) => {
         if (!jobId || !scores) return;
 
         try {
-            const updatedCv = await applyAtsSuggestion(
-                suggestion,
-                index,
-                scores.atsScores
-            );
+            await applyAtsSuggestion({}, [suggestion]);
             const newApplied = [...appliedSuggestions, suggestion];
             setAppliedSuggestions(newApplied);
         } catch (error: any) {
@@ -121,6 +113,7 @@ export const useAtsAnalysis = (jobId: string | undefined, appliedSuggestions: st
         progressMessage,
         isApplyingBatch,
         appliedSuggestions,
+        analysisId,
         handleScan,
         handleApplySuggestion,
         handleDelete,

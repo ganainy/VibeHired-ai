@@ -1,30 +1,13 @@
 import { useState, useEffect } from 'react';
 import { JobApplication } from '../../../services/jobApi';
 import { generateCoverLetter } from '../../../services/coverLetterApi';
-import { DEFAULT_COVER_LETTER_PROMPT } from '../../../constants/prompts';
-import { CoverLetterBase } from '../../../services/coverLetterBaseApi';
 import { saveAs } from 'file-saver';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
-import { getPdfFilename } from '../utils/filenameHelpers';
-import { getStoredValue, setStoredValue } from '../utils/localStorageHelpers';
 
 export const useCoverLetter = (jobId: string | undefined, jobApplication: JobApplication | null) => {
     const [text, setText] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    const [baseLetters, setBaseLetters] = useState<CoverLetterBase[]>([]);
-    const [showLibrary, setShowLibrary] = useState(false);
-    const [selectedBaseId, setSelectedBaseId] = useState('');
-    const [creationMode, setCreationMode] = useState<'ai' | 'import'>('ai');
-    const [uploadFile, setUploadFile] = useState<File | null>(null);
-    const [isApplying, setIsApplying] = useState(false);
-    const [applyError, setApplyError] = useState<string | null>(null);
-
-    const [selectedClBaseCvId, setSelectedClBaseCvId] = useState<string>(() =>
-        getStoredValue('job_selectedClBaseCvId', jobId)
-    );
-    const [clCustomInstructions, setClCustomInstructions] = useState<string>('');
 
     useEffect(() => {
         setText(jobApplication?.draftCoverLetterText || '');
@@ -37,15 +20,10 @@ export const useCoverLetter = (jobId: string | undefined, jobApplication: JobApp
         setError(null);
 
         try {
-            const fullPrompt = DEFAULT_COVER_LETTER_PROMPT + "\n\n**USER INSTRUCTIONS:**\n" + clCustomInstructions;
             const language = jobApplication?.language || 'en' as 'en' | 'de';
 
-            const { availableCvs } = await import('../../../services/cvApi');
-            const selectedOption = availableCvs.find(cv => cv._id === selectedClBaseCvId);
-            const baseCvDataToUse = selectedOption?.cvJson || null;
-
-            const response = await generateCoverLetter(jobId, language, baseCvDataToUse);
-            const { text: generatedText, suggestedFilename } = response;
+            const response = await generateCoverLetter(jobId, language);
+            const { text: generatedText } = response;
 
             setText(generatedText);
         } catch (error: any) {
@@ -99,9 +77,6 @@ export const useCoverLetter = (jobId: string | undefined, jobApplication: JobApp
         setText,
         isGenerating,
         error,
-        baseLetters,
-        showLibrary,
-        selectedClBaseCvId,
         handleGenerate,
         handleCopyCoverLetter,
         handleDownloadWord,

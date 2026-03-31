@@ -10,7 +10,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import EmailSuggestionPanel from '../EmailSuggestionPanel';
 
 // ── Mock the API modules ──────────────────────────────────────────────────────
 
@@ -29,7 +28,12 @@ vi.mock('../../../services/googleCalendarApi', () => ({
     getGoogleConnectUrl: vi.fn(),
 }));
 
+vi.mock('../../../context/AuthContext', () => ({
+    useAuth: () => ({ refreshUsage: vi.fn() }),
+}));
+
 import * as api from '../../../services/emailSuggestionsApi';
+import EmailSuggestionPanel from '../EmailSuggestionPanel';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

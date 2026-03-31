@@ -1,5 +1,4 @@
-﻿import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+﻿import React from 'react';
 import { JobApplication } from '../../../services/jobApi';
 import { normalizeMultipleUrls } from '../../../lib/utils';
 import ErrorAlert from '../../../components/common/ErrorAlert';
@@ -84,7 +83,6 @@ export const JobDetailsTab: React.FC<JobDetailsTabProps> = ({
     saveError,
     hasChanges,
     availableCvs,
-    isRefreshing,
     refreshError,
     isExtractingWithAi,
     pastedJobText,

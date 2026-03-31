@@ -71,7 +71,6 @@ export const CoverLetterTab: React.FC<CoverLetterTabProps> = ({
     isApplyingBaseCl,
     applyClError,
     selectedClBaseCvId,
-    clCustomInstructions,
     tailoredJobTitle,
     tailoredCompanyName,
     tailoredJobDescription,

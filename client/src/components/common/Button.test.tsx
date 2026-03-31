@@ -1,5 +1,7 @@
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { Button } from './Button';
 
 describe('Button Component', () => {
@@ -125,7 +127,7 @@ describe('Button Component', () => {
 
   describe('Event Handling', () => {
     it('handles click events', async () => {
-      const handleClick = jest.fn();
+      const handleClick = vi.fn();
       render(<Button onClick={handleClick}>Click</Button>);
 
       await userEvent.click(screen.getByRole('button'));
@@ -133,7 +135,7 @@ describe('Button Component', () => {
     });
 
     it('prevents click when disabled', async () => {
-      const handleClick = jest.fn();
+      const handleClick = vi.fn();
       render(
         <Button onClick={handleClick} disabled>
           Disabled
@@ -145,7 +147,7 @@ describe('Button Component', () => {
     });
 
     it('prevents click when loading', async () => {
-      const handleClick = jest.fn();
+      const handleClick = vi.fn();
       render(
         <Button onClick={handleClick} isLoading>
           Loading

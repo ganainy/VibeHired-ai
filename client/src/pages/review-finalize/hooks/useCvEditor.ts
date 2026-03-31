@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
+import { JsonResumeSchema } from '../../../../../server/src/types/jsonresume';
 import { createJobCv, CVDocument, getJobCv, createJobCvFromBase, deleteCv, getCvBranches } from '../../../services/cvApi';
 import { CvSectionDescriptor, CvDynamicPayload } from '../../../types/cvDescriptor';
 import { getStoredValue, setStoredValue } from '../utils/localStorageHelpers';
@@ -12,7 +12,6 @@ export const useCvEditor = (jobId: string | undefined) => {
     const { refreshUsage } = useAuth();
     const [cvData, setCvData] = useState<JsonResumeSchema>(EMPTY_CV_DATA);
     const [currentCvId, setCurrentCvId] = useState<string | null>(null);
-    const [currentCvFilename, setCurrentCvFilename] = useState<string | null>(null);
     const [liveCvDescriptor, setLiveCvDescriptor] = useState<CvSectionDescriptor[] | null>(null);
     const [liveCvData, setLiveCvData] = useState<Record<string, any> | null>(null);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -51,7 +50,6 @@ export const useCvEditor = (jobId: string | undefined) => {
                 if (cvResponse.cv && cvResponse.cv.cvJson) {
                     setCvData(cvResponse.cv.cvJson);
                     setCurrentCvId(cvResponse.cv._id);
-                    setCurrentCvFilename(cvResponse.cv.filename ?? null);
                     setTailoringChanges(cvResponse.cv.tailoringChanges ?? []);
                     setShowInlineCvDiff(false);
                     lastSavedCvDataRef.current = JSON.stringify(cvResponse.cv.cvJson);
@@ -59,7 +57,6 @@ export const useCvEditor = (jobId: string | undefined) => {
                     setLiveCvData(cvResponse.cv.cvData ?? null);
                 } else {
                     setCurrentCvId(null);
-                    setCurrentCvFilename(null);
                     setLiveCvDescriptor(null);
                     setLiveCvData(null);
                     setTailoringChanges([]);
@@ -67,7 +64,6 @@ export const useCvEditor = (jobId: string | undefined) => {
                 }
             } catch (err) {
                 setCurrentCvId(null);
-                setCurrentCvFilename(null);
                 setLiveCvDescriptor(null);
                 setLiveCvData(null);
                 setTailoringChanges([]);
@@ -123,7 +119,7 @@ export const useCvEditor = (jobId: string | undefined) => {
             const newCvResponse = await createJobCv(jobId, updatePayload);
 
             setCurrentCvId(newCvResponse.cv._id);
-            setCurrentCvFilename(newCvResponse.cv.filename ?? null);
+            setCurrentCvId(newCvResponse.cv._id);
             setTailoringChanges(newCvResponse.cv.tailoringChanges ?? []);
             lastSavedCvDataRef.current = JSON.stringify(cvData);
             setSaveStatus('saved');
@@ -140,8 +136,8 @@ export const useCvEditor = (jobId: string | undefined) => {
         setGenerateError(null);
 
         try {
-            const response = await createJobCvFromBase(jobId, { cvJson: cvData });
-            setCvData(response.cv.cvJson);
+            const response = await createJobCv(jobId, { cvJson: cvData });
+            setCvData(response.cv.cvJson ?? EMPTY_CV_DATA);
             setTailoringChanges(response.cv.tailoringChanges ?? []);
             lastSavedCvDataRef.current = JSON.stringify(response.cv.cvJson);
             try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
@@ -163,7 +159,9 @@ export const useCvEditor = (jobId: string | undefined) => {
             autoSaveTimeoutRef.current = null;
         }
 
-        setCvData((prev: JsonResumeSchema) => ({ ...prev, ...payload.changes }));
+        setCvData((prev: JsonResumeSchema) => ({ ...prev, ...(payload.data || {}) }));
+        setLiveCvDescriptor(payload.descriptor);
+        setLiveCvData(payload.data);
         setTailoringChanges(null);
         setShowInlineCvDiff(false);
 
@@ -180,11 +178,9 @@ export const useCvEditor = (jobId: string | undefined) => {
 
         try {
             const baseCvIdForJob = (selectedBaseCvId === 'master' || selectedBaseCvId === '') ? null : selectedBaseCvId;
-            const response = await createJobCvFromBase(jobId, {
-                baseCvId: baseCvIdForJob,
-            });
+            const response = await createJobCvFromBase(jobId, baseCvIdForJob || undefined);
 
-            setCvData(response.cv.cvJson);
+            setCvData(response.cv.cvJson ?? EMPTY_CV_DATA);
             setCurrentCvId(response.cv._id);
             setTailoringChanges(response.cv.tailoringChanges ?? []);
             lastSavedCvDataRef.current = JSON.stringify(response.cv.cvJson);
@@ -204,11 +200,9 @@ export const useCvEditor = (jobId: string | undefined) => {
         if (!confirm('Are you sure you want to delete the CV?')) return;
 
         try {
-            const { deleteCv } = await import('../../../services/cvApi');
-            await deleteCv(jobId, currentCvId);
+            await deleteCv(currentCvId);
             setCvData(EMPTY_CV_DATA);
             setCurrentCvId(null);
-            setCurrentCvFilename(null);
             setLiveCvDescriptor(null);
             setLiveCvData(null);
             setTailoringChanges([]);

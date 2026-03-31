@@ -79,7 +79,7 @@ describe('acceptSuggestion', () => {
 
         expect(mockedAxios.post).toHaveBeenCalledWith(
             expect.stringContaining('/email-suggestions/sug-001/accept'),
-            { includeCalendarEvent: true }
+            { includeCalendarEvent: true, includeEmailLink: true }
         );
     });
 
@@ -88,7 +88,7 @@ describe('acceptSuggestion', () => {
 
         expect(mockedAxios.post).toHaveBeenCalledWith(
             expect.stringContaining('/email-suggestions/sug-001/accept'),
-            { includeCalendarEvent: false }
+            { includeCalendarEvent: false, includeEmailLink: true }
         );
     });
 
@@ -120,7 +120,8 @@ describe('addNoteSuggestion', () => {
         await addNoteSuggestion('sug-001');
 
         expect(mockedAxios.post).toHaveBeenCalledWith(
-            expect.stringContaining('/email-suggestions/sug-001/add-note')
+            expect.stringContaining('/email-suggestions/sug-001/add-note'),
+            { includeEmailLink: true }
         );
     });
 
@@ -162,7 +163,7 @@ describe('pollNow', () => {
 
         expect(mockedAxios.post).toHaveBeenCalledWith(
             expect.stringContaining('/email-suggestions/poll'),
-            { lookbackDays: 14 }
+            { scanLimit: 14 }
         );
         expect(result.count).toBe(3);
     });

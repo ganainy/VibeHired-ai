@@ -1,9 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { getJobById, updateJob, JobApplication, scrapeJobDescriptionApi, extractJobFromTextApi, deleteJob } from '../../../services/jobApi';
 import { getJobRecommendation, JobRecommendation } from '../../../services/jobRecommendationApi';
 import { useAuth } from '../../../context/AuthContext';
-import { parseApiErrorMessage } from '../../../utils/parseApiError';
 
 export const useJobApplication = (jobId: string | undefined) => {
     const [job, setJob] = useState<JobApplication | null>(null);
@@ -13,13 +12,11 @@ export const useJobApplication = (jobId: string | undefined) => {
     const [refreshError, setRefreshError] = useState<string | null>(null);
 
     const [recommendation, setRecommendation] = useState<JobRecommendation | null>(null);
-    const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
     const [isRefreshingRecommendation, setIsRefreshingRecommendation] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const [isExtractingWithAi, setIsExtractingWithAi] = useState(false);
     const [pastedJobText, setPastedJobText] = useState('');
-    const [showExtractWithAi, setShowExtractWithAi] = useState(false);
 
     const navigate = useNavigate();
     const { refreshUsage } = useAuth();
@@ -63,7 +60,7 @@ export const useJobApplication = (jobId: string | undefined) => {
 
         try {
             const response = await scrapeJobDescriptionApi(jobId);
-            setJob(response);
+            setJob(response.job);
             try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
         } catch (error: any) {
             console.error('Error refreshing job details:', error);
@@ -85,7 +82,6 @@ export const useJobApplication = (jobId: string | undefined) => {
             const updatedJob = await extractJobFromTextApi(jobId, pastedJobText.trim());
             setJob(updatedJob);
             setPastedJobText('');
-            setShowExtractWithAi(false);
             try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
         } catch (error: any) {
             console.error('Error extracting job details:', error);
@@ -147,7 +143,6 @@ export const useJobApplication = (jobId: string | undefined) => {
         isRefreshing,
         refreshError,
         recommendation,
-        isLoadingRecommendation,
         isRefreshingRecommendation,
         isModalOpen,
         isExtractingWithAi,

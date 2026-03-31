@@ -1,6 +1,5 @@
 ﻿import React, { useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
+import { JsonResumeSchema } from '../../../../../server/src/types/jsonresume';
 import { CvSectionDescriptor, CvDynamicPayload } from '../../../types/cvDescriptor';
 import ErrorAlert from '../../../components/common/ErrorAlert';
 import Spinner from '../../../components/common/Spinner';
@@ -83,9 +82,7 @@ interface CvEditorTabProps {
 
 export const CvEditorTab: React.FC<CvEditorTabProps> = ({
     jobApplication,
-    jobId,
     cvData,
-    setCvData,
     currentCvId,
     currentCvFilename,
     liveCvDescriptor,
@@ -106,13 +103,11 @@ export const CvEditorTab: React.FC<CvEditorTabProps> = ({
     selectedTemplate,
     isLoadingRawPdf,
     hasLocalCv,
-    hasPersistableCvContent,
     improvingSections,
     analyzeError,
     tailoredJobTitle,
     tailoredCompanyName,
     tailoredJobDescription,
-    customInstructions,
     lastSavedCvDataRef,
     atsScores,
     isScanningAts,
@@ -377,7 +372,9 @@ export const CvEditorTab: React.FC<CvEditorTabProps> = ({
                                 isApplyingBatch={isApplyingAtsBatch}
                                 onScan={onScanAts}
                                 onRescan={onScanAts}
-                                onApplyBatch={onApplyAtsSuggestionBatch}
+                                onApplyBatch={async (items) => {
+                                    onApplyAtsSuggestionBatch(items.map((item) => item.suggestion));
+                                }}
                                 onDelete={atsScores ? onDeleteAts : undefined}
                                 hideHeader
                             />

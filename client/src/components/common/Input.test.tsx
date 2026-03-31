@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { Input } from './Input';
 
 describe('Input Component', () => {
@@ -29,7 +30,7 @@ describe('Input Component', () => {
   });
 
   it('forwards standard input props', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     render(<Input placeholder="Type" onChange={onChange} />);
 
     await userEvent.type(screen.getByPlaceholderText('Type'), 'Hello');

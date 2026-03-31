@@ -102,10 +102,10 @@ export const useJobDetails = (jobApplication: JobApplication | null) => {
                 status: form.status,
                 baseCvId: form.baseCvId || null,
                 jobType: form.jobType || null,
-                salary: form.salary || null,
+                salary: form.salary || undefined,
                 contactEmail: form.contactEmail || undefined,
                 contact: legacyContact,
-                applicationUrl: normalizedJobUrl || null,
+                applicationUrl: normalizedJobUrl || undefined,
                 notes: form.notes || undefined,
             };
 
