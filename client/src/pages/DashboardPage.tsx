@@ -189,6 +189,7 @@ const DashboardPage: React.FC = () => {
 
   // --- Add Job Form Collapse State (mobile only) ---
   const [addJobFormCollapsed, setAddJobFormCollapsed] = useState<boolean>(true);
+  const addJobSectionRef = useRef<HTMLDivElement>(null);
 
   const getRecipientEmail = (job: JobApplication): string | null => {
     const direct = job.contactEmail?.trim();
@@ -251,6 +252,30 @@ const DashboardPage: React.FC = () => {
 
 
   const { showTour: showJobTour, dismiss: dismissJobTour } = usePageTour('dashboard');
+
+  const hasAnyCv = cvs.length > 0;
+  const hasAnyJob = jobs.length > 0;
+  const hasAnyCoverLetter = useMemo(
+    () => jobs.some(job => Boolean(job.generatedCoverLetterFilename || job.draftCoverLetterText || job.coverLetterEmailBody)),
+    [jobs]
+  );
+  const isJourneyComplete = hasAnyCv && hasAnyJob && hasAnyCoverLetter;
+
+  const handleJourneyPrimaryAction = () => {
+    if (!hasAnyCv) {
+      navigate('/manage-cv');
+      return;
+    }
+
+    if (!hasAnyJob) {
+      setAddJobFormCollapsed(false);
+      addJobSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    const targetJob = jobs.find(job => !job.generatedCoverLetterFilename && !job.draftCoverLetterText) || jobs[0];
+    navigate(`/jobs/${targetJob._id}/workspace/cover-letter`);
+  };
 
   // --- useEffect: Fetch initial job data ---
   useEffect(() => {
@@ -1152,8 +1177,8 @@ const DashboardPage: React.FC = () => {
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
-            <h1 className="page-title">Job Dashboard</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>Manage your job applications and track your progress</p>
+            <h1 className="page-title">From CV to tailored applications</h1>
+            <p style={{ color: 'var(--text-secondary)' }}>Upload your CV, add a target job, create a job-specific CV, and generate a role-specific cover letter.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {(() => {
@@ -1179,16 +1204,98 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Start Here Journey */}
+        {!isJourneyComplete && (
+          <div
+            className="rounded-2xl border p-4 sm:p-6"
+            style={{
+              background: 'linear-gradient(130deg, color-mix(in srgb, var(--accent-bg) 65%, var(--bg-surface) 35%), var(--bg-surface))',
+              borderColor: 'color-mix(in srgb, var(--accent) 20%, var(--border) 80%)'
+            }}
+          >
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.12em] font-semibold" style={{ color: 'var(--accent)' }}>
+                  Start Here
+                </p>
+                <h2 className="text-lg sm:text-xl font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
+                  Get your first tailored application in 3 steps
+                </h2>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  Keep this sequence: add your CV first, then add a job, then generate the cover letter.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleJourneyPrimaryAction}
+                className="w-full lg:w-auto px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
+              >
+                {!hasAnyCv ? 'Step 1: Add your CV' : !hasAnyJob ? 'Step 2: Add a target job' : 'Step 3: Generate cover letter'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                {
+                  key: 'cv',
+                  label: '1. Add your CV',
+                  hint: 'Upload once and reuse for every application.',
+                  done: hasAnyCv,
+                  eta: 'About 1 min'
+                },
+                {
+                  key: 'job',
+                  label: '2. Add a target job',
+                  hint: 'Paste a URL or job description text.',
+                  done: hasAnyJob,
+                  eta: 'About 1 min'
+                },
+                {
+                  key: 'cover',
+                  label: '3. Generate cover letter',
+                  hint: 'Create a tailored draft, then edit before sending.',
+                  done: hasAnyCoverLetter,
+                  eta: 'About 30 sec'
+                }
+              ].map(step => (
+                <div
+                  key={step.key}
+                  className="rounded-xl border p-3.5"
+                  style={{
+                    background: step.done ? 'color-mix(in srgb, var(--accent-bg) 45%, var(--bg-elevated) 55%)' : 'var(--bg-elevated)',
+                    borderColor: step.done ? 'color-mix(in srgb, var(--accent) 40%, var(--border) 60%)' : 'var(--border)'
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{step.label}</p>
+                    <span
+                      className="text-[10px] uppercase tracking-wide font-bold px-2 py-1 rounded-full"
+                      style={step.done
+                        ? { background: 'var(--accent)', color: 'var(--text-on-accent)' }
+                        : { background: 'var(--bg-raised)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                    >
+                      {step.done ? 'Done' : 'Pending'}
+                    </span>
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{step.hint}</p>
+                  <p className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>{step.eta}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
 
 
 
 
 
         {/* Add Job Section */}
-        <div className="bg-surface p-3 sm:p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+        <div ref={addJobSectionRef} className="bg-surface p-3 sm:p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800">
           {/* Mobile Header - always visible, collapsible */}
           <div className="sm:hidden flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Add New Job</h2>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Step 2: Add a target job</h2>
             <button
               type="button"
               onClick={() => setAddJobFormCollapsed(!addJobFormCollapsed)}
@@ -1205,7 +1312,8 @@ const DashboardPage: React.FC = () => {
 
           {/* Desktop Header - just a title, always visible */}
           <div className="hidden sm:block mb-4">
-            <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Add New Job</h2>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Step 2: Add a target job</h2>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Paste a job description or add details manually to start tailoring.</p>
           </div>
 
           {/* Form Content - collapsible on mobile, always visible on desktop */}

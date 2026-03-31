@@ -70,7 +70,7 @@ export async function fetchStreamingAnswer(
   referenceMaterialIds: string[] = [],
   activeCvId?: string,
 ): Promise<Response> {
-  const res = await fetch(`${apiUrl}/interview/${jobId}/stream-answer`, {
+  const res = await fetch(`${apiUrl}/interview/${jobId}/stream-interview-buddy-answer`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

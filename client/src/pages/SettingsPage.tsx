@@ -159,12 +159,30 @@ const SettingsPage: React.FC = () => {
     return 0;
   };
 
+  const getActionTotal = (...keys: string[]): number =>
+    keys.reduce((sum, key) => {
+      const value = usageActions[key];
+      return sum + (typeof value === 'number' ? value : 0);
+    }, 0);
+
+  // Prefer specific Interview Buddy action counters when present.
+  // Fall back to the legacy aggregate "interview" counter for older records.
+  const interviewBuddyCount = (() => {
+    const specificTotal = getActionTotal(
+      'interviewGenerateQuestions',
+      'interviewEvaluate',
+      'interviewAnswer',
+      'interviewStreamAnswer'
+    );
+    return specificTotal > 0 ? specificTotal : getActionCount('interview');
+  })();
+
   const quickStatItems = [
     { label: 'CV Improvements', cost: '2 Credits', count: getActionCount('analysis') },
     { label: 'CV Generation', cost: '3 Credits', count: getActionCount('cvGeneration') },
     { label: 'AI Chat Messages', cost: '1 Credit', count: getActionCount('chatMessages', 'chatMessage') },
     { label: 'Job Extractions', cost: '1 Credit', count: getActionCount('jobExtractions', 'jobExtraction') },
-    { label: 'Interview Prep', cost: '5 Credits', count: getActionCount('interview') },
+    { label: 'Interview Buddy', cost: '1-5 Credits', count: interviewBuddyCount },
     { label: 'Cover Letters', cost: '3 Credits', count: getActionCount('coverLetter') },
     { label: 'ATS Scoring', cost: '2 Credits', count: getActionCount('atsScoring') },
     { label: 'CV Parsing', cost: '2 Credits', count: getActionCount('cvParsing') },
@@ -178,6 +196,7 @@ const SettingsPage: React.FC = () => {
   const creditsRemaining = usageInfo?.usage.remaining ?? 0;
   const creditLimit = usageInfo?.usage.creditLimit ?? 0;
   const creditsRemainingPct = creditLimit > 0 ? Math.min(100, (creditsRemaining / creditLimit) * 100) : 0;
+  const creditsUsedPct = creditLimit > 0 ? Math.min(100, (creditsUsed / creditLimit) * 100) : 0;
 
   const loadUsageData = async () => {
     try {
@@ -333,74 +352,173 @@ const SettingsPage: React.FC = () => {
           </div>
         )}
         {/* Subscription & Usage Overview */}
-        <div className="mb-8 grid grid-cols-1 xl:grid-cols-5 gap-6">
-          {/* Active Plan Card */}
-          <div className="xl:col-span-2 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700 p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xs font-semibold text-secondary-color uppercase tracking-[0.16em]">Active Plan</h3>
-              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${user?.plan === 'pro' || user?.plan === 'premium' ? 'bg-gold-500/20 text-gold-700 dark:text-gold-400' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300'}`}>
-                {user?.plan || 'Free'}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 mb-5">
-              <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
-                <p className="text-[11px] uppercase tracking-wide text-zinc-500">Remaining</p>
-                <p className="text-xl font-bold text-primary-color">{creditsRemaining}</p>
+        <div className="mb-8 grid grid-cols-1 xl:grid-cols-5 gap-6 xl:items-start">
+          <div className="xl:col-span-2 space-y-6">
+            {/* Active Plan Card */}
+            <div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700 p-6 h-fit">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-xs font-semibold text-secondary-color uppercase tracking-[0.16em]">Active Plan</h3>
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight ${user?.plan === 'pro' || user?.plan === 'premium' ? 'bg-gold-500/20 text-gold-700 dark:text-gold-400' : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300'}`}>
+                  {user?.plan || 'Free'}
+                </span>
               </div>
-              <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
-                <p className="text-[11px] uppercase tracking-wide text-zinc-500">Used</p>
-                <p className="text-xl font-bold text-primary-color">{creditsUsed}</p>
-              </div>
-              <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
-                <p className="text-[11px] uppercase tracking-wide text-zinc-500">Limit</p>
-                <p className="text-xl font-bold text-primary-color">{creditLimit}</p>
-              </div>
-            </div>
 
-            <div className="mb-2 flex items-center justify-between text-xs text-secondary-color">
-              <span>Credit pool</span>
-              <span>{Math.round(creditsRemainingPct)}% remaining</span>
-            </div>
-            <div className="w-full bg-zinc-100 dark:bg-zinc-700 h-2.5 rounded-full mb-6 overflow-hidden">
-              <div
-                className="bg-gold-500 h-full transition-all duration-700"
-                style={{ width: `${creditsRemainingPct}%` }}
-              />
-            </div>
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
+                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Remaining</p>
+                  <p className="text-xl font-bold text-primary-color">{creditsRemaining}</p>
+                </div>
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
+                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Used</p>
+                  <p className="text-xl font-bold text-primary-color">{creditsUsed}</p>
+                </div>
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 bg-zinc-50/70 dark:bg-zinc-900/40">
+                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Limit</p>
+                  <p className="text-xl font-bold text-primary-color">{creditLimit}</p>
+                </div>
+              </div>
 
-            {user?.plan !== 'free' ? (
-              PAYMENTS_ENABLED && (
-                <button
-                  onClick={handleManageSubscription}
-                  disabled={isCreatingPortal}
-                  className="w-full py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-600 text-xs font-semibold text-secondary-color hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  {isCreatingPortal ? <Spinner size="sm" /> : 'Manage Subscription'}
-                </button>
-              )
-            ) : (
-              <>
-                {PAYMENTS_ENABLED ? (
+              <div className="mb-2 flex items-center justify-between text-xs text-secondary-color">
+                <span>Credit pool</span>
+                <span>{Math.round(creditsRemainingPct)}% remaining</span>
+              </div>
+              <div className="w-full bg-zinc-100 dark:bg-zinc-700 h-2.5 rounded-full mb-6 overflow-hidden">
+                <div
+                  className="bg-gold-500 h-full transition-all duration-700"
+                  style={{ width: `${creditsRemainingPct}%` }}
+                />
+              </div>
+
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50/70 dark:bg-zinc-900/40 p-3 mb-5">
+                <div className="flex items-center justify-between text-xs mb-2">
+                  <span className="text-secondary-color">Credits used</span>
+                  <span className="font-semibold text-primary-color">{Math.round(creditsUsedPct)}%</span>
+                </div>
+                <div className="h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden mb-2.5">
+                  <div className="h-full bg-zinc-500 dark:bg-zinc-300 rounded-full transition-all duration-700" style={{ width: `${creditsUsedPct}%` }} />
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-secondary-color">Billing cycle resets</span>
+                  <span className="font-medium text-primary-color">
+                    {usageInfo ? new Date(usageInfo.usage.billingPeriodEnd).toLocaleDateString() : '---'}
+                  </span>
+                </div>
+              </div>
+
+              {user?.plan !== 'free' ? (
+                PAYMENTS_ENABLED && (
                   <button
-                    onClick={() => handleUpgrade('pro')}
-                    className="w-full py-2.5 rounded-lg bg-gold-500 hover:bg-gold-600 text-gold-950 text-xs font-bold transition-all shadow-md shadow-gold-500/20"
+                    onClick={handleManageSubscription}
+                    disabled={isCreatingPortal}
+                    className="w-full py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-600 text-xs font-semibold text-secondary-color hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
                   >
-                    Upgrade to Pro
+                    {isCreatingPortal ? <Spinner size="sm" /> : 'Manage Subscription'}
                   </button>
+                )
+              ) : (
+                <>
+                  {PAYMENTS_ENABLED ? (
+                    <button
+                      onClick={() => handleUpgrade('pro')}
+                      className="w-full py-2.5 rounded-lg bg-gold-500 hover:bg-gold-600 text-gold-950 text-xs font-bold transition-all shadow-md shadow-gold-500/20"
+                    >
+                      Upgrade to Pro
+                    </button>
+                  ) : (
+                    <div className="w-full py-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 text-xs font-semibold text-center cursor-not-allowed">
+                      Paid plans coming soon
+                    </div>
+                  )}
+                  <Link
+                    to="/subscriptions"
+                    className="w-full mt-2 py-2 block text-center text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
+                  >
+                    View all plans
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Google Calendar Integration Card */}
+            <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg" style={{ background: 'var(--accent-bg)' }}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} style={{ color: 'var(--accent)' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                        Google Calendar
+                      </h3>
+                      <p className="text-xs sm:text-sm text-secondary-color">
+                        Sync job reminders and interviews directly to your calendar
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isLoadingGoogleCal ? (
+                      <Spinner size="sm" />
+                    ) : googleCalConnected ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                        <CheckIcon />
+                        Connected
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-600 text-secondary-color">
+                        Not Connected
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 sm:p-6 space-y-4">
+                {googleCalConnected ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-secondary-color font-medium">Connected account</p>
+                      {googleCalEmail && (
+                        <p className="text-xs text-secondary-color mt-0.5">{googleCalEmail}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleGoogleDisconnect}
+                      disabled={isDisconnectingGoogle}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors"
+                    >
+                      {isDisconnectingGoogle ? <Spinner size="sm" /> : <TrashIcon />}
+                      Disconnect
+                    </button>
+                  </div>
                 ) : (
-                  <div className="w-full py-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 text-xs font-semibold text-center cursor-not-allowed">
-                    Paid plans coming soon
+                  <div className="space-y-3">
+                    <p className="text-sm text-secondary-color">
+                      Keep track of your applications by automatically syncing reminders (e.g. "Follow up in one week")
+                      directly to your primary Google Calendar.
+                    </p>
+                    <button
+                      onClick={handleGoogleConnect}
+                      disabled={isConnectingGoogle}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-600 disabled:opacity-50 transition-colors shadow-sm"
+                    >
+                      {isConnectingGoogle ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <svg className="w-4 h-4" viewBox="0 0 48 48" fill="none">
+                          <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107" />
+                          <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00" />
+                          <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50" />
+                          <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2" />
+                        </svg>
+                      )}
+                      Connect Google Account
+                    </button>
                   </div>
                 )}
-                <Link
-                  to="/subscriptions"
-                  className="w-full mt-2 py-2 block text-center text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
-                >
-                  View all plans
-                </Link>
-              </>
-            )}
+              </div>
+            </div>
           </div>
 
           {/* Usage Breakdown */}
@@ -410,8 +528,13 @@ const SettingsPage: React.FC = () => {
                 <h3 className="text-xs font-semibold text-secondary-color uppercase tracking-[0.16em]">Quick Stats</h3>
                 <p className="text-sm text-secondary-color mt-1">Actions used in the current billing cycle</p>
               </div>
-              <div className="px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200">
-                {totalActionsThisCycle} total actions
+              <div className="flex items-center gap-2">
+                <div className="px-3 py-1.5 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200">
+                  {totalActionsThisCycle} total actions
+                </div>
+                <div className="px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                  {creditsUsed} credits used
+                </div>
               </div>
             </div>
 
@@ -486,90 +609,6 @@ const SettingsPage: React.FC = () => {
             )}
           </div>
         )}
-
-        {/* Integrations Section */}
-        <div className="space-y-6">
-          {/* Google Calendar Integration Card */}
-          <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg" style={{ background: 'var(--accent-bg)' }}>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} style={{ color: 'var(--accent)' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-                      Google Calendar
-                    </h3>
-                    <p className="text-xs sm:text-sm text-secondary-color">
-                      Sync job reminders and interviews directly to your calendar
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isLoadingGoogleCal ? (
-                    <Spinner size="sm" />
-                  ) : googleCalConnected ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                      <CheckIcon />
-                      Connected
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-600 text-secondary-color">
-                      Not Connected
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="p-4 sm:p-6 space-y-4">
-              {googleCalConnected ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-secondary-color font-medium">Connected account</p>
-                    {googleCalEmail && (
-                      <p className="text-xs text-secondary-color mt-0.5">{googleCalEmail}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={handleGoogleDisconnect}
-                    disabled={isDisconnectingGoogle}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 transition-colors"
-                  >
-                    {isDisconnectingGoogle ? <Spinner size="sm" /> : <TrashIcon />}
-                    Disconnect
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-sm text-secondary-color">
-                    Keep track of your applications by automatically syncing reminders (e.g. "Follow up in one week")
-                    directly to your primary Google Calendar.
-                  </p>
-                  <button
-                    onClick={handleGoogleConnect}
-                    disabled={isConnectingGoogle}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-600 disabled:opacity-50 transition-colors shadow-sm"
-                  >
-                    {isConnectingGoogle ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <svg className="w-4 h-4" viewBox="0 0 48 48" fill="none">
-                        <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107" />
-                        <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00" />
-                        <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50" />
-                        <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2" />
-                      </svg>
-                    )}
-                    Connect Google Account
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* Toast Notification */}
         {toast && (

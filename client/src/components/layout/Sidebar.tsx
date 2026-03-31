@@ -160,10 +160,10 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
 
     const navSections = [
         {
-            label: 'Workspace',
+            label: 'Start Here',
             items: [
-                { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
                 { path: '/manage-cv', label: 'CV Library', icon: WorkIcon },
+                { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
                 { path: '/email-suggestions', label: 'Inbox', icon: InboxIcon, badge: pendingEmailCount > 0 ? pendingEmailCount : undefined },
             ],
         },

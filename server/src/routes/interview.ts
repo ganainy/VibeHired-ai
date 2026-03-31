@@ -22,7 +22,10 @@ router.post('/:jobId/answer-question', usageLimiter('interviewAnswer'), asyncHan
 // POST /api/interview/:jobId/initialize-session — pre-warm a Gemini chat session with CV + job context
 router.post('/:jobId/initialize-session', aiRateLimiter(), asyncHandler(initializeSession));
 
-// POST /api/interview/:jobId/stream-answer — stream an AI answer via SSE
+// POST /api/interview/:jobId/stream-interview-buddy-answer — stream an AI answer via SSE
+router.post('/:jobId/stream-interview-buddy-answer', usageLimiter('interviewStreamAnswer'), asyncHandler(streamAnswer));
+
+// Legacy alias kept for backward compatibility with older clients
 router.post('/:jobId/stream-answer', usageLimiter('interviewStreamAnswer'), asyncHandler(streamAnswer));
 
 export default router;
