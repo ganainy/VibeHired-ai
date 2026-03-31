@@ -8,7 +8,8 @@ import {
     DependencyCheck
 } from './ProviderStrategy';
 import { decrypt } from '../../utils/encryption';
-import { GEMINI_FLASH, GEMINI_FLASH_LITE, GEMINI_FLASH_8B, GEMINI_PRO } from '../../constants/geminiModels';
+import { GEMINI_FLASH } from '../../constants/geminiModels';
+import { listGeminiModels } from '../../utils/geminiModelResolver';
 
 /**
  * Gemini AI provider strategy
@@ -20,38 +21,40 @@ export class GeminiProvider extends ProviderStrategy {
     }
 
     async getModels(config: any): Promise<ModelInfo[]> {
-        // Return hardcoded Gemini models
-        // In the future, this could fetch from Gemini API
-        return [
-            {
-                id: GEMINI_FLASH_LITE,
-                name: 'Gemini 1.5 Flash',
-                contextWindow: 1000000,
-                costPer1kTokens: 0.00015,
-                supportsImages: true
-            },
-            {
-                id: GEMINI_FLASH_8B,
-                name: 'Gemini 1.5 Flash-8B',
-                contextWindow: 1000000,
-                costPer1kTokens: 0.00010,
-                supportsImages: true
-            },
-            {
-                id: GEMINI_PRO,
-                name: 'Gemini 1.5 Pro',
-                contextWindow: 2000000,
-                costPer1kTokens: 0.00125,
-                supportsImages: true
-            },
-            {
-                id: GEMINI_FLASH,
-                name: 'Gemini 3 Flash (Preview)',
-                contextWindow: 1000000,
-                costPer1kTokens: 0.00015,
-                supportsImages: true
-            }
-        ];
+        const apiKey = this.getApiKey(config);
+
+        if (!apiKey) {
+            return [
+                {
+                    id: GEMINI_FLASH,
+                    name: GEMINI_FLASH,
+                    contextWindow: 1000000,
+                    costPer1kTokens: 0.00015,
+                    supportsImages: true
+                }
+            ];
+        }
+
+        const modelNames = await listGeminiModels(apiKey);
+        if (modelNames.length === 0) {
+            return [
+                {
+                    id: GEMINI_FLASH,
+                    name: GEMINI_FLASH,
+                    contextWindow: 1000000,
+                    costPer1kTokens: 0.00015,
+                    supportsImages: true
+                }
+            ];
+        }
+
+        return modelNames.map((modelName) => ({
+            id: modelName,
+            name: modelName,
+            contextWindow: 1000000,
+            costPer1kTokens: modelName.includes('pro') ? 0.00125 : 0.00015,
+            supportsImages: true,
+        }));
     }
 
     validateConfig(config: any): ValidationResult {

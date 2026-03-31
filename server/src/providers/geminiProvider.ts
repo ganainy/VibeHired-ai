@@ -5,6 +5,7 @@ import { ModelAdapter } from '../adapters/base';
 import { GeminiAdapter } from '../adapters/geminiAdapter';
 import Profile from '../models/Profile';
 import { decrypt, isEncrypted } from '../utils/encryption';
+import { listGeminiModels } from '../utils/geminiModelResolver';
 
 /**
  * Gemini provider strategy
@@ -28,42 +29,7 @@ export class GeminiProvider extends ProviderStrategy {
     }
 
     try {
-      // Fetch models from Gemini API
-      const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        console.error(`Gemini API error: ${response.status} ${response.statusText} - ${errorText}`);
-        return [];
-      }
-
-      const data = await response.json();
-      const modelsList = data.models || [];
-
-      if (modelsList.length === 0) {
-        console.warn('No Gemini models found in API response');
-        return [];
-      }
-
-      // Normalize model names (remove "models/" prefix if present)
-      const normalizedModels = modelsList
-        .map((model: any) => {
-          const modelName = model.name || model.id || '';
-          // Remove "models/" prefix if present
-          return modelName.startsWith('models/')
-            ? modelName.substring(7)
-            : modelName;
-        })
-        .filter((name: string) => name.length > 0)
-        .sort(); // Sort alphabetically
-
-      return normalizedModels;
+      return await listGeminiModels(apiKey);
     } catch (error: any) {
       console.error('Error fetching Gemini models from API:', error);
       return [];

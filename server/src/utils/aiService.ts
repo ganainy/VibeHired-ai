@@ -4,6 +4,7 @@ import { ModelAdapter, GenerateContentOptions, GenerateContentResult } from '../
 import { NotFoundError } from './errors/AppError';
 import { GeminiAdapter } from '../adapters/geminiAdapter';
 import { GEMINI_FLASH } from '../constants/geminiModels';
+import { listGeminiModels, resolveBestGeminiModel } from './geminiModelResolver';
 
 function getMasterApiKey(): string {
   const key = process.env.GEMINI_API_KEY;
@@ -21,9 +22,12 @@ export async function getModelAdapter(
   modelName?: string,
   _providerOverride?: string
 ): Promise<ModelAdapter> {
+  const apiKey = getMasterApiKey();
+  const selectedModel = modelName || await resolveBestGeminiModel(apiKey, 'fast');
+
   return new GeminiAdapter(
-    getMasterApiKey(),
-    modelName || GEMINI_FLASH
+    apiKey,
+    selectedModel
   ) as unknown as ModelAdapter;
 }
 
@@ -70,7 +74,13 @@ export async function generateStructuredResponse<T>(
  * Get available models for Gemini
  */
 export async function getAvailableModels(_userId: string): Promise<string[]> {
-  return [GEMINI_FLASH, 'gemini-1.5-pro'];
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return [GEMINI_FLASH];
+  }
+
+  const discovered = await listGeminiModels(apiKey);
+  return discovered.length > 0 ? discovered : [GEMINI_FLASH];
 }
 
 /**

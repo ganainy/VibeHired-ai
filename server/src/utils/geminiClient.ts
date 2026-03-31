@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, GoogleGenerativeAIError, GenerativeModel, Part } from "@google/generative-ai";
 import fs from 'fs'; // Import fs for file reading
 import { GEMINI_FLASH } from '../constants/geminiModels';
+import { resolveBestGeminiModel } from './geminiModelResolver';
 
 /**
  * Creates a Gemini client instance with the provided API key
@@ -10,11 +11,26 @@ import { GEMINI_FLASH } from '../constants/geminiModels';
 export const createGeminiClient = (apiKey: string) => {
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // Using a model that supports multimodal input including files
+    // Keep this function sync for backward compatibility with existing call sites.
+    // Dynamic model selection is done by createGeminiClientAuto.
     const model = genAI.getGenerativeModel({ model: GEMINI_FLASH });
 
     return { model };
 };
+
+/**
+ * Creates a Gemini client and automatically selects the best currently available model.
+ * Uses API-discovered models with cache and fallback behavior.
+ */
+export async function createGeminiClientAuto(
+    apiKey: string,
+    preference: 'fast' | 'quality' = 'fast'
+): Promise<{ model: GenerativeModel; modelName: string }> {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const modelName = await resolveBestGeminiModel(apiKey, preference);
+    const model = genAI.getGenerativeModel({ model: modelName });
+    return { model, modelName };
+}
 
 /**
  * Converts a local file path to a GoogleGenerativeAI.Part object.
@@ -74,7 +90,8 @@ export async function generateAnalysisFromFile<T>(
 ): Promise<T> {
     console.log(`Sending file (${mimeType}) and prompt to Gemini for structured analysis...`);
     try {
-        const { model } = createGeminiClient(apiKey);
+        const { model, modelName } = await createGeminiClientAuto(apiKey, 'fast');
+        console.log(`Gemini model selected: ${modelName}`);
         const filePart = fileToGenerativePart(filePath, mimeType);
         // Wrap the text prompt in a Part object
         const textPart: Part = { text: prompt };
@@ -126,7 +143,7 @@ export async function generateJsonAnalysis<T>(
     jsonString: string
 ): Promise<T> {
     try {
-        const { model } = createGeminiClient(apiKey);
+        const { model } = await createGeminiClientAuto(apiKey, 'fast');
         // Combine the prompt with the JSON content
         const combinedPrompt = `${prompt}\n\nAnalyze the following CV in JSON Resume format:\n\n${jsonString}`;
 
@@ -152,7 +169,7 @@ export async function generateJsonAnalysis<T>(
 export async function generateStructuredResponse<T>(apiKey: string, prompt: string): Promise<T> {
     console.log("Sending prompt to Gemini for structured response...");
     try {
-        const { model } = createGeminiClient(apiKey);
+        const { model } = await createGeminiClientAuto(apiKey, 'fast');
         // Add explicit instruction for JSON format with escaped backticks
         const jsonPrompt = `${prompt}\n\nIMPORTANT: Your response MUST be a valid JSON object wrapped in triple backticks (\`\`\`json). Do not include any additional text outside the JSON block.`;
 
