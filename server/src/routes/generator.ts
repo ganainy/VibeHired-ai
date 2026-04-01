@@ -19,6 +19,7 @@ import { improveCvSection, applyAtsSuggestion } from '../controllers/generatorCo
 import { asyncHandler } from '../utils/asyncHandler';
 import { generateDescriptorFromJson } from '../services/generatorService';
 import { CvSectionDescriptor } from '../types/cvDescriptor';
+import { normalizeFreeformCvTags } from '../utils/vhTagNormalizer';
 
 const router: Router = express.Router();
 router.use(authMiddleware as RequestHandler); // Apply auth to all routes in this file
@@ -956,6 +957,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             * Keep the CV as FREEFORM JSON (not JSON Resume schema).
             * Keep section keys and overall structure style close to the base CV.
             * Preserve and return the top-level \`__vh_tags\` object if present; if missing, create one that maps important fields for rendering.
+            * Use ONLY canonical tags: name, email, phone, url, location, address, city, linkedin, github, website, portfolio, date, date_range, title, subtitle, paragraph, bullets, key_value, contact_block, personal_info.
             * Do not invent skills/experience/certifications/facts.
             * Keep all factual data, names, dates, and achievements truthful.
             * You may reorder items to better match the role, but do not drop important sections.
@@ -974,7 +976,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             \`\`\`json
             {
               "tailoredCv": {
-                "unsectioned": { "Name": "..." },
+                                "Header Info": { "Name": "..." },
                 "PROFIL": "...",
                 "BERUFSERFAHRUNG": [ ... ],
                 "__vh_tags": { ... }
@@ -1070,6 +1072,8 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             console.error("Parsed response is invalid:", parsedResponse);
             throw new Error("AI response missing expected structure.");
         }
+
+        normalizeFreeformCvTags(tailoredCvJson as any);
 
         // 5. Validate CV structure
         if (!isNonEmptyObject(tailoredCvJson)) {

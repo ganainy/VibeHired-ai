@@ -15,6 +15,7 @@ import User from '../models/User';
 import JobApplication from '../models/JobApplication';
 import { generateContentWithFile } from '../utils/aiService';
 import { generateDescriptorFromJson, improveDynamicSectionWithAi } from '../services/generatorService';
+import { normalizeFreeformCvTags } from '../utils/vhTagNormalizer';
 import { GoogleGenerativeAIError } from '@google/generative-ai';
 import { NotFoundError, ValidationError } from '../utils/errors/AppError';
 import { JsonResumeSchema } from '../types/jsonresume';
@@ -181,7 +182,8 @@ You are a CV transcription tool. Your ONLY job is to read the attached CV file (
 - Keep each section value in the most natural freeform structure from the source (string, array, or object).
 - Keep entry ordering exactly as in the CV.
 - If there is content that does not fit a clean section, include it under a key named "unsectioned".
-- If the first unlabeled/unsectioned block is personal/contact info (name, age, location, email, phone, links), keep it under "unsectioned" when there is no heading but tag that section as contact info in "__vh_tags".
+- If there is content that does not fit a clean section, include it under a key named "Header Info".
+- If the first unlabeled block is personal/contact info (name, age, location, email, phone, links), keep it under "Header Info" when there is no heading but tag that section as contact info in "__vh_tags".
 - For key-value contact lines, store the value only (e.g. if source shows "Phone: +49...", save value as "+49...", not "Phone:").
 - LABELED LIST SECTIONS: If a section contains lines like "CategoryName: item1, item2" (e.g. skills, languages, knowledge), do NOT flatten them into a single bullet string. Represent each line as its own object: { "category": "CategoryName", "content": "item1, item2" }. This preserves the label so it can be rendered as a bold title.
 - TITLE + DETAILS LIST ITEMS: If a bullet/line follows patterns like "Title – details", "Title - details", "Title: details", or "Title | details" (common in certificates/training/courses), represent each item as an object with separate fields, e.g. { "title": "...", "content": "..." }.
@@ -197,12 +199,12 @@ This metadata must NOT alter or omit any CV content. Use * as a wildcard for arr
 Tag the following field types regardless of what language or key name the CV uses:
 
 PERSONAL INFO BLOCK (the unlabeled top block or any named contact/header section):
-- Section itself:                         "unsectioned": "contact_block"
-- Person's full name field:               "unsectioned.Name": "name"
-- Location / city / address fields:       "unsectioned.Location": "location"
-- Phone / mobile / tel fields:            "unsectioned.Phone": "phone"
-- Email fields:                           "unsectioned.Email": "email"
-- Any URL (LinkedIn, GitHub, website):    "unsectioned.LinkedIn": "url"
+- Section itself:                         "Header Info": "contact_block"
+- Person's full name field:               "Header Info.Name": "name"
+- Location / city / address fields:       "Header Info.Location": "location"
+- Phone / mobile / tel fields:            "Header Info.Phone": "phone"
+- Email fields:                           "Header Info.Email": "email"
+- Any URL (LinkedIn, GitHub, website):    "Header Info.LinkedIn": "url"
 
 PROFILE / SUMMARY / OBJECTIVE sections (free-text paragraph):
 - Tag the whole section as:               "Profil": "paragraph"
@@ -242,7 +244,7 @@ TRAINING / CERTIFICATE / COURSE LISTS WITH "TITLE + DETAILS" ITEMS (e.g. WEITERB
             { "title": "Netzwerk- und Systemadministration (Udemy, 2026)", "content": "TCP/IP, Routing & Switching, Windows Server (AD/DNS/DHCP), Virtualisierung, Firewall/VPN, Troubleshooting" }
         ]
 
-Allowed tags: name, email, phone, url, location, address, city, date, date_range, title, subtitle, paragraph, bullets, key_value, contact_block, personal_info.
+Allowed tags: name, email, phone, url, location, address, city, linkedin, github, website, portfolio, date, date_range, title, subtitle, paragraph, bullets, key_value, contact_block, personal_info.
 
 === OUTPUT FORMAT ===
 Return ONLY a single valid JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`).
@@ -270,6 +272,7 @@ No text, explanation, or commentary before or after the JSON block.
         const markerBaseCounts = new Map<string, number>();
         collectPageMarkerBaseCounts(cvJsonResume, markerBaseCounts);
         const sanitizedCvJsonResume = sanitizeParsedCvJson(cvJsonResume, markerBaseCounts) as JsonResumeSchema;
+        normalizeFreeformCvTags(sanitizedCvJsonResume as any);
 
         console.log('--- PARSED CV JSON ---');
         console.log(JSON.stringify(sanitizedCvJsonResume, null, 2));

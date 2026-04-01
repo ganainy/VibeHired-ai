@@ -147,6 +147,7 @@ const CVManagementPage: React.FC = () => {
   const baseCvs = useMemo(() => allCvs.filter(cv => !cv.jobApplicationId), [allCvs]);
   const masterCv = useMemo(() => allCvs.find(cv => cv.isMasterCv), [allCvs]); // Keep for backward compatibility
   const jobCvs = useMemo(() => allCvs.filter(cv => !cv.isMasterCv), [allCvs]); // Keep for backward compatibility
+  const hasBaseCvs = baseCvs.length > 0;
 
   // Get active CV document
   const activeCv = useMemo(() => {
@@ -974,7 +975,7 @@ const CVManagementPage: React.FC = () => {
         </div>
       )}
 
-      {allCvs.length === 0 && !showMockTour && !isLoadingCv && !currentCvData ? (
+      {!hasBaseCvs && !showMockTour && !isLoadingCv ? (
         /*  Zero-CV hero  */
         <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
           <div className="w-full max-w-lg px-4 sm:px-6 py-8 sm:py-12">
@@ -1245,7 +1246,7 @@ const CVManagementPage: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : (!currentCvData || isReplacing) && !isLoadingCv ? (
+        ) : isReplacing && !isLoadingCv ? (
           /* "" Upload / Create Overlay "" */
           <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
             {allCvs.length > 0 && (
