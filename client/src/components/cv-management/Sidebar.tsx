@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Input } from '../common';
+import { TableOrCards, ColumnDef, CardConfig } from '../common/TableOrCards';
 import Spinner from '../common/Spinner';
 import EditBaseCvModal from './EditBaseCvModal';
 import { CVDocument } from '../../services/cvApi';
@@ -14,6 +15,7 @@ interface SidebarProps {
     onReplaceCv?: (id: string) => void;
     onRenameBranch?: (id: string, payload: { displayName: string; category: string | null }) => Promise<boolean>;
     onCreateBranch?: () => void;
+    onToggleStar?: (id: string, nextValue: boolean) => void;
     className?: string;
 }
 
@@ -27,6 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     onReplaceCv,
     onRenameBranch,
     onCreateBranch,
+    onToggleStar,
     className = ''
 }) => {
     void onAddNewCv;
@@ -34,11 +37,86 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [editCv, setEditCv] = useState<CVDocument | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [sortKey, setSortKey] = useState<'edited' | 'usage'>('edited');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+    const [languageFilter, setLanguageFilter] = useState<'all' | 'english' | 'german' | 'unknown'>('all');
+    const [focusFilter, setFocusFilter] = useState<string>('all');
+    const [starFilter, setStarFilter] = useState<'all' | 'starred' | 'unstarred'>('all');
+    const hasActiveFilters = Boolean(
+        searchTerm.trim()
+        || languageFilter !== 'all'
+        || focusFilter !== 'all'
+        || starFilter !== 'all'
+    );
+
+    const focusOptions = Array.from(new Set(
+        cvs
+            .map(cv => (cv.category || '').trim())
+            .filter(Boolean)
+    )).sort((a, b) => a.localeCompare(b));
 
     const filteredCvs = cvs.filter(cv => {
         const displayName = cv.displayName || cv.category || 'Unnamed CV';
-        return displayName.toLowerCase().includes(searchTerm.toLowerCase());
+        const focusLabel = cv.category || '';
+        const matchesSearch = `${displayName} ${focusLabel}`.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const languageLabel = getCvLanguageLabel(cv).toLowerCase();
+        const matchesLanguage = languageFilter === 'all'
+            || (languageFilter === 'english' && languageLabel === 'english')
+            || (languageFilter === 'german' && languageLabel === 'german')
+            || (languageFilter === 'unknown' && languageLabel === 'unknown');
+
+        const matchesFocus = focusFilter === 'all'
+            || (cv.category || '').toLowerCase() === focusFilter.toLowerCase();
+
+        const matchesStar = starFilter === 'all'
+            || (starFilter === 'starred' && cv.isStarred)
+            || (starFilter === 'unstarred' && !cv.isStarred);
+
+        return matchesSearch && matchesLanguage && matchesFocus && matchesStar;
     });
+
+    const totalCount = cvs.length;
+    const filteredCount = filteredCvs.length;
+
+    const clearFilters = () => {
+        setSearchTerm('');
+        setLanguageFilter('all');
+        setFocusFilter('all');
+        setStarFilter('all');
+        setCurrentPage(1);
+    };
+
+    const sortedCvs = [...filteredCvs].sort((a, b) => {
+        if (sortKey === 'usage') {
+            const aUsage = a.usedByJobCount || 0;
+            const bUsage = b.usedByJobCount || 0;
+            return sortDirection === 'asc' ? aUsage - bUsage : bUsage - aUsage;
+        }
+        const aTime = new Date(a.updatedAt).getTime();
+        const bTime = new Date(b.updatedAt).getTime();
+        return sortDirection === 'asc' ? aTime - bTime : bTime - aTime;
+    });
+
+    const handleSort = (key: 'edited' | 'usage') => {
+        if (sortKey === key) {
+            setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+            return;
+        }
+        setSortKey(key);
+        setSortDirection('desc');
+    };
+
+    const pageSize = 5;
+    const totalPages = Math.max(1, Math.ceil(sortedCvs.length / pageSize));
+    const safePage = Math.min(currentPage, totalPages);
+    const startIndex = (safePage - 1) * pageSize;
+    const pagedCvs = sortedCvs.slice(startIndex, startIndex + pageSize);
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, languageFilter, focusFilter, starFilter, cvs.length]);
 
     const getRelativeTime = (dateString: string) => {
         const date = new Date(dateString);
@@ -52,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         return `${Math.floor(diffInSeconds / 604800)}w ago`;
     };
 
-    const getCvLanguageLabel = (cv: CVDocument): 'English' | 'German' | 'Unknown' => {
+    function getCvLanguageLabel(cv: CVDocument): 'English' | 'German' | 'Unknown' {
         const data: any = cv.cvJson || {};
 
         const metaLanguageCandidates = [
@@ -110,41 +188,20 @@ const Sidebar: React.FC<SidebarProps> = ({
         if (germanScore > englishScore) return 'German';
         if (englishScore > germanScore) return 'English';
         return 'Unknown';
-    };
+    }
 
-    const CvCard = ({ cv }: { cv: CVDocument }) => {
-        const isActive = activeCvId === cv._id;
-        const isMock = cv._id === '__mock_cv__';
-        const displayName = cv.displayName || cv.category || 'Unnamed CV';
-        const languageLabel = getCvLanguageLabel(cv);
-        const isPrimary = cv.isPrimary || cv.isMasterCv;
-        const languageCode = languageLabel === 'English' ? 'EN' : languageLabel === 'German' ? 'DE' : '??';
-        const usedCount = cv.usedByJobCount || 0;
-        const focusLabel = cv.category && cv.category !== displayName ? cv.category : null;
-
-        return (
-            <div
-                onClick={() => onSelectCv(cv._id)}
-                style={isActive ? {background:'var(--bg-surface)', borderColor:'var(--accent)', boxShadow:'0 0 0 1px rgba(232,184,68,0.2)'} : {background:'var(--bg-surface)', borderColor:'var(--border)'}}
-                className={`group relative p-3 rounded-xl border transition-all duration-200 w-56 sm:w-64 flex-shrink-0 snap-start hover:border-opacity-70 overflow-hidden ${isMock ? 'pointer-events-none select-none opacity-70' : 'cursor-pointer'}`}
-            >
-                {isActive && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{background:'var(--accent)'}} />
-                )}
-
-                <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm line-clamp-1" style={{color:'var(--text-primary)'}}>
-                            {displayName}
-                        </h3>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        <span
-                            className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
-                            style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-                        >
-                            Base CV
-                        </span>
+    const columns: ColumnDef<CVDocument>[] = [
+        {
+            key: 'displayName',
+            label: 'CV Name',
+            render: (cv) => {
+                const displayName = cv.displayName || cv.category || 'Unnamed CV';
+                const isPrimary = cv.isPrimary || cv.isMasterCv;
+                return (
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{displayName}</span>
+                        </div>
                         {isPrimary && (
                             <span
                                 className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1"
@@ -156,36 +213,83 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 Primary
                             </span>
                         )}
-                        <span
-                            className="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0"
-                            style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+                    </div>
+                );
+            },
+        },
+        {
+            key: 'jobFocus',
+            label: 'Job Focus',
+            render: (cv) => (
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {cv.category || 'General'}
+                </span>
+            ),
+            className: 'w-32',
+        },
+        {
+            key: 'language',
+            label: 'Lang',
+            render: (cv) => {
+                const languageLabel = getCvLanguageLabel(cv);
+                const languageCode = languageLabel === 'English' ? 'EN' : languageLabel === 'German' ? 'DE' : '??';
+                return (
+                    <span
+                        className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                        style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+                    >
+                        {languageCode}
+                    </span>
+                );
+            },
+            className: 'w-20',
+        },
+        {
+            key: 'usedByJobCount',
+            label: 'Usage',
+            sortable: true,
+            onSort: () => handleSort('usage'),
+            sortDirection: sortKey === 'usage' ? sortDirection : null,
+            render: (cv) => (
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {`${cv.usedByJobCount || 0} job CV${(cv.usedByJobCount || 0) === 1 ? '' : 's'}`}
+                </span>
+            ),
+            className: 'w-28',
+        },
+        {
+            key: 'updatedAt',
+            label: 'Edited',
+            sortable: true,
+            onSort: () => handleSort('edited'),
+            sortDirection: sortKey === 'edited' ? sortDirection : null,
+            render: (cv) => (
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {getRelativeTime(cv.updatedAt)}
+                </span>
+            ),
+            className: 'w-24',
+        },
+        {
+            key: 'actions',
+            label: 'Actions',
+            align: 'right',
+            render: (cv) => (
+                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    {onToggleStar && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleStar(cv._id, !cv.isStarred);
+                            }}
+                            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${cv.isStarred ? 'text-amber-600 bg-amber-100' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-100'}`}
+                            title={cv.isStarred ? 'Unstar' : 'Star'}
                         >
-                            {languageCode}
-                        </span>
-                    </div>
-                    {focusLabel && (
-                        <div className="text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>
-                            Job focus: <span style={{ color: 'var(--text-primary)' }}>{focusLabel}</span>
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-xs flex items-center gap-1" style={{color:'var(--text-muted)'}}>
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            <svg className="w-4 h-4" fill={cv.isStarred ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                             </svg>
-                            {`Base for ${usedCount} job CV${usedCount === 1 ? '' : 's'}`}
-                        </span>
-                        <span className="text-xs" style={{color:'var(--text-muted)'}}>
-                            Edited: {getRelativeTime(cv.updatedAt)}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Hover Actions */}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        </button>
+                    )}
                     {onRenameBranch && (
                         <button
                             onClick={(e) => {
@@ -193,8 +297,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 setEditCv(cv);
                                 setIsEditModalOpen(true);
                             }}
-                            className="p-1 rounded-md transition-colors"
-                            style={{color:'var(--text-muted)', background:'var(--bg-elevated)'}}
+                            className="p-1.5 rounded-lg transition-colors"
+                            style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)' }}
                             onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
                             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
                             title="Rename"
@@ -210,8 +314,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 e.stopPropagation();
                                 onDeleteCv(cv._id);
                             }}
-                            className="p-1 rounded-md transition-colors"
-                            style={{color:'var(--text-muted)', background:'var(--bg-elevated)'}}
+                            className="p-1.5 rounded-lg transition-colors"
+                            style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)' }}
                             onMouseEnter={e => (e.currentTarget.style.color = 'var(--rose)')}
                             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
                             title="Delete"
@@ -222,35 +326,138 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </button>
                     )}
                 </div>
+            ),
+            className: 'w-24',
+        },
+    ];
+
+    const cardConfig: CardConfig<CVDocument> = {
+        title: (cv) => cv.displayName || cv.category || 'Unnamed CV',
+        subtitle: (cv) => {
+            const focusLabel = cv.category && cv.category !== (cv.displayName || cv.category) ? cv.category : 'General';
+            return focusLabel;
+        },
+        badge: (cv) => {
+            if (activeCvId === cv._id) {
+                return { text: 'Selected', className: 'bg-[var(--accent)] text-[var(--text-on-accent)]' };
+            }
+            if (cv.isPrimary || cv.isMasterCv) {
+                return { text: 'Primary', className: 'bg-amber-100 text-amber-700' };
+            }
+            return null;
+        },
+        avatar: (cv) => ({ letter: (cv.displayName || cv.category || 'CV').charAt(0).toUpperCase() }),
+        fields: [
+            {
+                label: 'Language',
+                value: (cv) => {
+                    const languageLabel = getCvLanguageLabel(cv);
+                    return languageLabel === 'English' ? 'EN' : languageLabel === 'German' ? 'DE' : 'Unknown';
+                },
+            },
+            {
+                label: 'Usage',
+                value: (cv) => `${cv.usedByJobCount || 0} job CV${(cv.usedByJobCount || 0) === 1 ? '' : 's'}`,
+            },
+            {
+                label: 'Edited',
+                value: (cv) => getRelativeTime(cv.updatedAt),
+            },
+        ],
+        actions: (cv) => (
+            <div className="grid grid-cols-3 gap-2 w-full" onClick={(e) => e.stopPropagation()}>
+                {onToggleStar && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleStar(cv._id, !cv.isStarred);
+                        }}
+                        className={`text-[11px] font-semibold px-2 py-2 rounded-lg transition-colors border ${cv.isStarred ? 'text-amber-700 border-amber-200 bg-amber-50' : 'text-gray-600 border-transparent'}`}
+                        style={{ background: cv.isStarred ? undefined : 'var(--bg-elevated)' }}
+                        aria-pressed={cv.isStarred}
+                        title={cv.isStarred ? 'Unstar CV' : 'Star CV'}
+                    >
+                        {cv.isStarred ? 'Starred' : 'Star'}
+                    </button>
+                )}
+                {onRenameBranch && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setEditCv(cv);
+                            setIsEditModalOpen(true);
+                        }}
+                        className="text-[11px] font-semibold px-2 py-2 rounded-lg border"
+                        style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', borderColor: 'var(--border)' }}
+                        title="Rename CV"
+                    >
+                        Rename
+                    </button>
+                )}
+                {onDeleteCv && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteCv(cv._id);
+                        }}
+                        className="text-[11px] font-semibold px-2 py-2 rounded-lg border"
+                        style={{ background: 'var(--bg-elevated)', color: 'var(--rose)', borderColor: 'color-mix(in srgb, var(--rose) 30%, var(--border))' }}
+                        title="Delete CV"
+                    >
+                        Delete
+                    </button>
+                )}
             </div>
-        );
+        ),
     };
 
     return (
         <>
-        <div className={`flex flex-col rounded-xl overflow-hidden ${className}`} style={{background:'var(--bg-surface)', border:'1px solid var(--border)', boxShadow:'0 2px 8px rgba(0,0,0,0.3)'}}>
-            <div className="flex flex-col gap-2 p-3 border-b" style={{borderColor:'var(--border)'}}>
-                {/* Row 1: Title & Filter - stack on mobile */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div className="flex flex-col">
-                        <h2 className="text-sm font-extrabold uppercase tracking-widest label-overline" style={{color:'var(--text-primary)'}}>Base CVs</h2>
-                        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                            Reusable masters used to generate tailored CVs and cover letters.
-                        </span>
+        <div className={`flex flex-col ${className}`}>
+            <div
+                className="flex flex-col gap-3 p-4 sm:p-5 border-b"
+                style={{
+                    borderColor: 'var(--border)',
+                    background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 96%, var(--accent) 4%) 0%, var(--bg-surface) 100%)',
+                }}
+            >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        {hasActiveFilters && (
+                            <span
+                                className="text-[10px] font-semibold px-2 py-1 rounded-full border"
+                                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-elevated)' }}
+                            >
+                                Filtered
+                            </span>
+                        )}
+                        {hasActiveFilters && (
+                            <button
+                                type="button"
+                                onClick={clearFilters}
+                                className="text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-colors"
+                                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-surface)' }}
+                            >
+                                Clear filters
+                            </button>
+                        )}
                     </div>
+                </div>
 
-                    <div className="relative w-full sm:w-48 flex-shrink-0">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-gray-400">
+                <div className="grid grid-cols-1 sm:grid-cols-[minmax(220px,1fr)_repeat(3,minmax(130px,160px))] gap-2.5">
+                    <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </span>
                         <Input
                             type="text"
-                            placeholder="Filter CVs..."
+                            placeholder="Search base CVs"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full py-1.5 pl-8 pr-3 text-[11px] font-medium focus:ring-gold-500/30"
+                            className="w-full py-2 pl-9 pr-3 text-xs font-medium rounded-full border"
+                            aria-label="Search base CVs"
                             icon={
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -258,50 +465,102 @@ const Sidebar: React.FC<SidebarProps> = ({
                             }
                         />
                     </div>
+                    <select
+                        value={languageFilter}
+                        onChange={(e) => setLanguageFilter(e.target.value as typeof languageFilter)}
+                        className="px-3 py-2 text-xs rounded-full border"
+                        style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)', color: 'var(--text-secondary)' }}
+                        aria-label="Filter by language"
+                    >
+                        <option value="all">All languages</option>
+                        <option value="english">English</option>
+                        <option value="german">German</option>
+                        <option value="unknown">Unknown</option>
+                    </select>
+                    <select
+                        value={focusFilter}
+                        onChange={(e) => setFocusFilter(e.target.value)}
+                        className="px-3 py-2 text-xs rounded-full border"
+                        style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)', color: 'var(--text-secondary)' }}
+                        aria-label="Filter by job focus"
+                    >
+                        <option value="all">All job focus</option>
+                        {focusOptions.map((focus) => (
+                            <option key={focus} value={focus}>{focus}</option>
+                        ))}
+                    </select>
+                    <select
+                        value={starFilter}
+                        onChange={(e) => setStarFilter(e.target.value as typeof starFilter)}
+                        className="px-3 py-2 text-xs rounded-full border"
+                        style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)', color: 'var(--text-secondary)' }}
+                        aria-label="Filter by star status"
+                    >
+                        <option value="all">All stars</option>
+                        <option value="starred">Starred</option>
+                        <option value="unstarred">Unstarred</option>
+                    </select>
                 </div>
 
-                {/* Row 2: Cards - horizontal scroll on mobile */}
-                <div className="flex items-center">
-                    {/* Scrollable Cards - full viewport width on mobile */}
-                    <div className="flex-1 overflow-x-auto custom-scrollbar snap-x snap-mandatory">
-                        <div className="flex items-stretch gap-2 py-1">
-                            {isLoading ? (
-                                <div
-                                    className="flex items-center justify-center gap-2 w-full min-h-[96px] rounded-xl border border-dashed"
-                                    style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
-                                >
+                {/* Row 2: TableOrCards */}
+                <div className="flex flex-col gap-2">
+                    <TableOrCards
+                        data={isLoading ? [] : pagedCvs}
+                        columns={columns}
+                        cardConfig={cardConfig}
+                        onRowClick={(cv) => onSelectCv(cv._id)}
+                        rowClassName={(cv) => {
+                            const isActive = activeCvId === cv._id;
+                            const isMock = cv._id === '__mock_cv__';
+                            const baseClass = 'hover:bg-[var(--bg-elevated)] ring-1 ring-transparent';
+                            if (isMock) return `pointer-events-none opacity-70 ${baseClass}`;
+                            return isActive
+                                ? `ring-2 ring-[var(--accent)] shadow-[0_10px_28px_-14px_rgba(15,23,42,0.45)] before:content-[''] before:absolute before:inset-y-3 before:left-0 before:w-1.5 before:rounded-full before:bg-[var(--accent)] ${baseClass}`
+                                : baseClass;
+                        }}
+                        emptyMessage="No CVs found."
+                        emptyState={isLoading ? (
+                            <div className="p-10 text-center" style={{ color: 'var(--text-muted)' }}>
+                                <div className="flex items-center justify-center gap-2 text-xs">
                                     <Spinner size="sm" />
-                                    <span className="text-xs font-medium">Loading CVs...</span>
+                                    Loading CVs...
                                 </div>
-                            ) : (
-                                <>
-                                    {/* Create Branch Card */}
-                                    {onCreateBranch && (
-                                        <button
-                                            onClick={onCreateBranch}
-                                            className="flex flex-col items-center justify-center gap-2 w-28 sm:w-32 flex-shrink-0 snap-start rounded-xl border-2 border-dashed transition-all group pt-2.5 pb-2.5"
-                                            style={{borderColor:'var(--accent-dim)', background:'var(--accent-bg)', color:'var(--accent)'}}
-                                            onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.background='var(--accent-bg-hover,rgba(232,184,68,0.14))'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.borderColor='var(--accent-dim)'; e.currentTarget.style.background='var(--accent-bg)'; }}
-                                            title="Create a specialized version for a different career focus (e.g., one for frontend, one for DevOps)"
-                                        >
-                                            <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform" style={{background:'var(--accent-bg)'}}>
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                </svg>
-                                            </div>
-                                            <span className="text-[10px] font-bold uppercase tracking-tight">New CV</span>
-                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credits</span>
-                                        </button>
-                                    )}
+                            </div>
+                        ) : undefined}
+                        className="rounded-xl border-transparent md:border"
+                        mobileBreakpoint="md"
+                    />
 
-                                    {filteredCvs.map(cv => (
-                                        <CvCard key={cv._id} cv={cv} />
-                                    ))}
-                                </>
-                            )}
+                    {!isLoading && filteredCvs.length > pageSize && (
+                        <div className="flex items-center justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
+                            <span>
+                                Showing {startIndex + 1}-{Math.min(startIndex + pageSize, sortedCvs.length)} of {sortedCvs.length}
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                                    disabled={safePage === 1}
+                                    className="px-2 py-1 rounded-md border text-xs disabled:opacity-50"
+                                    style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}
+                                >
+                                    Prev
+                                </button>
+                                <span>
+                                    Page {safePage} / {totalPages}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                                    disabled={safePage === totalPages}
+                                    className="px-2 py-1 rounded-md border text-xs disabled:opacity-50"
+                                    style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}
+                                >
+                                    Next
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

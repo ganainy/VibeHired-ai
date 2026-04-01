@@ -333,6 +333,7 @@ router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
             templateId: cv.templateId,
             filename: cv.filename,
             analysisCache: lite ? null : cv.analysisCache,
+            isStarred: cv.isStarred ?? false,
             usedByJobCount: usageByBaseCv.get(String(cv._id)) || 0,
             createdAt: cv.createdAt,
             updatedAt: cv.updatedAt,
@@ -403,6 +404,7 @@ router.get('/master', asyncHandler(async (req: Request, res: Response) => {
             templateId: effectiveTemplate,
             filename: baseCv.filename,
             analysisCache: baseCv.analysisCache,
+            isStarred: baseCv.isStarred ?? false,
             createdAt: baseCv.createdAt,
             updatedAt: baseCv.updatedAt,
         }
@@ -464,6 +466,7 @@ router.post('/create-branch', asyncHandler(async (req: Request, res: Response) =
             cvDescriptor: newBranch.cvDescriptor ?? null,
             cvData: newBranch.cvData ?? null,
             templateId: newBranch.templateId,
+            isStarred: newBranch.isStarred ?? false,
             createdAt: newBranch.createdAt,
             updatedAt: newBranch.updatedAt,
         }
@@ -534,6 +537,7 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
             templateId: effectiveTemplate,
             filename: cv.filename,
             analysisCache: cv.analysisCache,
+            isStarred: cv.isStarred ?? false,
             createdAt: cv.createdAt,
             updatedAt: cv.updatedAt,
         }
@@ -611,6 +615,7 @@ router.get('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
             templateId: effectiveTemplate,
             filename: cv.filename,
             tailoringChanges: cv.tailoringChanges || null,
+            isStarred: cv.isStarred ?? false,
             createdAt: cv.createdAt,
             updatedAt: cv.updatedAt,
         }
@@ -677,6 +682,7 @@ router.post(
                 cvDescriptor: newCv.cvDescriptor ?? null,
                 cvData: newCv.cvData ?? null,
                 filename: newCv.filename,
+                isStarred: newCv.isStarred ?? false,
                 createdAt: newCv.createdAt,
                 updatedAt: newCv.updatedAt,
             }
@@ -751,6 +757,7 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
             jobApplicationId: newCv.jobApplicationId,
             cvJson: newCv.cvJson,
             templateId: newCv.templateId,
+            isStarred: newCv.isStarred ?? false,
             createdAt: newCv.createdAt,
             updatedAt: newCv.updatedAt,
         }
@@ -820,6 +827,7 @@ router.post(
                 cvDescriptor: newCv.cvDescriptor ?? null,
                 cvData: newCv.cvData ?? null,
                 filename: newCv.filename,
+                isStarred: newCv.isStarred ?? false,
                 createdAt: newCv.createdAt,
                 updatedAt: newCv.updatedAt,
             }
@@ -891,6 +899,7 @@ router.post('/job/:jobId/from-base', asyncHandler(async (req: Request, res: Resp
             cvJson: jobCv.cvJson,
             filename: jobCv.filename,
             templateId: jobCv.templateId,
+            isStarred: jobCv.isStarred ?? false,
             createdAt: jobCv.createdAt,
         },
     });
@@ -943,6 +952,7 @@ router.post(
                 displayName: jobCv.displayName,
                 cvJson: null,
                 filename: jobCv.filename,
+                isStarred: jobCv.isStarred ?? false,
                 createdAt: jobCv.createdAt,
             },
         });
@@ -975,7 +985,7 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
         throw new ValidationError('Original extraction fields are read-only. Use reset-from-source for recovery.');
     }
 
-    const { cvJson, cvDescriptor, cvData, templateId } = req.body;
+    const { cvJson, cvDescriptor, cvData, templateId, isStarred } = req.body;
 
     if (cvJson) {
         if (typeof cvJson !== 'object' || Array.isArray(cvJson)) {
@@ -1000,6 +1010,10 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
         cv.templateId = templateId;
     }
 
+    if (isStarred !== undefined) {
+        cv.isStarred = Boolean(isStarred);
+    }
+
     await cv.save();
 
     console.log(`CV ${cvId} updated for user ${req.user!.email}`);
@@ -1017,6 +1031,37 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
             cvDescriptor: cv.cvDescriptor ?? null,
             cvData: cv.cvData ?? null,
             templateId: cv.templateId,
+            isStarred: cv.isStarred ?? false,
+            updatedAt: cv.updatedAt,
+        }
+    });
+}));
+
+/**
+ * PATCH /api/cvs/:id/star
+ * Toggle star status for a CV
+ */
+router.patch('/:id/star', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id;
+    const cvId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(cvId)) {
+        throw new ValidationError('Invalid CV ID');
+    }
+
+    const cv = await CV.findOne({ _id: cvId, userId });
+    if (!cv) {
+        throw new NotFoundError('CV not found');
+    }
+
+    cv.isStarred = Boolean(req.body?.isStarred);
+    await cv.save();
+
+    res.json({
+        message: 'CV star status updated.',
+        cv: {
+            _id: cv._id,
+            isStarred: cv.isStarred ?? false,
             updatedAt: cv.updatedAt,
         }
     });
@@ -1062,6 +1107,7 @@ router.post('/:id/reset-from-source', asyncHandler(async (req: Request, res: Res
             cvDescriptor: cv.cvDescriptor ?? null,
             cvData: cv.cvData ?? null,
             templateId: cv.templateId,
+            isStarred: cv.isStarred ?? false,
             updatedAt: cv.updatedAt,
         }
     });
@@ -1117,6 +1163,7 @@ router.post('/:id/promote', asyncHandler(async (req: Request, res: Response) => 
             isMasterCv: true,
             cvJson: promotedCv.cvJson,
             templateId: promotedCv.templateId,
+            isStarred: promotedCv.isStarred ?? false,
             updatedAt: promotedCv.updatedAt,
         }
     });

@@ -38,7 +38,9 @@ const Txt = ({ v, className = '' }: { v: FreeformJsonValue; className?: string }
     .replace(/\r?\n+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+  const normalized = text.replace(/[^a-z0-9/]+/gi, '').toLowerCase();
   if (!text.trim()) return null;
+  if (normalized === 'na' || normalized === 'n/a' || normalized === 'notavailable') return null;
   return <span className={`whitespace-normal break-words ${className}`}>{text}</span>;
 };
 
@@ -55,18 +57,26 @@ const CvEntry = ({ obj, root, path }: { obj: FreeformJsonObject; root: FreeformJ
   let dateEntry: [string, FreeformJsonValue] | undefined;
   let subtitleEntry: [string, FreeformJsonValue] | undefined;
   let keyValueEntry: [string, FreeformJsonValue] | undefined;
+  let locationEntry: [string, FreeformJsonValue] | undefined;
 
   for (const [k, v] of entries) {
     const tag = getUiTagForPath(root, [...path, k])?.toLowerCase() ?? '';
     if (!titleEntry && tag === 'title' && typeof v === 'string') { titleEntry = [k, v]; continue; }
     if (!dateEntry && (tag === 'date' || tag === 'date_range') && typeof v === 'string') { dateEntry = [k, v]; continue; }
     if (!subtitleEntry && tag === 'subtitle' && typeof v === 'string') { subtitleEntry = [k, v]; continue; }
+    if (!locationEntry && tag === 'location' && typeof v === 'string') { locationEntry = [k, v]; continue; }
     if (!keyValueEntry && tag === 'key_value' && !Array.isArray(v) && !isPlainObject(v)) { keyValueEntry = [k, v]; continue; }
   }
 
   const hasInlineTitleValue = Boolean(titleEntry && keyValueEntry);
   const showRightAlignedDate = Boolean(dateEntry && subtitleEntry);
-  const handled = new Set([titleEntry?.[0], dateEntry?.[0], subtitleEntry?.[0], keyValueEntry?.[0]].filter(Boolean) as string[]);
+  const handled = new Set([
+    titleEntry?.[0],
+    dateEntry?.[0],
+    subtitleEntry?.[0],
+    locationEntry?.[0],
+    keyValueEntry?.[0],
+  ].filter(Boolean) as string[]);
   const rest = entries.filter(([k]) => !handled.has(k));
 
   return (
@@ -91,6 +101,12 @@ const CvEntry = ({ obj, root, path }: { obj: FreeformJsonObject; root: FreeformJ
       )}
       {subtitleEntry && (
         <Txt v={subtitleEntry[1]} className="text-[12px] text-gray-700 leading-snug" />
+      )}
+      {locationEntry && (
+        <div className="text-[11.5px] text-gray-500 italic leading-snug">
+          <span className="mr-1">—</span>
+          <Txt v={locationEntry[1]} />
+        </div>
       )}
       {rest.map(([k, v]) => {
         const fp = [...path, k];
@@ -134,6 +150,8 @@ const CvEntry = ({ obj, root, path }: { obj: FreeformJsonObject; root: FreeformJ
         if (fieldTag === 'paragraph') {
           return <p key={k} className="text-[12.5px] text-gray-800 leading-[1.5] break-words">{normalizeParagraphText(v)}</p>;
         }
+
+        if (fieldTag === 'location') return null;
 
         const text = String(v ?? '');
         if (!text.trim()) return null;

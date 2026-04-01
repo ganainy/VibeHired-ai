@@ -1,5 +1,6 @@
 // client/src/pages/DashboardPage.tsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   getJobs,
@@ -717,20 +718,48 @@ const DashboardPage: React.FC = () => {
   const StatusDropdown: React.FC<{ job: JobApplication }> = ({ job }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [focusedIndex, setFocusedIndex] = useState(-1);
+    const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
     const dropdownRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
     const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-          setIsOpen(false);
-          setFocusedIndex(-1);
+        const target = event.target as Node;
+        if (dropdownRef.current?.contains(target) || menuRef.current?.contains(target)) {
+          return;
         }
+        setIsOpen(false);
+        setFocusedIndex(-1);
       };
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+      if (!isOpen) return;
+
+      const updatePosition = () => {
+        const rect = triggerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        setMenuStyle({
+          position: 'fixed',
+          top: rect.bottom + 6,
+          left: rect.left,
+          minWidth: Math.max(rect.width, 176),
+          zIndex: 9999,
+        });
+      };
+
+      updatePosition();
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
+      return () => {
+        window.removeEventListener('resize', updatePosition);
+        window.removeEventListener('scroll', updatePosition, true);
+      };
+    }, [isOpen]);
 
     const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
       switch (e.key) {
@@ -807,10 +836,22 @@ const DashboardPage: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        {isOpen && (
+        {isOpen && createPortal(
           <div
-            className="absolute z-50 mt-1 w-44 rounded-xl shadow-xl py-1 overflow-hidden"
-            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+            ref={menuRef}
+            className="rounded-xl shadow-xl py-1 overflow-hidden bg-white dark:bg-[#1a1a28]"
+            style={{
+              ...menuStyle,
+              backgroundColor: 'var(--bg-surface)',
+              backgroundImage: 'none',
+              border: '1px solid var(--border)',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+              opacity: 1,
+              mixBlendMode: 'normal',
+              isolation: 'isolate',
+              filter: 'none',
+              backdropFilter: 'none'
+            }}
             role="listbox"
             aria-label={`Select status for ${job.jobTitle} at ${job.companyName}`}
             aria-activedescendant={focusedIndex >= 0 ? `status-option-${focusedIndex}` : undefined}
@@ -836,7 +877,8 @@ const DashboardPage: React.FC = () => {
                 {status}
               </button>
             ))}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     );

@@ -60,6 +60,7 @@ export interface CVDocument {
     templateId?: string | null;
     filename?: string | null;
     analysisCache?: Record<string, unknown> | null;
+    isStarred?: boolean;
     tailoringChanges?: Array<{
         section: string;
         description: string;
@@ -156,6 +157,11 @@ export interface UploadBranchResponse {
 export interface PreviewCvResponse {
     message: string;
     pdfBase64: string;
+}
+
+export interface ToggleStarResponse {
+    message: string;
+    cv: { _id: string; isStarred: boolean; updatedAt: string };
 }
 
 export interface CvUsageJob {
@@ -567,6 +573,22 @@ export const deleteCv = async (cvId: string): Promise<DeleteCvResponse> => {
             throw error.response.data;
         }
         throw { message: 'An unknown error occurred deleting CV.' };
+    }
+};
+
+/**
+ * Toggle star on a CV by ID
+ */
+export const toggleCvStar = async (cvId: string, isStarred: boolean): Promise<ToggleStarResponse> => {
+    try {
+        const response = await axios.patch<ToggleStarResponse>(`${API_BASE_URL}/${cvId}/star`, { isStarred });
+        return response.data;
+    } catch (error: any) {
+        console.error('Toggle CV star API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred toggling CV star.' };
     }
 };
 

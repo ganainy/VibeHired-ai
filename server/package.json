@@ -13,7 +13,8 @@
     "dev": "nodemon src/index.ts",
     "migrate:usernames": "ts-node scripts/migrate-usernames.ts",
     "migrate-cv-branches": "ts-node scripts/migrate-to-cv-branches.ts",
-    "analyze-jobs": "ts-node scripts/analyze-job-descriptions.ts"
+    "analyze-jobs": "ts-node scripts/analyze-job-descriptions.ts",
+    "bulk-improve-cvs": "ts-node scripts/bulk-improve-cvs.ts"
   },
   "keywords": [],
   "author": "",

@@ -46,6 +46,7 @@ export interface ICV extends Document {
     templateId?: string | null;  // null = use user's default template
     filename?: string | null;    // Original uploaded filename
     analysisCache?: Record<string, unknown> | null;
+    isStarred?: boolean;
     tailoringChanges?: Array<{
         section: string;       // e.g., "work", "skills", "summary"
         description: string;   // What was changed
@@ -137,6 +138,10 @@ const CVSchema = new Schema<ICV>(
         analysisCache: {
             type: Schema.Types.Mixed,
             default: null,
+        },
+        isStarred: {
+            type: Boolean,
+            default: false,
         },
         tailoringChanges: {
             type: [{

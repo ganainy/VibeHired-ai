@@ -7,6 +7,7 @@ import {
   getAllCvs,
   updateCv,
   deleteCv,
+  toggleCvStar,
   CVDocument,
   getCvBranches,
   createCvBranch,
@@ -27,6 +28,7 @@ import Sidebar from '../components/cv-management/Sidebar';
 import CreateBranchModal from '../components/cv-management/CreateBranchModal';
 import { validateCvFile, formatFileSize } from '../lib/utils';
 import ConfirmModal from '../components/common/ConfirmModal';
+import Spinner from '../components/common/Spinner';
 import TourBanner from '../components/onboarding/TourBanner';
 import { usePageTour } from '../hooks/usePageTour';
 import JobStatusBadge from '../components/jobs/JobStatusBadge';
@@ -814,6 +816,18 @@ const CVManagementPage: React.FC = () => {
     }
   };
 
+  const handleToggleStar = async (cvId: string, nextValue: boolean) => {
+    try {
+      await toggleCvStar(cvId, nextValue);
+      setAllCvs((prev: CVDocument[]) => prev.map((cv: CVDocument) =>
+        cv._id === cvId ? { ...cv, isStarred: nextValue } : cv
+      ));
+    } catch (error: any) {
+      console.error('Error toggling CV star:', error);
+      setToast({ message: error.message || 'Failed to update CV star.', type: 'error' });
+    }
+  };
+
   const handleCreateBranch = async (sourceCvId: string, category: string, displayName: string) => {
     setIsCreatingBranch(true);
     try {
@@ -965,21 +979,39 @@ const CVManagementPage: React.FC = () => {
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6 gap-4 sm:gap-6 overflow-hidden">
       {/* Page Header */}
       {allCvs.length > 0 && !showMockTour && !isReplacing && (
-        <div className="flex-shrink-0 pb-2">
-          <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-            Base CV Library
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Base CVs are your reusable masters. Tailored CVs and cover letters are generated from them per job.
-          </p>
+        <div className="flex-shrink-0 pb-2 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+              Base CV Library
+            </h1>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsCreateBranchModalOpen(true)}
+            className="btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm"
+            title="Create a specialized version for a different career focus (e.g., one for frontend, one for DevOps)"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            New CV
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>2 Credits</span>
+          </button>
         </div>
       )}
 
-      {!hasBaseCvs && !showMockTour && !isLoadingCv ? (
+      {(isLoadingCv || isLoadingJobCvs) && !showMockTour ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+            <Spinner size="sm" />
+            Loading CVs...
+          </div>
+        </div>
+      ) : !hasBaseCvs && !showMockTour ? (
         /*  Zero-CV hero  */
         <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
           <div className="w-full max-w-lg px-4 sm:px-6 py-8 sm:py-12">
-            <div className="text-center mb-10">
+            <div className="text-center mb-8">
               <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, var(--accent-dim), var(--accent))' }}>
                 <svg className="w-8 h-8 text-ink-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -989,50 +1021,8 @@ const CVManagementPage: React.FC = () => {
                 No Base CVs Yet
               </h2>
               <p className="text-base text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                Upload your base CV or create one from scratch. You can keep multiple base CVs by language or job focus.
+                Upload a CV or start from scratch to create your first base CV. We use base CVs to generate tailored CVs for jobs later.
               </p>
-            </div>
-
-            {/* Educational Banner */}
-            <div className="mb-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-5">
-              <p className="text-sm text-indigo-800 dark:text-indigo-200 mb-4 text-center font-medium">
-                Base CVs are the foundation. When you apply to jobs, we generate tailored CVs and cover letters while your base stays untouched.
-              </p>
-              <p className="text-xs text-indigo-700 dark:text-indigo-300 text-center">
-                Tip: Keep separate base CVs for different roles or languages (e.g., IT vs Sales, EN vs DE).
-              </p>
-              <div className="flex items-center justify-center gap-3 sm:gap-6">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                  </div>
-                  <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">Upload Base CV</span>
-                </div>
-                <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">Apply to Jobs</span>
-                </div>
-                <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                    </svg>
-                  </div>
-                  <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">Get Tailored CVs</span>
-                </div>
-              </div>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -1111,6 +1101,7 @@ const CVManagementPage: React.FC = () => {
           onDeleteCv={showMockTour ? undefined : handleDeleteCv}
           onRenameBranch={showMockTour ? undefined : handleRenameBranch}
           onCreateBranch={showMockTour ? undefined : () => setIsCreateBranchModalOpen(true)}
+          onToggleStar={showMockTour ? undefined : handleToggleStar}
           className="w-full flex-shrink-0 z-20"
         />
       )}
@@ -1352,7 +1343,7 @@ const CVManagementPage: React.FC = () => {
           />
           {/* Used in Jobs section  only for base CVs */}
           {isBaseCv && (
-            <div className="flex-shrink-0 border-t" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex-shrink-0 border-t mt-3" style={{ borderColor: 'var(--border)' }}>
               <button
                 onClick={() => setUsageExpanded(!usageExpanded)}
                 className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"

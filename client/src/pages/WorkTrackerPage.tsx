@@ -1,5 +1,6 @@
 // client/src/pages/WorkTrackerPage.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Badge, Button } from '../components/common';
 import {
   Clock,
   Calendar,
@@ -2532,8 +2533,10 @@ const WorkTrackerPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2.5 flex-wrap">
-                <button
+                <Button
                   onClick={() => setShowImportModal(true)}
+                  variant="secondary"
+                  size="md"
                   className="group flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all"
                   style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-dim)' }}
                   title="Import with AI"
@@ -2544,9 +2547,9 @@ const WorkTrackerPage: React.FC = () => {
                     <span className="text-[11px] opacity-80 hidden md:inline">Parse image, PDF, or pasted text</span>
                   </span>
                   <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>1 Credit</span>
-                </button>
+                </Button>
 
-                <button
+                <Button
                   onClick={() => {
                     setEditingEntry(null);
                     // Reset pre-filled values to defaults
@@ -2561,6 +2564,8 @@ const WorkTrackerPage: React.FC = () => {
                     setEntryNotes('');
                     setShowEntryModal(true);
                   }}
+                  variant="secondary"
+                  size="md"
                   className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all"
                   style={{
                     background: 'var(--bg-elevated)',
@@ -2574,7 +2579,7 @@ const WorkTrackerPage: React.FC = () => {
                     <span className="text-sm font-semibold">Manual entry</span>
                     <span className="text-[11px] opacity-80 hidden md:inline">Add one shift or appointment</span>
                   </span>
-                </button>
+                </Button>
               </div>
             </div>
 

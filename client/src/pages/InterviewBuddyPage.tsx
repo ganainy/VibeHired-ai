@@ -5,6 +5,7 @@ import { getGlobalMaterials } from '../services/interviewMaterialsApi';
 import { InterviewMaterial } from '../types/interviewMaterial';
 import { CVDocument, getCvBranches, getJobCv } from '../services/cvApi';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/common';
 
 const COMPANION_DOWNLOAD_URL: string | null =
   import.meta.env.VITE_COMPANION_DOWNLOAD_URL || null;
@@ -595,42 +596,19 @@ const InterviewBuddyPage: React.FC = () => {
             </a>
           ) : null}
 
-          <button
+          <Button
             onClick={handleLaunch}
             disabled={!selectedJobId || launching}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-150"
-            style={{
-              background: selectedJobId && !launching ? 'var(--accent)' : 'var(--bg-elevated)',
-              color: selectedJobId && !launching ? 'var(--text-on-accent)' : 'var(--text-muted)',
-              cursor: selectedJobId && !launching ? 'pointer' : 'not-allowed',
-              border: 'none',
-            }}
-            onMouseEnter={(e) => {
-              if (selectedJobId && !launching)
-                (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent-hover)';
-            }}
-            onMouseLeave={(e) => {
-              if (selectedJobId && !launching)
-                (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent)';
-            }}
+            isLoading={launching}
+            icon={!launching ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+            ) : undefined}
+            className="px-5 py-2.5"
           >
-            {launching ? (
-              <>
-                <span
-                  className="inline-block w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
-                  style={{ borderColor: 'var(--text-muted)', borderTopColor: 'var(--text-primary)' }}
-                />
-                Launching
-              </>
-            ) : (
-              <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="5 3 19 12 5 21 5 3" />
-                </svg>
-                Launch installed companion
-              </>
-            )}
-          </button>
+            {launching ? 'Launching' : 'Launch installed companion'}
+          </Button>
         </div>
         {/* Status feedback */}
         {companionStatus === 'available' && (
