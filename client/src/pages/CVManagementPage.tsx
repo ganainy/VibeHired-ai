@@ -793,21 +793,23 @@ const CVManagementPage: React.FC = () => {
     });
   };
 
-  const handleRenameBranch = async (cvId: string, newName: string) => {
+  const handleRenameBranch = async (cvId: string, payload: { displayName: string; category: string | null }) => {
     try {
-      await renameCvBranch(cvId, { displayName: newName });
+      await renameCvBranch(cvId, { displayName: payload.displayName, category: payload.category });
 
       // Update local state
       setAllCvs((prev: CVDocument[]) =>
         prev.map((cv: CVDocument) =>
-          cv._id === cvId ? { ...cv, displayName: newName } : cv
+          cv._id === cvId ? { ...cv, displayName: payload.displayName, category: payload.category ?? cv.category } : cv
         )
       );
 
       setToast({ message: 'CV branch renamed successfully.', type: 'success' });
+      return true;
     } catch (error: any) {
       console.error("Error renaming CV branch:", error);
       setToast({ message: error.message || 'Failed to rename CV branch.', type: 'error' });
+      return false;
     }
   };
 
@@ -964,10 +966,10 @@ const CVManagementPage: React.FC = () => {
       {allCvs.length > 0 && !showMockTour && !isReplacing && (
         <div className="flex-shrink-0 pb-2">
           <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-            CV Library
+            Base CV Library
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Your base resumes  the starting point for tailored job applications
+            Base CVs are your reusable masters. Tailored CVs and cover letters are generated from them per job.
           </p>
         </div>
       )}
@@ -983,17 +985,20 @@ const CVManagementPage: React.FC = () => {
                 </svg>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-                No CVs Yet
+                No Base CVs Yet
               </h2>
               <p className="text-base text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                Upload your existing CV or create one from scratch to get started with personalized job applications.
+                Upload your base CV or create one from scratch. You can keep multiple base CVs by language or job focus.
               </p>
             </div>
 
             {/* Educational Banner */}
             <div className="mb-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-5">
               <p className="text-sm text-indigo-800 dark:text-indigo-200 mb-4 text-center font-medium">
-                Your base resume is the foundation. When you apply to jobs, we create AI-tailored copies  your original stays untouched.
+                Base CVs are the foundation. When you apply to jobs, we generate tailored CVs and cover letters while your base stays untouched.
+              </p>
+              <p className="text-xs text-indigo-700 dark:text-indigo-300 text-center">
+                Tip: Keep separate base CVs for different roles or languages (e.g., IT vs Sales, EN vs DE).
               </p>
               <div className="flex items-center justify-center gap-3 sm:gap-6">
                 <div className="flex flex-col items-center gap-2">
@@ -1090,6 +1095,7 @@ const CVManagementPage: React.FC = () => {
         <Sidebar
           cvs={showMockTour ? [MOCK_CV as CVDocument] : baseCvs}
           activeCvId={activeCvId}
+          isLoading={isLoadingJobCvs}
           onSelectCv={(id) => { if (id !== '__mock_cv__') setActiveCvId(id); }}
           onAddNewCv={() => {
             setIsReplacing(true);
@@ -1258,7 +1264,7 @@ const CVManagementPage: React.FC = () => {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                <span className="hidden sm:inline">Back to My CVs</span>
+                <span className="hidden sm:inline">Back to Base CVs</span>
                 <span className="sm:hidden">Back</span>
               </button>
             )}
@@ -1267,8 +1273,8 @@ const CVManagementPage: React.FC = () => {
             {creationMode === 'upload' && (
               <div className="max-w-2xl mx-auto mt-6 sm:mt-10">
                 <div className="text-center mb-6 sm:mb-8">
-                  <h2 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Import Your CV</h2>
-                  <p className="text-gray-600 dark:text-gray-400">Upload a PDF, DOCX, or RTF file.</p>
+                  <h2 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Import a Base CV</h2>
+                  <p className="text-gray-600 dark:text-gray-400">Upload a PDF, DOCX, or RTF file as your base CV.</p>
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -1301,7 +1307,7 @@ const CVManagementPage: React.FC = () => {
                     disabled={!selectedFile || isUploading}
                     className="mt-6 w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {isUploading ? 'Processing...' : 'Extract & Fill Form'}
+                    {isUploading ? 'Processing...' : 'Extract & Create Base CV'}
                   </button>
                 </form>
                 {uploadError && <p className="mt-4 text-red-600 text-center">{uploadError}</p>}

@@ -161,7 +161,7 @@ const InterviewBuddyPage: React.FC = () => {
   const selectedReferenceIdsParam = selectedMaterialIds.join(',');
 
   const activeCvOptions = [
-    ...(jobCv ? [{ value: jobCv._id, label: 'Job CV (default for this role)' }] : []),
+    ...(jobCv ? [{ value: jobCv._id, label: 'Job CV (saved for this role)' }] : []),
     ...cvBranches
       .filter((cv) => cv._id !== jobCv?._id)
       .map((cv) => ({

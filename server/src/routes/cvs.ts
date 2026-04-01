@@ -1168,7 +1168,7 @@ router.post('/:id/preview', asyncHandler(async (req: Request, res: Response) => 
 router.patch('/:id/rename', asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id;
     const cvId = req.params.id;
-    const { displayName } = req.body;
+    const { displayName, category } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(cvId)) {
         throw new ValidationError('Invalid CV ID');
@@ -1185,6 +1185,13 @@ router.patch('/:id/rename', asyncHandler(async (req: Request, res: Response) => 
     }
 
     cv.displayName = displayName.trim();
+    if (category !== undefined) {
+        if (typeof category !== 'string') {
+            throw new ValidationError('Category must be a string');
+        }
+        const trimmed = category.trim();
+        cv.category = trimmed.length ? trimmed : null;
+    }
     await cv.save();
 
     res.json({
@@ -1192,6 +1199,7 @@ router.patch('/:id/rename', asyncHandler(async (req: Request, res: Response) => 
         branch: {
             _id: cv._id,
             displayName: cv.displayName,
+            category: cv.category ?? null,
             updatedAt: cv.updatedAt,
         }
     });

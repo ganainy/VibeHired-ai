@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { Input } from '../common';
+import Spinner from '../common/Spinner';
+import EditBaseCvModal from './EditBaseCvModal';
 import { CVDocument } from '../../services/cvApi';
 
 interface SidebarProps {
     cvs: CVDocument[];
     activeCvId: string | null;
+    isLoading?: boolean;
     onSelectCv: (id: string) => void;
     onAddNewCv: () => void;
     onDeleteCv?: (id: string) => void;
     onReplaceCv?: (id: string) => void;
-    onRenameBranch?: (id: string, newName: string) => void;
+    onRenameBranch?: (id: string, payload: { displayName: string; category: string | null }) => Promise<boolean>;
     onCreateBranch?: () => void;
     className?: string;
 }
@@ -17,6 +20,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
     cvs,
     activeCvId,
+    isLoading = false,
     onSelectCv,
     onAddNewCv,
     onDeleteCv,
@@ -28,6 +32,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     void onAddNewCv;
     void onReplaceCv;
     const [searchTerm, setSearchTerm] = useState('');
+    const [editCv, setEditCv] = useState<CVDocument | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     const filteredCvs = cvs.filter(cv => {
         const displayName = cv.displayName || cv.category || 'Unnamed CV';
@@ -114,6 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const isPrimary = cv.isPrimary || cv.isMasterCv;
         const languageCode = languageLabel === 'English' ? 'EN' : languageLabel === 'German' ? 'DE' : '??';
         const usedCount = cv.usedByJobCount || 0;
+        const focusLabel = cv.category && cv.category !== displayName ? cv.category : null;
 
         return (
             <div
@@ -125,11 +132,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{background:'var(--accent)'}} />
                 )}
 
-                <div className="flex justify-between items-start mb-1">
+                <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         <h3 className="font-semibold text-sm line-clamp-1" style={{color:'var(--text-primary)'}}>
                             {displayName}
                         </h3>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                            className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0"
+                            style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
+                        >
+                            Base CV
+                        </span>
                         {isPrimary && (
                             <span
                                 className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1"
@@ -148,18 +163,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {languageCode}
                         </span>
                     </div>
+                    {focusLabel && (
+                        <div className="text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+                            Job focus: <span style={{ color: 'var(--text-primary)' }}>{focusLabel}</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center gap-1.5">
-                        {usedCount > 0 && (
-                            <span className="text-xs flex items-center gap-1" style={{color:'var(--text-muted)'}}>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                                {usedCount} job{usedCount > 1 ? 's' : ''}
-                            </span>
-                        )}
+                        <span className="text-xs flex items-center gap-1" style={{color:'var(--text-muted)'}}>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            {`Base for ${usedCount} job CV${usedCount === 1 ? '' : 's'}`}
+                        </span>
                         <span className="text-xs" style={{color:'var(--text-muted)'}}>
                             Edited: {getRelativeTime(cv.updatedAt)}
                         </span>
@@ -172,10 +190,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const newName = prompt('Enter new name:', cv.displayName || cv.category || '');
-                                if (newName && newName.trim()) {
-                                    onRenameBranch(cv._id, newName.trim());
-                                }
+                                setEditCv(cv);
+                                setIsEditModalOpen(true);
                             }}
                             className="p-1 rounded-md transition-colors"
                             style={{color:'var(--text-muted)', background:'var(--bg-elevated)'}}
@@ -211,11 +227,17 @@ const Sidebar: React.FC<SidebarProps> = ({
     };
 
     return (
+        <>
         <div className={`flex flex-col rounded-xl overflow-hidden ${className}`} style={{background:'var(--bg-surface)', border:'1px solid var(--border)', boxShadow:'0 2px 8px rgba(0,0,0,0.3)'}}>
             <div className="flex flex-col gap-2 p-3 border-b" style={{borderColor:'var(--border)'}}>
                 {/* Row 1: Title & Filter - stack on mobile */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <h2 className="text-sm font-extrabold uppercase tracking-widest label-overline" style={{color:'var(--text-primary)'}}>My CVs</h2>
+                    <div className="flex flex-col">
+                        <h2 className="text-sm font-extrabold uppercase tracking-widest label-overline" style={{color:'var(--text-primary)'}}>Base CVs</h2>
+                        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                            Reusable masters used to generate tailored CVs and cover letters.
+                        </span>
+                    </div>
 
                     <div className="relative w-full sm:w-48 flex-shrink-0">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-gray-400">
@@ -243,34 +265,58 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {/* Scrollable Cards - full viewport width on mobile */}
                     <div className="flex-1 overflow-x-auto custom-scrollbar snap-x snap-mandatory">
                         <div className="flex items-stretch gap-2 py-1">
-                            {/* Create Branch Card */}
-                            {onCreateBranch && (
-                                <button
-                                    onClick={onCreateBranch}
-                                    className="flex flex-col items-center justify-center gap-2 w-28 sm:w-32 flex-shrink-0 snap-start rounded-xl border-2 border-dashed transition-all group pt-2.5 pb-2.5"
-                                    style={{borderColor:'var(--accent-dim)', background:'var(--accent-bg)', color:'var(--accent)'}}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.background='var(--accent-bg-hover,rgba(232,184,68,0.14))'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor='var(--accent-dim)'; e.currentTarget.style.background='var(--accent-bg)'; }}
-                                    title="Create a specialized version for a different career focus (e.g., one for frontend, one for DevOps)"
+                            {isLoading ? (
+                                <div
+                                    className="flex items-center justify-center gap-2 w-full min-h-[96px] rounded-xl border border-dashed"
+                                    style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
                                 >
-                                    <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform" style={{background:'var(--accent-bg)'}}>
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                        </svg>
-                                    </div>
-                                    <span className="text-[10px] font-bold uppercase tracking-tight">New CV</span>
-                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credits</span>
-                                </button>
-                            )}
+                                    <Spinner size="sm" />
+                                    <span className="text-xs font-medium">Loading CVs...</span>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Create Branch Card */}
+                                    {onCreateBranch && (
+                                        <button
+                                            onClick={onCreateBranch}
+                                            className="flex flex-col items-center justify-center gap-2 w-28 sm:w-32 flex-shrink-0 snap-start rounded-xl border-2 border-dashed transition-all group pt-2.5 pb-2.5"
+                                            style={{borderColor:'var(--accent-dim)', background:'var(--accent-bg)', color:'var(--accent)'}}
+                                            onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.background='var(--accent-bg-hover,rgba(232,184,68,0.14))'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.borderColor='var(--accent-dim)'; e.currentTarget.style.background='var(--accent-bg)'; }}
+                                            title="Create a specialized version for a different career focus (e.g., one for frontend, one for DevOps)"
+                                        >
+                                            <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform" style={{background:'var(--accent-bg)'}}>
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                </svg>
+                                            </div>
+                                            <span className="text-[10px] font-bold uppercase tracking-tight">New CV</span>
+                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credits</span>
+                                        </button>
+                                    )}
 
-                            {filteredCvs.map(cv => (
-                                <CvCard key={cv._id} cv={cv} />
-                            ))}
+                                    {filteredCvs.map(cv => (
+                                        <CvCard key={cv._id} cv={cv} />
+                                    ))}
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        {onRenameBranch && (
+            <EditBaseCvModal
+                isOpen={isEditModalOpen}
+                cv={editCv}
+                onClose={() => setIsEditModalOpen(false)}
+                onSave={async (payload) => {
+                    if (!editCv) return false;
+                    return onRenameBranch(editCv._id, payload);
+                }}
+            />
+        )}
+        </>
     );
 };
 

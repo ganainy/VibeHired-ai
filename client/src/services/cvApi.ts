@@ -129,6 +129,7 @@ export interface SetPrimaryResponse {
 
 export interface RenameBranchRequest {
     displayName: string;
+    category?: string | null;
 }
 
 export interface RenameBranchResponse {
@@ -136,6 +137,7 @@ export interface RenameBranchResponse {
     branch: {
         _id: string;
         displayName: string;
+        category?: string | null;
         updatedAt: string;
     };
 }

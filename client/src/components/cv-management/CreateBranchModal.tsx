@@ -130,16 +130,16 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                        Create a Specialized Resume
+                        Create a Base CV
                     </h2>
                 </div>
 
                 {/* Info Banner */}
                 <div className="mx-6 mt-4 mb-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-400">
-                    <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">When to create a branch:</p>
+                    <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">When to create another base CV:</p>
                     <ul className="list-disc list-inside space-y-0.5 ml-1">
-                        <li>Different career focus (e.g., Frontend vs DevOps)</li>
-                        <li>Different language versions of your CV</li>
+                        <li>Different job focus (e.g., IT vs Sales)</li>
+                        <li>Different language versions (e.g., English vs German)</li>
                         <li>Different experience levels to highlight</li>
                     </ul>
                 </div>
@@ -233,7 +233,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                     {/* Category */}
                     <div className="mb-4">
                         <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Category
+                            Job Focus
                         </label>
                         <input
                             type="text"
@@ -241,7 +241,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                             value={category}
                             onChange={(e) => setCategory(e.target.value)}
                             disabled={isLoading}
-                            placeholder="e.g., IT Helpdesk, Programming, Cybersecurity"
+                            placeholder="e.g., IT Sysadmin, Sales, Designer"
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-600 ${errors.category ? 'border-red-500' : 'border-gray-300'
                                 } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
@@ -253,7 +253,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                     {/* Display Name */}
                     <div className="mb-4">
                         <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Display Name
+                            Base CV Name
                         </label>
                         <input
                             type="text"
@@ -261,10 +261,13 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
                             value={displayName}
                             onChange={(e) => setDisplayName(e.target.value)}
                             disabled={isLoading}
-                            placeholder="e.g., Frontend Developer, DevOps Engineer"
+                            placeholder="e.g., IT Sysadmin (EN), Sales (DE)"
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-600 ${errors.displayName ? 'border-red-500' : 'border-gray-300'
                                 } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Tip: include language in the name if you keep multiple base CVs.
+                        </p>
                         {errors.displayName && (
                             <p className="text-red-500 text-sm mt-1">{errors.displayName}</p>
                         )}

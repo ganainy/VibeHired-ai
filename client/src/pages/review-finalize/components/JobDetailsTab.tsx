@@ -273,7 +273,7 @@ export const JobDetailsTab: React.FC<JobDetailsTabProps> = ({
                                     onChange={(e) => onChange('baseCvId', e.target.value)}
                                     className="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-600 px-3 py-2.5 text-text-main-light dark:text-text-main-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                                 >
-                                    <option value="">Use master/primary CV</option>
+                                    <option value="" disabled>Select a CV</option>
                                     {form.baseCvId && !availableCvs.some(cv => cv.id === form.baseCvId) && (
                                         <option value={form.baseCvId}>Current saved CV ({form.baseCvId})</option>
                                     )}
