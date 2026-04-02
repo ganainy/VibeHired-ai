@@ -1,5 +1,5 @@
 // client/src/pages/DashboardPage.tsx
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -30,6 +30,146 @@ import { usePageTour } from '../hooks/usePageTour';
 import { MOCK_JOB } from '../data/mockTourData';
 
 type JobPlatform = 'linkedin' | 'indeed' | 'xing' | 'stepstone' | null;
+
+const ExpandableText: React.FC<{
+  text: string;
+  maxChars?: number;
+  containerClassName?: string;
+  textClassName?: string;
+  textStyle?: React.CSSProperties;
+}> = ({
+  text,
+  maxChars = 28,
+  containerClassName = '',
+  textClassName = '',
+  textStyle,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
+  const trimmed = text?.trim() || '';
+
+  if (!trimmed) {
+    return <span className={containerClassName}>-</span>;
+  }
+
+  const isLong = trimmed.length > maxChars;
+  const preview = isLong ? `${trimmed.slice(0, maxChars).trim()}...` : trimmed;
+
+  useLayoutEffect(() => {
+    if (!isOpen || !anchorRef.current) return;
+
+    const updatePosition = () => {
+      if (!anchorRef.current) return;
+      const rect = anchorRef.current.getBoundingClientRect();
+      const maxWidth = Math.min(240, window.innerWidth - 32);
+      let left = rect.left;
+      if (left + maxWidth > window.innerWidth - 16) {
+        left = Math.max(16, window.innerWidth - maxWidth - 16);
+      }
+      setPopoverStyle({
+        position: 'fixed',
+        top: rect.bottom + 8,
+        left,
+        width: maxWidth,
+        zIndex: 60,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen]);
+
+  return (
+    <span
+      ref={anchorRef}
+      className={`relative inline-flex max-w-full items-center gap-2 ${containerClassName}`}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <span className={`block truncate ${textClassName}`} style={textStyle} title={trimmed}>
+        {preview}
+      </span>
+      {isLong && (
+        <>
+          <button
+            type="button"
+            className="text-[10px] uppercase tracking-wide"
+            style={{ color: 'var(--accent)' }}
+            onClick={(event) => {
+              event.stopPropagation();
+              setIsOpen((prev) => !prev);
+            }}
+          >
+            {isOpen ? 'Less' : 'More'}
+          </button>
+          {isOpen && createPortal(
+            <span
+              className="rounded-lg border px-3 py-2 text-xs shadow-lg"
+              style={{
+                ...popoverStyle,
+                background: 'var(--bg-elevated)',
+                borderColor: 'var(--border)',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              {trimmed}
+            </span>,
+            document.body
+          )}
+        </>
+      )}
+    </span>
+  );
+};
+
+const TagCards: React.FC<{
+  tags: string[];
+  max?: number;
+  size?: 'xs' | 'sm';
+}> = ({ tags, max = 4, size = 'sm' }) => {
+  const visibleTags = tags.slice(0, max);
+  const remaining = tags.length - visibleTags.length;
+  const sizeClasses = size === 'xs'
+    ? 'text-[10px] px-2 py-0.5'
+    : 'text-[11px] px-2.5 py-1';
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {visibleTags.map((tag) => (
+        <span
+          key={tag}
+          className={`inline-flex items-center rounded-md border ${sizeClasses}`}
+          style={{
+            background: 'var(--bg-raised)',
+            color: 'var(--text-secondary)',
+            borderColor: 'var(--border)',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.12)'
+          }}
+        >
+          {tag}
+        </span>
+      ))}
+      {remaining > 0 && (
+        <span
+          className={`inline-flex items-center rounded-md border ${sizeClasses}`}
+          style={{
+            background: 'var(--bg-elevated)',
+            color: 'var(--text-muted)',
+            borderColor: 'var(--border)',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.12)'
+          }}
+        >
+          +{remaining}
+        </span>
+      )}
+    </div>
+  );
+};
 
 const getJobPlatform = (url: string): JobPlatform => {
   const lowerUrl = url.toLowerCase();
@@ -65,6 +205,9 @@ type SortableJobKeys = 'jobTitle' | 'companyName' | 'status' | 'createdAt' | 'jo
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
+  const MAX_JOB_TAGS = 6;
+  const UNTAGGED_FILTER_KEY = '__untagged__';
+
   // --- Core State ---
   const [jobs, setJobs] = useState<JobApplication[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -79,6 +222,7 @@ const DashboardPage: React.FC = () => {
   const [formData, setFormData] = useState<JobFormData>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [jobTagInput, setJobTagInput] = useState<string>('');
   const modalRef = useRef<HTMLDivElement>(null);
   const modalTriggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -181,8 +325,14 @@ const DashboardPage: React.FC = () => {
   const [filterFavorite, setFilterFavorite] = useState<boolean>(false);
   const [filterHasNotes, setFilterHasNotes] = useState<boolean>(false);
   const [filterJobType, setFilterJobType] = useState<string>('');
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [groupByTag, setGroupByTag] = useState<boolean>(false);
   const [sortKey, setSortKey] = useState<SortableJobKeys>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [isFieldMenuOpen, setIsFieldMenuOpen] = useState(false);
+  const fieldMenuRef = useRef<HTMLDivElement>(null);
+  const fieldMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const [fieldMenuStyle, setFieldMenuStyle] = useState<React.CSSProperties>({});
 
   // --- Toast State ---
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -191,6 +341,158 @@ const DashboardPage: React.FC = () => {
   // --- Add Job Form Collapse State (mobile only) ---
   const [addJobFormCollapsed, setAddJobFormCollapsed] = useState<boolean>(true);
   const addJobSectionRef = useRef<HTMLDivElement>(null);
+
+  const normalizeTagValue = (value: string): string => value.trim().replace(/\s+/g, ' ');
+
+  const getJobTags = (job: JobApplication): string[] => {
+    const tags: string[] = [];
+    const seen = new Set<string>();
+    const pushTag = (tag?: string | null) => {
+      if (!tag) return;
+      const normalized = normalizeTagValue(tag);
+      if (!normalized) return;
+      const key = normalized.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      tags.push(normalized);
+    };
+
+    if (Array.isArray(job.jobTags)) {
+      job.jobTags.forEach(pushTag);
+    }
+    if (job.jobCategory) {
+      pushTag(job.jobCategory);
+    }
+
+    return tags;
+  };
+
+  const availableTags = useMemo(() => {
+    const tags = new Map<string, string>();
+    jobs.forEach((job) => {
+      getJobTags(job).forEach((tag) => {
+        const key = tag.toLowerCase();
+        if (!tags.has(key)) {
+          tags.set(key, tag);
+        }
+      });
+    });
+    return Array.from(tags.values()).sort((a, b) => a.localeCompare(b));
+  }, [jobs]);
+
+  const hasUntaggedJobs = useMemo(
+    () => jobs.some((job) => getJobTags(job).length === 0),
+    [jobs]
+  );
+
+  const hasFieldOptions = availableTags.length > 0;
+
+  const fieldFilterOptions = useMemo(() => {
+    const options = availableTags.map((tag) => ({ key: tag, label: tag }));
+    if (hasUntaggedJobs) {
+      options.push({ key: UNTAGGED_FILTER_KEY, label: 'Untagged' });
+    }
+    return options;
+  }, [availableTags, hasUntaggedJobs]);
+
+  const addTagsToForm = (rawValue: string) => {
+    const currentTags = Array.isArray(formData.jobTags) ? [...formData.jobTags] : [];
+    const seen = new Set(currentTags.map((tag) => normalizeTagValue(tag).toLowerCase()));
+    const parts = rawValue.split(',');
+
+    for (const part of parts) {
+      if (currentTags.length >= MAX_JOB_TAGS) break;
+      const normalized = normalizeTagValue(part);
+      if (!normalized) continue;
+      const key = normalized.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      currentTags.push(normalized);
+    }
+
+    setFormData((prev) => ({ ...prev, jobTags: currentTags }));
+  };
+
+  const removeTagFromForm = (tagToRemove: string) => {
+    const keyToRemove = normalizeTagValue(tagToRemove).toLowerCase();
+    setFormData((prev) => ({
+      ...prev,
+      jobTags: (prev.jobTags || []).filter((tag) => normalizeTagValue(tag).toLowerCase() !== keyToRemove),
+    }));
+  };
+
+  const toggleTagFilter = (tag: string) => {
+    setFilterTags((prev) =>
+      prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag]
+    );
+  };
+
+  const renderTagCards = (tags: string[], size: 'xs' | 'sm' = 'sm') => {
+    if (tags.length === 0) return null;
+    return <TagCards tags={tags} max={4} size={size} />;
+  };
+
+  const MAX_VISIBLE_FIELDS = 8;
+  const visibleFieldOptions = fieldFilterOptions.slice(0, MAX_VISIBLE_FIELDS);
+  const hiddenFieldOptions = fieldFilterOptions.slice(MAX_VISIBLE_FIELDS);
+
+  useEffect(() => {
+    if (!hasFieldOptions && groupByTag) {
+      setGroupByTag(false);
+    }
+  }, [hasFieldOptions, groupByTag]);
+
+  useEffect(() => {
+    if (!isFieldMenuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (fieldMenuRef.current && !fieldMenuRef.current.contains(event.target as Node)) {
+        setIsFieldMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsFieldMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isFieldMenuOpen]);
+
+  useEffect(() => {
+    if (!isFieldMenuOpen) return;
+
+    const updatePosition = () => {
+      const rect = fieldMenuTriggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const maxWidth = Math.min(520, window.innerWidth - 32);
+      const left = Math.max(16, Math.min(rect.right - maxWidth, window.innerWidth - maxWidth - 16));
+      const maxHeight = Math.min(360, window.innerHeight - rect.bottom - 24);
+      setFieldMenuStyle({
+        position: 'fixed',
+        top: rect.bottom + 8,
+        left,
+        width: maxWidth,
+        maxHeight,
+        zIndex: 80,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isFieldMenuOpen]);
 
   const getRecipientEmail = (job: JobApplication): string | null => {
     const direct = job.contactEmail?.trim();
@@ -358,7 +660,7 @@ const DashboardPage: React.FC = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, showOnlyDueFollowUps]);
+  }, [filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, showOnlyDueFollowUps]);
 
   // --- Derived State: Filtered and Sorted Jobs ---
   const displayedJobs = useMemo(() => {
@@ -392,6 +694,18 @@ const DashboardPage: React.FC = () => {
     // Apply Has Notes Filter
     if (filterHasNotes) {
       filteredJobs = filteredJobs.filter(job => !!job.notes && job.notes.trim().length > 0);
+    }
+
+    // Apply Tag Filter
+    if (filterTags.length > 0) {
+      const selectedTags = new Set(
+        filterTags.map(tag => tag === UNTAGGED_FILTER_KEY ? tag : normalizeTagValue(tag).toLowerCase())
+      );
+      filteredJobs = filteredJobs.filter((job) => {
+        const tags = getJobTags(job);
+        if (tags.length === 0) return selectedTags.has(UNTAGGED_FILTER_KEY);
+        return tags.some(tag => selectedTags.has(normalizeTagValue(tag).toLowerCase()));
+      });
     }
 
     // Apply Follow-up Due Filter
@@ -448,7 +762,60 @@ const DashboardPage: React.FC = () => {
     }
 
     return filteredJobs;
-  }, [jobs, filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, showOnlyDueFollowUps, needsFollowUpJobIdSet, sortKey, sortDirection]);
+  }, [jobs, filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, showOnlyDueFollowUps, needsFollowUpJobIdSet, sortKey, sortDirection]);
+
+  const groupedJobs = useMemo(() => {
+    if (!groupByTag) return null;
+
+    const selectedTags = filterTags.filter((tag) => tag !== UNTAGGED_FILTER_KEY);
+    const selectedOrder = selectedTags.length > 0 ? selectedTags : availableTags;
+    const groups = new Map<string, { label: string; jobs: JobApplication[] }>();
+    const untagged: JobApplication[] = [];
+
+    const matchesTag = (tags: string[], target: string) =>
+      tags.some((tag) => normalizeTagValue(tag).toLowerCase() === normalizeTagValue(target).toLowerCase());
+
+    displayedJobs.forEach((job) => {
+      const tags = getJobTags(job);
+      if (tags.length === 0) {
+        untagged.push(job);
+        return;
+      }
+
+      let primaryTag = tags[0];
+      if (selectedOrder.length > 0) {
+        const matched = selectedOrder.find((tag) => matchesTag(tags, tag));
+        if (matched) primaryTag = matched;
+      }
+
+      const key = normalizeTagValue(primaryTag).toLowerCase();
+      if (!groups.has(key)) {
+        groups.set(key, { label: primaryTag, jobs: [] });
+      }
+      groups.get(key)!.jobs.push(job);
+    });
+
+    const orderedGroups: Array<{ label: string; jobs: JobApplication[] }> = [];
+    selectedOrder.forEach((tag) => {
+      const key = normalizeTagValue(tag).toLowerCase();
+      const group = groups.get(key);
+      if (group && group.jobs.length > 0) {
+        orderedGroups.push(group);
+      }
+    });
+
+    groups.forEach((group, key) => {
+      if (!orderedGroups.some((item) => normalizeTagValue(item.label).toLowerCase() === key)) {
+        orderedGroups.push(group);
+      }
+    });
+
+    if (untagged.length > 0) {
+      orderedGroups.push({ label: 'Untagged', jobs: untagged });
+    }
+
+    return orderedGroups;
+  }, [groupByTag, displayedJobs, filterTags, availableTags]);
 
   const handleToggleDueFollowUpFilter = () => {
     setShowOnlyDueFollowUps(prev => !prev);
@@ -466,6 +833,7 @@ const DashboardPage: React.FC = () => {
       language: 'en',
       baseCvId: firstCv?._id || null
     });
+    setJobTagInput('');
     setModalError(null);
     setModalMode('add');
   };
@@ -474,6 +842,7 @@ const DashboardPage: React.FC = () => {
     if (isSubmitting) return;
     setModalMode(null);
     setFormData({});
+    setJobTagInput('');
     setModalError(null);
   };
 
@@ -951,9 +1320,19 @@ const DashboardPage: React.FC = () => {
       wrap: true,
       className: 'max-w-[200px]',
       render: (job) => (
-        <span className="font-medium line-clamp-2 block" style={{ color: 'var(--text-primary)' }} title={job.jobTitle}>
-          {job.jobTitle}
-        </span>
+        <div>
+          <span className="font-medium line-clamp-1 block" style={{ color: 'var(--text-primary)' }} title={job.jobTitle}>
+            {job.jobTitle}
+          </span>
+          {(() => {
+            const tags = getJobTags(job);
+            return tags.length > 0 ? (
+              <div className="mt-1">
+                {renderTagCards(tags, 'xs')}
+              </div>
+            ) : null;
+          })()}
+        </div>
       ),
     },
     {
@@ -972,7 +1351,7 @@ const DashboardPage: React.FC = () => {
               </span>
             ) : null;
           })()}
-          <span className="line-clamp-2" style={{ color: 'var(--text-secondary)' }} title={job.companyName}>{job.companyName}</span>
+          <span className="line-clamp-1" style={{ color: 'var(--text-secondary)' }} title={job.companyName}>{job.companyName}</span>
         </div>
       ),
     },
@@ -1093,29 +1472,55 @@ const DashboardPage: React.FC = () => {
         value: (job) => {
           const color = STATUS_COLORS[job.status] || 'var(--text-muted)';
           return (
-            <span style={{ fontSize: 11, fontWeight: 700, color, letterSpacing: '0.02em' }}>
-              {job.status}
-            </span>
+            <ExpandableText
+              text={job.status}
+              maxChars={18}
+              textClassName="text-[11px] font-bold tracking-[0.02em]"
+              textStyle={{ color }}
+            />
           );
         },
       },
       {
         label: 'Date',
-        value: (job) => new Date(job.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        value: (job) => (
+          <ExpandableText
+            text={new Date(job.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+            maxChars={16}
+          />
+        ),
       },
       {
         label: 'Type',
-        value: (job) =>
-          job.jobType === 'full-time' ? 'Full-time' :
-          job.jobType === 'part-time' ? 'Part-time' :
-          job.jobType === 'working-student' ? 'Working Student' :
-          job.jobType === 'internship' ? 'Internship' :
-          job.jobType === 'contract' ? 'Contract' :
-          job.jobType === 'freelance' ? 'Freelance' : '-',
+        value: (job) => (
+          <ExpandableText
+            text={
+              job.jobType === 'full-time' ? 'Full-time' :
+              job.jobType === 'part-time' ? 'Part-time' :
+              job.jobType === 'working-student' ? 'Working Student' :
+              job.jobType === 'internship' ? 'Internship' :
+              job.jobType === 'contract' ? 'Contract' :
+              job.jobType === 'freelance' ? 'Freelance' : '-'
+            }
+            maxChars={20}
+          />
+        ),
+      },
+      {
+        label: 'Field',
+        value: (job) => {
+          const tags = getJobTags(job);
+          return tags.length > 0 ? renderTagCards(tags, 'xs') : '-';
+        },
       },
       {
         label: 'Salary',
-        value: (job) => job.salary || job.extractedData?.salaryRaw || job.extractedData?.estimatedSalary || '-',
+        value: (job) => (
+          <ExpandableText
+            text={job.salary || job.extractedData?.salaryRaw || job.extractedData?.estimatedSalary || '-'}
+            maxChars={22}
+          />
+        ),
       },
       {
         value: (job) => {
@@ -1200,7 +1605,7 @@ const DashboardPage: React.FC = () => {
   const totalPages = Math.ceil(displayedJobs.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedJobs = displayedJobs.slice(startIndex, endIndex);
+  const paginatedJobs = groupByTag ? displayedJobs : displayedJobs.slice(startIndex, endIndex);
 
   // --- Main Dashboard Content ---
   return (
@@ -1671,6 +2076,87 @@ const DashboardPage: React.FC = () => {
                 </select>
               </div>
 
+              {/* Tags */}
+              <div className="w-full">
+                <label className="block text-xs font-medium mb-1.5 label-overline">Tags</label>
+                <div className="flex items-center gap-2" ref={fieldMenuRef}>
+                  {fieldFilterOptions.length > 0 ? (
+                    <>
+                      <div className="flex-1 flex items-center gap-2 flex-nowrap overflow-x-auto">
+                        {visibleFieldOptions.map((option) => {
+                          const isActive = filterTags.includes(option.key);
+                          return (
+                            <button
+                              key={option.key}
+                              type="button"
+                              onClick={() => toggleTagFilter(option.key)}
+                              className="inline-flex items-center gap-1.5 h-9 min-h-[36px] px-3 rounded-full border text-xs font-semibold transition-all whitespace-nowrap"
+                              style={isActive
+                                ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
+                                : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                              aria-pressed={isActive}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {hiddenFieldOptions.length > 0 && (
+                        <div className="relative flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setIsFieldMenuOpen((prev) => !prev)}
+                            ref={fieldMenuTriggerRef}
+                            className="inline-flex items-center gap-1.5 h-9 min-h-[36px] px-3 rounded-full border text-xs font-semibold transition-all whitespace-nowrap"
+                            style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                            aria-expanded={isFieldMenuOpen}
+                            aria-haspopup="true"
+                          >
+                            More
+                            <span className="text-[10px] font-bold">+{hiddenFieldOptions.length}</span>
+                          </button>
+                          {isFieldMenuOpen && (
+                            <div
+                              className="rounded-xl border p-3 shadow-lg overflow-y-auto"
+                              style={{
+                                ...fieldMenuStyle,
+                                background: 'var(--bg-elevated)',
+                                borderColor: 'var(--border)'
+                              }}
+                            >
+                              <div className="flex flex-wrap gap-2">
+                                {hiddenFieldOptions.map((option) => {
+                                  const isActive = filterTags.includes(option.key);
+                                  return (
+                                    <button
+                                      key={option.key}
+                                      type="button"
+                                      onClick={() => {
+                                        toggleTagFilter(option.key);
+                                        setIsFieldMenuOpen(false);
+                                      }}
+                                      className="inline-flex items-center gap-1.5 h-8 min-h-[32px] px-3 rounded-full border text-[11px] font-semibold transition-all whitespace-nowrap"
+                                      style={isActive
+                                        ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
+                                        : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                                      aria-pressed={isActive}
+                                    >
+                                      {option.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>No tags yet</span>
+                  )}
+                </div>
+              </div>
+
               {/* Toggle pills */}
               <div className="flex flex-wrap items-end gap-3 pb-0">
                 <div>
@@ -1733,6 +2219,20 @@ const DashboardPage: React.FC = () => {
                       )}
                     </button>
 
+                    <button
+                      onClick={() => setGroupByTag(prev => !prev)}
+                      disabled={!hasFieldOptions}
+                      className="inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      style={groupByTag
+                        ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
+                        : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+                      aria-pressed={groupByTag}
+                      title={hasFieldOptions ? 'Group by field' : 'Add field tags to enable grouping'}
+                    >
+                      <span className="material-symbols-outlined text-base" style={{ fontSize: '16px' }}>view_list</span>
+                      <span>Group by tag</span>
+                    </button>
+
                     
                   </div>
                 </div>
@@ -1751,7 +2251,7 @@ const DashboardPage: React.FC = () => {
                       </p>
                       <div className="mt-6">
                         <button
-                          onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); setShowOnlyDueFollowUps(false); }}
+                          onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); setFilterTags([]); setGroupByTag(false); setShowOnlyDueFollowUps(false); }}
                           className="btn-primary"
                         >
                           Clear Filters
@@ -1840,47 +2340,71 @@ const DashboardPage: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <TableOrCards
-                    data={paginatedJobs}
-                    columns={jobColumns}
-                    cardConfig={jobCardConfig}
-                    onRowClick={(job) => handleRowClick(job._id)}
-                    aria-label="Job applications table"
-                  />
-                  {/* Pagination */}
-                  <div className="flex items-center justify-between pt-4">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Showing {startIndex + 1} to {Math.min(endIndex, displayedJobs.length)} of {displayedJobs.length} results
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                        className="flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      >
-                        <ChevronLeftIcon />
-                      </button>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`flex items-center justify-center w-10 h-10 rounded-xl text-sm font-semibold transition-all ${currentPage === page
-                            ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
-                            : 'border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-secondary-color'
-                            }`}
-                        >
-                          {page}
-                        </button>
+                  {groupByTag && groupedJobs ? (
+                    <div className="space-y-6">
+                      {groupedJobs.map((group) => (
+                        <div key={group.label} className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{group.label}</span>
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'var(--bg-raised)', color: 'var(--text-muted)' }}>
+                              {group.jobs.length}
+                            </span>
+                          </div>
+                          <TableOrCards
+                            data={group.jobs}
+                            columns={jobColumns}
+                            cardConfig={jobCardConfig}
+                            onRowClick={(job) => handleRowClick(job._id)}
+                            aria-label={`Job applications table for ${group.label}`}
+                          />
+                        </div>
                       ))}
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        disabled={currentPage === totalPages}
-                        className="flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      >
-                        <ChevronRightIcon />
-                      </button>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <TableOrCards
+                        data={paginatedJobs}
+                        columns={jobColumns}
+                        cardConfig={jobCardConfig}
+                        onRowClick={(job) => handleRowClick(job._id)}
+                        aria-label="Job applications table"
+                      />
+                      {/* Pagination */}
+                      <div className="flex items-center justify-between pt-4">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Showing {startIndex + 1} to {Math.min(endIndex, displayedJobs.length)} of {displayedJobs.length} results
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                          >
+                            <ChevronLeftIcon />
+                          </button>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`flex items-center justify-center w-10 h-10 rounded-xl text-sm font-semibold transition-all ${currentPage === page
+                                ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900'
+                                : 'border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-secondary-color'
+                                }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                          >
+                            <ChevronRightIcon />
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -2031,6 +2555,63 @@ const DashboardPage: React.FC = () => {
                       <option value="contract">Contract</option>
                       <option value="freelance">Freelance</option>
                     </select>
+                  </div>
+
+                  {/* Field Tags */}
+                  <div className="mb-5">
+                    <label htmlFor="jobTags" className="label-overline mb-2 block">Field Tags</label>
+                    <div className="space-y-2">
+                      {Array.isArray(formData.jobTags) && formData.jobTags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {formData.jobTags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
+                              style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', borderColor: 'var(--border)' }}
+                            >
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => removeTagFromForm(tag)}
+                                className="text-slate-400 hover:text-red-500 transition-colors"
+                                aria-label={`Remove tag ${tag}`}
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <input
+                        id="jobTags"
+                        type="text"
+                        value={jobTagInput}
+                        onChange={(e) => setJobTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            if (jobTagInput.trim()) {
+                              addTagsToForm(jobTagInput);
+                              setJobTagInput('');
+                            }
+                          }
+                        }}
+                        onBlur={() => {
+                          if (jobTagInput.trim()) {
+                            addTagsToForm(jobTagInput);
+                            setJobTagInput('');
+                          }
+                        }}
+                        className="input-base w-full"
+                        placeholder={Array.isArray(formData.jobTags) && formData.jobTags.length >= MAX_JOB_TAGS ? 'Tag limit reached' : 'Add tags, press Enter'}
+                        disabled={Array.isArray(formData.jobTags) && formData.jobTags.length >= MAX_JOB_TAGS}
+                      />
+                      <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                        Add up to {MAX_JOB_TAGS} tags, separated by commas or Enter.
+                      </p>
+                    </div>
                   </div>
 
                   {/* Date Added */}

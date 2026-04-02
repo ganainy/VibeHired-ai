@@ -60,6 +60,66 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
     formatDateForInput
 }) => {
     const jobStatusOptions: JobApplication['status'][] = ['Not Applied', 'Applied', 'Interview', 'Assessment', 'Rejected', 'Closed', 'Offer'];
+    const normalizeTagValue = (value: string): string => value.trim().replace(/\s+/g, ' ');
+    const getJobTags = (): string[] => {
+        const tags: string[] = [];
+        const seen = new Set<string>();
+        const pushTag = (tag?: string | null) => {
+            if (!tag) return;
+            const normalized = normalizeTagValue(tag);
+            if (!normalized) return;
+            const key = normalized.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            tags.push(normalized);
+        };
+
+        if (Array.isArray(jobApplication.jobTags)) {
+            jobApplication.jobTags.forEach(pushTag);
+        }
+        if (jobApplication.jobCategory) {
+            pushTag(jobApplication.jobCategory);
+        }
+
+        return tags;
+    };
+
+    const renderTagCards = (tags: string[]) => {
+        const visibleTags = tags.slice(0, 4);
+        const remaining = tags.length - visibleTags.length;
+        return (
+            <div className="flex flex-wrap gap-2">
+                {visibleTags.map((tag) => (
+                    <span
+                        key={tag}
+                        className="inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold"
+                        style={{
+                            background: 'var(--bg-raised)',
+                            color: 'var(--text-secondary)',
+                            borderColor: 'var(--border)',
+                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.12)'
+                        }}
+                    >
+                        {tag}
+                    </span>
+                ))}
+                {remaining > 0 && (
+                    <span
+                        className="inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold"
+                        style={{
+                            background: 'var(--bg-elevated)',
+                            color: 'var(--text-muted)',
+                            borderColor: 'var(--border)',
+                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.12)'
+                        }}
+                    >
+                        +{remaining}
+                    </span>
+                )}
+            </div>
+        );
+    };
+    const jobTags = getJobTags();
 
     if (!formData) return null;
 
@@ -389,6 +449,13 @@ const JobDetailsSection: React.FC<JobDetailsSectionProps> = ({
                             </dd>
                         </div>
                     )}
+                    {/* Tags */}
+                    <div className="flex flex-col gap-0.5 sm:col-span-2">
+                        <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">Tags</dt>
+                        <dd>
+                            {jobTags.length > 0 ? renderTagCards(jobTags) : <span className="italic text-gray-400">—</span>}
+                        </dd>
+                    </div>
                     {/* Salary */}
                     {formData.salary && (
                         <div className="flex flex-col gap-0.5">
