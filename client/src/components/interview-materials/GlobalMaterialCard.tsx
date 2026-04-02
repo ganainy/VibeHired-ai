@@ -88,6 +88,7 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
     const jobId = getJobId(material);
     void isAssignedToJob;
     const dimmedMutedIconStyle = { color: 'var(--text-muted)', opacity: 0.62 } as const;
+    const cardCursorClass = clickable ? 'cursor-pointer' : 'cursor-default';
 
     const handleCardClick = () => {
         if (editMode) return;
@@ -152,7 +153,7 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
     return (
         <div
             onClick={clickable ? handleCardClick : undefined}
-            className="group relative flex flex-col p-4 rounded-2xl border border transition-all duration-300 overflow-hidden"
+            className={`group relative flex flex-col gap-4 p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${cardCursorClass} hover:-translate-y-0.5 hover:shadow-sm`}
             style={{
                 backgroundColor: editMode ? 'var(--bg-surface)' : 'var(--bg-elevated)',
                 borderColor: editMode ? 'var(--accent)' : 'var(--border)',
@@ -306,199 +307,205 @@ const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
             ) : (
                 /* Normal View */
                 <>
-                    {/* Icon + Title Row */}
-                    <div className="flex items-start gap-4 mb-3">
-                        {/* Type Icon */}
-                        <div className="relative flex-shrink-0">
-                            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--accent-bg-hover)', color: 'var(--accent)' }}>
-                                <span className="material-symbols-outlined text-base" style={{ color: 'var(--bg-base)' }}>
-                                    {iconForType(material.type)}
-                                </span>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                            <div className="flex items-start min-w-0">
+                                <div className="flex-1 min-w-0 space-y-1">
+                                    <p className="text-base font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>
+                                        {material.title}
+                                    </p>
+
+                                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                        <span
+                                            className="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider"
+                                            style={{
+                                                backgroundColor: 'var(--bg-surface)',
+                                                color: 'var(--text-muted)',
+                                            }}
+                                        >
+                                            {material.type}
+                                        </span>
+
+                                        {material.fileSize !== undefined && (
+                                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                                {formatBytes(material.fileSize)}
+                                            </span>
+                                        )}
+
+                                        {material.createdAt && (
+                                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                                {formatDate(material.createdAt)}
+                                            </span>
+                                        )}
+
+                                        {material.url && (
+                                            <span className="truncate max-w-[200px] underline text-xs" style={{ color: 'var(--accent)' }}>
+                                                {material.url}
+                                            </span>
+                                        )}
+
+                                        {/* Job chip (shown in flat view) */}
+                                        {showJobChip && jobRef && jobId && (
+                                            <span
+                                                className="px-3 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80"
+                                                style={{
+                                                    backgroundColor: 'var(--accent-bg)',
+                                                    color: 'var(--accent)',
+                                                }}
+                                            >
+                                                {jobRef.companyName} — {jobRef.jobTitle}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {material.description && (
+                                        <p className="text-sm mt-1 line-clamp-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                                            {material.description}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Content */}
-                        <div className="flex-1 min-w-0 space-y-0.5">
-                            {/* Title */}
-                            <p className="text-base font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>
-                                {material.title}
-                            </p>
-
-                            {/* Metadata Row */}
-                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                                <span
-                                    className="px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wider"
-                                    style={{
-                                        backgroundColor: 'var(--bg-surface)',
-                                        color: 'var(--text-muted)',
-                                    }}
-                                >
-                                    {material.type}
-                                </span>
-
-                                {material.fileSize !== undefined && (
-                                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                        {formatBytes(material.fileSize)}
-                                    </span>
-                                )}
-
-                                {material.url && (
-                                    <span className="truncate max-w-[180px] underline" style={{ color: 'var(--accent)' }}>
-                                        {material.url}
-                                    </span>
-                                )}
-
-                                {material.createdAt && (
-                                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                        {formatDate(material.createdAt)}
-                                    </span>
-                                )}
-
-                                {/* Job chip (shown in flat view) */}
-                                {showJobChip && jobRef && jobId && (
-                                    <span
-                                        className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors hover:opacity-80"
-                                        style={{
-                                            backgroundColor: 'var(--accent-bg)',
-                                            color: 'var(--accent)',
-                                        }}
+                            {/* Actions */}
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                {confirmDelete ? (
+                                    <div
+                                        className="flex items-center gap-2 rounded-full border px-3 py-1.5"
+                                        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
                                     >
-                                        {jobRef.companyName} — {jobRef.jobTitle}
-                                    </span>
+                                        <button
+                                            onClick={() => onDelete(material._id)}
+                                            disabled={isUpdating}
+                                            className="text-xs px-3 py-1.5 rounded-full bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors disabled:opacity-50"
+                                        >
+                                            Delete
+                                        </button>
+                                        <button
+                                            onClick={() => setConfirmDelete(false)}
+                                            className="text-xs px-3 py-1.5 rounded-full transition-colors"
+                                            style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div
+                                        className="flex items-center gap-1 rounded-full border p-1.5"
+                                        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+                                    >
+                                        {/* Favorite Star */}
+                                        <button
+                                            onClick={() => onToggleFavorite(material._id)}
+                                            disabled={isUpdating}
+                                            title={material.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                                            aria-label={material.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                                            className="p-2 rounded-full transition-all hover:opacity-100 disabled:opacity-50"
+                                            style={{
+                                                color: material.isFavorite ? 'var(--accent)' : 'var(--text-muted)',
+                                                opacity: material.isFavorite ? 0.9 : 0.6,
+                                            }}
+                                        >
+                                            <span
+                                                className="material-symbols-outlined text-base"
+                                                style={material.isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                                            >
+                                                star
+                                            </span>
+                                        </button>
+
+                                        {/* Edit Button */}
+                                        {isEditable && (
+                                            <button
+                                                onClick={openEdit}
+                                                title="Edit"
+                                                aria-label="Edit"
+                                                disabled={isUpdating}
+                                                className="p-2 rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
+                                                style={dimmedMutedIconStyle}
+                                            >
+                                                <span className="material-symbols-outlined text-base">edit</span>
+                                            </button>
+                                        )}
+
+                                        {/* Download Button */}
+                                        {material.type !== 'link' && (
+                                            <button
+                                                onClick={handleDownload}
+                                                title="Download"
+                                                aria-label="Download"
+                                                className="p-2 rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
+                                                style={dimmedMutedIconStyle}
+                                            >
+                                                <span className="material-symbols-outlined text-base">download</span>
+                                            </button>
+                                        )}
+
+                                        {/* Share / Open Button */}
+                                        {material.cloudinaryUrl ? (
+                                            <button
+                                                onClick={() => {
+                                                    const cloudinaryUrl = material.cloudinaryUrl;
+                                                    if (cloudinaryUrl) {
+                                                        window.open(toDownloadCloudinaryUrl(cloudinaryUrl), '_blank', 'noopener,noreferrer');
+                                                    }
+                                                }}
+                                                title="Open file"
+                                                aria-label="Open file"
+                                                className="p-2 rounded-full transition-colors hover:opacity-100"
+                                                style={{ color: 'var(--accent)', opacity: 0.8 }}
+                                            >
+                                                <span className="material-symbols-outlined text-base">open_in_new</span>
+                                            </button>
+                                        ) : material.shareToken ? (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onShowShare(material); }}
+                                                title="Sharing is on - click to manage"
+                                                aria-label="Manage sharing"
+                                                className="p-2 rounded-full transition-colors hover:opacity-100"
+                                                style={{ color: 'var(--accent)', opacity: 0.8 }}
+                                            >
+                                                <span className="material-symbols-outlined text-base">link</span>
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onShare(material._id); }}
+                                                title="Share"
+                                                aria-label="Share"
+                                                disabled={isUpdating}
+                                                className="p-2 rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
+                                                style={dimmedMutedIconStyle}
+                                            >
+                                                <span className="material-symbols-outlined text-base">share</span>
+                                            </button>
+                                        )}
+
+                                        {/* Delete Button */}
+                                        <button
+                                            onClick={() => setConfirmDelete(true)}
+                                            title="Delete"
+                                            aria-label="Delete"
+                                            disabled={isUpdating}
+                                            className="p-2 rounded-full transition-colors hover:text-red-500 hover:opacity-100 disabled:opacity-50"
+                                            style={dimmedMutedIconStyle}
+                                        >
+                                            <span className="material-symbols-outlined text-base">delete</span>
+                                        </button>
+
+                                        <span className="w-px h-6" style={{ backgroundColor: 'var(--border)' }} />
+
+                                        {/* Remove from Library Button */}
+                                        <button
+                                            onClick={() => onRemoveGlobal(material._id)}
+                                            disabled={isUpdating}
+                                            className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors hover:opacity-100 disabled:opacity-50"
+                                            style={{ color: 'var(--error)' }}
+                                        >
+                                            Remove from library
+                                        </button>
+                                    </div>
                                 )}
                             </div>
-
-                            {/* Description */}
-                            {material.description && (
-                                <p className="text-sm mt-1 line-clamp-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                                    {material.description}
-                                </p>
-                            )}
                         </div>
-                    </div>
-
-                    {/* Actions Row */}
-                    <div className="flex items-center flex-wrap gap-2 mt-2 pl-9" onClick={(e) => e.stopPropagation()}>
-                        {/* Favorite Star */}
-                        <button
-                            onClick={() => onToggleFavorite(material._id)}
-                            disabled={isUpdating}
-                            title={material.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                            className="p-2 rounded-lg transition-all hover:opacity-100 disabled:opacity-50"
-                            style={{
-                                color: material.isFavorite ? 'var(--accent)' : 'var(--text-muted)',
-                                opacity: material.isFavorite ? 0.82 : 0.56,
-                            }}
-                        >
-                            <span
-                                className="material-symbols-outlined text-base"
-                                style={material.isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                            >
-                                star
-                            </span>
-                        </button>
-
-                        {/* Edit Button */}
-                        {isEditable && (
-                            <button
-                                onClick={openEdit}
-                                title="Edit"
-                                disabled={isUpdating}
-                                className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
-                                style={dimmedMutedIconStyle}
-                            >
-                                <span className="material-symbols-outlined text-base">edit</span>
-                            </button>
-                        )}
-
-                        {/* Download Button */}
-                        {material.type !== 'link' && (
-                            <button
-                                onClick={handleDownload}
-                                title="Download"
-                                className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
-                                style={dimmedMutedIconStyle}
-                            >
-                                <span className="material-symbols-outlined text-base">download</span>
-                            </button>
-                        )}
-
-                        {/* Share / Open Button */}
-                        {material.cloudinaryUrl ? (
-                            <button
-                                onClick={() => {
-                                    const cloudinaryUrl = material.cloudinaryUrl;
-                                    if (cloudinaryUrl) {
-                                        window.open(toDownloadCloudinaryUrl(cloudinaryUrl), '_blank', 'noopener,noreferrer');
-                                    }
-                                }}
-                                title="Open file"
-                                className="p-2 rounded-lg transition-colors hover:opacity-100"
-                                style={{ color: 'var(--accent)', opacity: 0.75 }}
-                            >
-                                <span className="material-symbols-outlined text-base">open_in_new</span>
-                            </button>
-                        ) : material.shareToken ? (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onShowShare(material); }}
-                                title="Sharing is on - click to manage"
-                                className="p-2 rounded-lg transition-colors hover:opacity-100"
-                                style={{ color: 'var(--accent)', opacity: 0.75 }}
-                            >
-                                <span className="material-symbols-outlined text-base">link</span>
-                            </button>
-                        ) : (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onShare(material._id); }}
-                                title="Share"
-                                disabled={isUpdating}
-                                className="p-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
-                                style={dimmedMutedIconStyle}
-                            >
-                                <span className="material-symbols-outlined text-base">share</span>
-                            </button>
-                        )}
-
-                        {/* Delete Button */}
-                        {confirmDelete ? (
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => onDelete(material._id)}
-                                    disabled={isUpdating}
-                                    className="text-xs px-3 py-1.5 rounded-md bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
-                                >
-                                    Delete
-                                </button>
-                                <button
-                                    onClick={() => setConfirmDelete(false)}
-                                    className="text-xs px-3 py-1.5 rounded-md transition-colors"
-                                    style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => setConfirmDelete(true)}
-                                title="Delete"
-                                disabled={isUpdating}
-                                className="p-2 rounded-lg transition-colors hover:text-red-500 hover:opacity-100 disabled:opacity-50"
-                                style={dimmedMutedIconStyle}
-                            >
-                                <span className="material-symbols-outlined text-base">delete</span>
-                            </button>
-                        )}
-
-                        {/* Remove from Library Button */}
-                        <button
-                            onClick={() => onRemoveGlobal(material._id)}
-                            disabled={isUpdating}
-                            className="inline-flex items-center gap-2 text-xs leading-none transition-colors hover:opacity-100 disabled:opacity-50 hover:text-red-500"
-                            style={dimmedMutedIconStyle}
-                        >
-                            <span className="material-symbols-outlined text-sm">remove_circle_outline</span>
-                            Remove from library
-                        </button>
                     </div>
                 </>
             )}

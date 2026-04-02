@@ -131,47 +131,57 @@ const GroupedView: React.FC<{
     if (groups.length === 0) return null;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-8">
             {groups.map(group => (
-                <div key={group.jobId} className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+                <div key={group.jobId} className="rounded-2xl border overflow-hidden shadow-sm" style={{ borderColor: 'var(--border)' }}>
                     {/* Group header */}
                     <button
                         onClick={() => toggleGroup(group.jobId)}
-                        className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
+                        className="w-full flex items-center justify-between px-5 py-4 text-left transition-colors"
                         style={{ backgroundColor: 'var(--bg-elevated)' }}
                     >
-                        <div className="flex items-center gap-3">
-                            <span className="material-symbols-outlined text-base" style={{ color: 'var(--accent)' }}>
-                                work
-                            </span>
+                        <div className="flex items-center gap-4">
+                            <div
+                                className="w-11 h-11 rounded-xl flex items-center justify-center"
+                                style={{ backgroundColor: 'var(--accent-bg)' }}
+                            >
+                                <span className="material-symbols-outlined text-lg" style={{ color: 'var(--accent)' }}>
+                                    work
+                                </span>
+                            </div>
                             <div>
-                                <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                                    {group.companyName}
-                                </p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                        {group.companyName}
+                                    </p>
+                                    <span
+                                        className="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide"
+                                        style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
+                                    >
+                                        {group.materials.length} item{group.materials.length !== 1 ? 's' : ''}
+                                    </span>
+                                </div>
                                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                     {group.jobTitle}
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span
-                                className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent)' }}
-                            >
-                                {group.materials.length} item{group.materials.length !== 1 ? 's' : ''}
-                            </span>
+                        <div className="flex items-center gap-3">
                             {group.jobId !== '__unassigned__' && (
                                 <Link
                                     to={`/jobs/${group.jobId}/workspace/materials`}
-                                    className="text-xs px-2 py-1 rounded-md transition-colors hover:underline flex items-center gap-0.5"
-                                    style={{ color: 'var(--text-muted)' }}
+                                    className="text-xs font-medium hover:underline flex items-center gap-1"
+                                    style={{ color: 'var(--accent)' }}
                                     onClick={e => e.stopPropagation()}
                                 >
                                     View job
-                                    <span className="material-symbols-outlined text-xs">arrow_outward</span>
+                                    <span className="material-symbols-outlined text-xs">open_in_new</span>
                                 </Link>
                             )}
-                            <span className="material-symbols-outlined text-base transition-transform duration-200" style={{ color: 'var(--text-muted)', transform: openGroups.has(group.jobId) ? 'rotate(180deg)' : 'rotate(0)' }}>
+                            <span
+                                className="material-symbols-outlined text-base transition-transform duration-200"
+                                style={{ color: 'var(--text-muted)', transform: openGroups.has(group.jobId) ? 'rotate(180deg)' : 'rotate(0)' }}
+                            >
                                 expand_more
                             </span>
                         </div>
@@ -179,7 +189,7 @@ const GroupedView: React.FC<{
 
                     {/* Items */}
                     {isGroupOpen(group.jobId) && (
-                        <div className="p-3 grid gap-2" style={{ backgroundColor: 'var(--bg-surface)' }}>
+                        <div className="p-4 grid gap-4" style={{ backgroundColor: 'var(--bg-surface)' }}>
                             {group.materials.map(m => (
                                 <GlobalMaterialCard
                                     key={m._id}
@@ -528,26 +538,46 @@ const InterviewMaterialsPage: React.FC = () => {
     //  Render 
 
     return (
-        <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 overflow-hidden">
 
             {/* Page header */}
-            <div>
-                <div className="flex items-center gap-2.5 mb-1">
-                    <span className="material-symbols-outlined text-2xl" style={{ color: 'var(--accent)' }}>
-                        library_books
-                    </span>
-                    <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'Fraunces, Georgia, serif' }}>
-                        Prep Library
-                    </h1>
+            <div
+                className="rounded-2xl border p-6 sm:p-8 relative overflow-hidden"
+                style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
+            >
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background: 'radial-gradient(circle at top right, rgba(245, 124, 0, 0.15), transparent 60%)',
+                        opacity: 0.6,
+                    }}
+                />
+                <div className="relative flex flex-col gap-4">
+                    <div className="flex items-center gap-2.5">
+                        <span className="material-symbols-outlined text-2xl" style={{ color: 'var(--accent)' }}>
+                            library_books
+                        </span>
+                        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                            Prep Library
+                        </h1>
+                        {!isLoading && (
+                            <span
+                                className="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide"
+                                style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
+                            >
+                                {filtered.length} items
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-sm max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+                        All interview preparation materials you've marked to share across jobs, including PDFs, notes, links, and more.
+                    </p>
                 </div>
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                    All interview preparation materials you've marked to share across jobs  PDFs, notes, links, and more.
-                </p>
             </div>
 
             {/* Error */}
             {error && (
-                <div className="flex items-center gap-2 text-sm px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800">
+                <div className="flex items-center gap-2 text-sm px-3 py-2.5 rounded-xl border" style={{ borderColor: 'var(--rose)', backgroundColor: 'rgba(244, 100, 100, 0.12)', color: 'var(--rose)' }}>
                     <span className="material-symbols-outlined text-base">error</span>
                     {error}
                     <button onClick={() => setError(null)} className="ml-auto">
@@ -557,7 +587,7 @@ const InterviewMaterialsPage: React.FC = () => {
             )}
 
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border p-4" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                 {/* Search */}
                 <div className="flex-1 min-w-[180px] relative">
                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-base" style={{ color: 'var(--text-muted)' }}>
@@ -568,7 +598,7 @@ const InterviewMaterialsPage: React.FC = () => {
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Search materials, jobs"
-                        className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        className="w-full pl-8 pr-3 py-2 text-sm rounded-full border focus:outline-none focus:ring-1 focus:ring-amber-400"
                         style={{
                             backgroundColor: 'var(--bg-elevated)',
                             borderColor: 'var(--border)',
@@ -580,7 +610,7 @@ const InterviewMaterialsPage: React.FC = () => {
                 {/* Favourites filter */}
                 <button
                     onClick={() => setShowFavoritesOnly(v => !v)}
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-full border transition-colors"
                     style={{
                         borderColor: showFavoritesOnly ? 'var(--accent)' : 'var(--border)',
                         backgroundColor: showFavoritesOnly ? 'var(--accent-bg)' : 'var(--bg-elevated)',
@@ -597,7 +627,7 @@ const InterviewMaterialsPage: React.FC = () => {
                 </button>
 
                 {/* View toggle */}
-                <div className="flex items-center rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+                <div className="flex items-center rounded-full border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
                     <button
                         onClick={() => setViewMode('grouped')}
                         className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
@@ -697,14 +727,14 @@ const InterviewMaterialsPage: React.FC = () => {
                         onDragLeave={() => setIsDragOver(false)}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        className="relative flex flex-col items-center justify-center gap-2 p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200"
+                        className="relative flex flex-col items-center justify-center gap-2 p-10 rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200"
                         style={{
                             borderColor: isDragOver ? 'var(--accent)' : 'var(--border)',
                             backgroundColor: isDragOver ? 'var(--accent-bg)' : 'var(--bg-elevated)',
                         }}
                     >
                         <span
-                            className="material-symbols-outlined text-3xl"
+                            className="material-symbols-outlined text-4xl"
                             style={{ color: isDragOver ? 'var(--accent)' : 'var(--text-muted)' }}
                         >
                             cloud_upload
@@ -730,7 +760,7 @@ const InterviewMaterialsPage: React.FC = () => {
                     <div className="flex flex-wrap gap-2">
                         <button
                             onClick={() => setAddMode('text')}
-                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
+                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border transition-all hover:border-opacity-60"
                             style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-elevated)' }}
                         >
                             <span className="material-symbols-outlined text-sm text-green-500">article</span>
@@ -738,7 +768,7 @@ const InterviewMaterialsPage: React.FC = () => {
                         </button>
                         <button
                             onClick={() => setAddMode('markdown')}
-                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
+                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border transition-all hover:border-opacity-60"
                             style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-elevated)' }}
                         >
                             <span className="material-symbols-outlined text-sm text-cyan-500">code</span>
@@ -746,7 +776,7 @@ const InterviewMaterialsPage: React.FC = () => {
                         </button>
                         <button
                             onClick={() => setAddMode('link')}
-                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-all hover:border-opacity-60"
+                            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border transition-all hover:border-opacity-60"
                             style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-elevated)' }}
                         >
                             <span className="material-symbols-outlined text-sm text-amber-500">link</span>
@@ -759,7 +789,7 @@ const InterviewMaterialsPage: React.FC = () => {
             {/*  Bulk Upload Queue  */}
             {addMode === 'bulk' && (
                 <div
-                    className="rounded-xl border p-4 space-y-3"
+                    className="rounded-2xl border p-4 space-y-3"
                     style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--accent)', borderWidth: '1.5px' }}
                 >
                     <div className="flex items-center justify-between">
@@ -805,7 +835,7 @@ const InterviewMaterialsPage: React.FC = () => {
                         <button
                             onClick={resetForm}
                             disabled={isSubmitting}
-                            className="text-xs px-3 py-2 rounded-lg border transition-colors disabled:opacity-50"
+                            className="text-xs px-3 py-2 rounded-full border transition-colors disabled:opacity-50"
                             style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
                         >
                             Cancel
@@ -813,7 +843,7 @@ const InterviewMaterialsPage: React.FC = () => {
                         <button
                             onClick={handleBulkUpload}
                             disabled={isSubmitting}
-                            className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-full font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-text, #1a1200)' }}
                         >
                             {isSubmitting ? (
@@ -835,7 +865,7 @@ const InterviewMaterialsPage: React.FC = () => {
             {/*  Add Form  */}
             {addMode !== 'idle' && addMode !== 'bulk' && (
                 <div
-                    className="rounded-xl border p-4 space-y-3"
+                    className="rounded-2xl border p-4 space-y-3"
                     style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--accent)', borderWidth: '1.5px' }}
                 >
                     {/* Form header */}
@@ -961,7 +991,7 @@ const InterviewMaterialsPage: React.FC = () => {
                         <button
                             onClick={resetForm}
                             disabled={isSubmitting}
-                            className="text-xs px-3 py-2 rounded-lg border transition-colors disabled:opacity-50"
+                            className="text-xs px-3 py-2 rounded-full border transition-colors disabled:opacity-50"
                             style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
                         >
                             Cancel
@@ -969,7 +999,7 @@ const InterviewMaterialsPage: React.FC = () => {
                         <button
                             onClick={handleSubmit}
                             disabled={isSubmitting || !form.title.trim()}
-                            className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-full font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-text, #1a1200)' }}
                         >
                             {isSubmitting ? (
@@ -1034,7 +1064,7 @@ const InterviewMaterialsPage: React.FC = () => {
                     updatingIds={updatingIds}
                 />
             ) : (
-                <div className="grid gap-2.5">
+                <div className="grid gap-4">
                     {filtered.map(m => (
                         <GlobalMaterialCard
                             key={m._id}
