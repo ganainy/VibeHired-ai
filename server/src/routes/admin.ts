@@ -29,6 +29,24 @@ router.get('/users', adminController.getUsers as RequestHandler);
 router.get('/users/:userId', adminController.getUserDetail as RequestHandler);
 
 /**
+ * GET /api/admin/users/:userId/cvs
+ * Get base CV library summaries for a user
+ */
+router.get('/users/:userId/cvs', adminController.getUserCvLibrary as RequestHandler);
+
+/**
+ * GET /api/admin/users/:userId/cvs/:cvId
+ * Get base CV detail for template preview
+ */
+router.get('/users/:userId/cvs/:cvId', adminController.getUserCvDetail as RequestHandler);
+
+/**
+ * GET /api/admin/users/:userId/cvs/:cvId/preview
+ * Generate PDF preview for original/current CV snapshot
+ */
+router.get('/users/:userId/cvs/:cvId/preview', adminController.getUserCvPreview as RequestHandler);
+
+/**
  * PATCH /api/admin/users/:userId/role
  * Update user role
  */

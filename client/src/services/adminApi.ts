@@ -89,6 +89,44 @@ export interface UserUsageDetail {
     }>;
 }
 
+export interface UserCvSummary {
+    id: string;
+    displayName: string;
+    category: string | null;
+    isPrimary: boolean;
+    templateId: string | null;
+    filename: string | null;
+    createdAt: string;
+    updatedAt: string;
+    hasOriginalSnapshot: boolean;
+    hasCurrentJson: boolean;
+    extractionMode?: 'strict' | 'standard' | null;
+    extractionTimestamp?: string | null;
+}
+
+export interface GetUserCvLibraryResponse {
+    cvs: UserCvSummary[];
+}
+
+export interface GetUserCvPreviewResponse {
+    pdfBase64: string;
+    templateId: string;
+    mode: 'original' | 'current';
+    source?: 'originalPdf' | 'cvJson';
+}
+
+export interface UserCvDetail {
+    id: string;
+    displayName: string;
+    templateId: string | null;
+    cvJson: any | null;
+    cvDescriptor: any[] | null;
+    cvData: Record<string, any> | null;
+    filename: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface GetUsersResponse {
     users: AdminUser[];
     total: number;
@@ -110,6 +148,28 @@ export const getAllUsers = async (search?: string, page = 1, limit = 20): Promis
 
 export const getUserDetail = async (userId: string): Promise<AdminUser & { usage: UserUsageDetail }> => {
     const response = await axios.get<AdminUser & { usage: UserUsageDetail }>(`${API_BASE_URL}/users/${userId}`);
+    return response.data;
+};
+
+export const getUserCvLibrary = async (userId: string): Promise<GetUserCvLibraryResponse> => {
+    const response = await axios.get<GetUserCvLibraryResponse>(`${API_BASE_URL}/users/${userId}/cvs`);
+    return response.data;
+};
+
+export const getUserCvPreview = async (
+    userId: string,
+    cvId: string,
+    mode: 'original' | 'current',
+    template?: string
+): Promise<GetUserCvPreviewResponse> => {
+    const response = await axios.get<GetUserCvPreviewResponse>(`${API_BASE_URL}/users/${userId}/cvs/${cvId}/preview`, {
+        params: { mode, template }
+    });
+    return response.data;
+};
+
+export const getUserCvDetail = async (userId: string, cvId: string): Promise<UserCvDetail> => {
+    const response = await axios.get<UserCvDetail>(`${API_BASE_URL}/users/${userId}/cvs/${cvId}`);
     return response.data;
 };
 

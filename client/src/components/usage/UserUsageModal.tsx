@@ -1,6 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { getUserDetail, AdminUser, UserUsageDetail, grantUserCredits, updateUserRole, updateUserPlan, cancelUserSubscription, setUserBlocked } from '../../services/adminApi';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+    getUserDetail,
+    getUserCvLibrary,
+    getUserCvPreview,
+    getUserCvDetail,
+    AdminUser,
+    UserUsageDetail,
+    UserCvSummary,
+    UserCvDetail,
+    grantUserCredits,
+    updateUserRole,
+    updateUserPlan,
+    cancelUserSubscription,
+    setUserBlocked
+} from '../../services/adminApi';
 import Spinner from '../common/Spinner';
+import CvPreviewModal from '../cv-editor/CvPreviewModal';
+import CvLivePreview from '../cv-editor/CvLivePreview';
 
 interface UserUsageModalProps {
     userId: string;
@@ -17,6 +33,14 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
     const [isCancelling, setIsCancelling] = useState(false);
     const [isBlocking, setIsBlocking] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
+    const [cvLibrary, setCvLibrary] = useState<UserCvSummary[]>([]);
+    const [isLoadingCvLibrary, setIsLoadingCvLibrary] = useState(true);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [previewPdfBase64, setPreviewPdfBase64] = useState<string | null>(null);
+    const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+    const [isTemplatePreviewOpen, setIsTemplatePreviewOpen] = useState(false);
+    const [templatePreviewCv, setTemplatePreviewCv] = useState<UserCvDetail | null>(null);
+    const [isTemplatePreviewLoading, setIsTemplatePreviewLoading] = useState(false);
 
     // Escape key handler
     useEffect(() => {
@@ -26,18 +50,74 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
     }, [onClose]);
 
     useEffect(() => {
+        let isMounted = true;
         const fetchDetail = async () => {
+            setIsLoading(true);
+            setIsLoadingCvLibrary(true);
             try {
-                const detail = await getUserDetail(userId);
+                const [detail, cvLibraryResponse] = await Promise.all([
+                    getUserDetail(userId),
+                    getUserCvLibrary(userId)
+                ]);
+                if (!isMounted) return;
                 setData(detail);
+                setCvLibrary(cvLibraryResponse.cvs || []);
             } catch (err) {
                 console.error('Failed to load user detail:', err);
+                if (!isMounted) return;
             } finally {
+                if (!isMounted) return;
                 setIsLoading(false);
+                setIsLoadingCvLibrary(false);
             }
         };
         fetchDetail();
+        return () => { isMounted = false; };
     }, [userId]);
+
+    const handlePreviewCv = async (cvId: string, mode: 'original' | 'current') => {
+        setIsPreviewLoading(true);
+        setPreviewPdfBase64(null);
+        setActionError(null);
+        try {
+            const response = await getUserCvPreview(userId, cvId, mode);
+            if (response.source === 'originalPdf' && mode === 'current') {
+                setActionError('Current CV preview is not available yet. Showing original PDF instead.');
+            }
+            setPreviewPdfBase64(response.pdfBase64);
+            setIsPreviewOpen(true);
+        } catch (err) {
+            setActionError('Failed to load CV preview');
+        } finally {
+            setIsPreviewLoading(false);
+        }
+    };
+
+    const handlePreviewCurrentTemplate = async (cvId: string) => {
+        setIsTemplatePreviewLoading(true);
+        setTemplatePreviewCv(null);
+        setActionError(null);
+        try {
+            const detail = await getUserCvDetail(userId, cvId);
+            const hasTemplatePayload =
+                detail.cvJson || (detail.cvDescriptor && detail.cvData);
+            if (!hasTemplatePayload) {
+                setActionError('No CV data available for template preview.');
+                return;
+            }
+            setTemplatePreviewCv(detail);
+            setIsTemplatePreviewOpen(true);
+        } catch (err) {
+            setActionError('Failed to load current CV preview');
+        } finally {
+            setIsTemplatePreviewLoading(false);
+        }
+    };
+
+    const dynamicPayload = useMemo(() => {
+        if (!templatePreviewCv?.cvDescriptor || !templatePreviewCv?.cvData) return null;
+        return { descriptor: templatePreviewCv.cvDescriptor, data: templatePreviewCv.cvData };
+    }, [templatePreviewCv]);
 
     const handleGrantCredits = async () => {
         setIsSubmitting(true);
@@ -357,12 +437,143 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                                     )}
                                 </div>
                             </div>
+
+                            {/* CV Library */}
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                    <span className="material-symbols-outlined text-base">description</span>
+                                    CV Library
+                                </h3>
+                                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                                    {isLoadingCvLibrary ? (
+                                        <div className="p-6 flex items-center justify-center">
+                                            <Spinner size="md" />
+                                        </div>
+                                    ) : cvLibrary.length === 0 ? (
+                                        <p className="text-center py-10 text-sm italic" style={{ color: 'var(--text-muted)' }}>
+                                            No base CVs found for this user.
+                                        </p>
+                                    ) : (
+                                        <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                                            {cvLibrary.map((cv) => (
+                                                <div key={cv.id} className="px-4 py-4 flex flex-col gap-3" style={{ backgroundColor: 'var(--bg-base)' }}>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                                            {cv.displayName || 'Untitled CV'}
+                                                        </span>
+                                                        {cv.isPrimary && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase" style={{ backgroundColor: 'rgba(59,130,246,0.12)', color: '#2563eb' }}>
+                                                                Primary
+                                                            </span>
+                                                        )}
+                                                        {cv.category && (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                                                                {cv.category}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>
+                                                        {cv.filename && <span>{cv.filename}</span>}
+                                                        <span>Created: {new Date(cv.createdAt).toLocaleDateString()}</span>
+                                                        <span>Updated: {new Date(cv.updatedAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handlePreviewCv(cv.id, 'original')}
+                                                            disabled={!cv.hasOriginalSnapshot || isPreviewLoading}
+                                                            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                                                            style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+                                                        >
+                                                            {isPreviewLoading ? 'Loading...' : 'Preview Original'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handlePreviewCurrentTemplate(cv.id)}
+                                                            disabled={isTemplatePreviewLoading}
+                                                            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                                                            style={{ backgroundColor: 'var(--accent)', color: '#0e0e17' }}
+                                                        >
+                                                            {isTemplatePreviewLoading ? 'Loading...' : 'Preview Current'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </>
                 ) : (
                     <div className="p-20 text-center" style={{ color: 'var(--text-muted)' }}>User not found.</div>
                 )}
             </div>
+            <CvPreviewModal
+                isOpen={isPreviewOpen}
+                onClose={() => {
+                    setIsPreviewOpen(false);
+                    setPreviewPdfBase64(null);
+                }}
+                pdfBase64={previewPdfBase64}
+                isLoading={isPreviewLoading}
+            />
+            {isTemplatePreviewOpen && (
+                <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[120] p-4" onClick={() => setIsTemplatePreviewOpen(false)}>
+                    <div
+                        className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-7xl max-h-[95vh] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <div>
+                                <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                                    Current CV Preview
+                                </h2>
+                                {templatePreviewCv?.displayName && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        {templatePreviewCv.displayName}
+                                    </p>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setIsTemplatePreviewOpen(false)}
+                                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                aria-label="Close"
+                            >
+                                <CloseIcon />
+                            </button>
+                        </div>
+
+                        {isTemplatePreviewLoading ? (
+                            <div className="flex-1 flex items-center justify-center">
+                                <Spinner size="lg" />
+                            </div>
+                        ) : templatePreviewCv ? (
+                            <div className="flex-1 overflow-hidden border dark:border-gray-700 rounded-lg">
+                                <CvLivePreview
+                                    data={templatePreviewCv.cvJson}
+                                    templateId={templatePreviewCv.templateId || 'modern-clean'}
+                                    dynamicPayload={dynamicPayload}
+                                    className="h-full"
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex items-center justify-center">
+                                <p className="text-gray-600 dark:text-gray-400">No preview available</p>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700 mt-4">
+                            <button
+                                onClick={() => setIsTemplatePreviewOpen(false)}
+                                className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-700"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

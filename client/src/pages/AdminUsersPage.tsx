@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getAllUsers, AdminUser } from '../services/adminApi';
 import Spinner from '../components/common/Spinner';
-import UserUsageModal from '../components/usage/UserUsageModal';
 import { TableOrCards } from '../components/common/TableOrCards';
 
 const PAGE_SIZE = 20;
@@ -15,7 +14,6 @@ const AdminUsersPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchUsers = useCallback(async (currentPage: number, search: string) => {
@@ -162,13 +160,15 @@ const AdminUsersPage: React.FC = () => {
                             label: '',
                             align: 'right',
                             render: (u: AdminUser) => (
-                                <button
-                                    onClick={() => setSelectedUserId(u.id)}
+                                <a
+                                    href={`/admin/users/${u.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     aria-label={"Manage user " + u.username}
                                     className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold rounded-xl transition-all active:scale-[0.98]"
                                 >
                                     Manage
-                                </button>
+                                </a>
                             )
                         },
                     ]}
@@ -198,13 +198,15 @@ const AdminUsersPage: React.FC = () => {
                             },
                         ],
                         actions: (u: AdminUser) => (
-                            <button
-                                onClick={() => setSelectedUserId(u.id)}
+                            <a
+                                href={`/admin/users/${u.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 aria-label={"Manage user " + u.username}
                                 className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold rounded-xl transition-all active:scale-[0.98]"
                             >
                                 Manage
-                            </button>
+                            </a>
                         ),
                     }}
                     emptyMessage="No users found."
@@ -240,14 +242,6 @@ const AdminUsersPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Management Modal */}
-            {selectedUserId && (
-                <UserUsageModal
-                    userId={selectedUserId}
-                    onClose={() => setSelectedUserId(null)}
-                    onUpdate={() => fetchUsers(page, debouncedSearch)}
-                />
-            )}
         </div>
     );
 };

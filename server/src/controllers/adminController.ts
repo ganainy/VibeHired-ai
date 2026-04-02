@@ -1,10 +1,13 @@
 import { Request, Response } from 'express';
-import User, { IUser } from '../models/User';
+import User from '../models/User';
+import CV from '../models/CV';
 import UsageRecord from '../models/UsageRecord';
 import ExternalCallLog from '../models/ExternalCallLog';
 import { getUsageRecord, grantBonusCredits, resetBillingPeriod } from '../services/creditService';
 import { PlanType } from '../constants/plans';
 import { stripe } from '../services/stripeService';
+import { generateCvPdfBuffer } from '../utils/pdfGenerator';
+import { CVTemplate } from '../utils/cvTemplates';
 
 // ---------------------------------------------------------------------------
 // Simple in-memory cache for expensive Stripe stats queries (5-minute TTL)
@@ -358,6 +361,165 @@ export async function getUserDetail(req: Request, res: Response) {
     } catch (error) {
         console.error('getUserDetail error:', error);
         res.status(500).json({ message: 'Failed to fetch user detail' });
+    }
+}
+
+/**
+ * Get CV library summaries for a user (base CVs only).
+ */
+export async function getUserCvLibrary(req: Request, res: Response) {
+    const { userId } = req.params;
+
+    const isJsonResumeLike = (value: unknown): boolean => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+        const candidate = value as Record<string, unknown>;
+        return 'basics' in candidate || 'work' in candidate || 'education' in candidate || 'skills' in candidate;
+    };
+
+    try {
+        const userExists = await User.exists({ _id: userId });
+        if (!userExists) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+
+        const cvs = await CV.find({ userId, jobApplicationId: null })
+            .select('displayName category isPrimary templateId filename createdAt updatedAt cvJson originalCvJson extractionMode extractionTimestamp +originalPdf')
+            .sort({ isPrimary: -1, createdAt: -1 })
+            .lean();
+
+        res.json({
+            cvs: cvs.map((cv) => ({
+                id: cv._id.toString(),
+                displayName: cv.displayName,
+                category: cv.category ?? null,
+                isPrimary: cv.isPrimary,
+                templateId: cv.templateId ?? null,
+                filename: cv.filename ?? null,
+                createdAt: cv.createdAt,
+                updatedAt: cv.updatedAt,
+                hasOriginalSnapshot: Boolean(cv.originalCvJson || cv.originalPdf),
+                hasCurrentJson: Boolean(cv.cvJson && isJsonResumeLike(cv.cvJson)),
+                extractionMode: cv.extractionMode ?? null,
+                extractionTimestamp: cv.extractionTimestamp ?? null,
+            }))
+        });
+    } catch (error) {
+        console.error('getUserCvLibrary error:', error);
+        res.status(500).json({ message: 'Failed to fetch user CVs' });
+    }
+}
+
+/**
+ * Get a base CV detail for template preview.
+ */
+export async function getUserCvDetail(req: Request, res: Response) {
+    const { userId, cvId } = req.params;
+
+    try {
+        const userExists = await User.exists({ _id: userId });
+        if (!userExists) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+
+        const cv = await CV.findOne({ _id: cvId, userId, jobApplicationId: null })
+            .select('displayName templateId cvJson cvDescriptor cvData filename createdAt updatedAt')
+            .lean();
+
+        if (!cv) {
+            res.status(404).json({ message: 'CV not found' });
+            return;
+        }
+
+        res.json({
+            id: cv._id.toString(),
+            displayName: cv.displayName,
+            templateId: cv.templateId ?? null,
+            cvJson: cv.cvJson ?? null,
+            cvDescriptor: cv.cvDescriptor ?? null,
+            cvData: cv.cvData ?? null,
+            filename: cv.filename ?? null,
+            createdAt: cv.createdAt,
+            updatedAt: cv.updatedAt,
+        });
+    } catch (error) {
+        console.error('getUserCvDetail error:', error);
+        res.status(500).json({ message: 'Failed to fetch CV detail' });
+    }
+}
+
+/**
+ * Generate a PDF preview for a user's CV snapshot (original or current).
+ */
+export async function getUserCvPreview(req: Request, res: Response) {
+    const { userId, cvId } = req.params;
+    const mode = (req.query.mode as string) || 'current';
+    const template = (req.query.template as string) || undefined;
+
+    const isJsonResumeLike = (value: unknown): boolean => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+        const candidate = value as Record<string, unknown>;
+        return 'basics' in candidate || 'work' in candidate || 'education' in candidate || 'skills' in candidate;
+    };
+
+    if (!['original', 'current'].includes(mode)) {
+        res.status(400).json({ message: 'Invalid mode. Use original or current.' });
+        return;
+    }
+
+    try {
+        const cv = await CV.findOne({ _id: cvId, userId, jobApplicationId: null }).select('cvJson originalCvJson templateId +originalPdf');
+        if (!cv) {
+            res.status(404).json({ message: 'CV not found' });
+            return;
+        }
+
+        if (mode === 'original' && cv.originalPdf) {
+            const pdfBase64 = (cv.originalPdf as Buffer).toString('base64');
+            res.json({
+                pdfBase64,
+                templateId: template || cv.templateId || 'original',
+                mode,
+                source: 'originalPdf'
+            });
+            return;
+        }
+
+        const snapshot = mode === 'original' ? cv.originalCvJson : cv.cvJson;
+        if (!snapshot) {
+            res.status(404).json({ message: mode === 'original' ? 'Original snapshot not available.' : 'CV data not available.' });
+            return;
+        }
+
+        if (!isJsonResumeLike(snapshot)) {
+            if (cv.originalPdf) {
+                const pdfBase64 = (cv.originalPdf as Buffer).toString('base64');
+                res.json({
+                    pdfBase64,
+                    templateId: template || cv.templateId || 'original',
+                    mode,
+                    source: 'originalPdf'
+                });
+                return;
+            }
+            res.status(400).json({ message: 'CV preview is only available for structured JSON Resume data.' });
+            return;
+        }
+
+        const templateId = template || cv.templateId || 'modern-clean';
+        const pdfBuffer = await generateCvPdfBuffer(snapshot, templateId as CVTemplate);
+        const pdfBase64 = pdfBuffer.toString('base64');
+
+        res.json({
+            pdfBase64,
+            templateId,
+            mode,
+            source: 'cvJson'
+        });
+    } catch (error) {
+        console.error('getUserCvPreview error:', error);
+        res.status(500).json({ message: 'Failed to generate CV preview' });
     }
 }
 
