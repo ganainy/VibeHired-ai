@@ -33,10 +33,51 @@ interface NodeEditorProps {
   /** Keys currently expanded (depth-0 sections only) */
   expandedKeys?: Set<string>;
   onToggleKey?: (key: string) => void;
+  onRenameSectionKey?: (oldKey: string, nextKey: string) => void;
 }
 
 const inputBase =
   'w-full px-3 py-2 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/30';
+
+const SectionKeyInput: React.FC<{
+  value: string;
+  onCommit: (nextValue: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ value, onCommit, className, style }) => {
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  const commitIfNeeded = () => {
+    const trimmed = draft.trim();
+    if (!trimmed || trimmed === value) return;
+    onCommit(trimmed);
+  };
+
+  return (
+    <input
+      type="text"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commitIfNeeded}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          commitIfNeeded();
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setDraft(value);
+        }
+      }}
+      className={className}
+      style={style}
+    />
+  );
+};
 
 /** Returns the first short string value inside an array item for a summary label */
 function getItemSummary(item: FreeformJsonValue): string {
@@ -168,7 +209,16 @@ const PrimitiveEditor: React.FC<{
   );
 };
 
-const NodeEditor: React.FC<NodeEditorProps> = ({ root, path, nodeKey, depth, onChange, expandedKeys, onToggleKey }) => {
+const NodeEditor: React.FC<NodeEditorProps> = ({
+  root,
+  path,
+  nodeKey,
+  depth,
+  onChange,
+  expandedKeys,
+  onToggleKey,
+  onRenameSectionKey,
+}) => {
   const node = getValueAtPath(root, path) as FreeformJsonValue;
 
   // ── Depth-0 root object: render each key as a named section ──
@@ -202,10 +252,12 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ root, path, nodeKey, depth, onC
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
-                <input
-                  type="text"
+                <SectionKeyInput
                   value={sectionKey}
-                  onChange={(e) => onChange(renameObjectKeyAtPath(root, path, sectionKey, e.target.value))}
+                  onCommit={(nextValue) => {
+                    onRenameSectionKey?.(sectionKey, nextValue);
+                    onChange(renameObjectKeyAtPath(root, path, sectionKey, nextValue));
+                  }}
                   className="text-base font-bold tracking-tight bg-transparent border-0 focus:outline-none focus:ring-0 p-0 flex-1"
                   style={{ color: 'var(--text-primary)' }}
                 />
@@ -321,10 +373,9 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ root, path, nodeKey, depth, onC
                   style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <input
-                      type="text"
+                    <SectionKeyInput
                       value={childKey}
-                      onChange={(e) => onChange(renameObjectKeyAtPath(root, path, childKey, e.target.value))}
+                      onCommit={(nextValue) => onChange(renameObjectKeyAtPath(root, path, childKey, nextValue))}
                       className="text-sm font-semibold bg-transparent border-0 focus:outline-none focus:ring-0 p-0 flex-1"
                       style={{ color: 'var(--text-primary)' }}
                     />
@@ -412,6 +463,19 @@ const FreeformCvEditor: React.FC<FreeformCvEditorProps> = ({ value, onChange, cv
     });
   }, [storageKey]);
 
+  const handleSectionRename = useCallback((oldKey: string, nextKey: string) => {
+    setExpandedKeys((prev) => {
+      if (!prev.has(oldKey)) return prev;
+      const next = new Set(prev);
+      next.delete(oldKey);
+      next.add(nextKey);
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
+      } catch { /* quota exceeded — silently ignore */ }
+      return next;
+    });
+  }, [storageKey]);
+
   return (
     <div>
       <NodeEditor
@@ -421,6 +485,7 @@ const FreeformCvEditor: React.FC<FreeformCvEditorProps> = ({ value, onChange, cv
         onChange={onChange}
         expandedKeys={expandedKeys}
         onToggleKey={toggleKey}
+        onRenameSectionKey={handleSectionRename}
       />
     </div>
   );

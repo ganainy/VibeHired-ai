@@ -40,3 +40,6 @@ mcp-install/brave.json
 
 # Local Netlify folder
 .netlify
+
+# Electron release artifacts
+electron/release/
