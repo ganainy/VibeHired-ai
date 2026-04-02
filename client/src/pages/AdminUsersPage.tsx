@@ -133,6 +133,26 @@ const AdminUsersPage: React.FC = () => {
                             )
                         },
                         {
+                            key: 'servicesUsed',
+                            label: 'Services Used',
+                            render: (u: AdminUser) => (
+                                <div className="flex flex-wrap gap-1">
+                                    {(u.servicesUsed && u.servicesUsed.length > 0) ? (
+                                        u.servicesUsed.map((service) => (
+                                            <span
+                                                key={service}
+                                                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-zinc-100 dark:bg-zinc-800 text-secondary-color"
+                                            >
+                                                {service}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className="text-[10px] text-zinc-400">None</span>
+                                    )}
+                                </div>
+                            )
+                        },
+                        {
                             key: 'verified',
                             label: 'Verified',
                             render: (u: AdminUser) =>
@@ -186,6 +206,12 @@ const AdminUsersPage: React.FC = () => {
                             {
                                 label: 'Credits',
                                 value: (u: AdminUser) => `${u.credits} / ${u.totalConsumed} used`
+                            },
+                            {
+                                label: 'Services Used',
+                                value: (u: AdminUser) => (u.servicesUsed && u.servicesUsed.length > 0)
+                                    ? u.servicesUsed.join(', ')
+                                    : 'None'
                             },
                             {
                                 label: 'Verified',

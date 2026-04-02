@@ -67,6 +67,9 @@ export async function getUsers(req: Request, res: Response) {
         // Enhance with usage info
         const usersWithUsage = await Promise.all(users.map(async (u: any) => {
             const usage = await getUsageRecord(u._id.toString());
+            const servicesUsed = Object.entries(usage.actions || {})
+                .filter(([, count]) => typeof count === 'number' && count > 0)
+                .map(([key]) => key);
             return {
                 id: u._id.toString(),
                 email: u.email,
@@ -79,7 +82,8 @@ export async function getUsers(req: Request, res: Response) {
                 credits: usage.credits.limit - usage.credits.used,
                 totalConsumed: usage.credits.used,
                 lastActive: (u as any).updatedAt || u.createdAt,
-                createdAt: u.createdAt
+                createdAt: u.createdAt,
+                servicesUsed,
             };
         }));
 

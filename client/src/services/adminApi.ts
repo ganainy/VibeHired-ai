@@ -72,6 +72,7 @@ export interface AdminUser {
     totalConsumed: number;
     lastActive: string;
     createdAt: string;
+    servicesUsed?: string[];
 }
 
 export interface UserUsageDetail {
