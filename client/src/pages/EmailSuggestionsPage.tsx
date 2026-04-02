@@ -148,16 +148,16 @@ function formatRelativeTime(iso: string | null | undefined): string {
 //  Helpers 
 
 const STATUS_COLORS: Record<string, string> = {
-    Interview: '#3b82f6',
-    Assessment: '#a855f7',
-    Rejected: '#ef4444',
-    Offer: '#22c55e',
+    Interview: 'var(--azure)',
+    Assessment: 'var(--ember)',
+    Rejected: 'var(--rose)',
+    Offer: 'var(--jade)',
 };
 
 const CONFIDENCE_COLORS: Record<string, string> = {
-    high: '#22c55e',
-    medium: '#f59e0b',
-    low: '#ef4444',
+    high: 'var(--jade)',
+    medium: 'var(--ember)',
+    low: 'var(--rose)',
 };
 
 function ConfidencePill({ confidence }: { confidence: string }) {
@@ -242,6 +242,7 @@ const EmailSuggestionsPage: React.FC = () => {
     const [calendarUnchecked, setCalendarUnchecked] = useState<Set<string>>(new Set());
     const [, setNoteAddedLocally] = useState<Set<string>>(new Set());
     const [editingSuggestion, setEditingSuggestion] = useState<EmailSuggestion | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [howItWorksOpen, setHowItWorksOpen] = useState<boolean>(() => {
         try { return localStorage.getItem('emailSuggestions.howItWorksOpen') === 'true'; }
         catch { return false; }
@@ -393,353 +394,298 @@ const EmailSuggestionsPage: React.FC = () => {
         }
     };
 
+    const appCount = suggestions.filter(s => (s.emailCategory ?? 'application_response') === 'application_response').length;
+    const leadCount = suggestions.filter(s => s.emailCategory === 'job_offer').length;
+    const totalCount = suggestions.length;
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const visibleSuggestions = suggestions
+        .filter(s => (s.emailCategory ?? 'application_response') === activeTab)
+        .filter((s) => {
+            if (!normalizedQuery) return true;
+            const haystack = [
+                s.matchedCompanyName,
+                s.senderName,
+                s.senderEmail,
+                s.matchedJobTitle,
+                s.emailSubject,
+                s.emailSnippet,
+            ].filter(Boolean).join(' ').toLowerCase();
+            return haystack.includes(normalizedQuery);
+        });
+
     return (
-        <div style={{ background: 'var(--bg-base)' }}>
-            <div className="max-w-3xl mx-auto px-4 md:px-6">
-                <div className="py-6 md:py-8 pb-16 space-y-5">
-
-                    {/*  Page header  */}
-                    <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <h1
-                                    className="text-2xl font-semibold tracking-tight"
-                                    style={{ color: 'var(--text-primary)' }}
-                                >
-                                    Inbox
-                                </h1>
-                                {suggestions.length > 0 && (
-                                    <span
-                                        className="px-2 py-0.5 rounded-full text-xs font-bold"
-                                        style={{ background: 'var(--accent)', color: '#000' }}
-                                    >
-                                        {suggestions.length}
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {/* Settings gear */}
-                                <button
-                                    type="button"
-                                    onClick={() => setSettingsOpen((v) => !v)}
-                                    title="Scan settings"
-                                    className="flex items-center justify-center w-9 h-9 rounded-xl transition-all"
-                                    style={{
-                                        background: settingsOpen ? 'var(--bg-elevated)' : 'transparent',
-                                        border: `1px solid ${settingsOpen ? 'var(--border)' : 'var(--border-subtle)'}`,
-                                        color: settingsOpen ? 'var(--text-secondary)' : 'var(--text-muted)',
-                                    }}
-                                >
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="12" cy="12" r="3" />
-                                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-                                    </svg>
-                                </button>
-                                {/* Scan button */}
-                                <button
-                                    onClick={handlePoll}
-                                    disabled={polling}
-                                    className="btn-primary flex items-center gap-2"
-                                >
-                                    <RefreshIcon spinning={polling} />
-                                    {polling ? `Scanning last ${scanLimit} emails` : 'Scan inbox'}
-                                    {!polling && <span className="text-[10px] font-bold ml-0.5 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>1 Credit</span>}
-                                </button>
-                            </div>
-                        </div>
-                        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                            AI-detected status changes from your job application emails. Review before applying.
-                        </p>
+        <div className="inbox-amber">
+            <header className="inbox-topbar">
+                <div className="inbox-topbar-inner">
+                    <div className="inbox-search">
+                        <span className="inbox-search-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                        </span>
+                        <input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="inbox-search-input"
+                            placeholder="Search archives..."
+                            type="search"
+                            aria-label="Search inbox"
+                        />
                     </div>
-
-                    {/*  Settings panel  */}
-                    {settingsOpen && (
-                        <div className="card px-3 py-2 sm:px-4 sm:py-3 flex flex-wrap items-center gap-x-5 gap-y-3">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Scan</span>
-                                <select
-                                    value={scanLimit}
-                                    onChange={(e) => handleScanLimitChange(Number(e.target.value))}
-                                    className="input-base !w-auto text-sm"
-                                >
-                                    <option value={25}>Last 25 emails</option>
-                                    <option value={50}>Last 50 emails</option>
-                                    <option value={100}>Last 100 emails</option>
-                                    <option value={200}>Last 200 emails</option>
-                                </select>
-                            </div>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <button
-                                    role="switch"
-                                    aria-checked={autoPollApplications}
-                                    onClick={() => handleAutoPollApplicationsChange(!autoPollApplications)}
-                                    className="relative shrink-0 transition-colors"
-                                    style={{
-                                        width: 32, height: 18, borderRadius: 99,
-                                        background: autoPollApplications ? 'var(--accent)' : 'var(--bg-elevated)',
-                                        border: `1px solid ${autoPollApplications ? 'var(--accent)' : 'var(--border)'}`,
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            position: 'absolute', top: 2,
-                                            left: autoPollApplications ? 14 : 2,
-                                            width: 12, height: 12, borderRadius: '50%',
-                                            background: autoPollApplications ? '#000' : 'var(--text-muted)',
-                                            transition: 'left 150ms',
-                                        }}
-                                    />
-                                </button>
-                                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Auto-scan applications</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <button
-                                    role="switch"
-                                    aria-checked={autoPollJobLeads}
-                                    onClick={() => handleAutoPollJobLeadsChange(!autoPollJobLeads)}
-                                    className="relative shrink-0 transition-colors"
-                                    style={{
-                                        width: 32, height: 18, borderRadius: 99,
-                                        background: autoPollJobLeads ? 'var(--accent)' : 'var(--bg-elevated)',
-                                        border: `1px solid ${autoPollJobLeads ? 'var(--accent)' : 'var(--border)'}`,
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            position: 'absolute', top: 2,
-                                            left: autoPollJobLeads ? 14 : 2,
-                                            width: 12, height: 12, borderRadius: '50%',
-                                            background: autoPollJobLeads ? '#000' : 'var(--text-muted)',
-                                            transition: 'left 150ms',
-                                        }}
-                                    />
-                                </button>
-                                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Auto-scan job leads</span>
-                            </label>
-                            <p className="text-[11px] ml-auto hidden md:block" style={{ color: 'var(--text-muted)' }}>
-                                Processed emails are labelled{' '}
-                                <code style={{ fontSize: 10, padding: '0 4px', borderRadius: 3, background: 'var(--bg-elevated)' }}>vibe-hired-processed</code>{' '}
-                                in Gmail
-                            </p>
-                        </div>
-                    )}
-
-                    {/*  How it works (collapsed by default)  */}
-                    <div>
+                    <div className="inbox-topbar-actions">
                         <button
                             type="button"
-                            onClick={toggleHowItWorks}
-                            className="flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-70"
-                            style={{ color: 'var(--accent)' }}
+                            onClick={() => setSettingsOpen((v) => !v)}
+                            title="Scan settings"
+                            className={settingsOpen ? 'inbox-icon-btn is-active' : 'inbox-icon-btn'}
                         >
-                            <svg
-                                width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                                style={{ transform: howItWorksOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 200ms' }}
-                            >
-                                <polyline points="6 9 12 15 18 9" />
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="3" />
+                                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
                             </svg>
-                            {howItWorksOpen ? 'Hide' : 'How does this work?'}
                         </button>
-                        {howItWorksOpen && (
-                            <div className="card mt-3 p-3 sm:p-5">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {HOW_IT_WORKS.map((step, i) => (
-                                        <div key={i} className="flex gap-3">
-                                            <div
-                                                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold"
-                                                style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
-                                            >
-                                                {i + 1}
-                                            </div>
-                                            <div>
-                                                <p className="text-[12.5px] font-semibold mb-0.5" style={{ color: 'var(--text-primary)' }}>{step.title}</p>
-                                                <p className="text-[11.5px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>{step.description}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                        <button
+                            onClick={handlePoll}
+                            disabled={polling}
+                            className="inbox-primary-btn"
+                        >
+                            <RefreshIcon spinning={polling} />
+                            <span>{polling ? `Scanning last ${scanLimit} emails` : 'Scan inbox'}</span>
+                            {!polling && (
+                                <span className="inbox-credit-pill">1 Credit</span>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main className="inbox-container">
+                <section className="inbox-hero">
+                    <div className="inbox-title-row">
+                        <div>
+                            <div className="inbox-title-inline">
+                                <h1 className="inbox-title">Inbox</h1>
+                                {totalCount > 0 && (
+                                    <span className="inbox-count-pill">{totalCount}</span>
+                                )}
                             </div>
-                        )}
+                            <p className="inbox-subtitle">
+                                AI-detected status changes from your job application emails. Review before applying.
+                            </p>
+                        </div>
                     </div>
 
-                    {/*  Gmail not connected  */}
-                    {hasScope === false && (
-                        <div
-                            className="flex items-center gap-3 px-4 py-3 rounded-xl"
-                            style={{
-                                background: 'rgba(251,191,36,0.06)',
-                                border: '1px solid rgba(251,191,36,0.25)',
-                            }}
-                        >
-                            <span style={{ color: '#fbbf24', flexShrink: 0 }}><MailIcon /></span>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Gmail access not granted</p>
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                                    Connect or re-authorise your Google account to enable inbox scanning. Your calendar data is preserved.
-                                </p>
+                    <div className="inbox-stats-grid">
+                        <div className="inbox-stat inbox-stat-primary">
+                            <span className="inbox-stat-icon"><MailIcon /></span>
+                            <div>
+                                <p>Active Inbox</p>
+                                <h3>{totalCount}</h3>
                             </div>
+                        </div>
+                        <div className="inbox-stat inbox-stat-neutral">
+                            <span className="inbox-stat-icon"><MailIcon /></span>
+                            <div>
+                                <p>Applications</p>
+                                <h3>{appCount}</h3>
+                            </div>
+                        </div>
+                        <div className="inbox-stat inbox-stat-secondary">
+                            <span className="inbox-stat-icon"><BoltIcon /></span>
+                            <div>
+                                <p>Job Leads</p>
+                                <h3>{leadCount}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {settingsOpen && (
+                    <div className="inbox-settings">
+                        <div className="inbox-settings-row">
+                            <span className="inbox-settings-label">Scan</span>
+                            <select
+                                value={scanLimit}
+                                onChange={(e) => handleScanLimitChange(Number(e.target.value))}
+                                className="inbox-select"
+                            >
+                                <option value={25}>Last 25 emails</option>
+                                <option value={50}>Last 50 emails</option>
+                                <option value={100}>Last 100 emails</option>
+                                <option value={200}>Last 200 emails</option>
+                            </select>
+                        </div>
+                        <label className="inbox-toggle">
                             <button
-                                onClick={handleConnectGmail}
-                                className="btn-primary shrink-0 flex items-center gap-1.5"
-                                style={{ fontSize: 12, padding: '6px 12px' }}
+                                role="switch"
+                                aria-checked={autoPollApplications}
+                                onClick={() => handleAutoPollApplicationsChange(!autoPollApplications)}
+                                className={autoPollApplications ? 'inbox-toggle-track is-active' : 'inbox-toggle-track'}
                             >
-                                <LinkIcon /> Connect Google
+                                <span className="inbox-toggle-thumb" />
                             </button>
-                        </div>
-                    )}
-
-                    {/*  Action error banner  */}
-                    {actionError && (
-                        <div
-                            className="rounded-xl px-4 py-3 flex items-start gap-3"
-                            style={{
-                                background: actionError.upgrade ? 'rgba(251,191,36,0.08)' : 'rgba(239,68,68,0.08)',
-                                border: `1px solid ${actionError.upgrade ? 'rgba(251,191,36,0.3)' : 'rgba(239,68,68,0.3)'}`,
-                            }}
-                        >
-                                <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"
-                                    style={{ color: actionError.upgrade ? '#f59e0b' : '#ef4444' }}>
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                                <div className="flex-1">
-                                    <p className="text-[13px] font-medium" style={{ color: actionError.upgrade ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
-                                        {actionError.message}
-                                    </p>
-                                    {actionError.upgrade && (
-                                        PAYMENTS_ENABLED
-                                            ? <a href="/subscriptions" className="text-[12px] font-semibold underline mt-0.5 inline-block" style={{ color: 'var(--accent)' }}>
-                                                View upgrade options 
-                                              </a>
-                                            : <span className="text-[12px] mt-0.5 inline-block" style={{ color: 'var(--text-muted)' }}>
-                                                Paid plans coming soon
-                                              </span>
-                                    )}
-                                </div>
-                                <button onClick={() => setActionError(null)} className="text-xs opacity-50 hover:opacity-100 transition-opacity shrink-0" style={{ color: 'var(--text-muted)' }}></button>
-                        </div>
-                    )}
-
-                    {/*  Tabs  */}
-                    {(() => {
-                        const appCount = suggestions.filter(s => (s.emailCategory ?? 'application_response') === 'application_response').length;
-                        const offerCount = suggestions.filter(s => s.emailCategory === 'job_offer').length;
-                        return (
-                            <div
-                                className="flex items-center gap-1 p-1 rounded-xl"
-                                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                            <span>Auto-scan applications</span>
+                        </label>
+                        <label className="inbox-toggle">
+                            <button
+                                role="switch"
+                                aria-checked={autoPollJobLeads}
+                                onClick={() => handleAutoPollJobLeadsChange(!autoPollJobLeads)}
+                                className={autoPollJobLeads ? 'inbox-toggle-track is-active' : 'inbox-toggle-track'}
                             >
-                                {([
-                                    { key: 'application_response' as const, label: 'Applications', count: appCount },
-                                    { key: 'job_offer' as const, label: 'Job Leads', count: offerCount },
-                                ]).map(({ key, label, count }) => {
-                                    const isActive = activeTab === key;
-                                    return (
-                                        <button
-                                            key={key}
-                                            type="button"
-                                            onClick={() => switchTab(key)}
-                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                                            style={{
-                                                background: isActive ? 'var(--bg-raised)' : 'transparent',
-                                                border: isActive ? '1px solid var(--border-bright)' : '1px solid transparent',
-                                                color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-                                                boxShadow: isActive ? '0 1px 4px rgba(14,14,23,0.4)' : 'none',
-                                            }}
-                                        >
-                                            {label}
-                                            {count > 0 && (
-                                                <span
-                                                    className="px-1.5 py-0.5 rounded-full text-xs font-bold leading-none"
-                                                    style={{
-                                                        background: isActive ? 'var(--accent)' : 'var(--bg-raised)',
-                                                        color: isActive ? '#000' : 'var(--text-muted)',
-                                                    }}
-                                                >
-                                                    {count}
-                                                </span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        );
-                    })()}
+                                <span className="inbox-toggle-thumb" />
+                            </button>
+                            <span>Auto-scan job leads</span>
+                        </label>
+                        <p className="inbox-settings-note">
+                            Processed emails are labeled <span className="inbox-code-pill">vibe-hired-processed</span> in Gmail.
+                        </p>
+                    </div>
+                )}
 
-                    {/*  Loading skeletons  */}
-                    {loading && (
-                        <div className="space-y-3">
-                            {[0, 1, 2].map((i) => (
-                                <div key={i} className="card p-3 sm:p-4 space-y-3" style={{ opacity: 1 - i * 0.25 }}>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-xl shrink-0" style={{ background: 'var(--bg-elevated)' }} />
-                                        <div className="space-y-1.5 flex-1">
-                                            <div className="h-3.5 w-1/3 rounded" style={{ background: 'var(--bg-elevated)' }} />
-                                            <div className="h-3 w-1/4 rounded" style={{ background: 'var(--bg-elevated)' }} />
-                                        </div>
-                                        <div className="h-5 w-16 rounded-full" style={{ background: 'var(--bg-elevated)' }} />
+                <div className="inbox-how">
+                    <button
+                        type="button"
+                        onClick={toggleHowItWorks}
+                        className="inbox-how-trigger"
+                    >
+                        <svg
+                            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                            style={{ transform: howItWorksOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 200ms' }}
+                        >
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                        {howItWorksOpen ? 'Hide' : 'How does this work?'}
+                    </button>
+                    {howItWorksOpen && (
+                        <div className="inbox-how-grid">
+                            {HOW_IT_WORKS.map((step, i) => (
+                                <div key={i} className="inbox-how-card">
+                                    <div className="inbox-step-pill">{i + 1}</div>
+                                    <span className="inbox-how-icon"><step.icon /></span>
+                                    <div>
+                                        <p className="inbox-how-title">{step.title}</p>
+                                        <p className="inbox-how-desc">{step.description}</p>
                                     </div>
-                                    <div className="h-12 rounded-lg" style={{ background: 'var(--bg-elevated)' }} />
-                                    <div className="flex justify-end gap-2">
-                                        <div className="h-8 w-14 rounded-lg" style={{ background: 'var(--bg-elevated)' }} />
-                                        <div className="h-8 w-14 rounded-lg" style={{ background: 'var(--bg-elevated)' }} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {hasScope === false && (
+                    <div className="inbox-warning">
+                        <span><MailIcon /></span>
+                        <div>
+                            <p>Gmail access not granted</p>
+                            <p>Connect or re-authorize your Google account to enable inbox scanning. Your calendar data is preserved.</p>
+                        </div>
+                        <button onClick={handleConnectGmail} className="inbox-link-btn">
+                            <LinkIcon /> Connect Google
+                        </button>
+                    </div>
+                )}
+
+                {actionError && (
+                    <div className={actionError.upgrade ? 'inbox-alert is-upgrade' : 'inbox-alert'}>
+                        <svg className="inbox-alert-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                            <p>{actionError.message}</p>
+                            {actionError.upgrade && (
+                                PAYMENTS_ENABLED
+                                    ? <a href="/subscriptions">View upgrade options</a>
+                                    : <span>Paid plans coming soon</span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <section className="inbox-updates">
+                    <div className="inbox-updates-header">
+                        <h2>Recent Updates</h2>
+                        <div className="inbox-chips">
+                            <button
+                                type="button"
+                                onClick={() => switchTab('application_response')}
+                                className={activeTab === 'application_response' ? 'inbox-chip is-active' : 'inbox-chip'}
+                            >
+                                Applications {appCount > 0 && <span>{appCount}</span>}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => switchTab('job_offer')}
+                                className={activeTab === 'job_offer' ? 'inbox-chip is-active' : 'inbox-chip'}
+                            >
+                                Job Leads {leadCount > 0 && <span>{leadCount}</span>}
+                            </button>
+                            <span className="inbox-chip ghost">Sort: Newest</span>
+                        </div>
+                    </div>
+
+                    {loading && (
+                        <div className="inbox-skeletons">
+                            {[0, 1, 2].map((i) => (
+                                <div key={i} className="inbox-skeleton" style={{ opacity: 1 - i * 0.2 }}>
+                                    <div className="inbox-skeleton-head">
+                                        <div className="inbox-skeleton-avatar" />
+                                        <div>
+                                            <div className="inbox-skeleton-line short" />
+                                            <div className="inbox-skeleton-line" />
+                                        </div>
+                                        <div className="inbox-skeleton-pill" />
+                                    </div>
+                                    <div className="inbox-skeleton-block" />
+                                    <div className="inbox-skeleton-actions">
+                                        <span />
+                                        <span />
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/*  Empty state (no suggestions at all)  */}
                     {!loading && suggestions.length === 0 && (
-                        <div className="card p-6 sm:p-10 flex flex-col items-center text-center">
-                            <div
-                                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-                                style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
-                            >
-                                <InboxIcon />
-                            </div>
+                        <div className="inbox-empty">
+                            <div className="inbox-empty-icon"><InboxIcon /></div>
                             {hasScope === false ? (
                                 <>
-                                    <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                                        Gmail account not connected
-                                    </p>
-                                    <p className="text-sm max-w-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-                                        Connect your Gmail account to use inbox scanning and get AI-detected application updates.
-                                    </p>
-                                    <button
-                                        onClick={handleConnectGmail}
-                                        className="btn-primary shrink-0 flex items-center gap-1.5"
-                                        style={{ fontSize: 12, padding: '6px 12px' }}
-                                    >
+                                    <h3>Gmail account not connected</h3>
+                                    <p>Connect your Gmail account to use inbox scanning and get AI-detected application updates.</p>
+                                    <button onClick={handleConnectGmail} className="inbox-link-btn">
                                         <LinkIcon /> Connect Google
                                     </button>
                                 </>
                             ) : (
                                 <>
-                                    <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>All caught up</p>
-                                    <p className="text-sm max-w-sm" style={{ color: 'var(--text-muted)' }}>
-                                        No pending suggestions. Use the <strong>Scan inbox</strong> button above to check for new job emails.
-                                    </p>
+                                    <h3>All caught up</h3>
+                                    <p>No pending suggestions. Use the Scan inbox button above to check for new job emails.</p>
                                 </>
                             )}
                         </div>
                     )}
 
-                    {/*  Empty current tab (but other tab has items)  */}
-                    {!loading && suggestions.length > 0 && suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).length === 0 && (
-                        <div className="card p-6 sm:p-8 text-center">
-                            <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-                                No {activeTab === 'job_offer' ? 'job lead' : 'application'} emails pending
-                            </p>
-                            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                Switch tab to see your {activeTab === 'job_offer' ? 'application responses' : 'job leads'}.
-                            </p>
+                    {!loading && suggestions.length > 0 && visibleSuggestions.length === 0 && (
+                        <div className="inbox-empty">
+                            {normalizedQuery ? (
+                                <>
+                                    <h3>No results found</h3>
+                                    <p>Try adjusting your search or switch tabs to see more updates.</p>
+                                </>
+                            ) : (
+                                <>
+                                    <h3>No {activeTab === 'job_offer' ? 'job lead' : 'application'} emails pending</h3>
+                                    <p>Switch tabs to see your {activeTab === 'job_offer' ? 'application responses' : 'job leads'}.</p>
+                                </>
+                            )}
                         </div>
                     )}
 
-                    {/*  Suggestion cards  */}
-                    {!loading && (
-                        <div className="space-y-3">
-                            {suggestions.filter(s => (s.emailCategory ?? 'application_response') === activeTab).map((s) => {
+                    {!loading && visibleSuggestions.length > 0 && (
+                        <div className="inbox-cards">
+                            {visibleSuggestions.map((s) => {
                                 const busy = actionIds.has(s._id);
                                 const job = s.jobApplicationId as any;
                                 const isCalChecked = !calendarUnchecked.has(s._id);
@@ -747,119 +693,62 @@ const EmailSuggestionsPage: React.FC = () => {
                                 const companyInitial = (s.matchedCompanyName || s.senderName || '?')[0].toUpperCase();
 
                                 return (
-                                    <div key={s._id} className="card overflow-hidden relative">
-                                        {/* Busy overlay */}
+                                    <div key={s._id} className="inbox-card">
                                         {busy && (
-                                            <div
-                                                className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl"
-                                                style={{ background: 'rgba(14,14,23,0.5)', backdropFilter: 'blur(1px)' }}
-                                            >
+                                            <div className="inbox-card-overlay">
                                                 <Spinner size="sm" />
                                             </div>
                                         )}
 
-                                        <div className="p-4 space-y-3">
-                                            {/*  Header: avatar + company + status + time  */}
-                                            <div className="flex items-start gap-3">
-                                                <div
-                                                    className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-sm font-bold"
-                                                    style={{
-                                                        background: 'var(--accent-bg)',
-                                                        color: 'var(--accent)',
-                                                        border: '1px solid var(--accent-dim)',
-                                                    }}
-                                                >
-                                                    {companyInitial}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div className="min-w-0">
-                                                            <p className="text-[14px] font-semibold leading-tight truncate" style={{ color: 'var(--text-primary)' }}>
-                                                                {s.matchedCompanyName || s.senderName || 'Unknown sender'}
-                                                            </p>
-                                                            {s.matchedJobTitle && (
-                                                                <p className="text-[12px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
-                                                                    {s.matchedJobTitle}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            {s.suggestedStatus && <StatusPill status={s.suggestedStatus} />}
-                                                            {s.createdAt && (
-                                                                <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                                                                    {formatRelativeTime(s.createdAt)}
-                                                                </span>
-                                                            )}
-                                                            {s.gmailMessageId && activeTab === 'application_response' && (
-                                                                <a
-                                                                    href={`https://mail.google.com/mail/u/0/#all/${s.gmailMessageId}`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    title="Open in Gmail"
-                                                                    className="flex items-center justify-center w-7 h-7 rounded-lg transition-colors"
-                                                                    style={{
-                                                                        color: 'var(--text-muted)',
-                                                                        border: '1px solid var(--border-subtle)',
-                                                                        background: 'var(--bg-elevated)',
-                                                                    }}
-                                                                >
-                                                                    <GmailLinkIcon />
-                                                                </a>
-                                                            )}
-                                                        </div>
+                                        <div className="inbox-card-body">
+                                            <div className="inbox-card-header">
+                                                <div className="inbox-card-avatar">{companyInitial}</div>
+                                                <div className="inbox-card-meta">
+                                                    <div>
+                                                        <h4>{s.matchedCompanyName || s.senderName || 'Unknown sender'}</h4>
+                                                        {s.matchedJobTitle && <p>{s.matchedJobTitle}</p>}
                                                     </div>
-                                                    <div className="mt-1.5">
-                                                        <ConfidencePill confidence={s.confidence} />
+                                                    <div className="inbox-card-tags">
+                                                        {s.suggestedStatus && <StatusPill status={s.suggestedStatus} />}
+                                                        {s.createdAt && <span>{formatRelativeTime(s.createdAt)}</span>}
+                                                        {s.gmailMessageId && (
+                                                            <a
+                                                                href={`https://mail.google.com/mail/u/0/#all/${s.gmailMessageId}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                title="Open in Gmail"
+                                                                className="inbox-gmail-btn"
+                                                            >
+                                                                <GmailLinkIcon />
+                                                            </a>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/*  Email preview block  */}
-                                            <div
-                                                className="rounded-lg px-3 py-2.5"
-                                                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
-                                            >
-                                                <p className="text-[12.5px] font-medium leading-snug" style={{ color: 'var(--text-secondary)' }}>
-                                                    {s.emailSubject || 'No subject'}
-                                                </p>
-                                                {s.emailSnippet && (
-                                                    <p className="text-[11.5px] mt-1 leading-relaxed line-clamp-2" style={{ color: 'var(--text-muted)' }}>
-                                                        {s.emailSnippet}
-                                                    </p>
-                                                )}
+                                            <div className="inbox-card-status">
+                                                <ConfidencePill confidence={s.confidence} />
+                                            </div>
+
+                                            <div className="inbox-card-preview">
+                                                <p className="inbox-card-subject">{s.emailSubject || 'No subject'}</p>
+                                                {s.emailSnippet && <p className="inbox-card-snippet">{s.emailSnippet}</p>}
                                                 {(s.senderName || s.senderEmail) && (
-                                                    <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>
-                                                        From: {s.senderName || s.senderEmail}
-                                                    </p>
+                                                    <p className="inbox-card-from">From: {s.senderName || s.senderEmail}</p>
                                                 )}
                                             </div>
 
-                                            {/*  AI note  */}
                                             {s.suggestedNote && (
-                                                <div
-                                                    className="rounded-lg px-3 py-2.5"
-                                                    style={{
-                                                        background: 'var(--accent-bg)',
-                                                        borderLeft: '3px solid var(--accent)',
-                                                        border: '1px solid var(--accent-dim)',
-                                                    }}
-                                                >
-                                                    <p className="text-[11px] font-semibold mb-1" style={{ color: 'var(--accent)' }}>AI note</p>
-                                                    <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                                                        {s.suggestedNote}
-                                                    </p>
+                                                <div className="inbox-card-note">
+                                                    <div className="inbox-card-note-head">
+                                                        <span>AI Note</span>
+                                                    </div>
+                                                    <p>{s.suggestedNote}</p>
                                                 </div>
                                             )}
 
-                                            {/*  Calendar event chip  */}
                                             {hasCalEvent && (
-                                                <div
-                                                    className="flex items-center gap-2.5 rounded-lg px-3 py-2.5"
-                                                    style={{
-                                                        background: hasScope ? 'rgba(59,130,246,0.06)' : 'var(--bg-elevated)',
-                                                        border: `1px solid ${hasScope ? 'rgba(59,130,246,0.2)' : 'var(--border-subtle)'}`,
-                                                    }}
-                                                >
+                                                <div className="inbox-card-calendar">
                                                     {hasScope && (
                                                         <input
                                                             type="checkbox"
@@ -871,66 +760,41 @@ const EmailSuggestionsPage: React.FC = () => {
                                                                     return next;
                                                                 });
                                                             }}
-                                                            className="shrink-0 cursor-pointer"
-                                                            style={{ accentColor: '#3b82f6', width: 14, height: 14 }}
                                                         />
                                                     )}
-                                                    <span style={{ color: hasScope ? '#3b82f6' : 'var(--text-muted)', flexShrink: 0 }}>
-                                                        <CalendarIcon />
-                                                    </span>
-                                                    <div className="flex-1 min-w-0 flex items-baseline gap-2">
-                                                        <p className="text-[12.5px] font-semibold truncate" style={{ color: hasScope ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                                                            {s.suggestedCalendarEvent!.title}
-                                                        </p>
-                                                        <p className="text-[11.5px] shrink-0" style={{ color: 'var(--text-muted)' }}>
-                                                            {formatCalEventDate(s.suggestedCalendarEvent!.dateTimeISO)}
-                                                        </p>
+                                                    <span><CalendarIcon /></span>
+                                                    <div>
+                                                        <p>{s.suggestedCalendarEvent!.title}</p>
+                                                        <span>{formatCalEventDate(s.suggestedCalendarEvent!.dateTimeISO)}</span>
                                                     </div>
                                                     {!hasScope && (
-                                                        <button
-                                                            onClick={handleConnectGmail}
-                                                            className="text-[11px] font-semibold shrink-0 underline"
-                                                            style={{ color: 'var(--accent)' }}
-                                                        >
-                                                            Connect calendar 
-                                                        </button>
+                                                        <button onClick={handleConnectGmail}>Connect calendar</button>
                                                     )}
                                                 </div>
                                             )}
 
-                                            {/*  Footer: match info + email link toggle + action buttons  */}
-                                            <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                                            <div className="inbox-card-footer">
                                                 {s.emailCategory !== 'job_offer' && (
-                                                    <div className="flex-1 min-w-0 text-[11.5px] truncate" style={{ color: 'var(--text-muted)' }}>
+                                                    <div className="inbox-card-match">
                                                         {job ? (
                                                             <>
-                                                                <span>Matched: </span>
-                                                                <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
-                                                                    {job.companyName}  {job.jobTitle}
-                                                                </span>
-                                                                <span
-                                                                    className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1.5"
-                                                                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
-                                                                >
-                                                                    {job.status}
-                                                                </span>
+                                                                <span>Matched:</span>
+                                                                <strong>{job.companyName} {job.jobTitle}</strong>
+                                                                <em>{job.status}</em>
                                                             </>
                                                         ) : (
-                                                            <span style={{ color: 'rgba(251,191,36,0.85)' }}> No matching job found</span>
+                                                            <span className="warn">No matching job found</span>
                                                         )}
                                                     </div>
                                                 )}
-                                                {s.emailCategory === 'job_offer' && <div className="flex-1" />}
 
-                                                {/* Action buttons */}
-                                                <div className="flex gap-1.5 shrink-0">
+                                                <div className="inbox-card-actions">
                                                     {s.emailCategory === 'job_offer' ? (
                                                         <>
                                                             <button
                                                                 onClick={() => handleReject(s)}
                                                                 disabled={busy}
-                                                                className="btn-secondary flex items-center gap-1"
-                                                                style={{ fontSize: 12, padding: '5px 10px' }}
+                                                                className="inbox-ghost-btn"
                                                             >
                                                                 <XIcon /> Dismiss
                                                             </button>
@@ -938,8 +802,7 @@ const EmailSuggestionsPage: React.FC = () => {
                                                                 href={`https://mail.google.com/mail/u/0/#all/${s.gmailMessageId}`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="btn-primary flex items-center gap-1"
-                                                                style={{ fontSize: 12, padding: '5px 10px' }}
+                                                                className="inbox-solid-btn"
                                                             >
                                                                 <ExternalLinkIcon /> Open in Gmail
                                                             </a>
@@ -949,16 +812,14 @@ const EmailSuggestionsPage: React.FC = () => {
                                                             <button
                                                                 onClick={() => setEditingSuggestion(s)}
                                                                 disabled={busy}
-                                                                className="btn-secondary flex items-center gap-1"
-                                                                style={{ fontSize: 12, padding: '5px 10px' }}
+                                                                className="inbox-ghost-btn"
                                                             >
                                                                 <EditIcon /> Edit
                                                             </button>
                                                             <button
                                                                 onClick={() => handleReject(s)}
                                                                 disabled={busy}
-                                                                className="btn-danger flex items-center gap-1"
-                                                                style={{ fontSize: 12, padding: '5px 10px' }}
+                                                                className="inbox-ghost-btn" style={{ color: 'var(--error)' }}
                                                             >
                                                                 <XIcon /> Dismiss
                                                             </button>
@@ -966,11 +827,9 @@ const EmailSuggestionsPage: React.FC = () => {
                                                                 <button
                                                                     onClick={() => handleAccept(s)}
                                                                     disabled={busy}
-                                                                    className="btn-primary flex items-center gap-1"
-                                                                    style={{ fontSize: 12, padding: '5px 10px' }}
+                                                                    className="inbox-solid-btn"
                                                                 >
-                                                                    <CheckIcon />
-                                                                    {s.suggestedStatus ? 'Apply' : 'Save to calendar'}
+                                                                    <CheckIcon /> {s.suggestedStatus ? 'Apply' : 'Save to calendar'}
                                                                 </button>
                                                             )}
                                                         </>
@@ -983,40 +842,925 @@ const EmailSuggestionsPage: React.FC = () => {
                             })}
                         </div>
                     )}
+                </section>
 
-                    {/*  Edit modal  */}
-                    {editingSuggestion && (
-                        <EditSuggestionModal
-                            suggestion={editingSuggestion}
-                            onClose={() => setEditingSuggestion(null)}
-                            onSave={handleEditSave}
-                        />
-                    )}
+                {editingSuggestion && (
+                    <EditSuggestionModal
+                        suggestion={editingSuggestion}
+                        onClose={() => setEditingSuggestion(null)}
+                        onSave={handleEditSave}
+                    />
+                )}
+            </main>
 
-                    {/*  Toast  */}
-                    {toast && (
-                        <div
-                            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-xl text-sm font-medium shadow-xl whitespace-nowrap"
-                            style={{
-                                background: toast.type === 'err' ? 'rgba(244,100,100,0.12)' : 'var(--bg-elevated)',
-                                border: `1px solid ${toast.type === 'err' ? 'rgba(244,100,100,0.3)' : 'var(--border)'}`,
-                                color: toast.type === 'err' ? 'var(--rose, var(--error))' : 'var(--text-primary)',
-                                animation: 'fadeUp 200ms ease',
-                            }}
-                        >
-                            {toast.msg}
-                        </div>
-                    )}
-
-                    <style>{`
-                        @keyframes spin { to { transform: rotate(360deg); } }
-                        @keyframes fadeUp {
-                            from { opacity: 0; transform: translateX(-50%) translateY(8px); }
-                            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-                        }
-                    `}</style>
+            {toast && (
+                <div className={toast.type === 'err' ? 'inbox-toast is-error' : 'inbox-toast'}>
+                    {toast.msg}
                 </div>
-            </div>
+            )}
+
+            <style>{`
+                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes fadeUp {
+                    from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+                    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+                }
+
+                .inbox-amber {
+                    --primary: var(--accent);
+                    --primary-dim: var(--accent-dim);
+                    --primary-container: var(--accent-bg);
+                    --secondary: var(--ember);
+                    --secondary-container: var(--ember-bg, rgba(240, 126, 56, 0.08));
+                    --surface: var(--bg-base);
+                    --surface-low: var(--bg-elevated);
+                    --surface-lowest: var(--bg-surface);
+                    --surface-variant: var(--bg-raised, var(--bg-elevated));
+                    --text-primary-amber: var(--text-primary);
+                    --text-muted-amber: var(--text-muted);
+                    --text-secondary: var(--text-secondary);
+                    --text-muted: var(--text-muted);
+                    --outline-variant: var(--border);
+                    --error: var(--rose);
+                    --error-soft: var(--rose-bg, rgba(244, 100, 100, 0.08));
+                    --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.25);
+                    background: var(--surface);
+                    color: var(--text-primary-amber);
+                    min-height: 100vh;
+                    position: relative;
+                    font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
+                }
+
+                .inbox-amber h1,
+                .inbox-amber h2,
+                .inbox-amber h3,
+                .inbox-amber h4 {
+                    font-family: 'Manrope', 'Fraunces', serif;
+                }
+
+                .inbox-topbar {
+                    position: sticky;
+                    top: 0;
+                    z-index: 3;
+                    background: var(--bg-surface);
+                    border-bottom: 1px solid var(--border);
+                }
+
+                .inbox-topbar-inner {
+                    max-width: 72rem;
+                    margin: 0 auto;
+                    padding: 1.25rem 2rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 1.5rem;
+                    justify-content: space-between;
+                }
+
+                .inbox-search {
+                    flex: 1;
+                    max-width: 480px;
+                    position: relative;
+                }
+
+                .inbox-search-icon {
+                    position: absolute;
+                    left: 16px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: var(--text-muted);
+                }
+
+                .inbox-search-input {
+                    width: 100%;
+                    border: none;
+                    border-radius: 999px;
+                    padding: 0.7rem 1rem 0.7rem 2.75rem;
+                    background: var(--surface-low);
+                    box-shadow: inset 0 0 0 1px var(--border);
+                    font-size: 0.9rem;
+                    color: var(--text-primary);
+                }
+
+                .inbox-search-input:focus {
+                    outline: 2px solid var(--accent-bg);
+                }
+
+                .inbox-topbar-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                }
+
+                .inbox-icon-btn {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 14px;
+                    border: 1px solid var(--border);
+                    background: transparent;
+                    color: var(--text-muted);
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 150ms ease;
+                }
+
+                .inbox-icon-btn.is-active {
+                    background: var(--bg-surface);
+                    box-shadow: var(--shadow-soft);
+                    color: var(--primary);
+                }
+
+                .inbox-primary-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.65rem 1rem;
+                    border-radius: 999px;
+                    border: none;
+                    background: var(--primary);
+                    color: var(--text-on-accent, #0e0e17);
+                    font-weight: 700;
+                    font-size: 0.9rem;
+                    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+                }
+
+                .inbox-primary-btn:disabled {
+                    opacity: 0.7;
+                }
+
+                .inbox-credit-pill {
+                    background: var(--accent-dim);
+                    color: var(--text-on-accent, #0e0e17);
+                    font-size: 0.65rem;
+                    padding: 0.2rem 0.5rem;
+                    border-radius: 999px;
+                    font-weight: 700;
+                }
+
+                .inbox-container {
+                    position: relative;
+                    z-index: 2;
+                    max-width: 72rem;
+                    margin: 0 auto;
+                    padding: 2rem 2rem 4rem;
+                }
+
+                .inbox-title-row {
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                }
+
+                .inbox-title-inline {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                }
+
+                .inbox-title {
+                    font-size: 2.75rem;
+                    font-weight: 800;
+                    letter-spacing: -0.02em;
+                    margin-bottom: 0.5rem;
+                }
+
+                .inbox-count-pill {
+                    background: var(--primary-container);
+                    color: var(--text-on-accent, #0e0e17);
+                    font-weight: 800;
+                    font-size: 0.8rem;
+                    padding: 0.2rem 0.6rem;
+                    border-radius: 999px;
+                }
+
+                .inbox-subtitle {
+                    color: var(--text-muted-amber);
+                    font-size: 0.95rem;
+                }
+
+                .inbox-stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                    gap: 1.5rem;
+                    margin-top: 2rem;
+                }
+
+                .inbox-stat {
+                    border-radius: 1.5rem;
+                    padding: 2rem;
+                    box-shadow: var(--shadow-soft);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.25rem;
+                    min-height: 180px;
+                }
+
+                .inbox-stat h3 {
+                    font-size: 3rem;
+                    font-weight: 800;
+                    margin: 0;
+                }
+
+                .inbox-stat p {
+                    font-weight: 600;
+                    margin: 0 0 0.5rem;
+                }
+
+                .inbox-stat-icon {
+                    width: 48px;
+                    height: 48px;
+                }
+
+                .inbox-stat-primary {
+                    background: var(--primary);
+                    color: var(--text-on-accent, #0e0e17);
+                }
+
+                .inbox-stat-neutral {
+                    background: var(--surface-lowest);
+                    border: 1px solid var(--border);
+                    color: var(--text-primary);
+                }
+
+                .inbox-stat-neutral h3 {
+                    color: var(--primary);
+                }
+
+                .inbox-stat-secondary {
+                    background: var(--azure-bg, rgba(59, 130, 246, 0.08));
+                    color: var(--azure, #3b82f6);
+                    border: 1px solid var(--border);
+                }
+
+                .inbox-settings {
+                    margin-top: 2rem;
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: 1rem 1.5rem;
+                    padding: 1rem 1.25rem;
+                    border-radius: 1.25rem;
+                    background: var(--bg-surface);
+                    border: 1px solid var(--border);
+                    box-shadow: var(--shadow-soft);
+                }
+
+                .inbox-settings-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+
+                .inbox-settings-label {
+                    font-size: 0.8rem;
+                    color: var(--text-muted-amber);
+                    font-weight: 600;
+                }
+
+                .inbox-select {
+                    border: none;
+                    background: var(--surface-low);
+                    padding: 0.4rem 0.8rem;
+                    border-radius: 999px;
+                    font-size: 0.85rem;
+                    color: var(--text-primary);
+                }
+
+                .inbox-toggle {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    font-size: 0.85rem;
+                    color: var(--text-primary-amber);
+                }
+
+                .inbox-toggle-track {
+                    width: 36px;
+                    height: 18px;
+                    border-radius: 999px;
+                    border: 1px solid var(--border);
+                    background: var(--surface-low);
+                    position: relative;
+                }
+
+                .inbox-toggle-track.is-active {
+                    background: var(--accent-bg);
+                    border-color: var(--accent-dim);
+                }
+
+                .inbox-toggle-thumb {
+                    position: absolute;
+                    top: 2px;
+                    left: 2px;
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 999px;
+                    background: var(--text-on-accent, #0e0e17);
+                    transition: transform 150ms ease;
+                }
+
+                .inbox-toggle-track.is-active .inbox-toggle-thumb {
+                    transform: translateX(16px);
+                    background: var(--accent);
+                }
+
+                .inbox-settings-note {
+                    margin-left: auto;
+                    font-size: 0.75rem;
+                    color: var(--text-muted-amber);
+                }
+
+                .inbox-code-pill {
+                    background: var(--surface-variant);
+                    padding: 0.15rem 0.4rem;
+                    border-radius: 0.5rem;
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 0.7rem;
+                }
+
+                .inbox-how {
+                    margin-top: 1.5rem;
+                }
+
+                .inbox-how-trigger {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: var(--primary);
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                }
+
+                .inbox-how-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                    gap: 1rem;
+                    margin-top: 1rem;
+                    padding: 1.5rem;
+                    border-radius: 1.5rem;
+                    background: var(--bg-surface);
+                    border: 1px solid var(--border);
+                }
+
+                .inbox-how-card {
+                    display: flex;
+                    gap: 0.75rem;
+                    align-items: flex-start;
+                }
+
+                .inbox-how-icon {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 10px;
+                    background: var(--accent-bg);
+                    color: var(--primary);
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .inbox-step-pill {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 10px;
+                    background: var(--accent-bg);
+                    color: var(--primary);
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    font-size: 0.8rem;
+                }
+
+                .inbox-how-title {
+                    font-weight: 700;
+                    font-size: 0.9rem;
+                    margin-bottom: 0.25rem;
+                }
+
+                .inbox-how-desc {
+                    font-size: 0.75rem;
+                    color: var(--text-muted-amber);
+                }
+
+                .inbox-warning {
+                    margin-top: 1.5rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    padding: 1rem 1.25rem;
+                    border-radius: 1.25rem;
+                    background: var(--ember-bg, rgba(240, 126, 56, 0.08));
+                    border: 1px solid var(--ember, #f07e38);
+                    color: var(--ember, #f07e38);
+                }
+
+                .inbox-warning p:first-child {
+                    font-weight: 700;
+                    margin-bottom: 0.2rem;
+                }
+
+                .inbox-warning p:last-child {
+                    font-size: 0.8rem;
+                    color: var(--text-muted);
+                }
+
+                .inbox-link-btn {
+                    margin-left: auto;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.4rem;
+                    padding: 0.5rem 0.9rem;
+                    border-radius: 999px;
+                    border: none;
+                    background: var(--primary);
+                    color: var(--text-on-accent, #0e0e17);
+                    font-size: 0.8rem;
+                    font-weight: 700;
+                }
+
+                .inbox-alert {
+                    margin-top: 1.5rem;
+                    display: flex;
+                    gap: 0.75rem;
+                    padding: 1rem 1.25rem;
+                    border-radius: 1rem;
+                    background: var(--error-soft);
+                    border: 1px solid var(--rose, #f46464);
+                    color: var(--error);
+                }
+
+                .inbox-alert.is-upgrade {
+                    background: var(--ember-bg, rgba(240, 126, 56, 0.08));
+                    border-color: var(--ember, #f07e38);
+                    color: var(--ember, #f07e38);
+                }
+
+                .inbox-alert-icon {
+                    width: 18px;
+                    height: 18px;
+                    flex-shrink: 0;
+                    margin-top: 2px;
+                }
+
+                .inbox-alert a {
+                    display: inline-block;
+                    margin-top: 0.3rem;
+                    color: inherit;
+                    text-decoration: underline;
+                    font-weight: 600;
+                    font-size: 0.8rem;
+                }
+
+                .inbox-updates {
+                    margin-top: 2.5rem;
+                }
+
+                .inbox-updates-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    margin-bottom: 1.5rem;
+                }
+
+                .inbox-updates-header h2 {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                }
+
+                .inbox-chips {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    flex-wrap: wrap;
+                }
+
+                .inbox-chip {
+                    border-radius: 999px;
+                    background: var(--surface-low);
+                    color: var(--text-muted-amber);
+                    padding: 0.35rem 0.9rem;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    border: 1px solid var(--border);
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.4rem;
+                }
+
+                .inbox-chip span {
+                    background: var(--surface-lowest);
+                    color: var(--primary);
+                    padding: 0.05rem 0.4rem;
+                    border-radius: 999px;
+                    font-size: 0.7rem;
+                }
+
+                .inbox-chip.is-active {
+                    background: var(--accent-bg);
+                    color: var(--text-primary);
+                    border-color: var(--accent-dim);
+                }
+
+                .inbox-chip.is-active span {
+                    background: var(--surface-lowest);
+                    color: var(--primary);
+                }
+
+                .inbox-chip.ghost {
+                    background: transparent;
+                    color: var(--text-muted-amber);
+                    border-style: dashed;
+                }
+
+                .inbox-skeletons {
+                    display: grid;
+                    gap: 1.5rem;
+                }
+
+                .inbox-skeleton {
+                    background: var(--surface-lowest);
+                    border-radius: 1.25rem;
+                    border: 1px solid var(--border);
+                    padding: 1.5rem;
+                    box-shadow: var(--shadow-soft);
+                }
+
+                .inbox-skeleton-head {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    justify-content: space-between;
+                }
+
+                .inbox-skeleton-avatar {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 16px;
+                    background: var(--surface-low);
+                }
+
+                .inbox-skeleton-line {
+                    width: 180px;
+                    height: 10px;
+                    border-radius: 6px;
+                    background: var(--surface-low);
+                }
+
+                .inbox-skeleton-line.short {
+                    width: 120px;
+                    margin-bottom: 6px;
+                }
+
+                .inbox-skeleton-pill {
+                    width: 60px;
+                    height: 20px;
+                    border-radius: 999px;
+                    background: var(--surface-low);
+                }
+
+                .inbox-skeleton-block {
+                    margin-top: 1rem;
+                    height: 70px;
+                    border-radius: 16px;
+                    background: var(--surface-low);
+                }
+
+                .inbox-skeleton-actions {
+                    margin-top: 1rem;
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 0.5rem;
+                }
+
+                .inbox-skeleton-actions span {
+                    width: 70px;
+                    height: 28px;
+                    border-radius: 999px;
+                    background: var(--surface-low);
+                }
+
+                .inbox-empty {
+                    background: var(--surface-lowest);
+                    border-radius: 1.5rem;
+                    padding: 2rem;
+                    text-align: center;
+                    border: 1px solid var(--border);
+                    box-shadow: var(--shadow-soft);
+                }
+
+                .inbox-empty h3 {
+                    font-size: 1.1rem;
+                    font-weight: 700;
+                    margin-bottom: 0.4rem;
+                }
+
+                .inbox-empty p {
+                    color: var(--text-muted-amber);
+                    margin-bottom: 1rem;
+                }
+
+                .inbox-empty-icon {
+                    width: 52px;
+                    height: 52px;
+                    border-radius: 18px;
+                    margin: 0 auto 1rem;
+                    background: var(--surface-low);
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: var(--primary);
+                }
+
+                .inbox-cards {
+                    display: grid;
+                    gap: 1.5rem;
+                }
+
+                .inbox-card {
+                    position: relative;
+                    background: var(--surface-lowest);
+                    border-radius: 1.5rem;
+                    padding: 0;
+                    border: 1px solid var(--border);
+                    box-shadow: var(--shadow-soft);
+                    transition: transform 200ms ease;
+                }
+
+                .inbox-card:hover {
+                    transform: translateY(-2px);
+                }
+
+                .inbox-card-overlay {
+                    position: absolute;
+                    inset: 0;
+                    border-radius: 1.5rem;
+                    background: rgba(0, 0, 0, 0.5);
+                    backdrop-filter: blur(2px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 2;
+                }
+
+                .inbox-card-body {
+                    padding: 2rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.2rem;
+                }
+
+                .inbox-card-header {
+                    display: flex;
+                    gap: 1rem;
+                    align-items: flex-start;
+                }
+
+                .inbox-card-avatar {
+                    width: 54px;
+                    height: 54px;
+                    border-radius: 18px;
+                    background: var(--surface-low);
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 800;
+                    font-size: 1.3rem;
+                    color: var(--primary);
+                }
+
+                .inbox-card-meta {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    flex: 1;
+                }
+
+                .inbox-card-meta h4 {
+                    font-size: 1.15rem;
+                    font-weight: 700;
+                }
+
+                .inbox-card-meta p {
+                    font-size: 0.85rem;
+                    color: var(--text-muted-amber);
+                }
+
+                .inbox-card-tags {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: var(--text-muted-amber);
+                    font-size: 0.75rem;
+                }
+
+                .inbox-gmail-btn {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 12px;
+                    background: var(--surface-low);
+                    border: 1px solid var(--border);
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: var(--primary);
+                }
+
+                .inbox-card-status {
+                    display: flex;
+                    gap: 0.5rem;
+                }
+
+                .inbox-card-preview {
+                    background: var(--surface-low);
+                    border-radius: 1rem;
+                    padding: 1rem 1.25rem;
+                    border: 1px solid var(--border);
+                }
+
+                .inbox-card-subject {
+                    font-weight: 600;
+                    font-size: 0.95rem;
+                }
+
+                .inbox-card-snippet {
+                    font-size: 0.8rem;
+                    color: var(--text-muted-amber);
+                    margin-top: 0.4rem;
+                    line-height: 1.5;
+                }
+
+                .inbox-card-from {
+                    margin-top: 0.4rem;
+                    font-size: 0.75rem;
+                    color: var(--text-muted-amber);
+                }
+
+                .inbox-card-note {
+                    background: var(--accent-bg);
+                    border-radius: 1rem;
+                    padding: 1rem 1.25rem;
+                    border: 1px solid var(--accent-dim);
+                }
+
+                .inbox-card-note-head {
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    color: var(--primary);
+                    text-transform: uppercase;
+                    letter-spacing: 0.12em;
+                    margin-bottom: 0.4rem;
+                }
+
+                .inbox-card-note p {
+                    font-size: 0.85rem;
+                    color: var(--text-secondary);
+                }
+
+                .inbox-card-calendar {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.9rem 1rem;
+                    border-radius: 1rem;
+                    background: var(--azure-bg, rgba(59, 130, 246, 0.08));
+                    border: 1px solid var(--azure, #3b82f6);
+                    font-size: 0.8rem;
+                }
+
+                .inbox-card-calendar input {
+                    width: 14px;
+                    height: 14px;
+                    accent-color: var(--azure, #3b82f6);
+                }
+
+                .inbox-card-calendar span {
+                    color: var(--azure, #3b82f6);
+                }
+
+                .inbox-card-calendar button {
+                    margin-left: auto;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    text-decoration: underline;
+                    color: var(--primary);
+                }
+
+                .inbox-card-calendar p {
+                    font-weight: 600;
+                }
+
+                .inbox-card-calendar span + div span {
+                    display: block;
+                    color: var(--text-muted-amber);
+                }
+
+                .inbox-card-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    flex-wrap: wrap;
+                }
+
+                .inbox-card-match {
+                    font-size: 0.75rem;
+                    color: var(--text-muted-amber);
+                    display: flex;
+                    align-items: center;
+                    gap: 0.4rem;
+                }
+
+                .inbox-card-match strong {
+                    color: var(--text-primary-amber);
+                    font-weight: 600;
+                }
+
+                .inbox-card-match em {
+                    font-style: normal;
+                    background: var(--surface-low);
+                    padding: 0.1rem 0.5rem;
+                    border-radius: 999px;
+                    font-size: 0.7rem;
+                }
+
+                .inbox-card-match .warn {
+                    color: var(--ember, #f07e38);
+                }
+
+                .inbox-card-actions {
+                    display: flex;
+                    gap: 0.6rem;
+                    flex-wrap: wrap;
+                }
+
+                .inbox-ghost-btn {
+                    border: 1px solid var(--border);
+                    background: transparent;
+                    color: var(--primary);
+                    border-radius: 999px;
+                    padding: 0.45rem 0.9rem;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.4rem;
+                }
+
+                .inbox-solid-btn {
+                    border: none;
+                    background: var(--primary);
+                    color: var(--text-on-accent, #0e0e17);
+                    border-radius: 999px;
+                    padding: 0.45rem 0.9rem;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.4rem;
+                }
+
+                .inbox-toast {
+                    position: fixed;
+                    bottom: 24px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    padding: 0.7rem 1.25rem;
+                    border-radius: 1rem;
+                    background: var(--bg-surface);
+                    border: 1px solid var(--border);
+                    box-shadow: var(--shadow-soft);
+                    font-size: 0.85rem;
+                    animation: fadeUp 200ms ease;
+                    z-index: 50;
+                }
+
+                .inbox-toast.is-error {
+                    background: var(--rose-bg, rgba(244, 100, 100, 0.08));
+                    color: var(--error);
+                }
+
+                @media (max-width: 768px) {
+                    .inbox-topbar-inner {
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+
+                    .inbox-topbar-actions {
+                        justify-content: space-between;
+                    }
+
+                    .inbox-card-meta {
+                        flex-direction: column;
+                    }
+
+                    .inbox-card-tags {
+                        justify-content: flex-start;
+                        flex-wrap: wrap;
+                    }
+                }
+            `}</style>
         </div>
     );
 };
