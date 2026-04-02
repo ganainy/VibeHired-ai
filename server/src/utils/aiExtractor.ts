@@ -25,6 +25,7 @@ export interface ExtractedJobData {
     hiringManagerName?: string | null; // Hiring manager or recruiter name
     applicationUrl?: string | null; // Direct application URL/portal link
     notes?: string; // Reserved for user, typically null from AI
+    jobTags?: string[] | null; // Short field/industry tags
 }
 
 // Fetch HTML with retry logic and increased timeout
@@ -99,6 +100,24 @@ function parseExtractionResponse(responseText: string): ExtractedJobData {
         }
     }
 
+    const normalizeJobTags = (tags: unknown): string[] | null => {
+        if (!Array.isArray(tags)) return null;
+        const normalized = tags
+            .map(tag => (typeof tag === 'string' ? tag.trim().replace(/\s+/g, ' ') : ''))
+            .filter(Boolean)
+            .map(tag => tag.length > 32 ? tag.slice(0, 32).trim() : tag);
+        const deduped: string[] = [];
+        const seen = new Set<string>();
+        for (const tag of normalized) {
+            const key = tag.toLowerCase();
+            if (!seen.has(key)) {
+                seen.add(key);
+                deduped.push(tag);
+            }
+        }
+        return deduped.length > 0 ? deduped.slice(0, 6) : null;
+    };
+
     try {
         const parsed = JSON.parse(extractedJsonString);
         // Basic validation - check for essential fields (allow null for jobDescriptionText as fallback)
@@ -113,6 +132,7 @@ function parseExtractionResponse(responseText: string): ExtractedJobData {
                     ? `Job details: ${parsed.notes}`
                     : `Job posting at ${parsed.companyName || 'the company'}. Please refer to the original job posting for full details.`;
             }
+            parsed.jobTags = normalizeJobTags(parsed.jobTags);
             return parsed as ExtractedJobData; // Assume structure matches if key fields exist
         } else {
             console.warn("Parsed JSON from AI missing essential fields (jobTitle, companyName, jobDescriptionText, language):", parsed);
@@ -154,14 +174,16 @@ async function extractFieldsWithGemini(htmlContent: string, url: string, userId:
             - contactPhone: Recruiter or company contact phone number
             - hiringManagerName: Name of hiring manager, recruiter, or contact person
             - applicationUrl: Direct application URL or portal link (if different from the source URL)
+        11. Provide 2-4 concise field/industry tags in jobTags (e.g., "Cybersecurity", "Network Security", "SOC", "Threat Detection"). Use Title Case, avoid duplicates, and keep each tag under 32 characters.
 
         Output Format:
-        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "estimatedSalary", "salaryIsEstimate", "keyDetails", "jobPrerequisites", "jobType", "contactEmail", "contactPhone", "hiringManagerName", "applicationUrl", and "notes".
+        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "estimatedSalary", "salaryIsEstimate", "keyDetails", "jobPrerequisites", "jobType", "contactEmail", "contactPhone", "hiringManagerName", "applicationUrl", "jobTags", and "notes".
         - jobTitle, companyName, language, location, salary, estimatedSalary, jobPrerequisites, contactEmail, contactPhone, hiringManagerName, applicationUrl should be strings if found, or null.
         - salaryIsEstimate should be a boolean: true if salary is AI-estimated, false if extracted from the posting.
         - jobType should be one of: "full-time", "part-time", "working-student", "internship", "contract", "freelance", or null.
         - keyDetails should be an array of objects with "key" and "value" strings, or null.
         - jobPrerequisites should be a bulleted list string of requirements and qualifications (ALWAYS IN ENGLISH).
+        - jobTags should be an array of 2-4 strings, or null if unclear.
         - jobDescriptionText is REQUIRED.
         - 'notes' should be null.
 
@@ -181,6 +203,7 @@ async function extractFieldsWithGemini(htmlContent: string, url: string, userId:
           "contactPhone": "+49 30 12345678",
           "hiringManagerName": "Jane Smith",
           "applicationUrl": "https://techcorp.com/careers/apply/123",
+                    "jobTags": ["Cybersecurity", "Threat Detection", "SOC"],
           "keyDetails": [
             { "key": "Contract", "value": "Full-time" },
             { "key": "Location", "value": "Berlin / Hybrid" },
@@ -278,14 +301,16 @@ export async function extractJobDataFromText(rawText: string, userId: string): P
             - contactPhone: Recruiter or company contact phone number
             - hiringManagerName: Name of hiring manager, recruiter, or contact person
             - applicationUrl: Direct application URL or portal link
+        11. Provide 2-4 concise field/industry tags in jobTags (e.g., "Cybersecurity", "Network Security", "SOC", "Threat Detection"). Use Title Case, avoid duplicates, and keep each tag under 32 characters.
 
         Output Format:
-        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "estimatedSalary", "salaryIsEstimate", "keyDetails", "jobPrerequisites", "jobType", "contactEmail", "contactPhone", "hiringManagerName", "applicationUrl", and "notes".
+        Return ONLY a single JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`). This JSON object MUST contain exactly these top-level keys: "jobTitle", "companyName", "jobDescriptionText", "language", "location", "salary", "estimatedSalary", "salaryIsEstimate", "keyDetails", "jobPrerequisites", "jobType", "contactEmail", "contactPhone", "hiringManagerName", "applicationUrl", "jobTags", and "notes".
         - jobTitle, companyName, language, location, salary, estimatedSalary, jobPrerequisites, contactEmail, contactPhone, hiringManagerName, applicationUrl should be strings if found, or null.
         - salaryIsEstimate should be a boolean: true if salary is AI-estimated, false if extracted from the posting.
         - jobType should be one of: "full-time", "part-time", "working-student", "internship", "contract", "freelance", or null.
         - keyDetails should be an array of objects with "key" and "value" strings, or null.
         - jobPrerequisites should be a bulleted list string of requirements and qualifications (ALWAYS IN ENGLISH).
+        - jobTags should be an array of 2-4 strings, or null if unclear.
         - jobDescriptionText is REQUIRED.
         - 'notes' should be null.
 
@@ -305,6 +330,7 @@ export async function extractJobDataFromText(rawText: string, userId: string): P
           "contactPhone": "+1 555 123 4567",
           "hiringManagerName": "John Doe",
           "applicationUrl": "https://techcorp.com/apply",
+                    "jobTags": ["Cybersecurity", "Threat Detection", "SOC"],
           "keyDetails": [
             { "key": "Contract", "value": "Full-time" },
             { "key": "Experience", "value": "3+ years" },

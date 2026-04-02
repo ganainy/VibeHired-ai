@@ -122,7 +122,7 @@ const createJobHandler: RequestHandler = async (req: ValidatedRequest, res) => {
     res.status(401).json({ message: 'User not authenticated correctly.' });
     return;
   }
-  const { jobTitle, companyName, status, jobUrl, notes, jobDescriptionText, salary, contact, contactEmail, contactPhone, hiringManagerName, applicationUrl, language, baseCvId, createdAt } = req.validated!.body!;
+  const { jobTitle, companyName, status, jobUrl, notes, jobDescriptionText, salary, contact, contactEmail, contactPhone, hiringManagerName, applicationUrl, language, baseCvId, createdAt, jobTags } = req.validated!.body!;
 
   try {
     const jobData: any = {
@@ -141,6 +141,7 @@ const createJobHandler: RequestHandler = async (req: ValidatedRequest, res) => {
       language,
       jobDescriptionText, // Pass scraped text if provided
       baseCvId: baseCvId || null, // Store the base CV ID if provided
+      jobTags: Array.isArray(jobTags) ? jobTags : undefined,
       isAutoJob: false, // Manual job
       showInDashboard: true // Manual jobs always show in dashboard
     };
@@ -534,6 +535,7 @@ const extractFromTextHandler: RequestHandler = async (req: ValidatedRequest, res
       contactPhone: extractedData.contactPhone || undefined,
       hiringManagerName: extractedData.hiringManagerName || undefined,
       applicationUrl: extractedData.applicationUrl || undefined,
+      jobTags: extractedData.jobTags || undefined,
       extractedData: {
         ...existingExtractedData,
         location: extractedData.location || existingExtractedData.location,
@@ -632,6 +634,7 @@ const createJobFromUrlHandler: RequestHandler = async (req: ValidatedRequest, re
       contactPhone: extractedData.contactPhone || undefined,
       hiringManagerName: extractedData.hiringManagerName || undefined,
       applicationUrl: extractedData.applicationUrl || undefined,
+      jobTags: extractedData.jobTags || undefined,
       isAutoJob: false, // Manual job
       showInDashboard: true, // Manual jobs always show in dashboard
       extractedData: {
@@ -761,6 +764,7 @@ const createJobFromTextHandler: RequestHandler = async (req: ValidatedRequest, r
       contactPhone: extractedData.contactPhone || undefined,
       hiringManagerName: extractedData.hiringManagerName || undefined,
       applicationUrl: extractedData.applicationUrl || undefined,
+      jobTags: extractedData.jobTags || undefined,
       isAutoJob: false,
       showInDashboard: true,
       extractedData: {

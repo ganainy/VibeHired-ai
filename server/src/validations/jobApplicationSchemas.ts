@@ -24,6 +24,10 @@ const jobTypeEnum = z.enum([
   'freelance',
 ]).nullable().optional();
 
+const jobTagsSchema = z.array(
+  z.string().min(1, 'Tag cannot be empty').max(32, 'Tag is too long').trim()
+).max(8, 'Too many tags').optional();
+
 /**
  * Create job application body schema
  */
@@ -48,6 +52,7 @@ export const createJobBodySchema = z.object({
   jobDescriptionText: z.string().optional(),
   baseCvId: z.string().optional(),
   createdAt: z.string().optional(),
+  jobTags: jobTagsSchema,
 });
 
 /**
@@ -86,6 +91,7 @@ export const updateJobBodySchema = z.object({
   language: z.enum(['en', 'de']).optional(),
   // Allow updating favorite status
   isFavorite: z.boolean().optional(),
+  jobTags: jobTagsSchema,
 });
 
 /**

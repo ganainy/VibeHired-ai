@@ -103,6 +103,7 @@ export interface IJobApplication extends Document {
     // --- New Fields for CV Branch System ---
     jobCategory?: string | null;   // e.g., "Software Engineering" (free text)
     baseCvId?: mongoose.Schema.Types.ObjectId | null;  // Which CV branch was used as base
+    jobTags?: string[]; // Optional multi-tag fields for grouping/filtering
     // --- Job Type Field ---
     jobType?: 'full-time' | 'part-time' | 'working-student' | 'internship' | 'contract' | 'freelance' | null;
     // --- Chat History ---
@@ -219,6 +220,7 @@ const JobApplicationSchema: Schema = new Schema(
         // --- Schema Definitions for CV Branch System ---
         jobCategory: { type: String, default: null, maxlength: 50 },
         baseCvId: { type: Schema.Types.ObjectId, ref: 'CV', default: null },
+        jobTags: { type: [String], default: [] },
         // --- Job Type Schema ---
         jobType: {
             type: String,

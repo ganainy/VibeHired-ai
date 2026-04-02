@@ -61,6 +61,7 @@ export interface JobApplication {
     generatedCoverLetterFilename?: string | null; // Added
     baseCvId?: string | null; // Reference to the base CV used for this job
     jobCategory?: string | null; // Category of the job (e.g., "IT Helpdesk", "Programming")
+    jobTags?: string[]; // Optional job field/industry tags
     isFavorite?: boolean; // User can mark job as favorite
     appliedAtsSuggestions?: string[]; // History of applied ATS improvements
     createdAt: string; // Dates are often strings in JSON
