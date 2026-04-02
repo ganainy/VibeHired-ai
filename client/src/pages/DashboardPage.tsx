@@ -1,7 +1,7 @@
 // client/src/pages/DashboardPage.tsx
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
   getJobs,
   createJob,
@@ -26,6 +26,7 @@ import Toast from '../components/common/Toast';
 import { TableOrCards, ColumnDef, CardConfig } from '../components/common/TableOrCards';
 import DuplicateJobWarningModal from '../components/jobs/DuplicateJobWarningModal';
 import TourBanner from '../components/onboarding/TourBanner';
+import SpotlightOverlay from '../components/onboarding/SpotlightOverlay';
 import { usePageTour } from '../hooks/usePageTour';
 import { MOCK_JOB } from '../data/mockTourData';
 
@@ -204,6 +205,7 @@ type SortableJobKeys = 'jobTitle' | 'companyName' | 'status' | 'createdAt' | 'jo
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const MAX_JOB_TAGS = 6;
   const UNTAGGED_FILTER_KEY = '__untagged__';
@@ -341,6 +343,7 @@ const DashboardPage: React.FC = () => {
   // --- Add Job Form Collapse State (mobile only) ---
   const [addJobFormCollapsed, setAddJobFormCollapsed] = useState<boolean>(true);
   const addJobSectionRef = useRef<HTMLDivElement>(null);
+  const [highlightAddJobCta, setHighlightAddJobCta] = useState<boolean>(false);
 
   const normalizeTagValue = (value: string): string => value.trim().replace(/\s+/g, ' ');
 
@@ -588,6 +591,9 @@ const DashboardPage: React.FC = () => {
       try {
         const fetchedJobs = await getJobs();
         setJobs(fetchedJobs);
+        if (fetchedJobs.length > 0 && typeof window !== 'undefined') {
+          window.localStorage.setItem('vh:has-created-first-job', '1');
+        }
       } catch (err: any) {
         console.error("Failed to fetch jobs:", err);
         setError(err.message || "Failed to load job applications.");
@@ -838,6 +844,20 @@ const DashboardPage: React.FC = () => {
     setModalMode('add');
   };
 
+  useEffect(() => {
+    const shouldHighlight = searchParams.get('highlightAddJob') === '1' || searchParams.get('createJob') === '1';
+    if (!shouldHighlight) return;
+    setHighlightAddJobCta(true);
+    addJobSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('highlightAddJob');
+    nextParams.delete('createJob');
+    setSearchParams(nextParams, { replace: true });
+    const timer = window.setTimeout(() => setHighlightAddJobCta(false), 6000);
+    return () => window.clearTimeout(timer);
+  }, [searchParams, setSearchParams]);
+
+
   const handleCloseModal = () => {
     if (isSubmitting) return;
     setModalMode(null);
@@ -868,6 +888,9 @@ const DashboardPage: React.FC = () => {
       const payload = formData as CreateJobPayload;
       const createdJob = await createJob(payload);
       setJobs(prevJobs => [createdJob, ...prevJobs]);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('vh:has-created-first-job', '1');
+      }
       handleCloseModal();
       setToast({ message: 'Job application added successfully!', type: 'success' });
     } catch (err: any) {
@@ -988,6 +1011,9 @@ const DashboardPage: React.FC = () => {
       }
 
       setJobs(prevJobs => [newJob, ...prevJobs]);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('vh:has-created-first-job', '1');
+      }
       setJobTextInput('');
       setPreExtractionJobUrl('');
       setPreExtractionJobType('');
@@ -1610,6 +1636,12 @@ const DashboardPage: React.FC = () => {
   // --- Main Dashboard Content ---
   return (
     <div className="h-full flex flex-col bg-zinc-50 dark:bg-zinc-950">
+      <SpotlightOverlay
+        isOpen={highlightAddJobCta}
+        targetRef={addJobSectionRef}
+        message="Add a target job here to start tailoring your CV and cover letter."
+        onDismiss={() => setHighlightAddJobCta(false)}
+      />
 
       {/* Skip link for keyboard users */}
       <a
@@ -1625,7 +1657,7 @@ const DashboardPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
             <h1 className="page-title">From CV to tailored applications</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>Upload your CV, add a target job, create a job-specific CV, and generate a role-specific cover letter.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>Upload your CV, add a target job, generate a tailored CV + cover letter, then prep with interview tools and reminders.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {(() => {
@@ -1669,7 +1701,7 @@ const DashboardPage: React.FC = () => {
                   Get your first tailored application in 3 steps
                 </h2>
                 <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  Keep this sequence: add your CV first, then add a job, then generate the cover letter.
+                  Keep this sequence: add your CV first, then add a job, then generate a tailored CV + cover letter and keep going.
                 </p>
               </div>
               <button
@@ -1678,7 +1710,7 @@ const DashboardPage: React.FC = () => {
                 className="w-full lg:w-auto px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
                 style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}
               >
-                {!hasAnyCv ? 'Step 1: Add your CV' : !hasAnyJob ? 'Step 2: Add a target job' : 'Step 3: Generate cover letter'}
+                {!hasAnyCv ? 'Step 1: Add your CV' : !hasAnyJob ? 'Step 2: Add a target job' : 'Step 3: Tailor CV + cover letter'}
               </button>
             </div>
 
@@ -1700,8 +1732,8 @@ const DashboardPage: React.FC = () => {
                 },
                 {
                   key: 'cover',
-                  label: '3. Generate cover letter',
-                  hint: 'Create a tailored draft, then edit before sending.',
+                  label: '3. Tailor CV + cover letter',
+                  hint: 'Generate the tailored CV + cover letter, then add reminders, mock interview prep, and more.',
                   done: hasAnyCoverLetter,
                   eta: 'About 30 sec'
                 }

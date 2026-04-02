@@ -52,6 +52,38 @@ import { Button } from '@/components/common';
 
 ---
 
+### ✅ SpotlightOverlay (Onboarding)
+
+**Import:**
+```tsx
+import SpotlightOverlay from '@/components/onboarding/SpotlightOverlay';
+```
+
+**Props:**
+- `isOpen: boolean`
+- `targetRef: React.RefObject<HTMLElement>`
+- `message: string`
+- `onDismiss?: () => void`
+- `padding?: number`
+- `maxWidth?: number`
+
+**Example:**
+```tsx
+const targetRef = useRef<HTMLDivElement>(null);
+
+<>
+  <div ref={targetRef}>Add job section</div>
+  <SpotlightOverlay
+    isOpen={showSpotlight}
+    targetRef={targetRef}
+    message="Add a target job here to start tailoring your CV and cover letter."
+    onDismiss={() => setShowSpotlight(false)}
+  />
+</>
+```
+
+---
+
 ## 🔄 Migration Pattern (Applies to All Components)
 
 ### Before (Ad-hoc)

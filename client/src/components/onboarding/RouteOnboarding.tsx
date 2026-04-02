@@ -19,12 +19,12 @@ const PAGE_GUIDES: PageGuide[] = [
         key: 'dashboard',
         match: (p) => p === '/dashboard',
         title: 'Start Here: Application Flow',
-        description: 'Use this order for best results: add your CV first, add a target job second, then generate a tailored CV and cover letter.',
+        description: 'Use this order for best results: add your CV first, add a target job second, then generate a tailored CV + cover letter and keep going.',
         features: [
             'Step 1: Add or select your base CV before creating jobs',
             'Step 2: Add a job by URL, description text, or manual entry',
-            'Step 3: Open the job workspace and generate a tailored CV and cover letter',
-            'Track each application status after sending',
+            'Step 3: Open the job workspace to generate a tailored CV + cover letter',
+            'Continue with mock interview prep, reminders, and follow-ups',
         ],
     },
     {

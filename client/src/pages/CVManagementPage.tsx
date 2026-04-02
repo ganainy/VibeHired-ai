@@ -62,6 +62,8 @@ const CVManagementPage: React.FC = () => {
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('german-latex');
   const [creationMode, setCreationMode] = useState<'choose' | 'upload' | 'scratch'>('upload');
+  const [isNudgeDismissed, setIsNudgeDismissed] = useState<boolean>(false);
+  const [hasCreatedFirstJob, setHasCreatedFirstJob] = useState<boolean>(false);
 
   // Analysis state
   const [analyses, setAnalyses] = useState<Record<string, SectionAnalysisResult[]>>({});
@@ -125,6 +127,24 @@ const CVManagementPage: React.FC = () => {
   const { showTour, dismiss: dismissCvTour } = usePageTour('manage-cv');
   // Show mock data only while the demo tour is active and no real CVs exist
   const showMockTour = showTour && allCvs.length === 0 && !isLoadingJobCvs && !isLoadingCv;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const created = window.localStorage.getItem('vh:has-created-first-job') === '1';
+    setHasCreatedFirstJob(created);
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'vh:has-created-first-job') {
+        setHasCreatedFirstJob(event.newValue === '1');
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  const handleDismissFirstUploadNudge = () => {
+    setIsNudgeDismissed(true);
+  };
 
   // Update URL when activeCvId changes
   useEffect(() => {
@@ -591,6 +611,15 @@ const CVManagementPage: React.FC = () => {
       const cvData = response.cv?.cvJson || null;
       setCurrentCvData(cvData);
       setMasterCvId(response.cv?._id || null); // Store the new CV's MongoDB ID
+      setAllCvs((prev: CVDocument[]) => {
+        if (!response.cv?._id) return prev;
+        const existingIndex = prev.findIndex((cv) => cv._id === response.cv._id);
+        if (existingIndex >= 0) {
+          return prev.map((cv) => (cv._id === response.cv._id ? { ...cv, ...response.cv } : cv));
+        }
+        return [...prev, response.cv];
+      });
+      if (!activeCvId && response.cv?._id) setActiveCvId(response.cv._id);
       originalCvDataRef.current = cvData ? JSON.parse(JSON.stringify(cvData)) : null;
       // Reset save trigger to ensure proper comparison
       setSaveTrigger(0);
@@ -611,6 +640,9 @@ const CVManagementPage: React.FC = () => {
       setIsReplacing(false);
       const fileInput = document.getElementById('cvFileInput') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
+      if (!hasCreatedFirstJob) {
+        setIsNudgeDismissed(false);
+      }
       setToast({ message: response.message || 'CV uploaded and processed successfully!', type: 'success' });
     } catch (error: any) {
       console.error('Upload failed:', error);
@@ -1325,6 +1357,83 @@ const CVManagementPage: React.FC = () => {
           </div>
         ) : (
           <>
+          {hasBaseCvs && !showMockTour && !hasCreatedFirstJob && !isNudgeDismissed && (
+            <div
+              className="mb-4 sm:mb-5 rounded-2xl border px-5 py-4 sm:px-6 sm:py-5 relative overflow-hidden"
+              style={{ borderColor: 'var(--accent-dim)', background: 'linear-gradient(135deg, var(--accent-bg), rgba(255,255,255,0.9))' }}
+            >
+              <div className="absolute -right-20 -top-20 w-48 h-48 rounded-full opacity-20" style={{ background: 'var(--accent)' }} />
+              <div className="relative flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
+                      <span className="material-symbols-outlined text-base" style={{ color: 'var(--accent)' }}>bolt</span>
+                      Next Step
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+                      Your base CV is ready. Now use it to apply.
+                    </h3>
+                    <p className="text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+                      Add a job in the dashboard, then generate a tailored CV and cover letter for that role.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to="/dashboard?highlightAddJob=1"
+                      className="btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
+                    >
+                      <span className="material-symbols-outlined text-base">dashboard</span>
+                      Go to Dashboard
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleDismissFirstUploadNudge}
+                      className="px-3 py-2 text-sm font-medium rounded-lg border transition-colors"
+                      style={{ borderColor: 'var(--text-primary)', color: 'var(--text-secondary)' }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    {
+                      title: 'Pick a job to apply for',
+                      detail: 'Create or import a job in the dashboard.',
+                      icon: 'work'
+                    },
+                    {
+                      title: 'Generate a tailored CV',
+                      detail: 'Use this base CV to craft the job-specific version.',
+                      icon: 'auto_awesome'
+                    },
+                    {
+                      title: 'Finish with a cover letter',
+                      detail: 'Let the workspace draft a targeted cover letter.',
+                      icon: 'mail'
+                    }
+                  ].map((step, index) => (
+                    <div
+                      key={step.title}
+                      className="rounded-xl border px-4 py-3 flex items-start gap-3"
+                      style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}
+                    >
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center font-semibold" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                        {index + 1}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-base" style={{ color: 'var(--accent)' }}>{step.icon}</span>
+                          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{step.title}</p>
+                        </div>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{step.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
           <CvEditorPanel
             data={activeCvData || currentCvData}
             onChange={handleCvChange}
