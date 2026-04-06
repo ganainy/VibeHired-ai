@@ -35,7 +35,7 @@ export async function getOrCreateUsageRecord(userId: string): Promise<IUsageReco
         record = await UsageRecord.create({
             userId,
             billingPeriodStart: start,
-            billingPeriodEnd: user.planExpiresAt || end,
+            billingPeriodEnd: (user.planExpiresAt && user.planExpiresAt > now) ? user.planExpiresAt : end,
             credits: {
                 used: 0,
                 limit: planConfig.credits

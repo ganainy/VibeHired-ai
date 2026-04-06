@@ -19,6 +19,7 @@ import Spinner from '../components/common/Spinner';
 import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
 import CvLivePreview from '../components/cv-editor/CvLivePreview';
 import { TableOrCards } from '../components/common/TableOrCards';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 const USAGE_PAGE_SIZE = 10;
 const CV_PAGE_SIZE = 5;
@@ -43,6 +44,14 @@ const AdminUserDetailPage: React.FC = () => {
     const [isTemplatePreviewLoading, setIsTemplatePreviewLoading] = useState(false);
     const [usagePage, setUsagePage] = useState(1);
     const [cvPage, setCvPage] = useState(1);
+    const [confirmModal, setConfirmModal] = useState<{
+        show: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        danger?: boolean;
+        confirmLabel?: string;
+    }>({ show: false, title: '', message: '', onConfirm: () => {} });
 
     useEffect(() => {
         if (!userId) return;
@@ -183,35 +192,51 @@ const AdminUserDetailPage: React.FC = () => {
 
     const handleCancelSubscription = async () => {
         if (!userId || !data) return;
-        if (!window.confirm(`Cancel ${data.email}'s subscription? They will be moved to the free plan immediately.`)) return;
-        setIsCancelling(true);
-        setActionError(null);
-        try {
-            await cancelUserSubscription(userId);
-            const updated = await getUserDetail(userId);
-            setData(updated);
-        } catch (err) {
-            setActionError('Failed to cancel subscription');
-        } finally {
-            setIsCancelling(false);
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Cancel Subscription',
+            message: `Cancel ${data.email}'s subscription? They will be moved to the free plan immediately.`,
+            confirmLabel: 'Cancel Subscription',
+            danger: true,
+            onConfirm: async () => {
+                setIsCancelling(true);
+                setActionError(null);
+                try {
+                    await cancelUserSubscription(userId!);
+                    const updated = await getUserDetail(userId!);
+                    setData(updated);
+                } catch (err) {
+                    setActionError('Failed to cancel subscription');
+                } finally {
+                    setIsCancelling(false);
+                }
+            }
+        });
     };
 
     const handleToggleBlock = async () => {
         if (!userId || !data) return;
         const action = data.isBlocked ? 'unblock' : 'block';
-        if (!window.confirm(`Are you sure you want to ${action} ${data.email}?`)) return;
-        setIsBlocking(true);
-        setActionError(null);
-        try {
-            await setUserBlocked(userId, !data.isBlocked);
-            const updated = await getUserDetail(userId);
-            setData(updated);
-        } catch (err) {
-            setActionError(`Failed to ${action} user`);
-        } finally {
-            setIsBlocking(false);
-        }
+        setConfirmModal({
+            show: true,
+            title: data.isBlocked ? 'Unblock User' : 'Block User',
+            message: `Are you sure you want to ${action} ${data.email}?`,
+            confirmLabel: data.isBlocked ? 'Unblock User' : 'Block User',
+            danger: !data.isBlocked,
+            onConfirm: async () => {
+                setIsBlocking(true);
+                setActionError(null);
+                try {
+                    await setUserBlocked(userId!, !data!.isBlocked);
+                    const updated = await getUserDetail(userId!);
+                    setData(updated);
+                } catch (err) {
+                    setActionError(`Failed to ${action} user`);
+                } finally {
+                    setIsBlocking(false);
+                }
+            }
+        });
     };
 
     if (!userId) {
@@ -667,6 +692,16 @@ const AdminUserDetailPage: React.FC = () => {
                 }}
                 pdfBase64={previewPdfBase64}
                 isLoading={isPreviewLoading}
+            />
+
+            <ConfirmModal
+                show={confirmModal.show}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmLabel={confirmModal.confirmLabel}
+                danger={confirmModal.danger}
+                onConfirm={confirmModal.onConfirm}
+                onClose={() => setConfirmModal(prev => ({ ...prev, show: false }))}
             />
 
             {isTemplatePreviewOpen && (

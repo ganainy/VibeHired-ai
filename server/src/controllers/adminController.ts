@@ -647,8 +647,11 @@ export async function cancelUserSubscription(req: Request, res: Response) {
             return;
         }
 
-        // Cancel immediately in Stripe
-        await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+        try {
+            await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+        } catch (stripeErr: any) {
+            if (stripeErr.code !== 'resource_missing') throw stripeErr;
+        }
 
         // Revert locally
         user.plan = 'free';
