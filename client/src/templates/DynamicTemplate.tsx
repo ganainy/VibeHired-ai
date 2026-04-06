@@ -54,9 +54,17 @@ function dateRange(entry: Record<string, any>): string {
 }
 
 /** Extract bullets from an entry (highlights or keywords) */
+function stringifyBullet(item: any): string {
+  if (typeof item === 'string') return item;
+  if (item && typeof item === 'object') {
+    return item.content || item.title || item.text || item.value || JSON.stringify(item);
+  }
+  return String(item ?? '');
+}
+
 function bullets(entry: Record<string, any>): string[] {
   const h = entry.highlights ?? entry.bullets ?? entry.details ?? [];
-  if (Array.isArray(h)) return h.filter(Boolean);
+  if (Array.isArray(h)) return h.filter(Boolean).map(stringifyBullet);
   if (typeof h === 'string' && h) return [h];
   return [];
 }
@@ -77,36 +85,40 @@ function SectionHeading({ label, theme }: { label: string; theme: Theme }) {
 function ContactBlock({ descriptor, data, theme }: { descriptor: CvSectionDescriptor; data: any; theme: Theme }) {
   const obj: Record<string, any> = data || {};
   const name = obj.name || [obj.firstName, obj.lastName].filter(Boolean).join(' ') || '';
-  const label = obj.label || obj.jobTitle || '';
+  const label = obj.label || obj.role || obj.jobTitle || obj.title || '';
   const email = obj.email || '';
   const phone = obj.phone || '';
   const url = obj.url || obj.website || '';
-  const city = obj.location?.city || obj.city || '';
+  const city = obj.location?.city || obj.city || (typeof obj.location === 'string' ? obj.location : '');
   const profiles: Array<{ network?: string; url?: string; username?: string }> =
     obj.profiles || [];
 
-  const linkedin = profiles.find(p => /linkedin/i.test(p.network || ''));
-  const github = profiles.find(p => /github/i.test(p.network || ''));
+  const linkedin = profiles.find(p => /linkedin/i.test(p.network || '')) || (obj.linkedIn || obj.linkedin ? { network: 'LinkedIn', url: obj.linkedIn || obj.linkedin, username: '' } : null);
+  const github = profiles.find(p => /github/i.test(p.network || '')) || (obj.gitHub || obj.github ? { network: 'GitHub', url: obj.gitHub || obj.github, username: '' } : null);
+  const portfolio = obj.portfolio || '';
+
+  const contactItems: Array<React.ReactNode> = [];
+  if (email) contactItems.push(<span key="email">✉ {email}</span>);
+  if (phone) contactItems.push(<span key="phone">☎ {phone}</span>);
+  if (city) contactItems.push(<span key="city">📍 {city}</span>);
+  if (url) contactItems.push(<a key="url" href={url} className="hover:underline break-normal" style={{ color: theme.hex }}>{url.replace(/^https?:\/\//, '')}</a>);
+  if (portfolio) contactItems.push(<a key="portfolio" href={portfolio.startsWith('http') ? portfolio : `https://${portfolio}`} className="hover:underline break-normal" style={{ color: theme.hex }}>Portfolio: {portfolio.replace(/^https?:\/\//, '')}</a>);
+  if (linkedin?.url) contactItems.push(<a key="linkedin" href={linkedin.url.startsWith('http') ? linkedin.url : `https://${linkedin.url}`} className="hover:underline break-normal" style={{ color: theme.hex }}>LinkedIn: {(linkedin.username || linkedin.url).replace(/^https?:\/\/(www\.)?/, '')}</a>);
+  if (github?.url) contactItems.push(<a key="github" href={github.url.startsWith('http') ? github.url : `https://${github.url}`} className="hover:underline break-normal" style={{ color: theme.hex }}>GitHub: {(github.username || github.url).replace(/^https?:\/\/(www\.)?/, '')}</a>);
+
+  // Collect any remaining unknown string fields
+  const knownKeys = new Set(['name', 'firstName', 'lastName', 'label', 'role', 'jobTitle', 'title', 'email', 'phone', 'url', 'website', 'city', 'location', 'profiles', 'linkedIn', 'linkedin', 'gitHub', 'github', 'portfolio']);
+  const extraEntries = Object.entries(obj).filter(([k, v]) => !knownKeys.has(k) && typeof v === 'string' && v.trim() !== '');
+  extraEntries.forEach(([k, v]) => {
+    contactItems.push(<span key={k}>{k.replace(/_/g, ' ')}: {v.startsWith('http') ? <a href={v} className="hover:underline" style={{ color: theme.hex }}>{v.replace(/^https?:\/\//, '')}</a> : v}</span>);
+  });
 
   return (
     <header className="mb-4 text-center">
       {name && <h1 className="text-[16pt] font-bold text-gray-900 mb-0.5">{name}</h1>}
       {label && <div className="text-[10pt] font-semibold mb-1.5 uppercase tracking-wide" style={{ color: theme.hex }}>{label}</div>}
       <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-[8.5pt] text-gray-600 break-all">
-        {email && <span>✉ {email}</span>}
-        {phone && <span>☎ {phone}</span>}
-        {city && <span>📍 {city}</span>}
-        {url && <a href={url} className="hover:underline break-normal" style={{ color: theme.hex }}>{url.replace(/^https?:\/\//, '')}</a>}
-        {linkedin?.url && (
-          <a href={linkedin.url} className="hover:underline break-normal" style={{ color: theme.hex }}>
-            LinkedIn: {(linkedin.username || linkedin.url).replace(/^https?:\/\/(www\.)?/, '')}
-          </a>
-        )}
-        {github?.url && (
-          <a href={github.url} className="hover:underline break-normal" style={{ color: theme.hex }}>
-            GitHub: {(github.username || github.url).replace(/^https?:\/\/(www\.)?/, '')}
-          </a>
-        )}
+        {contactItems}
       </div>
     </header>
   );

@@ -151,16 +151,17 @@ Rules:
     }
 }
 
-function buildFreeformCvJsonFromDynamic(
+function buildCvJsonFromDynamic(
     descriptor: CvSectionDescriptor[],
     data: Record<string, any>,
     fallbackOriginal?: Record<string, any> | null,
 ): Record<string, any> {
     const out: Record<string, any> = {};
     const sorted = [...descriptor].sort((a, b) => a.order - b.order);
+
     for (const section of sorted) {
         if (Object.prototype.hasOwnProperty.call(data, section.key)) {
-            out[section.label || section.key] = data[section.key];
+            out[section.key] = data[section.key];
         }
     }
 
@@ -169,10 +170,9 @@ function buildFreeformCvJsonFromDynamic(
             out.__vh_tags = (fallbackOriginal as any).__vh_tags;
         }
         if ((fallbackOriginal as any).meta && !out.meta) {
-            out.meta = (fallbackOriginal as any).meta;
+            out.meta = { ...fallbackOriginal.meta };
         }
     }
-
     return out;
 }
 
@@ -1048,7 +1048,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
                 baseCvDynamicData as Record<string, any>,
                 parsedResponse.tailoredData as Record<string, any>,
             );
-            tailoredCvJson = buildFreeformCvJsonFromDynamic(
+            tailoredCvJson = buildCvJsonFromDynamic(
                 baseCvDescriptor as CvSectionDescriptor[],
                 tailoredDynamicData,
                 baseCvJson as Record<string, any>

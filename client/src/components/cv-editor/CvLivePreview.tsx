@@ -6,10 +6,23 @@ import { CvDynamicPayload } from '../../types/cvDescriptor';
 import DynamicTemplate from '../../templates/DynamicTemplate';
 import FreeformCvRenderer from '../cv-freeform/FreeformCvRenderer';
 
+const JSON_RESUME_KEYS = [
+  'basics', 'work', 'education', 'skills', 'projects',
+  'languages', 'certificates', 'awards', 'volunteer',
+  'publications', 'interests', 'references',
+] as const;
+
 function isJsonResumeLike(data: unknown): data is JsonResumeSchema {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
   const candidate = data as Record<string, unknown>;
-  return 'basics' in candidate || 'work' in candidate || 'education' in candidate || 'skills' in candidate;
+  return JSON_RESUME_KEYS.some((k) => k in candidate);
+}
+
+function isTrulyFreeform(data: unknown): boolean {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+  const candidate = data as Record<string, unknown>;
+  if (JSON_RESUME_KEYS.some((k) => k in candidate)) return false;
+  return '__vh_tags' in candidate;
 }
 
 interface CvLivePreviewProps {
@@ -19,15 +32,15 @@ interface CvLivePreviewProps {
   className?: string;
   /**
    * When provided (for CVs that have been analysed by the AI), the preview
-   * is rendered via DynamicTemplate and the legacy TemplateWrapper path is
-   * skipped entirely.
+   * CAN be rendered via DynamicTemplate. However, if the data is a valid
+   * JsonResume, the legacy TemplateWrapper is preferred for consistent styling
+   * with the base CV templates.
    */
   dynamicPayload?: CvDynamicPayload | null;
   diffChanges?: Array<{ section: string; before?: string; after?: string; reason?: string }>;
   showDiffOverlay?: boolean;
 }
 
-/** Ref API exposed by CvLivePreview */
 export type CvLivePreviewRef = HTMLDivElement;
 
 const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
@@ -42,49 +55,19 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
   const previewRef = useRef<HTMLDivElement>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateConfig | null>(null);
 
+  const hasValidJsonResume = isJsonResumeLike(data);
+  const shouldUseFreeform = data !== null && isTrulyFreeform(data);
+
   useEffect(() => {
-    // Only need the legacy template when dynamicPayload is absent
-    if (!dynamicPayload) {
-      const template = getTemplate(templateId);
-      if (template) setSelectedTemplate(template);
-    }
-  }, [templateId, dynamicPayload]);
+    const template = getTemplate(templateId);
+    if (template) setSelectedTemplate(template);
+  }, [templateId]);
 
-  // ── Dynamic path ───────────────────────────────────────────────────────────
-  if (dynamicPayload) {
-    return (
-      <div className={`flex flex-col h-full ${className}`}>
-        <div className="flex-1 overflow-auto bg-white dark:bg-gray-800 p-0">
-          <div
-            ref={ref as React.RefObject<HTMLDivElement>}
-            className="bg-white mx-auto w-full max-w-[210mm] shrink-0"
-            id="cv-preview-container"
-          >
-            <DynamicTemplate
-              ref={previewRef}
-              payload={dynamicPayload}
-              templateId={templateId}
-              diffChanges={diffChanges}
-              showDiffOverlay={showDiffOverlay}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Legacy path (JsonResume → TemplateWrapper) ─────────────────────────────
-  if (!data) {
-    return (
-      <div className={`flex items-center justify-center p-4 sm:p-8 bg-gray-50 dark:bg-gray-900 rounded-lg ${className}`}>
-        <div className="text-center">
-          <p className="text-gray-500 dark:text-gray-400">No CV data available for preview</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isJsonResumeLike(data)) {
+  // ── Freeform / non-JsonResume data ────────────────────────────────────────
+  // Only use FreeformCvRenderer when the data is explicitly marked as freeform
+  // via __vh_tags AND has no JsonResume keys. This prevents tailored CVs that
+  // originated from freeform base CVs from being misrouted here.
+  if (shouldUseFreeform) {
     return (
       <div className={`flex flex-col h-full ${className}`}>
         <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-3 sm:p-6">
@@ -99,6 +82,45 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
     );
   }
 
+  // ── No JsonResume data — try dynamicPayload ───────────────────────────────
+  if (!hasValidJsonResume) {
+    if (dynamicPayload) {
+      return (
+        <div className={`flex flex-col h-full ${className}`}>
+          <div className="flex-1 overflow-auto bg-white dark:bg-gray-800 p-0">
+            <div
+              ref={ref as React.RefObject<HTMLDivElement>}
+              className="bg-white mx-auto w-full max-w-[210mm] shrink-0"
+              id="cv-preview-container"
+            >
+              <DynamicTemplate
+                ref={previewRef}
+                payload={dynamicPayload}
+                templateId={templateId}
+                diffChanges={diffChanges}
+                showDiffOverlay={showDiffOverlay}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!data) {
+      return (
+        <div className={`flex items-center justify-center p-4 sm:p-8 bg-gray-50 dark:bg-gray-900 rounded-lg ${className}`}>
+          <div className="text-center">
+            <p className="text-gray-500 dark:text-gray-400">No CV data available for preview</p>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  // ── Legacy path (JsonResume → TemplateWrapper) ────────────────────────────
+  // Preferred when valid JsonResume data exists, even if dynamicPayload is also
+  // available. This ensures the tailored CV uses the same styling/template as
+  // the base CV in the Manage CV page.
   if (!selectedTemplate) {
     return (
       <div className={`flex items-center justify-center p-4 sm:p-8 bg-gray-50 dark:bg-gray-900 rounded-lg ${className}`}>
@@ -134,4 +156,3 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
 CvLivePreview.displayName = 'CvLivePreview';
 
 export default CvLivePreview;
-
