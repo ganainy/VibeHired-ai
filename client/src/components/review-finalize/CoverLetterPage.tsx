@@ -78,6 +78,7 @@ interface CoverLetterPageProps {
     handleGenerateCoverLetter: () => void;
     updateJob: (jobId: string, updates: any) => Promise<any>;
     showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+    onCoverLetterDeleted: () => void;
 }
 
 const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
@@ -127,6 +128,7 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
     handleGenerateCoverLetter,
     updateJob,
     showToast,
+    onCoverLetterDeleted,
 }) => {
     const navigate = useNavigate();
 
@@ -158,8 +160,8 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
     const handleDeleteCoverLetter = async () => {
         if (window.confirm('Are you sure you want to delete this cover letter? You will need to regenerate it.')) {
             try {
-                // Update backend
                 await updateJob(jobId, { draftCoverLetterText: null });
+                onCoverLetterDeleted();
                 showToast('Cover letter deleted successfully', 'success');
             } catch (err) {
                 console.error('Failed to delete cover letter', err);

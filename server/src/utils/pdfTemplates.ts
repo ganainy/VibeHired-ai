@@ -336,9 +336,10 @@ export const getCoverLetterHtml = (letterText: string, cvData: JsonResumeSchema)
     const basics = cvData.basics || {};
     const name = basics.name || 'Applicant';
 
-    // Convert newlines to <br> tags for proper HTML formatting
-    // The cover letter text already includes the sender's contact information at the top
-    const formattedText = letterText.replace(/\n/g, '<br>'); // Convert newlines to <br>
+    const normalized = letterText
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n');
+    const formattedText = normalized.replace(/\n/g, '<br>');
 
     return `
          <!DOCTYPE html>

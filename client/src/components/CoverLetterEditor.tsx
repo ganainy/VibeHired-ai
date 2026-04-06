@@ -35,12 +35,41 @@ const CoverLetterEditor: React.FC<CoverLetterEditorProps> = ({
     };
 
     // Convert HTML to plain text (preserve newlines)
+    // Uses a recursive tree-walker instead of innerText to guarantee
+    // newlines survive on detached DOM elements across all browsers.
     const htmlToText = (html: string): string => {
         if (!html) return '';
         const temp = document.createElement('div');
         temp.innerHTML = html;
-        // Convert <br> tags back to newlines
-        return temp.innerText || temp.textContent || '';
+
+        const BLOCK_TAGS = new Set([
+            'DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+            'LI', 'BLOCKQUOTE', 'PRE', 'SECTION', 'ARTICLE',
+        ]);
+
+        const walk = (node: Node): string => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                return node.textContent || '';
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+            const el = node as HTMLElement;
+            if (el.tagName === 'BR') return '\n';
+
+            const isBlock = BLOCK_TAGS.has(el.tagName);
+            let text = '';
+            for (const child of Array.from(el.childNodes)) {
+                text += walk(child);
+            }
+            if (isBlock && !text.endsWith('\n')) {
+                text += '\n';
+            }
+            return text;
+        };
+
+        let text = walk(temp);
+        text = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+        return text.replace(/^\n+/, '').replace(/\n+$/, '');
     };
 
     // Initialize editor content when value changes externally
@@ -74,7 +103,8 @@ const CoverLetterEditor: React.FC<CoverLetterEditorProps> = ({
     const handlePaste = (e: React.ClipboardEvent) => {
         e.preventDefault();
         const text = e.clipboardData.getData('text/plain');
-        document.execCommand('insertText', false, text);
+        const html = textToHtml(text);
+        document.execCommand('insertHTML', false, html);
     };
 
     const handleFocus = () => {

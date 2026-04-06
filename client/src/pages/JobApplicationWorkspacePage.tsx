@@ -759,6 +759,10 @@ const JobApplicationWorkspacePage: React.FC = () => {
                                     handleGenerateCoverLetter={handleGenerateCoverLetter}
                                     updateJob={updateJob}
                                     showToast={showToast}
+                                    onCoverLetterDeleted={() => {
+                                        setJobApplication(prev => prev ? { ...prev, draftCoverLetterText: null } : prev);
+                                        setCoverLetterText('');
+                                    }}
                                 />
                             )}
 
