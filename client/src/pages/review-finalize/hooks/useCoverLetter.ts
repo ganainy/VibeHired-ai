@@ -4,7 +4,7 @@ import { generateCoverLetter } from '../../../services/coverLetterApi';
 import { saveAs } from 'file-saver';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 
-export const useCoverLetter = (jobId: string | undefined, jobApplication: JobApplication | null) => {
+export const useCoverLetter = (jobId: string | undefined, jobApplication: JobApplication | null, humanize: boolean = true) => {
     const [text, setText] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export const useCoverLetter = (jobId: string | undefined, jobApplication: JobApp
         try {
             const language = jobApplication?.language || 'en' as 'en' | 'de';
 
-            const response = await generateCoverLetter(jobId, language);
+            const response = await generateCoverLetter(jobId, language, undefined, humanize);
             const { text: generatedText } = response;
 
             setText(generatedText);

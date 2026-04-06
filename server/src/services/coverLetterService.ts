@@ -32,7 +32,8 @@ export async function generateCoverLetter(
     companyName: string,
     language: 'en' | 'de' = 'en',
     customPrompt?: string,
-    rawCvText?: string
+    rawCvText?: string,
+    humanize: boolean = true
 ): Promise<CoverLetterResponse> {
     const languageName = language === 'de' ? 'German' : 'English';
     const suggestedDocLabel = (language === 'de') ? 'Anschreiben' : 'Cover_Letter';
@@ -140,16 +141,18 @@ Return ONLY the JSON object, no additional text or markdown.`;
         coverLetterData.coverLetterText = normalizeCoverLetterFormatting(coverLetterData.coverLetterText, language);
 
         // Second pass: rewrite the drafted letter to sound more human while preserving facts.
-        coverLetterData.coverLetterText = await humanizeCoverLetterText(
-            userId,
-            coverLetterData.coverLetterText,
-            jobDescription,
-            jobTitle,
-            companyName,
-            language,
-            cvJson,
-            rawCvText
-        );
+        if (humanize) {
+            coverLetterData.coverLetterText = await humanizeCoverLetterText(
+                userId,
+                coverLetterData.coverLetterText,
+                jobDescription,
+                jobTitle,
+                companyName,
+                language,
+                cvJson,
+                rawCvText
+            );
+        }
 
         // Always sanitize the filename to ensure it contains only safe characters
         if (!coverLetterData.fileName) {

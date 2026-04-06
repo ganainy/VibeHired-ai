@@ -103,6 +103,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
     const [tailoredJobDescription, setTailoredJobDescription] = useState<string>('');
     const [customInstructions, setCustomInstructions] = useState<string>('');
     const [clCustomInstructions, setClCustomInstructions] = useState<string>('');
+    const [clHumanize, setClHumanize] = useState<boolean>(true);
     const clUploadFileRef = useRef<HTMLInputElement>(null);
     const cvImportFileRef = useRef<HTMLInputElement>(null);
 
@@ -383,6 +384,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
         setCoverLetterText,
         setFinalPdfFiles,
         setJobApplication,
+        humanize: clHumanize,
     });
 
     const resetLocalCvState = useCallback(() => {
@@ -750,6 +752,9 @@ const JobApplicationWorkspacePage: React.FC = () => {
                                     currentCvId={currentCvId}
                                     hasLocalCv={hasLocalCv}
                                     hasMasterCv={hasMasterCv}
+                                    // Humanize option
+                                    humanize={clHumanize}
+                                    setHumanize={setClHumanize}
                                     // Actions
                                     handleGenerateCoverLetter={handleGenerateCoverLetter}
                                     updateJob={updateJob}

@@ -70,6 +70,10 @@ interface CoverLetterPageProps {
     hasLocalCv: boolean;
     hasMasterCv: boolean;
     
+    // Humanize option
+    humanize: boolean;
+    setHumanize: (value: boolean) => void;
+    
     // Actions
     handleGenerateCoverLetter: () => void;
     updateJob: (jobId: string, updates: any) => Promise<any>;
@@ -118,6 +122,8 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
     currentCvId,
     hasLocalCv,
     hasMasterCv,
+    humanize,
+    setHumanize,
     handleGenerateCoverLetter,
     updateJob,
     showToast,
@@ -617,6 +623,23 @@ const CoverLetterPage: React.FC<CoverLetterPageProps> = ({
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
                                             Select the CV version to use for this cover letter.
                                         </p>
+                                    </div>
+                                </div>
+
+                                {/* Humanize Toggle */}
+                                <div className="flex items-center gap-3 py-2">
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={humanize}
+                                        onClick={() => setHumanize(!humanize)}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${humanize ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${humanize ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Humanize cover letter</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Runs a second AI pass to make the text sound more natural and less robotic.</p>
                                     </div>
                                 </div>
 

@@ -32,6 +32,7 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
 
     const { jobId } = req.params;
     const requestedLanguage = req.body.language === 'de' ? 'de' : 'en';
+    const humanize = req.body.humanize !== false;
     const userId = user._id.toString();
 
     try {
@@ -85,7 +86,9 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
             job.jobTitle,
             job.companyName,
             requestedLanguage,
-            customPrompt
+            customPrompt,
+            undefined,
+            humanize
         );
 
         const resolvedRecipient =

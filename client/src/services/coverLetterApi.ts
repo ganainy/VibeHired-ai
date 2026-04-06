@@ -42,12 +42,13 @@ export interface GenerateCoverLetterResult {
 export const generateCoverLetter = async (
     jobId: string,
     language: 'en' | 'de' = 'en',
-    baseCvData?: any
+    baseCvData?: any,
+    humanize: boolean = true
 ): Promise<GenerateCoverLetterResult> => {
     try {
         const response = await axios.post<CoverLetterResponse>(
             `${API_BASE_URL}/cover-letter/${jobId}`,
-            { language, baseCvData }
+            { language, baseCvData, humanize }
         );
 
         if (!response.data.success || !response.data.coverLetterText) {

@@ -29,6 +29,7 @@ interface UseReviewGenerationParams {
     setCoverLetterText: Dispatch<SetStateAction<string>>;
     setFinalPdfFiles: Dispatch<SetStateAction<{ cv: string | null; cl: string | null }>>;
     setJobApplication: Dispatch<SetStateAction<JobApplication | null>>;
+    humanize: boolean;
 }
 
 export const useReviewGeneration = ({
@@ -51,6 +52,7 @@ export const useReviewGeneration = ({
     setCoverLetterText,
     setFinalPdfFiles,
     setJobApplication,
+    humanize,
 }: UseReviewGenerationParams) => {
     const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState<boolean>(false);
     const [coverLetterError, setCoverLetterError] = useState<string | null>(null);
@@ -140,7 +142,7 @@ export const useReviewGeneration = ({
                 }
             }
 
-            const response = await generateCoverLetter(jobId, language as 'en' | 'de', baseCvDataToUse);
+            const response = await generateCoverLetter(jobId, language as 'en' | 'de', baseCvDataToUse, humanize);
             const { text: generatedText, suggestedFilename } = response;
 
             await updateJob(jobId, {
