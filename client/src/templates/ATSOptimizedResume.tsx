@@ -1,5 +1,26 @@
-import { forwardRef } from "react";
+import { forwardRef, ReactNode } from "react";
 import { ResumeData } from "../utils/cvDataTransform";
+
+function safeRenderValue(value: unknown): ReactNode {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    return value.map((item, i) => (
+      <span key={i}>
+        {safeRenderValue(item)}
+        {i < value.length - 1 ? ', ' : ''}
+      </span>
+    ));
+  }
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(' · ');
+  }
+  return String(value);
+}
 
 const ATSOptimizedResume = forwardRef<HTMLDivElement, { data: ResumeData }>(({ data }, ref) => {
   const formatDate = (dateString: string) => {
@@ -280,19 +301,25 @@ const ATSOptimizedResume = forwardRef<HTMLDivElement, { data: ResumeData }>(({ d
                 {section.heading}
               </h2>
               <div style={{ whiteSpace: 'pre-wrap' }} data-preserve="true">
-                {section.content.split('\n').map((line, i) => {
-                  const parts = line.split(/(\*\*.*?\*\*)/g);
-                  return (
-                    <div key={i} style={{ minHeight: '1.2em' }}>
-                      {parts.map((part, j) => {
-                        if (part.startsWith('**') && part.endsWith('**')) {
-                          return <strong key={j}>{part.slice(2, -2)}</strong>;
-                        }
-                        return <span key={j}>{part}</span>;
-                      })}
-                    </div>
-                  );
-                })}
+                {(() => {
+                  const content = section.content;
+                  if (typeof content === 'object') {
+                    return safeRenderValue(content);
+                  }
+                  return content.split('\n').map((line, i) => {
+                    const parts = line.split(/(\*\*.*?\*\*)/g);
+                    return (
+                      <div key={i} style={{ minHeight: '1.2em' }}>
+                        {parts.map((part, j) => {
+                          if (part.startsWith('**') && part.endsWith('**')) {
+                            return <strong key={j}>{part.slice(2, -2)}</strong>;
+                          }
+                          return <span key={j}>{part}</span>;
+                        })}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           ))}

@@ -1,6 +1,27 @@
 import { forwardRef, ReactNode } from "react";
 import { ResumeData } from "../utils/cvDataTransform";
 
+function safeRenderValue(value: unknown): ReactNode {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    return value.map((item, i) => (
+      <span key={i}>
+        {safeRenderValue(item)}
+        {i < value.length - 1 ? ', ' : ''}
+      </span>
+    ));
+  }
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(' · ');
+  }
+  return String(value);
+}
+
 interface GermanLatexResumeProps {
     data: ResumeData;
     language?: 'en' | 'de';
@@ -261,11 +282,17 @@ const GermanLatexResume = forwardRef<HTMLDivElement, GermanLatexResumeProps>(
                                 <div key={section.id} style={{ marginBottom: '15px' }}>
                                     <h2 style={sectionHeading}>{section.heading}</h2>
                                     <div style={{ fontSize: '10pt' }}>
-                                        {section.content.split('\n').filter(line => line.trim()).map((line, i) => (
-                                            <div key={i} style={{ marginBottom: '2px' }}>
-                                                {parseMarkdownBold(line.replace(/^[•\-–]\s*/, ''))}
-                                            </div>
-                                        ))}
+                                        {(() => {
+                                            const content = section.content;
+                                            if (typeof content === 'object') {
+                                                return safeRenderValue(content);
+                                            }
+                                            return content.split('\n').filter(line => line.trim()).map((line, i) => (
+                                                <div key={i} style={{ marginBottom: '2px' }}>
+                                                    {parseMarkdownBold(line.replace(/^[•\-–]\s*/, ''))}
+                                                </div>
+                                            ));
+                                        })()}
                                     </div>
                                 </div>
                             ))}

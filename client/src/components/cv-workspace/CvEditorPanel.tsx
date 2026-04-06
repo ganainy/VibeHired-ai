@@ -46,6 +46,8 @@ export interface CvEditorPanelProps {
   templateId: string;
   /** Called when the user picks a different template */
   onTemplateChange: (id: string) => void;
+  /** Whether the editor panel is open by default */
+  defaultEditorOpen?: boolean;
   /** Forwarded to ResumeBuilder for AI section improvement (legacy path) */
   onImproveSection?: (
     sectionName: string,
@@ -101,6 +103,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   hasUnsavedChanges = false,
   templateId,
   onTemplateChange,
+  defaultEditorOpen,
   onImproveSection,
   improvingSections = {},
   children,
@@ -117,7 +120,10 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
 }) => {
   const [rightView] = useState<'preview' | 'ats'>(atsPanel ? defaultRightView : 'preview');
   const [availableTemplates, setAvailableTemplates] = useState<TemplateConfig[]>([]);
-  const [showEditorPanel, setShowEditorPanel] = useState<boolean>(() => loadShowEditorPreference());
+  const [showEditorPanel, setShowEditorPanel] = useState<boolean>(() => {
+    if (defaultEditorOpen !== undefined) return defaultEditorOpen;
+    return loadShowEditorPreference();
+  });
   useEffect(() => { setAvailableTemplates(getAllTemplates()); }, []);
   useEffect(() => {
     try {

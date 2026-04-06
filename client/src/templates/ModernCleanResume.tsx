@@ -1,9 +1,30 @@
-import { forwardRef } from "react";
+import { forwardRef, ReactNode } from "react";
 import { Mail, Phone, MapPin, Globe, Linkedin } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
 import { ResumeData } from "../utils/cvDataTransform";
 import { formatDate, formatDateRange } from "../utils/dateUtils";
+
+function safeRenderValue(value: unknown): ReactNode {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    return value.map((item, i) => (
+      <span key={i}>
+        {safeRenderValue(item)}
+        {i < value.length - 1 ? ', ' : ''}
+      </span>
+    ));
+  }
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(' · ');
+  }
+  return String(value);
+}
 
 const ModernCleanResume = forwardRef<HTMLDivElement, { data: ResumeData }>((props, ref) => {
   const { data } = props;
@@ -222,20 +243,25 @@ const ModernCleanResume = forwardRef<HTMLDivElement, { data: ResumeData }>((prop
               {section.heading}
             </h2>
             <div className="text-gray-700 text-xs leading-relaxed whitespace-pre-line">
-              {section.content.split('\n').map((line, i) => {
-                // Simple bold parsing for **text**
-                const parts = line.split(/(\*\*.*?\*\*)/g);
-                return (
-                  <div key={i} className="min-h-[1.2em]">
-                    {parts.map((part, j) => {
-                      if (part.startsWith('**') && part.endsWith('**')) {
-                        return <strong key={j} className="text-gray-900 font-semibold">{part.slice(2, -2)}</strong>;
-                      }
-                      return <span key={j}>{part}</span>;
-                    })}
-                  </div>
-                );
-              })}
+              {(() => {
+                const content = section.content;
+                if (typeof content === 'object') {
+                  return safeRenderValue(content);
+                }
+                return content.split('\n').map((line, i) => {
+                  const parts = line.split(/(\*\*.*?\*\*)/g);
+                  return (
+                    <div key={i} className="min-h-[1.2em]">
+                      {parts.map((part, j) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                          return <strong key={j} className="text-gray-900 font-semibold">{part.slice(2, -2)}</strong>;
+                        }
+                        return <span key={j}>{part}</span>;
+                      })}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </section>
         ))

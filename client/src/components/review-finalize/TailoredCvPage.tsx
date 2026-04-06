@@ -36,18 +36,6 @@ interface TailoredCvPageProps {
     showInlineCvDiff: boolean;
     setShowInlineCvDiff: (show: boolean) => void;
     
-    // CV Creation Mode
-    cvCreationMode: 'ai' | 'import';
-    setCvCreationMode: (mode: 'ai' | 'import') => void;
-    cvImportFile: File | null;
-    setCvImportFile: (file: File | null) => void;
-    selectedBaseCvIdForImport: string;
-    setSelectedBaseCvIdForImport: (id: string) => void;
-    isApplyingBaseCv: boolean;
-    applyCvError: string | null;
-    setApplyCvError: (error: string | null) => void;
-    cvImportFileRef: React.RefObject<HTMLInputElement>;
-    
     // AI Generation State
     tailoredJobTitle: string;
     setTailoredJobTitle: (title: string) => void;
@@ -102,7 +90,6 @@ interface TailoredCvPageProps {
     handleDynamicChange: (payload: any) => void;
     resetLocalCvState: () => void;
     showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
-    handleApplyBaseCv: () => Promise<void>;
     handleGenerateSpecificCv: () => Promise<void>;
     handleScanAts: () => Promise<void>;
     handleDeleteAts: () => Promise<void>;
@@ -110,7 +97,6 @@ interface TailoredCvPageProps {
 }
 
 const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
-    // CV State
     hasLocalCv,
     cvData,
     currentCvId,
@@ -120,20 +106,6 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     tailoringChanges,
     showInlineCvDiff,
     setShowInlineCvDiff,
-    
-    // CV Creation Mode
-    cvCreationMode,
-    setCvCreationMode,
-    cvImportFile,
-    setCvImportFile,
-    selectedBaseCvIdForImport,
-    setSelectedBaseCvIdForImport,
-    isApplyingBaseCv,
-    applyCvError,
-    setApplyCvError,
-    cvImportFileRef,
-    
-    // AI Generation State
     tailoredJobTitle,
     setTailoredJobTitle,
     tailoredCompanyName,
@@ -148,26 +120,18 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     isGeneratingCv,
     generateCvError,
     setGenerateCvError,
-    
-    // Generation Progress
     generationStep,
     generationProgress,
-    
-    // CV Editor State
     selectedTemplate,
     setSelectedTemplate,
     cvSaveStatus,
     lastSavedCvDataRef,
     improvingSections,
-    
-    // ATS State
     atsScores,
     isLoadingAts,
     isScanningAts,
     atsProgressMessage,
     isApplyingAtsBatch,
-    
-    // Preview State
     isPreviewOpen,
     setIsPreviewOpen,
     previewPdfBase64,
@@ -175,19 +139,14 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     isLoadingRawPdf,
     setIsLoadingRawPdf,
     isGeneratingPreview,
-    
-    // Job Application
     jobApplication,
     jobId,
-    
-    // Handlers
     handleCvChange,
     handleManualSaveCv,
     handleImproveSection,
     handleDynamicChange,
     resetLocalCvState,
     showToast,
-    handleApplyBaseCv,
     handleGenerateSpecificCv,
     handleScanAts,
     handleDeleteAts,
@@ -293,6 +252,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                     }
                     templateId={selectedTemplate}
                     onTemplateChange={setSelectedTemplate}
+                    defaultEditorOpen={false}
                     onImproveSection={handleImproveSection}
                     improvingSections={improvingSections}
                     cvId={currentCvId ?? undefined}
@@ -477,301 +437,146 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                         </details>
                     </div>
                 </CvEditorPanel>
+            ) : !hasMasterCv ? (
+                <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+                    <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-zinc-800 mb-6">
+                        <span className="material-symbols-outlined text-[40px] text-gray-400 dark:text-zinc-500">back_hand</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">No base CV yet</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-base max-w-md mb-8">
+                        You need at least one base CV to generate a tailored CV for this job. Create one in the CV Management page first.
+                    </p>
+                    <Link to="/manage-cv">
+                        <Button className="font-semibold shadow-md hover:shadow-lg">
+                            <span className="material-symbols-outlined text-white">add</span>
+                            Create a Base CV
+                        </Button>
+                    </Link>
+                </div>
             ) : (
                 <div>
                     <div className="mb-6">
                         <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Tailor Your CV</h2>
                         <p className="text-gray-600 dark:text-gray-400 text-lg">
-                            Choose how you want to create this job's CV.
+                            Generate a tailored version of your base CV for this job.
                         </p>
                     </div>
 
-                    {/* ── Option picker ── */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                        {/* Option A – AI Generate */}
-                        <button
-                            type="button"
-                            onClick={() => setCvCreationMode('ai')}
-                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${cvCreationMode === 'ai' ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
-                                }`}
-                        >
-                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'ai' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`} style={cvCreationMode === 'ai' ? { background: 'var(--accent)' } : {}}>
-                                <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
-                            </div>
-                            <div>
-                                <p className="font-semibold text-gray-900 dark:text-gray-100">Generate with AI</p>
-                                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Let the AI tailor your CV to the job description automatically.</p>
-                            </div>
-                            {cvCreationMode === 'ai' && (
-                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{ background: 'var(--accent)' }}>
-                                    <span className="material-symbols-outlined text-[14px]">check</span>
-                                </span>
-                            )}
-                        </button>
-
-                        {/* Option B – Upload / Library */}
-                        <button
-                            type="button"
-                            onClick={() => setCvCreationMode('import')}
-                            className={`group relative flex flex-col items-start gap-3 rounded-2xl border-2 p-6 text-left transition-all focus:outline-none ${cvCreationMode === 'import' ? 'border-gold-500 shadow-md' : 'hover:border-gold-400'
-                                }`}
-                        >
-                            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${cvCreationMode === 'import' ? 'text-ink-950' : 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'}`} style={cvCreationMode === 'import' ? { background: 'var(--accent)' } : {}}>
-                                <span className="material-symbols-outlined text-[22px]">upload_file</span>
-                            </div>
-                            <div>
-                                <p className="font-semibold text-gray-900 dark:text-gray-100">Use my own CV</p>
-                                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Upload a PDF / DOCX file or pick an existing one from your library.</p>
-                            </div>
-                            {cvCreationMode === 'import' && (
-                                <span className="absolute top-4 right-4 flex items-center justify-center w-5 h-5 rounded-full text-ink-950" style={{ background: 'var(--accent)' }}>
-                                    <span className="material-symbols-outlined text-[14px]">check</span>
-                                </span>
-                            )}
-                        </button>
-                    </div>
-
-                    {/* ── Option B form: Import / Upload ── */}
-                    {cvCreationMode === 'import' && (
-                        <Card padding="none" className="p-8 space-y-6">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                                <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>folder_open</span>
-                                Attach CV
-                            </h3>
-
-                            {applyCvError && (
-                                <ErrorAlert message={applyCvError} onDismiss={() => setApplyCvError(null)} />
-                            )}
-
-                            {/* Upload a file */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Upload a file <span className="text-gray-400 font-normal">(PDF or DOCX)</span></label>
-                                <input
-                                    type="file"
-                                    accept=".pdf,.docx"
-                                    ref={cvImportFileRef}
-                                    className="hidden"
-                                    onChange={(e) => { const f = e.target.files?.[0] ?? null; setCvImportFile(f); if (f) setSelectedBaseCvIdForImport(''); }}
-                                />
-                                {cvImportFile ? (
-                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: "var(--accent-bg)", borderColor: "var(--accent-dim)", border: "1px solid var(--accent-dim)" }}>
-                                        <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>description</span>
-                                        <span className="flex-1 truncate text-sm text-gray-800 dark:text-gray-200 font-medium">{cvImportFile.name}</span>
-                                        <button
-                                            onClick={() => { setCvImportFile(null); if (cvImportFileRef.current) cvImportFileRef.current.value = ''; }}
-                                            className="text-gray-400 hover:text-red-500 transition-colors"
-                                        >
-                                            <span className="material-symbols-outlined text-base">close</span>
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => cvImportFileRef.current?.click()}
-                                        disabled={isApplyingBaseCv}
-                                        className="flex items-center gap-3 w-full px-4 py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-gold-400 hover:text-gold-600 dark:hover:text-gold-400 hover:bg-gold-50 dark:hover:bg-gold-900/10 transition-all disabled:opacity-50"
-                                    >
-                                        <span className="material-symbols-outlined text-2xl">upload_file</span>
-                                        <span className="text-sm font-medium">Click to choose a PDF or DOCX file…</span>
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* OR divider */}
-                            <div className="flex items-center gap-4">
-                                <hr className="flex-1 border-gray-200 dark:border-gray-700" />
-                                <span className="text-sm font-medium text-gray-400">OR</span>
-                                <hr className="flex-1 border-gray-200 dark:border-gray-700" />
-                            </div>
-
-                            {/* Select from library */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select from your library</label>
-                                <div className="relative">
-                                    <Select
-                                        value={selectedBaseCvIdForImport}
-                                        onChange={(e) => { setSelectedBaseCvIdForImport(e.target.value); setCvImportFile(null); if (cvImportFileRef.current) cvImportFileRef.current.value = ''; }}
-                                        disabled={!!cvImportFile || isApplyingBaseCv}
-                                        className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 disabled:opacity-50"
-                                    >
-                                        <option value="">— choose a saved CV —</option>
-                                        {availableCvs.map(cv => (
-                                            <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
-                                        ))}
-                                    </Select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
-                                        <span className="material-symbols-outlined">expand_more</span>
-                                    </div>
-                                </div>
-                                {availableCvs.length === 0 && (
-                                    <p className="text-xs text-gray-400 dark:text-gray-500">No saved CVs yet. You can upload a file above.</p>
-                                )}
-                            </div>
-
-                            <p className="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1.5">
-                                <span className="material-symbols-outlined text-base shrink-0">lock</span>
-                                A full independent copy will be stored for this job. Editing or deleting the original will not affect this application.
-                            </p>
-
-                            {/* Actions */}
-                            <div className="flex items-center justify-end gap-3 pt-2">
-                                <Button
-                                    variant="ghost"
-                                    onClick={() => { setCvCreationMode('ai'); setApplyCvError(null); setCvImportFile(null); setSelectedBaseCvIdForImport(''); }}
-                                    className="px-5 py-2.5 text-sm"
-                                >
-                                    Switch to AI Generate
-                                </Button>
-                                <Button
-                                    onClick={handleApplyBaseCv}
-                                    disabled={isApplyingBaseCv || (!selectedBaseCvIdForImport && !cvImportFile)}
-                                    icon={isApplyingBaseCv ? <Spinner size="sm" /> : <span className="material-symbols-outlined text-base">attach_file</span>}
-                                >
-                                    Attach to Job
-                                </Button>
-                            </div>
-                        </Card>
+                    {generateCvError && (
+                        <div className="mb-6">
+                            <ErrorAlert
+                                message={generateCvError}
+                                onDismiss={() => setGenerateCvError(null)}
+                            />
+                        </div>
                     )}
 
-                    {/* ── Option A form: AI Generate ── */}
-                    {cvCreationMode === 'ai' && (
-                        <>
-                            {generateCvError && (
-                                <div className="mb-6">
-                                    <ErrorAlert
-                                        message={generateCvError}
-                                        onDismiss={() => setGenerateCvError(null)}
+                    <Card padding="none" className="p-8 space-y-8">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>work</span>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Target Role</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Job Title
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        value={tailoredJobTitle}
+                                        onChange={(e) => setTailoredJobTitle(e.target.value)}
+                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600"
+                                        placeholder="e.g. Senior Product Manager"
                                     />
                                 </div>
-                            )}
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Company Name
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        value={tailoredCompanyName}
+                                        onChange={(e) => setTailoredCompanyName(e.target.value)}
+                                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600"
+                                        placeholder="e.g. Acme Innovations"
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
-                            <Card padding="none" className="p-8 space-y-8">
-                                {/* Target Role Section */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>description</span>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Job Description</h3>
+                                </div>
+                            </div>
+                            <div className="relative">
+                                <Textarea
+                                    value={tailoredJobDescription}
+                                    onChange={(e) => setTailoredJobDescription(e.target.value)}
+                                    className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 min-h-[200px]"
+                                    placeholder="Paste the full job description here... Our AI will analyze key requirements and skills."
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pt-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>work</span>
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Target Role</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                Job Title
-                                            </label>
-                                            <Input
-                                                type="text"
-                                                value={tailoredJobTitle}
-                                                onChange={(e) => setTailoredJobTitle(e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600"
-                                                placeholder="e.g. Senior Product Manager"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                Company Name
-                                            </label>
-                                            <Input
-                                                type="text"
-                                                value={tailoredCompanyName}
-                                                onChange={(e) => setTailoredCompanyName(e.target.value)}
-                                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600"
-                                                placeholder="e.g. Acme Innovations"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Job Description Section */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>description</span>
-                                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Job Description</h3>
-                                        </div>
+                                        <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>folder</span>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Base Resume</h3>
                                     </div>
                                     <div className="relative">
-                                        <Textarea
-                                            value={tailoredJobDescription}
-                                            onChange={(e) => setTailoredJobDescription(e.target.value)}
-                                            className="w-full px-4 py-4 bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 min-h-[200px]"
-                                            placeholder="Paste the full job description here... Our AI will analyze key requirements and skills."
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="pt-4">
-                                    {/* Base Resume - Now Full Width or in a grid if we add more items later, currently logic kept it in grid but requested full width for prompt means prompt moves out */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>folder</span>
-                                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Base Resume</h3>
-                                            </div>
-                                            <div className="relative">
-                                                <Select
-                                                    value={selectedBaseCvId}
-                                                    onChange={(e) => handleSelectedBaseCvIdChange(e.target.value)}
-                                                    className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300"
-                                                >
-                                                    <option value="">— Not selected —</option>
-                                                    {availableCvs.map(cv => (
-                                                        <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
-                                                    ))}
-                                                    {availableCvs.length === 0 && <option value="master">Loading CVs...</option>}
-                                                </Select>
-                                                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
-                                                    <span className="material-symbols-outlined">expand_more</span>
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                Select the version you want to tailor for this application.
-                                            </p>
+                                        <Select
+                                            value={selectedBaseCvId}
+                                            onChange={(e) => handleSelectedBaseCvIdChange(e.target.value)}
+                                            className="w-full px-4 py-3 pr-11 appearance-none bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300"
+                                        >
+                                            <option value="">— Not selected —</option>
+                                            {availableCvs.map(cv => (
+                                                <option key={cv.id} value={cv.id}>{cv.name || 'Unnamed CV'}</option>
+                                            ))}
+                                            {availableCvs.length === 0 && <option value="master">Loading CVs...</option>}
+                                        </Select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                            <span className="material-symbols-outlined">expand_more</span>
                                         </div>
                                     </div>
-
-                                    {/* Custom Instructions - Full Width */}
-                                    <PromptChecklist
-                                        type="cv"
-                                        onChange={setCustomInstructions}
-                                    />
-                                </div>
-                            </Card>
-
-                            {/* Footer Actions */}
-                            <div className="mt-8 flex items-center justify-end gap-4">
-                                <Button
-                                    variant="ghost"
-                                    onClick={() => setCvCreationMode('import')}
-                                    className="px-6 py-2.5 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-900 dark:hover:text-gray-200"
-                                >
-                                    Switch to Import
-                                </Button>
-                                <Button
-                                    onClick={handleGenerateSpecificCv}
-                                    disabled={isGeneratingCv || !hasMasterCv || !tailoredJobDescription}
-                                    className="font-semibold shadow-md hover:shadow-lg"
-                                >
-                                    {isGeneratingCv ? (
-                                        <>
-                                            <Spinner size="sm" className="text-white" />
-                                            <span>Generating...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="material-symbols-outlined text-white">auto_awesome</span>
-                                            <span>Generate Tailored CV</span>
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-
-                            {!hasMasterCv && (
-                                <div className="mt-4 text-center">
-                                    <p className="text-sm text-amber-600 dark:text-amber-400">
-                                        ⚠️ You need to upload a CV first. Go to <Link to="/manage-cv" className="underline font-medium">CV Management</Link> to upload it.
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Select the version you want to tailor for this application.
                                     </p>
                                 </div>
+                            </div>
+
+                            <PromptChecklist
+                                type="cv"
+                                onChange={setCustomInstructions}
+                            />
+                        </div>
+                    </Card>
+
+                    <div className="mt-8 flex items-center justify-end gap-4">
+                        <Button
+                            onClick={handleGenerateSpecificCv}
+                            disabled={isGeneratingCv || !hasMasterCv || !tailoredJobDescription}
+                            className="font-semibold shadow-md hover:shadow-lg"
+                        >
+                            {isGeneratingCv ? (
+                                <>
+                                    <Spinner size="sm" className="text-white" />
+                                    <span>Generating...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="material-symbols-outlined text-white">auto_awesome</span>
+                                    <span>Generate Tailored CV</span>
+                                </>
                             )}
-                        </>
-                    )}
+                        </Button>
+                    </div>
                 </div>
             )}
 

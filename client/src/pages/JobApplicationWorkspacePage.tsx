@@ -159,6 +159,11 @@ const JobApplicationWorkspacePage: React.FC = () => {
                         setCvData(EMPTY_CV_DATA);
                         lastSavedCvDataRef.current = JSON.stringify(EMPTY_CV_DATA);
                     }
+
+                    // Sync template from the CV document so both pages use the same template
+                    if (cvResponse.cv.templateId) {
+                        setSelectedTemplate(cvResponse.cv.templateId);
+                    }
                 } else {
                     // No CV document  clear all CV state first
                     setCurrentCvId(null);
@@ -203,8 +208,12 @@ const JobApplicationWorkspacePage: React.FC = () => {
             lastSavedCoverLetterRef.current = data.draftCoverLetterText || '';
 
             try {
-                const cvResponse = await getMasterCv();
-                setHasMasterCv(!!cvResponse.cv);
+                const masterCvResponse = await getMasterCv();
+                setHasMasterCv(!!masterCvResponse.cv);
+                // Use master CV's template as fallback if job CV didn't specify one
+                if (masterCvResponse.cv?.templateId && selectedTemplate === 'german-latex') {
+                    setSelectedTemplate(masterCvResponse.cv.templateId);
+                }
             } catch (error) {
                 console.error("Error checking master CV:", error);
                 setHasMasterCv(false);
@@ -243,16 +252,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
         setApplyClError,
         handleApplyBaseCoverLetter,
         handleSaveClSnapshot,
-        cvCreationMode,
-        setCvCreationMode,
-        cvImportFile,
-        setCvImportFile,
-        selectedBaseCvIdForImport,
-        setSelectedBaseCvIdForImport,
-        isApplyingBaseCv,
-        applyCvError,
-        setApplyCvError,
-        handleApplyBaseCv,
     } = useReviewBaseAssets({
         jobId,
         jobApplication,
@@ -768,7 +767,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
 
                             {activeTab === 'cv' && jobId && (
                                 <TailoredCvPage
-                                    // CV State
                                     hasLocalCv={hasLocalCv}
                                     cvData={cvData}
                                     currentCvId={currentCvId}
@@ -779,19 +777,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
                                     showInlineCvDiff={showInlineCvDiff}
                                     setShowInlineCvDiff={setShowInlineCvDiff}
 
-                                    // CV Creation Mode
-                                    cvCreationMode={cvCreationMode}
-                                    setCvCreationMode={setCvCreationMode}
-                                    cvImportFile={cvImportFile}
-                                    setCvImportFile={setCvImportFile}
-                                    selectedBaseCvIdForImport={selectedBaseCvIdForImport}
-                                    setSelectedBaseCvIdForImport={setSelectedBaseCvIdForImport}
-                                    isApplyingBaseCv={isApplyingBaseCv}
-                                    applyCvError={applyCvError}
-                                    setApplyCvError={setApplyCvError}
-                                    cvImportFileRef={cvImportFileRef}
-
-                                    // AI Generation State
                                     tailoredJobTitle={tailoredJobTitle}
                                     setTailoredJobTitle={setTailoredJobTitle}
                                     tailoredCompanyName={tailoredCompanyName}
@@ -807,25 +792,21 @@ const JobApplicationWorkspacePage: React.FC = () => {
                                     generateCvError={generateCvError}
                                     setGenerateCvError={setGenerateCvError}
 
-                                    // Generation Progress
                                     generationStep={generationStep}
                                     generationProgress={generationProgress}
 
-                                    // CV Editor State
                                     selectedTemplate={selectedTemplate}
                                     setSelectedTemplate={setSelectedTemplate}
                                     cvSaveStatus={cvSaveStatus}
                                     lastSavedCvDataRef={lastSavedCvDataRef}
                                     improvingSections={improvingSections}
 
-                                    // ATS State
                                     atsScores={atsScores}
                                     isLoadingAts={isLoadingAts}
                                     isScanningAts={isScanningAts}
                                     atsProgressMessage={atsProgressMessage}
                                     isApplyingAtsBatch={isApplyingAtsBatch}
 
-                                    // Preview State
                                     isPreviewOpen={isPreviewOpen}
                                     setIsPreviewOpen={setIsPreviewOpen}
                                     previewPdfBase64={previewPdfBase64}
@@ -834,18 +815,15 @@ const JobApplicationWorkspacePage: React.FC = () => {
                                     setIsLoadingRawPdf={setIsLoadingRawPdf}
                                     isGeneratingPreview={isGeneratingPreview}
 
-                                    // Job Application
                                     jobApplication={jobApplication}
                                     jobId={jobId}
 
-                                    // Handlers
                                     handleCvChange={handleCvChange}
                                     handleManualSaveCv={handleManualSaveCv}
                                     handleImproveSection={handleImproveSection}
                                     handleDynamicChange={handleDynamicChange}
                                     resetLocalCvState={resetLocalCvState}
                                     showToast={showToast}
-                                    handleApplyBaseCv={handleApplyBaseCv}
                                     handleGenerateSpecificCv={handleGenerateSpecificCv}
                                     handleScanAts={handleScanAts}
                                     handleDeleteAts={handleDeleteAts}
