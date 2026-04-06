@@ -30,3 +30,12 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Files changed:** electron/src/hooks/useAudioRecording.ts
 
 ---
+
+## pdf-download-400-error — PDF download fails with HTTP 400 Bad Request
+- **Date:** 2026-04-06
+- **Error patterns:** PDF download, 400 Bad Request, Authorization header, filename validation, sanitizeForFilename, regex validation, AI-generated filenames
+- **Root cause:** Three issues: (1) Client-side handleDownload function was missing Authorization header. (2) The filename validation regex `/^[a-zA-Z0-9._-]+$/` was too strict and didn't allow spaces. (3) AI-generated filenames were NOT being sanitized before storage - sanitizeForFilename was only used as a fallback, not on AI-generated filenames which contained spaces, &, and other special characters.
+- **Fix:** 1. Added Authorization header to axios.get() requests in both usePdfGeneration and useReviewCoverLetterPdf hooks. 2. Updated filename validation regex to `/^[a-zA-Z0-9_.\-+&\(\)\s]+$/` to allow spaces, &, +, and () for existing files. 3. Modified coverLetterService.ts to ALWAYS sanitize filenames (both AI-generated and fallback) before storing.
+- **Files changed:** client/src/pages/review-finalize/hooks/usePdfGeneration.ts, client/src/pages/review-finalize/hooks/useReviewCoverLetterPdf.ts, server/src/services/coverLetterService.ts, server/src/validations/commonSchemas.ts
+
+---
