@@ -370,6 +370,17 @@ const DashboardPage: React.FC = () => {
     return tags;
   };
 
+  const tagCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    jobs.forEach((job) => {
+      getJobTags(job).forEach((tag) => {
+        const key = tag.toLowerCase();
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+    });
+    return counts;
+  }, [jobs]);
+
   const availableTags = useMemo(() => {
     const tags = new Map<string, string>();
     jobs.forEach((job) => {
@@ -380,8 +391,12 @@ const DashboardPage: React.FC = () => {
         }
       });
     });
-    return Array.from(tags.values()).sort((a, b) => a.localeCompare(b));
-  }, [jobs]);
+    return Array.from(tags.values()).sort((a, b) => {
+      const countDiff = (tagCounts.get(b.toLowerCase()) || 0) - (tagCounts.get(a.toLowerCase()) || 0);
+      if (countDiff !== 0) return countDiff;
+      return a.localeCompare(b);
+    });
+  }, [jobs, tagCounts]);
 
   const hasUntaggedJobs = useMemo(
     () => jobs.some((job) => getJobTags(job).length === 0),
@@ -391,12 +406,12 @@ const DashboardPage: React.FC = () => {
   const hasFieldOptions = availableTags.length > 0;
 
   const fieldFilterOptions = useMemo(() => {
-    const options = availableTags.map((tag) => ({ key: tag, label: tag }));
+    const options = availableTags.map((tag) => ({ key: tag, label: tag, count: tagCounts.get(tag.toLowerCase()) || 0 }));
     if (hasUntaggedJobs) {
-      options.push({ key: UNTAGGED_FILTER_KEY, label: 'Untagged' });
+      options.push({ key: UNTAGGED_FILTER_KEY, label: 'Untagged', count: 0 });
     }
     return options;
-  }, [availableTags, hasUntaggedJobs]);
+  }, [availableTags, hasUntaggedJobs, tagCounts]);
 
   const addTagsToForm = (rawValue: string) => {
     const currentTags = Array.isArray(formData.jobTags) ? [...formData.jobTags] : [];
@@ -2111,10 +2126,10 @@ const DashboardPage: React.FC = () => {
               {/* Tags */}
               <div className="w-full">
                 <label className="block text-xs font-medium mb-1.5 label-overline">Tags</label>
-                <div className="flex items-center gap-2" ref={fieldMenuRef}>
+                <div className="flex items-center gap-2 w-full" ref={fieldMenuRef}>
                   {fieldFilterOptions.length > 0 ? (
                     <>
-                      <div className="flex-1 flex items-center gap-2 flex-nowrap overflow-x-auto">
+                      <div className="flex-1 min-w-0 flex items-center gap-2 flex-nowrap overflow-hidden">
                         {visibleFieldOptions.map((option) => {
                           const isActive = filterTags.includes(option.key);
                           return (
@@ -2122,13 +2137,21 @@ const DashboardPage: React.FC = () => {
                               key={option.key}
                               type="button"
                               onClick={() => toggleTagFilter(option.key)}
-                              className="inline-flex items-center gap-1.5 h-9 min-h-[36px] px-3 rounded-full border text-xs font-semibold transition-all whitespace-nowrap"
+                              className="inline-flex items-center gap-1.5 h-9 min-h-[36px] px-3 rounded-full border text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0"
                               style={isActive
                                 ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
                                 : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
                               aria-pressed={isActive}
                             >
                               {option.label}
+                              <span
+                                className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[9px] font-bold leading-none"
+                                style={isActive
+                                  ? { background: 'rgba(255,255,255,0.25)', color: 'var(--text-on-accent)' }
+                                  : { background: 'var(--bg-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                              >
+                                {option.count}
+                              </span>
                             </button>
                           );
                         })}
@@ -2174,6 +2197,14 @@ const DashboardPage: React.FC = () => {
                                       aria-pressed={isActive}
                                     >
                                       {option.label}
+                                      <span
+                                        className="inline-flex items-center justify-center min-w-[16px] h-[16px] rounded-full text-[8px] font-bold leading-none"
+                                        style={isActive
+                                          ? { background: 'rgba(255,255,255,0.25)', color: 'var(--text-on-accent)' }
+                                          : { background: 'var(--bg-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                                      >
+                                        {option.count}
+                                      </span>
                                     </button>
                                   );
                                 })}
