@@ -635,6 +635,7 @@ const CalendarPage: React.FC = () => {
                         <button
                             onClick={() => { setEditingEvent(null); setShowEventModal(true); }}
                             className="btn-primary gap-2"
+                            data-onboarding="primary-action"
                         >
                             <Plus size={18} />
                             Add Event
@@ -722,6 +723,7 @@ const CalendarPage: React.FC = () => {
                             onClick={handleConnect}
                             disabled={connecting}
                             className="btn-primary flex items-center gap-2 w-full justify-center disabled:opacity-50"
+                            data-onboarding="primary-action"
                         >
                             {connecting ? (
                                 <>

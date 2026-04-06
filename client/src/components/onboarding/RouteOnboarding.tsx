@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { BookOpen, ChevronRight, HelpCircle, X } from 'lucide-react';
+import SpotlightOverlay from './SpotlightOverlay';
 
 /* ─── Storage key prefix ─────────────────────────────────────────────────── */
-const GUIDE_SHOWN_PREFIX = 'guide_shown_';
+const SPOTLIGHT_SHOWN_PREFIX = 'spotlight_shown_';
 
 /* ─── Per-page guide config ──────────────────────────────────────────────── */
 type PageGuide = {
@@ -12,6 +13,8 @@ type PageGuide = {
     title: string;
     description: string;
     features: string[];
+    spotlightSelector?: string;
+    spotlightMessage?: string;
 };
 
 const PAGE_GUIDES: PageGuide[] = [
@@ -26,6 +29,8 @@ const PAGE_GUIDES: PageGuide[] = [
             'Step 3: Open the job workspace to generate a tailored CV + cover letter',
             'Continue with mock interview prep, reminders, and follow-ups',
         ],
+        spotlightSelector: '[data-onboarding="primary-action"]',
+        spotlightMessage: 'Start here by adding a target job, then tailor your CV and cover letter.',
     },
     {
         key: 'manage-cv',
@@ -38,6 +43,8 @@ const PAGE_GUIDES: PageGuide[] = [
             'Generate and store role-specific variants when needed',
             'Return to Dashboard to add jobs and create tailored cover letters',
         ],
+        spotlightSelector: '[data-onboarding="primary-action"]',
+        spotlightMessage: 'Upload or create your base CV here so the dashboard can generate tailored applications later.',
     },
     {
         key: 'email-suggestions',
@@ -50,6 +57,8 @@ const PAGE_GUIDES: PageGuide[] = [
             'Approve, edit, or dismiss with full control',
             'Suggestions automatically link to existing jobs',
         ],
+        spotlightSelector: '[data-onboarding="primary-action"]',
+        spotlightMessage: 'Scan your inbox to pull new job email updates and review the suggestions.',
     },
     {
         key: 'analytics',
@@ -62,6 +71,8 @@ const PAGE_GUIDES: PageGuide[] = [
             'Activity volume over a rolling time window',
             'Identify bottlenecks to sharpen your strategy',
         ],
+        spotlightSelector: '[data-onboarding="primary-action"]',
+        spotlightMessage: 'Switch between job and work analytics to explore the metrics that matter now.',
     },
     {
         key: 'calendar',
@@ -74,6 +85,8 @@ const PAGE_GUIDES: PageGuide[] = [
             'Set reminders so you never miss a follow-up',
             'Sync with external calendar services',
         ],
+        spotlightSelector: '[data-onboarding="primary-action"]',
+        spotlightMessage: 'Add a calendar event or connect Google Calendar to keep every interview on track.',
     },
     {
         key: 'work-tracker',
@@ -86,6 +99,8 @@ const PAGE_GUIDES: PageGuide[] = [
             'View weekly and monthly activity summaries',
             'Review and export your time logs at any point',
         ],
+        spotlightSelector: '[data-onboarding="primary-action"]',
+        spotlightMessage: 'Import your schedule with AI to log work sessions in seconds.',
     },
     {
         key: 'interview-materials',
@@ -98,6 +113,8 @@ const PAGE_GUIDES: PageGuide[] = [
             'Toggle pinning to keep must-reads at the top',
             'Archive materials after interviews are complete',
         ],
+        spotlightSelector: '[data-onboarding="primary-action"]',
+        spotlightMessage: 'Drop in prep docs or notes to build your interview library.',
     },
     {
         key: 'settings',
@@ -134,6 +151,8 @@ const PAGE_GUIDES: PageGuide[] = [
             'Control visibility settings before publishing',
             'Share a direct link to your live portfolio',
         ],
+        spotlightSelector: '[data-onboarding="primary-action"]',
+        spotlightMessage: 'Connect GitHub and LinkedIn to import your projects and experience automatically.',
     },
     {
         key: 'auto-jobs',
@@ -146,6 +165,8 @@ const PAGE_GUIDES: PageGuide[] = [
             'Review AI-scored matches and spot the best fits instantly',
             'Promote matching jobs straight to your main dashboard',
         ],
+        spotlightSelector: '[data-onboarding="primary-action"]',
+        spotlightMessage: 'Run Auto Jobs to start discovering matches based on your preferences.',
     },
     {
         key: 'interview-buddy',
@@ -158,6 +179,8 @@ const PAGE_GUIDES: PageGuide[] = [
             'Hold Ctrl+Shift+Space to capture the interviewer\'s question',
             'AI-generated answer appears in a floating overlay only you can see',
         ],
+        spotlightSelector: '[data-onboarding="primary-action"]',
+        spotlightMessage: 'Launch the companion app when you are ready to start an interview session.',
     },
 ];
 
@@ -165,41 +188,70 @@ const PAGE_GUIDES: PageGuide[] = [
 const RouteOnboarding: React.FC = () => {
     const location = useLocation();
     const [open, setOpen] = useState(false);
+    const [showSpotlight, setShowSpotlight] = useState(false);
+    const spotlightTargetRef = useRef<HTMLElement | null>(null);
 
     const guide = PAGE_GUIDES.find((g) => g.match(location.pathname));
 
-    // Auto-open once on the very first visit to each route.
-    // setOpen(false) on every route change so the panel closes when navigating
-    // away, and only re-opens automatically on a page that hasn't been seen yet.
     useEffect(() => {
-        if (!guide) return;
-        const seenKey = `${GUIDE_SHOWN_PREFIX}${guide.key}`;
+        setOpen(false);
+        setShowSpotlight(false);
+    }, [guide?.key]);
+
+    useEffect(() => {
+        if (!guide?.spotlightSelector || !guide?.spotlightMessage) return;
+        const seenKey = `${SPOTLIGHT_SHOWN_PREFIX}${guide.key}`;
+
         try {
             if (localStorage.getItem(seenKey) === 'true') {
-                setOpen(false);
                 return;
             }
         } catch {
             // ignore localStorage errors
         }
-        // Mark as seen only when the panel actually opens (inside the timeout),
-        // to avoid counting routes that were navigated away from in < 600 ms.
-        const timer = window.setTimeout(() => {
-            try {
-                localStorage.setItem(seenKey, 'true');
-            } catch {
-                // ignore localStorage errors
+
+        let cancelled = false;
+        let attempts = 0;
+        const maxAttempts = 20;
+        const retryDelayMs = 120;
+
+        const tryShowSpotlight = () => {
+            if (cancelled) return;
+            const target = document.querySelector(guide.spotlightSelector) as HTMLElement | null;
+            if (target) {
+                spotlightTargetRef.current = target;
+                setShowSpotlight(true);
+                try {
+                    localStorage.setItem(seenKey, 'true');
+                } catch {
+                    // ignore localStorage errors
+                }
+                return;
             }
-            setOpen(true);
-        }, 600);
-        return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [guide?.key]);
+
+            attempts += 1;
+            if (attempts < maxAttempts) {
+                window.setTimeout(tryShowSpotlight, retryDelayMs);
+            }
+        };
+
+        window.setTimeout(tryShowSpotlight, 0);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [guide]);
 
     if (!guide) return null;
 
     return (
         <>
+            <SpotlightOverlay
+                isOpen={showSpotlight}
+                targetRef={spotlightTargetRef}
+                message={guide.spotlightMessage || ''}
+                onDismiss={() => setShowSpotlight(false)}
+            />
             {/* ── Floating help FAB ─────────────────────────────────────────── */}
             <button
                 type="button"

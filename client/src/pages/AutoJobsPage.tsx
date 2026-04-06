@@ -680,6 +680,7 @@ const AutoJobsPage: React.FC = () => {
                             disabled={isWorkflowRunning || isTriggering}
                             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
                             title={`Run auto-jobs workflow (3 base + ${(settings.maxJobs || 100) * 0.25} credits = ${3 + (settings.maxJobs || 100) * 0.25} total)`}
+                            data-onboarding="primary-action"
                         >
                             {(isWorkflowRunning || isTriggering) ? (
                                 <>

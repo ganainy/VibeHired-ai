@@ -728,6 +728,7 @@ const InterviewMaterialsPage: React.FC = () => {
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
                         className="relative flex flex-col items-center justify-center gap-2 p-10 rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200"
+                        data-onboarding="primary-action"
                         style={{
                             borderColor: isDragOver ? 'var(--accent)' : 'var(--border)',
                             backgroundColor: isDragOver ? 'var(--accent-bg)' : 'var(--bg-elevated)',

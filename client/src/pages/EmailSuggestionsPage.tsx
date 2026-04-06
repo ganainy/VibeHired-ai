@@ -449,6 +449,7 @@ const EmailSuggestionsPage: React.FC = () => {
                             onClick={handlePoll}
                             disabled={polling}
                             className="inbox-primary-btn"
+                            data-onboarding="primary-action"
                         >
                             <RefreshIcon spinning={polling} />
                             <span>{polling ? `Scanning last ${scanLimit} emails` : 'Scan inbox'}</span>

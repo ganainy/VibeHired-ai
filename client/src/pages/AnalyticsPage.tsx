@@ -219,7 +219,7 @@ const AnalyticsPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col items-center md:items-end gap-3">
-                    <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                    <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }} data-onboarding="primary-action">
                         {[
                             { key: 'jobs', label: 'Job Applications', icon: <Briefcase size={15} /> },
                             { key: 'work', label: 'Work Tracker', icon: <Clock size={15} /> },

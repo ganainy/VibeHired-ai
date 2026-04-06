@@ -1771,7 +1771,7 @@ const DashboardPage: React.FC = () => {
 
 
         {/* Add Job Section */}
-        <div ref={addJobSectionRef} className="bg-surface p-3 sm:p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+        <div ref={addJobSectionRef} data-onboarding="primary-action" className="bg-surface p-3 sm:p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800">
           {/* Mobile Header - always visible, collapsible */}
           <div className="sm:hidden flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Step 2: Add a target job</h2>

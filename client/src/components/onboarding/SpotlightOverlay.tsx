@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface SpotlightOverlayProps {
   isOpen: boolean;
@@ -47,7 +48,7 @@ const SpotlightOverlay: React.FC<SpotlightOverlayProps> = ({
 
   if (!isOpen || !rect) return null;
 
-  return (
+  const overlay = (
     <div className="fixed inset-0 z-[60] pointer-events-none">
       <div
         className="absolute rounded-[28px]"
@@ -64,8 +65,10 @@ const SpotlightOverlay: React.FC<SpotlightOverlayProps> = ({
       <div
         className="absolute rounded-xl border px-3 py-2 text-xs font-medium shadow-lg pointer-events-auto"
         style={{
-          top: Math.max(12, rect.top - 56),
-          left: rect.left + Math.min(24, rect.width - maxWidth + 40),
+          top: rect.top - 56 < 12
+            ? Math.min(window.innerHeight - 12, rect.top + rect.height + 18)
+            : Math.max(12, rect.top - 56),
+          left: Math.max(12, Math.min(rect.left + 24, window.innerWidth - maxWidth - 12)),
           maxWidth,
           background: 'var(--bg-elevated)',
           borderColor: 'var(--border)',
@@ -89,6 +92,8 @@ const SpotlightOverlay: React.FC<SpotlightOverlayProps> = ({
       </div>
     </div>
   );
+
+  return typeof document === 'undefined' ? overlay : createPortal(overlay, document.body);
 };
 
 export default SpotlightOverlay;

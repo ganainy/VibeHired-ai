@@ -572,7 +572,7 @@ const InterviewBuddyPage: React.FC = () => {
         </div>
 
         {/* Install + Launch actions */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2" data-onboarding="primary-action">
           {COMPANION_DOWNLOAD_URL ? (
             <a
               href={COMPANION_DOWNLOAD_URL}

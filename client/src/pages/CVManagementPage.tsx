@@ -1042,7 +1042,7 @@ const CVManagementPage: React.FC = () => {
       ) : !hasBaseCvs && !showMockTour ? (
         /*  Zero-CV hero  */
         <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
-          <div className="w-full max-w-lg px-4 sm:px-6 py-8 sm:py-12">
+          <div className="w-full max-w-lg px-4 sm:px-6 py-8 sm:py-12" data-onboarding="primary-action">
             <div className="text-center mb-8">
               <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, var(--accent-dim), var(--accent))' }}>
                 <svg className="w-8 h-8 text-ink-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">

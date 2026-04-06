@@ -2540,6 +2540,7 @@ const WorkTrackerPage: React.FC = () => {
                   className="group flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all"
                   style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-dim)' }}
                   title="Import with AI"
+                  data-onboarding="primary-action"
                 >
                   <Sparkles size={15} />
                   <span className="flex flex-col items-start leading-tight">
