@@ -49,12 +49,13 @@ export const paginationSchema = z.object({
 
 /**
  * Validates safe filename pattern (no path traversal, no special chars)
+ * Allows alphanumeric, spaces, underscores, dashes, dots, and common special chars like &, +, ()
  */
 export const filenameParamSchema = z.object({
   filename: z.string().refine(
     (val) => {
       const basename = val.split('/').pop() || val;
-      return basename === val && !val.includes('..') && /^[a-zA-Z0-9._-]+$/.test(val);
+      return basename === val && !val.includes('..') && /^[a-zA-Z0-9_.\-+&\(\)\s]+$/.test(val);
     },
     {
       message: 'Invalid filename format',

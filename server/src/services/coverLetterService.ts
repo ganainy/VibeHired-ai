@@ -151,9 +151,14 @@ Return ONLY the JSON object, no additional text or markdown.`;
             rawCvText
         );
 
-        // Ensure fileName has proper format
-        if (!coverLetterData.fileName || !coverLetterData.fileName.endsWith('.pdf')) {
+        // Always sanitize the filename to ensure it contains only safe characters
+        if (!coverLetterData.fileName) {
             coverLetterData.fileName = `${firstName}_${lastName}_${suggestedDocLabel}_${sanitizeForFilename(jobTitle)}_${sanitizeForFilename(companyName)}.pdf`;
+        } else {
+            // Remove .pdf extension if present, sanitize, then add it back
+            const nameWithoutExt = coverLetterData.fileName.replace(/\.pdf$/i, '');
+            const sanitized = sanitizeForFilename(nameWithoutExt);
+            coverLetterData.fileName = `${sanitized}.pdf`;
         }
 
         // Ensure emailSubject exists

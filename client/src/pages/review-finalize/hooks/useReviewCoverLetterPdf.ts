@@ -26,9 +26,17 @@ export const useReviewCoverLetterPdf = ({
     const handleDownload = async (filename: string | null) => {
         if (!filename) return;
         try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token found.');
+            }
+
             const url = getDownloadUrl(filename);
             const response = await axios.get(url, {
                 responseType: 'blob',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
             });
 
             const blob = new Blob([response.data], { type: response.headers['content-type'] });
