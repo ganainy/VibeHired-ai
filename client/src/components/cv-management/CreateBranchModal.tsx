@@ -1,37 +1,27 @@
 // client/src/components/cv-management/CreateBranchModal.tsx
 import React, { useState, useEffect } from 'react';
-import { CVDocument } from '../../services/cvApi';
 import { validateCvFile } from '../../lib/utils';
 
 interface CreateBranchModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onCreateBranch: (sourceCvId: string, category: string, displayName: string) => Promise<void>;
-    onUploadBranchFromFile?: (file: File, category: string, displayName: string) => Promise<void>;
-    allCvs: CVDocument[];
+    onUploadBranchFromFile: (file: File, category: string, displayName: string) => Promise<void>;
     isLoading?: boolean;
 }
 
 const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
     isOpen,
     onClose,
-    onCreateBranch,
     onUploadBranchFromFile,
-    allCvs,
     isLoading = false
 }) => {
-    const [mode, setMode] = useState<'existing' | 'upload'>('existing');
-    const [sourceCvId, setSourceCvId] = useState('');
     const [category, setCategory] = useState('');
     const [displayName, setDisplayName] = useState('');
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-    // Reset form when modal opens
     useEffect(() => {
         if (isOpen) {
-            setMode('existing');
-            setSourceCvId('');
             setCategory('');
             setDisplayName('');
             setUploadedFile(null);
@@ -56,14 +46,8 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
     const validateForm = () => {
         const newErrors: { [key: string]: string } = {};
 
-        if (mode === 'existing') {
-            if (!sourceCvId) {
-                newErrors.sourceCvId = 'Please select a source CV';
-            }
-        } else if (mode === 'upload') {
-            if (!uploadedFile) {
-                newErrors.uploadedFile = 'Please select a file to upload';
-            }
+        if (!uploadedFile) {
+            newErrors.uploadedFile = 'Please select a file to upload';
         }
 
         if (!category.trim()) {
@@ -83,9 +67,7 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
         if (!validateForm()) return;
 
         try {
-            if (mode === 'existing') {
-                await onCreateBranch(sourceCvId, category.trim(), displayName.trim());
-            } else if (mode === 'upload' && uploadedFile && onUploadBranchFromFile) {
+            if (uploadedFile) {
                 await onUploadBranchFromFile(uploadedFile, category.trim(), displayName.trim());
             }
             onClose();
@@ -113,8 +95,6 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
             onClose();
         }
     };
-
-    const availableSourceCvs = allCvs;
 
     if (!isOpen) return null;
 
@@ -146,89 +126,36 @@ const CreateBranchModal: React.FC<CreateBranchModalProps> = ({
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="px-6 py-4">
-                    {/* Mode Toggle */}
                     <div className="mb-4">
-                        <div className="flex rounded-lg bg-gray-100 dark:bg-gray-600 p-1">
-                            <button
-                                type="button"
-                                onClick={() => setMode('existing')}
-                                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${mode === 'existing'
-                                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
-                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                                    }`}
-                            >
-                                Use Existing CV
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setMode('upload')}
-                                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${mode === 'upload'
-                                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
-                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                                    }`}
-                            >
-                                Upload From Device
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Source CV Selection or File Upload */}
-                    {mode === 'existing' ? (
-                        <div className="mb-4">
-                            <label htmlFor="sourceCv" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Source CV
-                            </label>
-                            <select
-                                id="sourceCv"
-                                value={sourceCvId}
-                                onChange={(e) => setSourceCvId(e.target.value)}
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Upload CV File
+                        </label>
+                        <div className="space-y-2">
+                            <input
+                                type="file"
+                                accept=".pdf,.docx,.rtf"
+                                onChange={handleFileChange}
                                 disabled={isLoading}
-                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-600 ${errors.sourceCvId ? 'border-red-500' : 'border-gray-300'
+                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-l-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-300 ${errors.uploadedFile ? 'border-red-500' : 'border-gray-300'
                                     } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <option value="">Select a CV to copy from</option>
-                                {availableSourceCvs.map((cv) => (
-                                    <option key={cv._id} value={cv._id}>
-                                        {cv.displayName || cv.category || 'Unnamed CV'}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.sourceCvId && (
-                                <p className="text-red-500 text-sm mt-1">{errors.sourceCvId}</p>
+                            />
+                            {uploadedFile && (
+                                <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                                    <span className="text-sm text-blue-700 dark:text-blue-300">{uploadedFile.name}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setUploadedFile(null)}
+                                        className="text-red-500 hover:text-red-700 text-sm"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
                             )}
                         </div>
-                    ) : (
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Upload CV File
-                            </label>
-                            <div className="space-y-2">
-                                <input
-                                    type="file"
-                                    accept=".pdf,.docx,.rtf"
-                                    onChange={handleFileChange}
-                                    disabled={isLoading}
-                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-100 dark:border-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-l-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-300 ${errors.uploadedFile ? 'border-red-500' : 'border-gray-300'
-                                        } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                />
-                                {uploadedFile && (
-                                    <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-                                        <span className="text-sm text-blue-700 dark:text-blue-300">{uploadedFile.name}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setUploadedFile(null)}
-                                            className="text-red-500 hover:text-red-700 text-sm"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                            {errors.uploadedFile && (
-                                <p className="text-red-500 text-sm mt-1">{errors.uploadedFile}</p>
-                            )}
-                        </div>
-                    )}
+                        {errors.uploadedFile && (
+                            <p className="text-red-500 text-sm mt-1">{errors.uploadedFile}</p>
+                        )}
+                    </div>
 
                     {/* Category */}
                     <div className="mb-4">

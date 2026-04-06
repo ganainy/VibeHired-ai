@@ -1526,9 +1526,7 @@ const CVManagementPage: React.FC = () => {
       <CreateBranchModal
         isOpen={isCreateBranchModalOpen}
         onClose={() => setIsCreateBranchModalOpen(false)}
-        onCreateBranch={handleCreateBranch}
         onUploadBranchFromFile={handleUploadBranchFromFile}
-        allCvs={allCvs}
         isLoading={isCreatingBranch}
       />
 
