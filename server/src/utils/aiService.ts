@@ -14,6 +14,16 @@ function getMasterApiKey(): string {
   return key;
 }
 
+// Cache the resolved model once at startup — avoids a network round-trip per request
+let _cachedModel: string | null = null;
+
+async function getResolvedModel(apiKey: string): Promise<string> {
+  if (!_cachedModel) {
+    _cachedModel = await resolveBestGeminiModel(apiKey, 'fast');
+  }
+  return _cachedModel;
+}
+
 /**
  * Get model adapter for Gemini using master key.
  */
@@ -23,7 +33,7 @@ export async function getModelAdapter(
   _providerOverride?: string
 ): Promise<ModelAdapter> {
   const apiKey = getMasterApiKey();
-  const selectedModel = modelName || await resolveBestGeminiModel(apiKey, 'fast');
+  const selectedModel = modelName || await getResolvedModel(apiKey);
 
   return new GeminiAdapter(
     apiKey,
@@ -63,7 +73,7 @@ export async function generateContentWithFile(
 export async function generateStructuredResponse<T>(
   userId: string,
   prompt: string,
-  options?: GenerateContentOptions,
+  options?: GenerateContentOptions & { responseJsonSchema?: object },
   _providerOverride?: string
 ): Promise<T> {
   const adapter = await getModelAdapter(userId);

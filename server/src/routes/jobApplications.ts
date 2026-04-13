@@ -7,6 +7,7 @@ import { ScraperService } from '../services/scraperService';
 import { extractJobDataFromUrl, extractJobDataFromText, ExtractedJobData } from '../utils/aiExtractor';
 import mongoose from 'mongoose'; // Import mongoose for ObjectId type
 import { JsonResumeSchema } from '../types/jsonresume'; // Import if needed for validation
+import { normalizeCvFieldNames } from '../utils/cvNormalizer';
 import { validateRequest, ValidatedRequest } from '../middleware/validateRequest';
 import { getJobRecommendation } from '../services/jobRecommendationService';
 import { usageLimiter } from '../middleware/usageLimiter';

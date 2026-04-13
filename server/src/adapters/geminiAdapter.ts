@@ -49,6 +49,36 @@ function fileToGenerativePart(filePath: string, mimeType: string): Part {
 }
 
 /**
+ * Recursively strip JSON Schema fields that the Gemini API does not support.
+ * Gemini's responseSchema only supports: type, format, description, nullable,
+ * enum, items, properties, required, anyOf.
+ */
+function sanitizeGeminiSchema(schema: object): object {
+  if (Array.isArray(schema)) {
+    return schema.map(sanitizeGeminiSchema);
+  }
+  if (schema === null || typeof schema !== 'object') return schema;
+
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    // Strip unsupported fields at any level
+    if (key === 'additionalProperties' || key === 'minItems' || key === 'maxItems' ||
+        key === 'minimum' || key === 'maximum' || key === 'pattern' ||
+        key === 'minLength' || key === 'maxLength' || key === 'default' ||
+        key === '$schema' || key === 'definitions' || key === '$defs') {
+      continue;
+    }
+    // Recurse into nested objects/arrays
+    if (typeof value === 'object' && value !== null) {
+      result[key] = sanitizeGeminiSchema(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+/**
  * Gemini model adapter
  */
 export class GeminiAdapter extends ModelAdapter {
@@ -139,12 +169,47 @@ export class GeminiAdapter extends ModelAdapter {
 
   async generateStructuredResponse<T>(
     prompt: string,
-    options?: GenerateContentOptions
+    options?: GenerateContentOptions & { responseJsonSchema?: object }
   ): Promise<T> {
-    const jsonPrompt = `${prompt}\n\nIMPORTANT: Your response MUST be a valid JSON object wrapped in triple backticks (\`\`\`json). Do not include any additional text outside the JSON block.`;
+    try {
+      const generationConfig: any = {};
+      if (options?.temperature !== undefined) generationConfig.temperature = options.temperature;
+      if (options?.maxTokens !== undefined) generationConfig.maxOutputTokens = options.maxTokens;
+      if (options?.topP !== undefined) generationConfig.topP = options.topP;
+      if (options?.topK !== undefined) generationConfig.topK = options.topK;
 
-    const result = await this.generateContent(jsonPrompt, options);
-    return parseJsonResponse<T>(result.text);
+      // When a schema is provided, enforce it at the API level
+      const hasSchema = !!options?.responseJsonSchema;
+      if (hasSchema) {
+        generationConfig.responseMimeType = 'application/json';
+        generationConfig.responseSchema = sanitizeGeminiSchema(options.responseJsonSchema!);
+      }
+
+      const model = Object.keys(generationConfig).length > 0
+        ? this.genAI.getGenerativeModel({ model: this.modelName, generationConfig })
+        : this.model;
+
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+
+      if (!response || !response.candidates || response.candidates.length === 0 || !response.candidates[0].content) {
+        const blockReason = response?.promptFeedback?.blockReason;
+        throw new Error(`AI content generation failed or was blocked: ${blockReason || 'No content generated'}`);
+      }
+
+      // When schema is enforced, the response is guaranteed valid JSON
+      const text = response.text();
+
+      if (hasSchema) {
+        return JSON.parse(text) as T;
+      }
+
+      // Fallback: legacy parsing for non-schema calls
+      return parseJsonResponse<T>(text);
+    } catch (error: any) {
+      console.error('Error during Gemini structured response generation:', error);
+      throw new Error(`Failed to generate structured response: ${error.message || error}`);
+    }
   }
 
   async startChatSession(

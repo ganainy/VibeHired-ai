@@ -16,6 +16,7 @@ import JobApplication from '../models/JobApplication';
 import { generateContentWithFile } from '../utils/aiService';
 import { generateDescriptorFromJson, improveDynamicSectionWithAi } from '../services/generatorService';
 import { normalizeFreeformCvTags } from '../utils/vhTagNormalizer';
+import { normalizeCvFieldNames } from '../utils/cvNormalizer';
 import { GoogleGenerativeAIError } from '@google/generative-ai';
 import { NotFoundError, ValidationError } from '../utils/errors/AppError';
 import { JsonResumeSchema } from '../types/jsonresume';
@@ -176,27 +177,42 @@ You are a CV transcription tool. Your ONLY job is to read the attached CV file (
 - Do NOT omit sections. If a section exists, include it.
 - Ignore running headers/footers/page markers that repeat across pages (e.g. watermark-like text, page counters, or tokens like "NAME - 1", "NAME - 2"). Do NOT include those in output JSON.
 
+=== STRICT FIELD NAME CONTRACT ===
+Within ALL array entries (BERUFSERFAHRUNG, AUSBILDUNG, WEITERBILDUNG, IT-ERFAHRUNG, etc.) you MUST use exactly these field names:
+- "title" for the main label (job title, degree name, certificate name, category name)
+- "subtitle" for the secondary label (company, institution, organization, school, employer)
+- "dates" for date or period information (e.g. "01/2020 – 12/2023")
+- "bullets" for bullet point arrays (lists of responsibilities, achievements, tasks)
+- "content" for key-value content text (e.g. skill values, language proficiency levels, descriptions)
+- "category" for category labels in skill/language/knowledge sections
+
+DO NOT use synonyms such as: degree, institution, period, company, employer, description, responsibilities, details, role, position, specialization, value, text. Only the six field names above.
+
+Example — Education entry:
+{ "title": "B.Sc. Informatik", "subtitle": "TU München", "dates": "2018 – 2022" }
+
+Example — Work entry:
+{ "title": "Software Engineer", "subtitle": "Beispiel GmbH", "dates": "03/2022 – heute", "bullets": ["Backend mit Node.js", "API-Design", "Mentoring"] }
+
+Example — Skills entry:
+{ "category": "Programmiersprachen", "content": "JavaScript, TypeScript, Python" }
+
 === STRUCTURE INSTRUCTIONS ===
 - Return one top-level JSON object.
 - Use section headings from the CV as keys whenever possible.
 - Keep each section value in the most natural freeform structure from the source (string, array, or object).
 - Keep entry ordering exactly as in the CV.
-- If there is content that does not fit a clean section, include it under a key named "unsectioned".
 - If there is content that does not fit a clean section, include it under a key named "Header Info".
-- If the first unlabeled block is personal/contact info (name, age, location, email, phone, links), keep it under "Header Info" when there is no heading but tag that section as contact info in "__vh_tags".
+- If the first unlabeled block is personal/contact info (name, age, location, email, phone, links), keep it under "Header Info" and tag that section as contact info in "__vh_tags".
 - For key-value contact lines, store the value only (e.g. if source shows "Phone: +49...", save value as "+49...", not "Phone:").
-- LABELED LIST SECTIONS: If a section contains lines like "CategoryName: item1, item2" (e.g. skills, languages, knowledge), do NOT flatten them into a single bullet string. Represent each line as its own object: { "category": "CategoryName", "content": "item1, item2" }. This preserves the label so it can be rendered as a bold title.
-- TITLE + DETAILS LIST ITEMS: If a bullet/line follows patterns like "Title – details", "Title - details", "Title: details", or "Title | details" (common in certificates/training/courses), represent each item as an object with separate fields, e.g. { "title": "...", "content": "..." }.
-- For those title+details items, keep the title text exactly as in the source and keep the details text exactly as in the source; only split structure, do not rewrite wording.
-- LANGUAGE SECTIONS: Each language entry MUST be its own separate object or array item. Never merge multiple languages into one string (e.g. "Arabisch: Muttersprache Deutsch: C1" is wrong — they must be separate entries).
+- For bullets/content fields that are strings, keep them as strings — do NOT split into arrays.
+- LANGUAGE SECTIONS: Each language entry MUST be its own separate object. Never merge multiple languages into one string.
 - NEVER include leading bullet characters (•, -, –) in stored strings. Strip them from the source text before storing.
 
 === REQUIRED METADATA (__vh_tags) ===
 You MUST include a top-level "__vh_tags" key in every response.
 "__vh_tags" maps dot-paths to rendering tags. It is the ONLY way the renderer knows how to display each field.
 This metadata must NOT alter or omit any CV content. Use * as a wildcard for array item indices.
-
-Tag the following field types regardless of what language or key name the CV uses:
 
 PERSONAL INFO BLOCK (the unlabeled top block or any named contact/header section):
 - Section itself:                         "Header Info": "contact_block"
@@ -212,37 +228,20 @@ PROFILE / SUMMARY / OBJECTIVE sections (free-text paragraph):
 EXPERIENCE / EDUCATION ENTRIES (arrays of objects — use * wildcard for all items):
 - Main title (job title, degree name):    "Experience.*.title": "title"
 - Date range / period:                    "Experience.*.dates": "date_range"
-- Company / institution / employer:       "Experience.*.company": "subtitle"
+- Company / institution / employer:       "Experience.*.subtitle": "subtitle"
+- Bullet point lists:                     "Experience.*.bullets": "bullets"
 
-LABELED LIST / CATEGORY SECTIONS (e.g. TECHNISCHE KENNTNISSE, SPRACHEN, where each item has "Category: values"):
-- These MUST be arrays of objects — not flat strings.
-- Tag the category/label field as "title":   "TECHNISCHE KENNTNISSE.*.category": "title"
-- Tag the content/value field accordingly:   "TECHNISCHE KENNTNISSE.*.content": "key_value"
+LABELED LIST / CATEGORY SECTIONS (e.g. TECHNISCHE KENNTNISSE, SPRACHEN):
+- Tag the category/label field as "title":  "TECHNISCHE KENNTNISSE.*.category": "title"
+- Tag the content/value field:              "TECHNISCHE KENNTNISSE.*.content": "key_value"
 - For language sections, each language is its own object:
     "SPRACHEN.*.category": "title"
     "SPRACHEN.*.content": "key_value"
-- Example output for skills:
-    "TECHNISCHE KENNTNISSE": [
-      { "category": "Betriebssysteme", "content": "Windows 10/11, Linux" },
-      { "category": "Virtualisierung", "content": "Hyper-V, VirtualBox" }
-    ]
-- Example output for languages:
-    "SPRACHEN": [
-      { "category": "Arabisch", "content": "Muttersprache" },
-      { "category": "Deutsch",  "content": "C1 (telc Hochschule)" },
-      { "category": "Englisch", "content": "B2" }
-    ]
 
-TRAINING / CERTIFICATE / COURSE LISTS WITH "TITLE + DETAILS" ITEMS (e.g. WEITERBILDUNG):
-- These MUST be arrays of objects — not flat strings.
-- Tag the title field as "title":            "WEITERBILDUNG.*.title": "title"
-- Tag the remaining details field as "key_value": "WEITERBILDUNG.*.content": "key_value"
-- If a date/period is separated as its own value, tag it as "date" or "date_range".
-- Example:
-        "WEITERBILDUNG": [
-            { "title": "Google IT Support Professional Certificate (Google / Coursera, 2024)", "content": "Technischer Support, TCP/IP, DNS, DHCP, VPN, Windows- & Linux-Administration, Active Directory, Backup & Recovery, IT-Sicherheit" },
-            { "title": "Netzwerk- und Systemadministration (Udemy, 2026)", "content": "TCP/IP, Routing & Switching, Windows Server (AD/DNS/DHCP), Virtualisierung, Firewall/VPN, Troubleshooting" }
-        ]
+TRAINING / CERTIFICATE / COURSE LISTS (e.g. WEITERBILDUNG):
+- Tag the title field:                      "WEITERBILDUNG.*.title": "title"
+- Tag the details field:                    "WEITERBILDUNG.*.content": "key_value"
+- If a date/period is separated, tag it:    "WEITERBILDUNG.*.dates": "date_range"
 
 Allowed tags: name, email, phone, url, location, address, city, linkedin, github, website, portfolio, date, date_range, title, subtitle, paragraph, bullets, key_value, contact_block, personal_info.
 
@@ -643,7 +642,8 @@ router.post(
         console.log(`Processing CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
-        const originalCvJson = JSON.parse(JSON.stringify(cvJsonResume));
+        const normalizedCvJson = normalizeCvFieldNames(cvJsonResume);
+        const originalCvJson = JSON.parse(JSON.stringify(normalizedCvJson));
 
         // Generate AI-driven descriptor + structured data in one additional call.
         // Errors here are non-fatal: the CV is still created with the legacy cvJson.
@@ -655,7 +655,7 @@ router.post(
             isPrimary: false,
             category: 'General',
             displayName: req.file.originalname.replace(/\.[^.]+$/, '') || 'Uploaded CV',
-            cvJson: cvJsonResume,
+            cvJson: normalizedCvJson,
             originalCvJson,
             extractionMode: 'strict',
             extractionTimestamp: new Date(),
@@ -676,7 +676,7 @@ router.post(
                 isPrimary: false,
                 category: newCv.category,
                 displayName: newCv.displayName,
-                cvJson: cvJsonResume,
+                cvJson: normalizedCvJson,
                 hasOriginalCvJson: Boolean(newCv.originalCvJson),
                 extractionMode: newCv.extractionMode ?? null,
                 cvDescriptor: newCv.cvDescriptor ?? null,
@@ -790,7 +790,8 @@ router.post(
         console.log(`Processing branch CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
-        const originalCvJson = JSON.parse(JSON.stringify(cvJsonResume));
+        const normalizedCvJson = normalizeCvFieldNames(cvJsonResume);
+        const originalCvJson = JSON.parse(JSON.stringify(normalizedCvJson));
 
         const branchCvDescriptor = null;
         const branchCvData = null;
@@ -800,7 +801,7 @@ router.post(
             isPrimary: false,
             category: category.trim(),
             displayName: displayName.trim(),
-            cvJson: cvJsonResume,
+            cvJson: normalizedCvJson,
             originalCvJson,
             extractionMode: 'strict',
             extractionTimestamp: new Date(),
@@ -821,7 +822,7 @@ router.post(
                 isPrimary: false,
                 category: newCv.category,
                 displayName: newCv.displayName,
-                cvJson: cvJsonResume,
+                cvJson: normalizedCvJson,
                 hasOriginalCvJson: Boolean(newCv.originalCvJson),
                 extractionMode: newCv.extractionMode ?? null,
                 cvDescriptor: newCv.cvDescriptor ?? null,
