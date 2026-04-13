@@ -76,6 +76,8 @@ export interface IProfile extends Document {
       autoPollApplications?: boolean;
       /** Separate auto-scan toggle for job offer/lead emails */
       autoPollJobLeads?: boolean;
+      /** Whether to include already-read emails in the scan */
+      includeReadEmails?: boolean;
     };
   };
   autoJobSettings?: {

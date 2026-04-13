@@ -16,7 +16,7 @@ import { env } from '../config/env';
 import { decrypt, encrypt } from '../utils/encryption';
 import { GEMINI_FLASH } from '../constants/geminiModels';
 
-const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>;
+import { PDFParse } from 'pdf-parse';
 
 const router: Router = express.Router();
 router.use(authMiddleware as RequestHandler);
@@ -694,7 +694,8 @@ router.post(
 
     if (req.file) {
       if (req.file.mimetype === 'application/pdf') {
-        const { text: pdfText } = await pdfParse(req.file.buffer);
+        const parser = new PDFParse({ data: req.file.buffer });
+        const { text: pdfText } = await parser.getText();
         const result = await model.generateContent(`${systemPrompt}\n\nSchedule text:\n${pdfText}`);
         responseText = result.response.text();
       } else {

@@ -214,11 +214,12 @@ const ZERO_RESULT: PollResult = { created: 0, scanned: 0, applicationResponses: 
  * Polls Gmail for new messages for a single user, classifies them, and stores
  * pending EmailSuggestion documents.  Returns a PollResult breakdown.
  * @param category - Optional category filter: 'application_response' or 'job_offer'
+ * @param includeReadEmails - Whether to include already-read emails in the scan
  */
-export async function pollEmailsForUser(userId: string, limit?: number, category?: 'application_response' | 'job_offer'): Promise<PollResult> {
+export async function pollEmailsForUser(userId: string, limit?: number, category?: 'application_response' | 'job_offer', includeReadEmails = false): Promise<PollResult> {
     const tPoll = Date.now();
     const effectiveLimit = limit ?? 50;
-    console.log(`\n[EmailSuggestionService] ── pollEmailsForUser START (userId=${userId}, limit=${effectiveLimit}, category=${category ?? 'all'}) ──`);
+    console.log(`\n[EmailSuggestionService] ── pollEmailsForUser START (userId=${userId}, limit=${effectiveLimit}, category=${category ?? 'all'}, includeReadEmails=${includeReadEmails}) ──`);
 
     // Check Gmail scope is available before attempting any API calls
     const hasSco = await hasGmailScope(userId);
@@ -227,7 +228,7 @@ export async function pollEmailsForUser(userId: string, limit?: number, category
         return ZERO_RESULT;
     }
 
-    const messages = await fetchNewMessages(userId, effectiveLimit);
+    const messages = await fetchNewMessages(userId, effectiveLimit, includeReadEmails);
     const scanned = messages.length;
     console.log(`[EmailSuggestionService] ${scanned} message(s) fetched from Gmail`);
     if (scanned === 0) {

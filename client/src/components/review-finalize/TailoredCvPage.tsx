@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
 import CvEditorPanel from '../cv-workspace/CvEditorPanel';
 import { CvSectionDescriptor } from '../../types/cvDescriptor';
-import AtsInlinePanel from '../ats/AtsInlinePanel';
 import CvPreviewModal from '../cv-editor/CvPreviewModal';
 import ConfirmModal from '../common/ConfirmModal';
 import { Button, Card, Input, Select, Textarea } from '../common';
@@ -15,6 +14,9 @@ import PromptChecklist from '../common/PromptChecklist';
 import { getCvOriginalPdf, detachJobCv, deleteCv, getJobCv } from '../../services/cvApi';
 import { AtsScores } from '../../services/atsApi';
 import { JobApplication } from '../../services/jobApi';
+import RawPdfPlaceholder from '../cv-workspace/RawPdfPlaceholder';
+import TailoringChangesPanel from '../cv-workspace/TailoringChangesPanel';
+import AtsAnalysisCard from '../cv-workspace/AtsAnalysisCard';
 
 interface CVDocument {
     id: string;
@@ -181,65 +183,32 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
         <div>
             {/* Raw PDF attached — no JSON, show placeholder */}
             {hasLocalCv && (!cvData || !cvData.basics || Object.keys(cvData.basics).length === 0) && !liveCvDescriptor ? (
-                <div className="p-10 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col items-center gap-4 text-center">
-                    <span className="material-symbols-outlined text-5xl" style={{ color: 'var(--accent)' }}>description</span>
-                    <div>
-                        <p className="text-base font-semibold text-gray-800 dark:text-gray-200">CV attached as PDF</p>
-                        {currentCvFilename && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-mono">{currentCvFilename}</p>
-                        )}
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                            This CV was stored as-is. No in-app editing is available for raw PDF attachments.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            disabled={isLoadingRawPdf}
-                            onClick={async () => {
-                                setIsLoadingRawPdf(true);
-                                try {
-                                    let cvIdToPreview = currentCvId;
-                                    if (!cvIdToPreview && jobId) {
-                                        const latestJobCv = await getJobCv(jobId);
-                                        cvIdToPreview = latestJobCv.cv?._id ?? null;
-                                    }
-
-                                    if (!cvIdToPreview) {
-                                        showToast('Could not find the attached CV. Please refresh and try again.', 'error');
-                                        return;
-                                    }
-
-                                    const { pdfBase64 } = await getCvOriginalPdf(cvIdToPreview);
-                                    setPreviewPdfBase64(pdfBase64);
-                                    setIsPreviewOpen(true);
-                                } catch {
-                                    showToast('Failed to load PDF preview', 'error');
-                                } finally {
-                                    setIsLoadingRawPdf(false);
-                                }
-                            }}
-                            className="text-sm"
-                        >
-                            {isLoadingRawPdf ? (
-                                <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                            ) : (
-                                <span className="material-symbols-outlined text-base">visibility</span>
-                            )}
-                            Preview PDF
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="danger"
-                            onClick={() => setShowRemoveCvConfirm(true)}
-                            className="text-sm"
-                        >
-                            <span className="material-symbols-outlined text-base">delete</span>
-                            Remove &amp; re-attach
-                        </Button>
-                    </div>
-                </div>
+                <RawPdfPlaceholder
+                    filename={currentCvFilename}
+                    isLoadingRawPdf={isLoadingRawPdf}
+                    onPreview={async () => {
+                        setIsLoadingRawPdf(true);
+                        try {
+                            let cvIdToPreview = currentCvId;
+                            if (!cvIdToPreview && jobId) {
+                                const latestJobCv = await getJobCv(jobId);
+                                cvIdToPreview = latestJobCv.cv?._id ?? null;
+                            }
+                            if (!cvIdToPreview) {
+                                showToast('Could not find the attached CV. Please refresh and try again.', 'error');
+                                return;
+                            }
+                            const { pdfBase64 } = await getCvOriginalPdf(cvIdToPreview);
+                            setPreviewPdfBase64(pdfBase64);
+                            setIsPreviewOpen(true);
+                        } catch {
+                            showToast('Failed to load PDF preview', 'error');
+                        } finally {
+                            setIsLoadingRawPdf(false);
+                        }
+                    }}
+                    onRemove={async () => setShowRemoveCvConfirm(true)}
+                />
             ) : hasLocalCv ? (
                 <CvEditorPanel
                     data={cvData}
@@ -276,166 +245,23 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                         }
                     }}
                 >
-                    {/* Tailoring Changes Panel - Show what AI changed */}
-                    {tailoringChanges !== null && (
-                        <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                            <details className="group">
-                                <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-transparent group-open:border-zinc-100 dark:group-open:border-zinc-800">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex items-center justify-center w-8 h-8 rounded-lg text-ink-950 shadow-sm" style={{ background: 'var(--accent)' }}>
-                                            <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
-                                        </div>
-                                        <div>
-                                            <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100">
-                                                Tailoring Changes
-                                            </h3>
-                                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                                {tailoringChanges.length > 0
-                                                    ? `${tailoringChanges.length} modification${tailoringChanges.length !== 1 ? 's' : ''} recorded`
-                                                    : 'No section-level change details were provided for this version'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setShowInlineCvDiff(!showInlineCvDiff);
-                                            }}
-                                            disabled={tailoringChanges.length === 0}
-                                            className="text-xs font-semibold px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            title="Show changed sections directly in CV preview"
-                                        >
-                                            {showInlineCvDiff ? 'Hide Inline Diff' : 'Show Inline Diff'}
-                                        </button>
-                                        <span className="text-zinc-400 group-open:rotate-180 transition-transform duration-200">
-                                            <span className="material-symbols-outlined text-[20px]">expand_more</span>
-                                        </span>
-                                    </div>
-                                </summary>
-                                <div className="p-4 pt-0 divide-y divide-slate-100 dark:divide-slate-800">
-                                    {tailoringChanges.length === 0 && (
-                                        <div className="py-4 text-sm text-zinc-600 dark:text-zinc-300">
-                                            This tailored CV was generated, but the model did not return section-level diff details.
-                                            Regenerate to capture richer change details.
-                                        </div>
-                                    )}
+                    <TailoringChangesPanel
+                        tailoringChanges={tailoringChanges}
+                        showInlineCvDiff={showInlineCvDiff}
+                        onToggleDiff={setShowInlineCvDiff}
+                    />
 
-                                    {tailoringChanges.map((change, index) => (
-                                        <div
-                                            key={index}
-                                            className="py-4 first:pt-2 last:pb-2"
-                                        >
-                                            <div className="flex items-start gap-4">
-                                                <span className="flex-shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                                                    {change.section}
-                                                </span>
-                                                <div className="flex-1 min-w-0 space-y-1.5">
-                                                    <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-snug">
-                                                        {change.before || change.after
-                                                            ? `In ${change.section}, changed from "${change.before || '—'}" to "${change.after || '—'}".`
-                                                            : change.description}
-                                                    </p>
-                                                    <p className="text-xs text-zinc-500 dark:text-zinc-500 flex items-center gap-2 italic">
-                                                        <span className="w-1 h-1 rounded-full" style={{ background: 'var(--accent)' }}></span>
-                                                        {change.reason}
-                                                    </p>
-
-                                                    {(change.before || change.after) && (
-                                                        <details className="mt-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 p-2.5">
-                                                            <summary className="cursor-pointer text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
-                                                                View content diff
-                                                            </summary>
-                                                            <div className="mt-2 space-y-2">
-                                                                {change.before && (
-                                                                    <div>
-                                                                        <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-1">Before</p>
-                                                                        <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">{change.before}</p>
-                                                                    </div>
-                                                                )}
-                                                                {change.after && (
-                                                                    <div>
-                                                                        <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-1">After</p>
-                                                                        <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">{change.after}</p>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </details>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </details>
-                        </div>
-                    )}
-
-                    {/* ATS Analysis Card */}
-                    <div className="mb-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                        <details className="group">
-                            <summary className="flex items-center justify-between cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors border-b border-transparent group-open:border-zinc-100 dark:group-open:border-zinc-800">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg text-ink-950 shadow-sm" style={{ background: 'var(--accent)' }}>
-                                        <span className="material-symbols-outlined text-[20px]">troubleshoot</span>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100">ATS Analysis</h3>
-                                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                            {isScanningAts ? 'Scanning…' : atsScores ? (() => {
-                                                const total =
-                                                    (atsScores.complianceDetails?.actionableFeedback?.length ?? 0) +
-                                                    (atsScores.complianceDetails?.keywordsMissing?.length ?? 0) +
-                                                    (atsScores.skillMatchDetails?.missingSkills?.length ?? 0);
-                                                return total > 0 ? `${total} improvement${total !== 1 ? 's' : ''} available` : 'Looking good — no issues found';
-                                            })() : 'Run a scan to check compatibility'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    {atsScores && (
-                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(atsScores.score ?? 0) >= 80 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                                            : (atsScores.score ?? 0) >= 60 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                                            }`}>
-                                            {Math.round(atsScores.score ?? 0)}%
-                                        </span>
-                                    )}
-                                    {atsScores && (
-                                        <button
-                                            onClick={(e) => { e.preventDefault(); handleScanAts(); }}
-                                            className="flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 transition-all"
-                                            title="Re-scan ATS"
-                                        >
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                            </svg>
-                                            Re-scan
-                                            <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credit</span>
-                                        </button>
-                                    )}
-                                    <span className="text-zinc-400 group-open:rotate-180 transition-transform duration-200">
-                                        <span className="material-symbols-outlined text-[20px]">expand_more</span>
-                                    </span>
-                                </div>
-                            </summary>
-                            <AtsInlinePanel
-                                atsScores={atsScores}
-                                isScanning={isScanningAts}
-                                isLoading={isLoadingAts}
-                                progressMessage={atsProgressMessage}
-                                hasJobDescription={!!jobApplication?.jobDescriptionText}
-                                isApplyingBatch={isApplyingAtsBatch}
-                                onScan={handleScanAts}
-                                onRescan={handleScanAts}
-                                onApplyBatch={handleApplyAtsSuggestionBatch}
-                                onDelete={atsScores ? handleDeleteAts : undefined}
-                                hideHeader
-                            />
-                        </details>
-                    </div>
+                    <AtsAnalysisCard
+                        atsScores={atsScores}
+                        isScanningAts={isScanningAts}
+                        isLoadingAts={isLoadingAts}
+                        atsProgressMessage={atsProgressMessage}
+                        isApplyingAtsBatch={isApplyingAtsBatch}
+                        hasJobDescription={!!jobApplication?.jobDescriptionText}
+                        onScan={handleScanAts}
+                        onApplyBatch={handleApplyAtsSuggestionBatch}
+                        onDelete={handleDeleteAts}
+                    />
                 </CvEditorPanel>
             ) : !hasMasterCv ? (
                 <div className="flex flex-col items-center justify-center py-20 px-6 text-center">

@@ -258,6 +258,16 @@ const Sidebar: React.FC<SidebarProps> = ({
             className: 'w-28',
         },
         {
+            key: 'createdAt',
+            label: 'Created',
+            render: (cv) => (
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {getRelativeTime(cv.createdAt)}
+                </span>
+            ),
+            className: 'w-24',
+        },
+        {
             key: 'updatedAt',
             label: 'Edited',
             sortable: true,
@@ -358,6 +368,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             {
                 label: 'Usage',
                 value: (cv) => `${cv.usedByJobCount || 0} job CV${(cv.usedByJobCount || 0) === 1 ? '' : 's'}`,
+            },
+            {
+                label: 'Created',
+                value: (cv) => getRelativeTime(cv.createdAt),
             },
             {
                 label: 'Edited',

@@ -16,8 +16,21 @@ const EditableList: React.FC<EditableListProps> = ({
     className = '',
     bulletChar = '•'
 }) => {
+    const cleanItems = (rawItems: string[]) => {
+        return rawItems.map(item => {
+            return item.replace(/^(?:specialization|content|details|description|role|responsibilities|achievements|key responsibilities|key achievements|highlights):\s*/i, '');
+        });
+    };
+
+    const cleanedItems = cleanItems(items);
     const [isEditing, setIsEditing] = useState(false);
-    const [editValue, setEditValue] = useState(items.join('\n'));
+    const [editValue, setEditValue] = useState(cleanedItems.join('\n'));
+
+    React.useEffect(() => {
+        if (!isEditing) {
+            setEditValue(cleanedItems.join('\n'));
+        }
+    }, [items, isEditing]);
 
     const handleClick = () => {
         setIsEditing(true);
@@ -43,13 +56,13 @@ const EditableList: React.FC<EditableListProps> = ({
                 onChange={handleChange}
                 onBlur={handleBlur}
                 className={`w-full bg-transparent border-2 border-blue-500 rounded focus:outline-none focus:border-blue-600 p-1 ${className}`}
-                rows={Math.max(3, items.length + 2)}
+                rows={Math.max(3, cleanedItems.length + 2)}
                 placeholder={placeholder}
             />
         );
     }
 
-    if (items.length === 0) {
+    if (cleanedItems.length === 0) {
         return (
             <div
                 onClick={handleClick}
@@ -67,7 +80,7 @@ const EditableList: React.FC<EditableListProps> = ({
             className={`cursor-text hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 py-0.5 transition-colors list-none ${className}`}
             title="Click to edit"
         >
-            {items.map((item, index) => (
+            {cleanedItems.map((item, index) => (
                 <li key={index} className="mb-1">
                     <span className="mr-2">{bulletChar}</span>
                     {item}

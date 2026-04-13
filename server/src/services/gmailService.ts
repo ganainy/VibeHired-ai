@@ -6,6 +6,9 @@
  *   - https://www.googleapis.com/auth/gmail.readonly
  *   - https://www.googleapis.com/auth/gmail.labels
  *   - https://www.googleapis.com/auth/gmail.modify  (for adding the processed label)
+ * 
+ * Note: If users have old tokens without gmail.modify scope, they will need to
+ * re-authenticate. Run scripts/clear-gmail-tokens.ts to force re-authentication.
  */
 import { google, gmail_v1 } from 'googleapis';
 import Profile from '../models/Profile';
@@ -148,17 +151,16 @@ async function pAll<T>(
 const FETCH_CONCURRENCY = 10;
 
 /** Fetch the most recent `limit` unprocessed messages. Marks them processed. */
-export async function fetchNewMessages(userId: string, limit: number): Promise<GmailMessage[]> {
+export async function fetchNewMessages(userId: string, limit: number, includeReadEmails = false): Promise<GmailMessage[]> {
     const t0 = Date.now();
-    console.log(`[GmailService] fetchNewMessages start — limit=${limit}`);
+    console.log(`[GmailService] fetchNewMessages start — limit=${limit}, includeReadEmails=${includeReadEmails}`);
 
     try {
         const auth = await getOAuth2Client(userId);
         const gmail = google.gmail({ version: 'v1', auth });
 
-        // Query the real last N unread emails — NO label filter here so the window
-        // is always anchored to the most recent N, not to the next-N-unlabeled.
-        const q = `is:unread`;
+        // Query the real last N emails — with optional unread filter
+        const q = includeReadEmails ? `` : `is:unread`;
 
         const tList = Date.now();
         const listResp = await gmail.users.messages.list({

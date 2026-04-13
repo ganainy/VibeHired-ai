@@ -239,6 +239,7 @@ const EmailSuggestionsPage: React.FC = () => {
     const [scanLimit, setScanLimit] = useState(25);
     const [autoPollApplications, setAutoPollApplications] = useState(true);
     const [autoPollJobLeads, setAutoPollJobLeads] = useState(true);
+    const [includeReadEmails, setIncludeReadEmails] = useState(false);
     const [calendarUnchecked, setCalendarUnchecked] = useState<Set<string>>(new Set());
     const [, setNoteAddedLocally] = useState<Set<string>>(new Set());
     const [editingSuggestion, setEditingSuggestion] = useState<EmailSuggestion | null>(null);
@@ -283,6 +284,7 @@ const EmailSuggestionsPage: React.FC = () => {
             setScanLimit(prefs.scanLimit ?? 25);
             setAutoPollApplications(prefs.autoPollApplications ?? true);
             setAutoPollJobLeads(prefs.autoPollJobLeads ?? true);
+            setIncludeReadEmails(prefs.includeReadEmails ?? false);
             setNoteAddedLocally(new Set(data.filter((s) => s.noteAdded).map((s) => s._id)));
         } catch {
             // non-fatal
@@ -340,7 +342,7 @@ const EmailSuggestionsPage: React.FC = () => {
     const handlePoll = async () => {
         setPolling(true);
         try {
-            const result = await pollNow(scanLimit);
+            const result = await pollNow(scanLimit, includeReadEmails);
             await load();
             showToast(buildPollToast(result));
             try { await refreshUsage(); } catch { /* non-fatal */ }
@@ -381,6 +383,15 @@ const EmailSuggestionsPage: React.FC = () => {
             await updatePreferences({ autoPollJobLeads: value });
         } catch {
             setAutoPollJobLeads(!value); // revert on failure
+        }
+    };
+
+    const handleIncludeReadEmailsChange = async (value: boolean) => {
+        setIncludeReadEmails(value);
+        try {
+            await updatePreferences({ includeReadEmails: value });
+        } catch {
+            setIncludeReadEmails(!value); // revert on failure
         }
     };
 
@@ -538,6 +549,17 @@ const EmailSuggestionsPage: React.FC = () => {
                                 <span className="inbox-toggle-thumb" />
                             </button>
                             <span>Auto-scan job leads</span>
+                        </label>
+                        <label className="inbox-toggle">
+                            <button
+                                role="switch"
+                                aria-checked={includeReadEmails}
+                                onClick={() => handleIncludeReadEmailsChange(!includeReadEmails)}
+                                className={includeReadEmails ? 'inbox-toggle-track is-active' : 'inbox-toggle-track'}
+                            >
+                                <span className="inbox-toggle-thumb" />
+                            </button>
+                            <span>Include read emails</span>
                         </label>
                         <p className="inbox-settings-note">
                             Processed emails are labeled <span className="inbox-code-pill">vibe-hired-processed</span> in Gmail.

@@ -103,10 +103,10 @@ export interface PollNowResult {
 }
 
 /** Manually trigger a Gmail poll for the current user. */
-export const pollNow = async (scanLimit = 50): Promise<PollNowResult> => {
+export const pollNow = async (scanLimit = 50, includeReadEmails = false): Promise<PollNowResult> => {
     const { data } = await axios.post<PollNowResult>(
         `${API_BASE_URL}/email-suggestions/poll`,
-        { scanLimit }
+        { scanLimit, includeReadEmails }
     );
     return data;
 };
@@ -128,6 +128,8 @@ export interface EmailSuggestionPreferences {
     autoPollApplications: boolean;
     /** Whether the server should automatically scan job offer/lead emails on the cron schedule. */
     autoPollJobLeads: boolean;
+    /** Whether to include already-read emails in the scan. */
+    includeReadEmails: boolean;
 }
 
 export const getPreferences = async (): Promise<EmailSuggestionPreferences> => {

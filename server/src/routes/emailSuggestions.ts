@@ -74,7 +74,12 @@ router.get(
         let profile = await Profile.findOne({ userId }).lean();
         if (!profile) {
             // Return defaults if profile doesn't exist
-            res.json({ scanLimit: 50 });
+            res.json({
+                scanLimit: 50,
+                autoPollApplications: true,
+                autoPollJobLeads: true,
+                includeReadEmails: false,
+            });
             return;
         }
 
@@ -82,6 +87,7 @@ router.get(
             scanLimit: profile.settings?.emailSuggestions?.scanLimit ?? 50,
             autoPollApplications: profile.settings?.emailSuggestions?.autoPollApplications ?? true,
             autoPollJobLeads: profile.settings?.emailSuggestions?.autoPollJobLeads ?? true,
+            includeReadEmails: profile.settings?.emailSuggestions?.includeReadEmails ?? false,
         });
     })
 );
@@ -94,7 +100,7 @@ router.put(
     '/preferences',
     asyncHandler(async (req: Request, res: Response) => {
         const userId = String(req.user!._id);
-        const { scanLimit, autoPollApplications, autoPollJobLeads } = req.body;
+        const { scanLimit, autoPollApplications, autoPollJobLeads, includeReadEmails } = req.body;
 
         // Find or create profile
         let profile = await Profile.findOne({ userId });
@@ -123,6 +129,10 @@ router.put(
             profile.settings.emailSuggestions.autoPollJobLeads = Boolean(autoPollJobLeads);
         }
 
+        if (includeReadEmails !== undefined) {
+            profile.settings.emailSuggestions.includeReadEmails = Boolean(includeReadEmails);
+        }
+
 
         await profile.save();
 
@@ -130,6 +140,7 @@ router.put(
             scanLimit: profile.settings.emailSuggestions.scanLimit ?? 50,
             autoPollApplications: profile.settings.emailSuggestions.autoPollApplications ?? true,
             autoPollJobLeads: profile.settings.emailSuggestions.autoPollJobLeads ?? true,
+            includeReadEmails: profile.settings.emailSuggestions.includeReadEmails ?? false,
         });
     })
 );
@@ -265,6 +276,7 @@ router.post(
 
         // Allow caller to specify how many recent emails to scan, default 50
         const limit = Number(req.body?.scanLimit) || 50;
+        const includeReadEmails = Boolean(req.body?.includeReadEmails);
 
         // Respect the user's category preferences
         const profile = await Profile.findOne({ userId });
@@ -295,7 +307,7 @@ router.post(
         }, 15000); // 15 seconds
 
         try {
-            const result = await pollEmailsForUser(userId, limit, category);
+            const result = await pollEmailsForUser(userId, limit, category, includeReadEmails);
             clearInterval(keepAliveInterval);
             
             const payload = {

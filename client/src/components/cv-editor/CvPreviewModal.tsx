@@ -1,5 +1,5 @@
 // client/src/components/cv-editor/CvPreviewModal.tsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface CvPreviewModalProps {
     isOpen: boolean;
@@ -14,58 +14,58 @@ const CvPreviewModal: React.FC<CvPreviewModalProps> = ({
     pdfBase64,
     isLoading = false
 }) => {
-    if (!isOpen) return null;
+    const blobUrlRef = useRef<string | null>(null);
 
-    const pdfUrl = pdfBase64 ? `data:application/pdf;base64,${pdfBase64}` : null;
+    useEffect(() => {
+        if (isOpen && pdfBase64 && !isLoading) {
+            // Convert base64 to blob and create object URL
+            const byteCharacters = atob(pdfBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            blobUrlRef.current = url;
+
+            // Open in new tab with native browser PDF viewer
+            window.open(url, '_blank');
+        }
+
+        // Cleanup: revoke blob URL when modal closes
+        return () => {
+            if (blobUrlRef.current) {
+                URL.revokeObjectURL(blobUrlRef.current);
+                blobUrlRef.current = null;
+            }
+        };
+    }, [isOpen, pdfBase64, isLoading]);
+
+    useEffect(() => {
+        if (isOpen && pdfBase64 && !isLoading) {
+            // Auto-close the modal since we opened in new tab
+            const timer = setTimeout(() => {
+                onClose();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, pdfBase64, isLoading, onClose]);
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-7xl mx-4 sm:mx-0 max-h-[95vh] flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                        CV Preview (ATS-Compatible)
-                    </h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                        aria-label="Close"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                {isLoading ? (
-                    <div className="flex-1 flex items-center justify-center">
-                        <div className="text-center">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md mx-4 sm:mx-0">
+                <div className="text-center">
+                    {isLoading ? (
+                        <>
                             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
-                            <p className="text-gray-600 dark:text-gray-400">Generating CV preview...</p>
-                        </div>
-                    </div>
-                ) : pdfUrl ? (
-                    <div className="flex-1 overflow-hidden border dark:border-gray-700 rounded-lg">
-                        <iframe
-                            src={pdfUrl}
-                            className="w-full h-full min-h-[700px]"
-                            title="CV Preview"
-                        />
-                    </div>
-                ) : (
-                    <div className="flex-1 flex items-center justify-center">
-                        <div className="text-center">
-                            <p className="text-gray-600 dark:text-gray-400">No preview available</p>
-                        </div>
-                    </div>
-                )}
-
-                <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700 mt-4">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-700"
-                    >
-                        Close
-                    </button>
+                            <p className="text-gray-600 dark:text-gray-400">Opening CV preview...</p>
+                        </>
+                    ) : (
+                        <p className="text-gray-600 dark:text-gray-400">Opening PDF in new tab...</p>
+                    )}
                 </div>
             </div>
         </div>
