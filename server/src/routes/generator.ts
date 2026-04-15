@@ -20,7 +20,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { generateDescriptorFromJson } from '../services/generatorService';
 import { CvSectionDescriptor } from '../types/cvDescriptor';
 import { normalizeFreeformCvTags } from '../utils/vhTagNormalizer';
-import { normalizeCvFieldNames } from '../utils/cvNormalizer';
+import { normalizeCvFieldNames, normalizeSectionNames } from '../utils/cvNormalizer';
 import {
     TailoringChange,
     TailoringResponse,
@@ -690,9 +690,56 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
 
         if (!baseCvJson) { res.status(400).json({ message: 'No base CV found in user profile or provided override.' }); return; }
 
-        // Normalize field names to canonical form (title/subtitle/dates/bullets/content)
-        // This ensures consistent structure regardless of how the parser named fields
+        // DEBUG: Log the raw CV structure before normalization
+        console.log('=== DEBUG: Raw base CV structure ===');
+        console.log('CV ID:', usedBaseCvId);
+        console.log('Top-level keys:', Object.keys(baseCvJson));
+        console.log('basics:', baseCvJson.basics ? JSON.stringify(baseCvJson.basics).substring(0, 100) : 'MISSING');
+        console.log('work:', Array.isArray(baseCvJson.work) ? `${baseCvJson.work.length} items` : 'MISSING or not array');
+        console.log('education:', Array.isArray(baseCvJson.education) ? `${baseCvJson.education.length} items` : 'MISSING or not array');
+        console.log('skills:', Array.isArray(baseCvJson.skills) ? `${baseCvJson.skills.length} items` : 'MISSING or not array');
+        
+        // Check for alternative field names
+        const alternativeFields = ['experience', 'jobs', 'employment', 'schools', 'qualifications', 'competencies', 'personalInfo', 'contact'];
+        const foundAlternatives = alternativeFields.filter(f => (baseCvJson as any)[f]);
+        if (foundAlternatives.length > 0) {
+            console.log('Alternative fields found:', foundAlternatives);
+        }
+
+        // STEP 1: Normalize section names (German → English, non-standard → canonical)
+        baseCvJson = normalizeSectionNames(baseCvJson as Record<string, any>) as JsonResumeSchema;
+        console.log('=== After section name normalization ===');
+        console.log('Top-level keys:', Object.keys(baseCvJson));
+
+        // STEP 2: Normalize field names within sections (company → subtitle, etc.)
         baseCvJson = normalizeCvFieldNames(baseCvJson as Record<string, any>) as JsonResumeSchema;
+        console.log('=== After field name normalization ===');
+        console.log('Top-level keys:', Object.keys(baseCvJson));
+
+        // Validate that base CV has meaningful content
+        const hasBasics = baseCvJson.basics && typeof baseCvJson.basics === 'object' && Object.keys(baseCvJson.basics).length > 0;
+        const hasWork = Array.isArray(baseCvJson.work) && baseCvJson.work.length > 0;
+        const hasEducation = Array.isArray(baseCvJson.education) && baseCvJson.education.length > 0;
+        const hasSkills = Array.isArray(baseCvJson.skills) && baseCvJson.skills.length > 0;
+
+        console.log('=== DEBUG: After normalization ===');
+        console.log('Top-level keys:', Object.keys(baseCvJson));
+        console.log('hasBasics:', hasBasics, 'hasWork:', hasWork, 'hasEducation:', hasEducation, 'hasSkills:', hasSkills);
+
+        if (!hasBasics && !hasWork && !hasEducation && !hasSkills) {
+            console.error('Base CV is empty or has no meaningful content. CV ID:', usedBaseCvId);
+            console.error('All keys:', JSON.stringify(Object.keys(baseCvJson)));
+            res.status(400).json({
+                message: 'The base CV has no meaningful content. Please upload a properly formatted CV or use the CV editor to add your information first.'
+            });
+            return;
+        }
+
+        if (!hasBasics) {
+            console.warn('Base CV has empty "basics" section. CV ID:', usedBaseCvId);
+        }
+
+        console.log(`Base CV validation - basics: ${hasBasics ? '✓' : '✗'}, work: ${baseCvJson.work?.length || 0}, education: ${baseCvJson.education?.length || 0}, skills: ${baseCvJson.skills?.length || 0}`);
 
         // 3. Fetch Custom Prompt (if any) or use override
         const profile = await Profile.findOne({ userId: userId });
@@ -748,9 +795,44 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             }
         }
 
+        // Validate that the final CV has all major sections - copy missing ones from base CV
+        const majorSections = ['basics', 'summary', 'work', 'education', 'skills', 'languages', 'certifications', 'projects'];
+        const finalCvAny = finalCvJson as Record<string, any>;
+        const baseCvAny = baseCvJson as Record<string, any>;
+        
+        for (const section of majorSections) {
+            const hasInFinal = finalCvAny[section] && (
+                (Array.isArray(finalCvAny[section]) && finalCvAny[section].length > 0) ||
+                (typeof finalCvAny[section] === 'object' && !Array.isArray(finalCvAny[section]) && Object.keys(finalCvAny[section]).length > 0)
+            );
+            
+            if (!hasInFinal && baseCvAny[section]) {
+                const hasInBase = Array.isArray(baseCvAny[section]) 
+                    ? baseCvAny[section].length > 0 
+                    : (typeof baseCvAny[section] === 'object' && Object.keys(baseCvAny[section]).length > 0);
+                
+                if (hasInBase) {
+                    console.log(`Copying ${section} from base CV (missing in AI response)`);
+                    finalCvAny[section] = JSON.parse(JSON.stringify(baseCvAny[section]));
+                }
+            }
+        }
+        
+        finalCvJson = finalCvAny as JsonResumeSchema;
+
         normalizeFreeformCvTags(finalCvJson);
+        // Safety-net: canonicalize section names (in case AI used non-standard names)
+        finalCvJson = normalizeSectionNames(finalCvJson as Record<string, any>) as JsonResumeSchema;
         // Safety-net: canonicalize field names in case Gemini ignored the prompt contract
-        finalCvJson = normalizeCvFieldNames(finalCvJson);
+        finalCvJson = normalizeCvFieldNames(finalCvJson as Record<string, any>) as JsonResumeSchema;
+
+        // Debug: Log final CV structure
+        console.log('=== Final CV structure before saving ===');
+        console.log('Top-level keys:', Object.keys(finalCvJson));
+        console.log('basics:', finalCvJson.basics ? JSON.stringify(finalCvJson.basics).substring(0, 100) : 'MISSING');
+        console.log('work:', Array.isArray(finalCvJson.work) ? `${finalCvJson.work.length} items` : 'MISSING');
+        console.log('education:', Array.isArray(finalCvJson.education) ? `${finalCvJson.education.length} items` : 'MISSING');
+        console.log('skills:', Array.isArray(finalCvJson.skills) ? `${finalCvJson.skills.length} items` : 'MISSING');
 
         // 8. Save CV draft
         await JobApplication.findOneAndUpdate(

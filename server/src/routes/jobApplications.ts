@@ -91,27 +91,78 @@ router.use(authMiddleware as RequestHandler);
 
 // --- Routes are now protected ---
 
-// GET /api/jobs - Retrieve job applications FOR THE LOGGED-IN USER
+// GET /api/jobs - Retrieve job applications FOR THE LOGGED-IN USER (with pagination & filtering)
 const getJobsHandler: RequestHandler = async (req, res) => {
   try {
-    // req.user should be populated by authMiddleware
     if (!req.user) {
-      // Should theoretically not be reached if middleware runs correctly, but good safeguard
       res.status(401).json({ message: 'User not authenticated correctly.' });
       return;
     }
-    const userId = req.user._id; // Get user ID from the authenticated user
-    // Only show jobs that should be displayed in dashboard
-    const jobs = await JobApplication.find({
-      userId: userId,
-      showInDashboard: true
-    })
+    const userId = req.user._id;
+
+    // --- Pagination params ---
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    // --- Filter params ---
+    const query: any = { userId, showInDashboard: true };
+
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
+    if (req.query.jobType) {
+      query.jobType = req.query.jobType;
+    }
+    if (req.query.search) {
+      const searchRegex = new RegExp((req.query.search as string).trim(), 'i');
+      query.$or = [
+        { jobTitle: searchRegex },
+        { companyName: searchRegex },
+        { hiringManagerName: searchRegex },
+      ];
+    }
+    if (req.query.isFavorite === 'true') {
+      query.isFavorite = true;
+    }
+    if (req.query.hasNotes === 'true') {
+      query.notes = { $exists: true, $ne: '' };
+    }
+    if (req.query.tags) {
+      const tagList = (req.query.tags as string).split(',').map(t => t.trim());
+      query.jobTags = { $in: tagList };
+    }
+    if (req.query.followUpDue === 'true') {
+      query['followUpSuggestion.status'] = 'suggested';
+      query.followUpSuggestion = { $exists: true };
+    }
+
+    // --- Sorting ---
+    const sortBy = (req.query.sortBy as string) || 'createdAt';
+    const sortOrder = (req.query.sortOrder as string) === 'asc' ? 1 : -1;
+    const sortOptions: any = { [sortBy]: sortOrder };
+
+    // --- Get total count ---
+    const total = await JobApplication.countDocuments(query);
+
+    // --- Fetch paginated jobs ---
+    const jobs = await JobApplication.find(query)
       .select('-draftCvJson -draftCoverLetterText -jobDescriptionText -chatHistory')
-      .sort({ createdAt: -1 });
-    res.status(200).json(jobs);
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      jobs,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching jobs:", error);
-    // Avoid sending detailed error object to client in production
     res.status(500).json({ message: 'Error fetching job applications' });
   }
 };

@@ -146,7 +146,15 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
 
   // ── Print ref ────────────────────────────────────────────────────────────
   const previewRef = useRef<HTMLDivElement>(null);
-  const handlePrint = useReactToPrint({ contentRef: previewRef, documentTitle: 'CV' });
+  const handlePrint = useReactToPrint({ 
+    contentRef: previewRef, 
+    documentTitle: 'CV',
+    onBeforePrint: () => {
+      if (!previewRef.current) {
+        console.warn('Preview ref is not available');
+      }
+    },
+  });
 
   // ── Save status pill ──────────────────────────────────────────────────────
   const saveStatusConfig: Record<CvSaveStatus, { label: string; color: string } | null> = {
@@ -229,7 +237,18 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
 
             {/* Download PDF button */}
             <Button
-              onClick={() => handlePrint()}
+              onClick={() => {
+                if (!previewRef.current) {
+                  showToast('Preview is not ready, please wait a moment and try again', 'error');
+                  return;
+                }
+                const hasContent = previewRef.current.innerHTML && previewRef.current.innerHTML.length > 0;
+                if (!hasContent) {
+                  showToast('There is no CV content to download', 'error');
+                  return;
+                }
+                handlePrint();
+              }}
               className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 text-sm"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -274,12 +293,28 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
 
               {/* Legacy JsonResume editor (shown when descriptor not yet generated) */}
               {!isDynamic && data && !isFreeformJson && (
-                <ResumeBuilder
-                  data={data}
-                  onChange={onChange}
-                  onImproveSection={onImproveSection}
-                  improvingSections={improvingSections}
-                />
+                <>
+                  {(!data.basics || Object.keys(data.basics).length === 0) && (
+                    <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 flex-shrink-0">warning</span>
+                        <div>
+                          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">CV Missing Personal Information</p>
+                          <p className="text-sm text-amber-700 dark:text-amber-400">
+                            Your CV doesn't include basic information like name, email, or phone. 
+                            Please add your details using the editor below.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <ResumeBuilder
+                    data={data}
+                    onChange={onChange}
+                    onImproveSection={onImproveSection}
+                    improvingSections={improvingSections}
+                  />
+                </>
               )}
 
               {/* Freeform JSON editor */}

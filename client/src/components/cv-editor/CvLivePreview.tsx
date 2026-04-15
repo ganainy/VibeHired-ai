@@ -59,7 +59,12 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
   const shouldUseFreeform = data !== null && isTrulyFreeform(data);
 
   useEffect(() => {
-    const template = getTemplate(templateId);
+    let template = getTemplate(templateId);
+    // Fallback to default template if the selected one isn't found
+    if (!template) {
+      console.warn(`Template "${templateId}" not found, falling back to default`);
+      template = getTemplate('german-latex');
+    }
     if (template) setSelectedTemplate(template);
   }, [templateId]);
 
@@ -125,7 +130,8 @@ const CvLivePreview = forwardRef<HTMLDivElement, CvLivePreviewProps>(({
     return (
       <div className={`flex items-center justify-center p-4 sm:p-8 bg-gray-50 dark:bg-gray-900 rounded-lg ${className}`}>
         <div className="text-center">
-          <p className="text-gray-500 dark:text-gray-400">Template not found</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-2">No template available</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Template ID: {templateId}</p>
         </div>
       </div>
     );

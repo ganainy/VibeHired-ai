@@ -291,6 +291,13 @@ JobApplicationSchema.index({ userId: 1, isAutoJob: 1, processingStatus: 1, 'reco
 JobApplicationSchema.index({ userId: 1, showInDashboard: 1, status: 1 });
 JobApplicationSchema.index({ userId: 1, status: 1, 'followUpSuggestion.status': 1, 'followUpSuggestion.snoozedUntil': 1 });
 
+// Compound index for paginated dashboard queries (userId + showInDashboard + createdAt)
+JobApplicationSchema.index({ userId: 1, showInDashboard: 1, createdAt: -1 });
+
+// Indexes for common filter/sort combinations
+JobApplicationSchema.index({ userId: 1, showInDashboard: 1, jobType: 1 });
+JobApplicationSchema.index({ userId: 1, showInDashboard: 1, isFavorite: 1 });
+
 /**
  * Cascade delete: When a job is deleted, also delete its associated CV
  * This prevents orphan CVs in the database

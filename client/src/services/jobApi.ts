@@ -5,24 +5,75 @@ import { JsonResumeSchema } from '../../../server/src/types/jsonresume'; // Adju
 // Define the base URL for your backend API
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api'; // Your backend URL
 
-const JOBS_CACHE_TTL_MS = 60 * 1000;
-let jobsCache: { data: JobApplication[]; fetchedAt: number } | null = null;
-let jobsInFlightRequest: Promise<JobApplication[]> | null = null;
+// --- Pagination Types ---
+export interface JobsResponse {
+    jobs: JobApplication[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        pages: number;
+    };
+}
 
-const isJobsCacheFresh = (): boolean => {
+export interface GetJobsParams {
+    page?: number;
+    limit?: number;
+    status?: string;
+    jobType?: string;
+    search?: string;
+    isFavorite?: boolean;
+    hasNotes?: boolean;
+    tags?: string[];
+    followUpDue?: boolean;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+}
+
+// --- Improved Cache: Key-based with longer TTL ---
+const JOBS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+type CacheEntry = {
+    data: JobsResponse;
+    fetchedAt: number;
+    paramsKey: string;
+};
+let jobsCache: CacheEntry | null = null;
+let jobsInFlightRequest: Promise<JobsResponse> | null = null;
+
+/**
+ * Build a stable cache key from the request params.
+ * e.g. "p1_l10_s__st__jt__fav__notes__tags__sort createdAt_desc"
+ */
+const buildCacheKey = (params: GetJobsParams = {}): string => {
+    const p = params;
+    const tagsKey = p.tags ? p.tags.sort().join(',') : '';
+    return `p${p.page || 1}_l${p.limit || 10}_s${p.search || ''}_st${p.status || ''}_jt${p.jobType || ''}_fav${p.isFavorite ? '1' : '0'}_notes${p.hasNotes ? '1' : '0'}_tags${tagsKey}_followUp${p.followUpDue ? '1' : '0'}_sort${p.sortBy || 'createdAt'}_${p.sortOrder || 'desc'}`;
+};
+
+const isCacheFresh = (paramsKey: string): boolean => {
     if (!jobsCache) return false;
+    if (jobsCache.paramsKey !== paramsKey) return false;
     return Date.now() - jobsCache.fetchedAt < JOBS_CACHE_TTL_MS;
 };
 
-const setJobsCache = (jobs: JobApplication[]): void => {
-    jobsCache = { data: jobs, fetchedAt: Date.now() };
+const setCache = (paramsKey: string, data: JobsResponse): void => {
+    jobsCache = { data, fetchedAt: Date.now(), paramsKey };
 };
 
-const updateCachedJob = (jobId: string, updater: (job: JobApplication) => JobApplication): void => {
-    if (!jobsCache) return;
+const invalidateCache = (): void => {
+    jobsCache = null;
+    jobsInFlightRequest = null;
+};
+
+const updateCachedJob = (paramsKey: string, jobId: string, updater: (job: JobApplication) => JobApplication): void => {
+    if (!jobsCache || jobsCache.paramsKey !== paramsKey) return;
     jobsCache = {
-        data: jobsCache.data.map((job) => (job._id === jobId ? updater(job) : job)),
+        data: {
+            ...jobsCache.data,
+            jobs: jobsCache.data.jobs.map((job) => (job._id === jobId ? updater(job) : job)),
+        },
         fetchedAt: Date.now(),
+        paramsKey,
     };
 };
 
@@ -137,10 +188,12 @@ export interface JobDraftData {
 
 // --- API Functions ---
 
-// Function to get all job applications
-export const getJobs = async (): Promise<JobApplication[]> => {
+// Function to get all job applications (with pagination & server-side filtering)
+export const getJobs = async (params: GetJobsParams = {}): Promise<JobsResponse> => {
     try {
-        if (isJobsCacheFresh()) {
+        const paramsKey = buildCacheKey(params);
+
+        if (isCacheFresh(paramsKey)) {
             return jobsCache!.data;
         }
 
@@ -148,11 +201,26 @@ export const getJobs = async (): Promise<JobApplication[]> => {
             return jobsInFlightRequest;
         }
 
-        jobsInFlightRequest = axios.get(`${API_BASE_URL}/job-applications`)
+        const queryParams = new URLSearchParams();
+        if (params.page) queryParams.set('page', String(params.page));
+        if (params.limit) queryParams.set('limit', String(params.limit));
+        if (params.status) queryParams.set('status', params.status);
+        if (params.jobType) queryParams.set('jobType', params.jobType);
+        if (params.search) queryParams.set('search', params.search);
+        if (params.isFavorite) queryParams.set('isFavorite', 'true');
+        if (params.hasNotes) queryParams.set('hasNotes', 'true');
+        if (params.tags && params.tags.length > 0) queryParams.set('tags', params.tags.join(','));
+        if (params.followUpDue) queryParams.set('followUpDue', 'true');
+        if (params.sortBy) queryParams.set('sortBy', params.sortBy);
+        if (params.sortOrder) queryParams.set('sortOrder', params.sortOrder);
+
+        const url = `${API_BASE_URL}/job-applications?${queryParams.toString()}`;
+
+        jobsInFlightRequest = axios.get(url)
             .then((response) => {
-                const jobs = response.data as JobApplication[];
-                setJobsCache(jobs);
-                return jobs;
+                const result = response.data as JobsResponse;
+                setCache(paramsKey, result);
+                return result;
             })
             .finally(() => {
                 jobsInFlightRequest = null;
@@ -162,7 +230,6 @@ export const getJobs = async (): Promise<JobApplication[]> => {
     }
     catch (error) {
         console.error("Error fetching jobs:", error);
-        // Handle or throw error appropriately for UI feedback
         throw error;
     }
 };
@@ -171,11 +238,9 @@ export const getJobs = async (): Promise<JobApplication[]> => {
 // We need the data to send (Payload Type) - excluding _id, createdAt, updatedAt
 export const createJob = async (jobData: CreateJobPayload): Promise<JobApplication> => {
     try {
-        const response = await axios.post(`${API_BASE_URL}/job-applications`, jobData); // Corrected endpoint
+        const response = await axios.post(`${API_BASE_URL}/job-applications`, jobData);
         const createdJob = response.data as JobApplication;
-        if (jobsCache) {
-            setJobsCache([createdJob, ...jobsCache.data]);
-        }
+        invalidateCache();
         return createdJob;
     } catch (error) {
         console.error("Error creating job:", error);
@@ -187,9 +252,9 @@ export const createJob = async (jobData: CreateJobPayload): Promise<JobApplicati
 // Payload can be partial data for the update
 export const updateJob = async (id: string, updates: UpdateJobPayload): Promise<JobApplication> => {
     try {
-        const response = await axios.put(`${API_BASE_URL}/job-applications/${id}`, updates); // Corrected endpoint
+        const response = await axios.put(`${API_BASE_URL}/job-applications/${id}`, updates);
         const updatedJob = response.data as JobApplication;
-        updateCachedJob(id, () => updatedJob);
+        invalidateCache();
         return updatedJob;
     } catch (error) {
         console.error(`Error updating job ${id}:`, error);
@@ -202,10 +267,8 @@ export const updateJob = async (id: string, updates: UpdateJobPayload): Promise<
 // Usually returns some confirmation or just succeeds/fails
 export const deleteJob = async (id: string): Promise<DeleteResponse> => {
     try {
-        const response = await axios.delete(`${API_BASE_URL}/job-applications/${id}`); // Corrected endpoint
-        if (jobsCache) {
-            setJobsCache(jobsCache.data.filter((job) => job._id !== id));
-        }
+        const response = await axios.delete(`${API_BASE_URL}/job-applications/${id}`);
+        invalidateCache();
         return response.data;
     } catch (error) {
         console.error(`Error deleting job ${id}:`, error);
@@ -277,9 +340,7 @@ export const createJobFromTextApi = async (text: string, options?: CreateJobFrom
         const payload: any = { text, ...options };
         const response = await axios.post<JobApplication>(`${API_BASE_URL}/job-applications/create-from-text`, payload);
         const createdJob = response.data;
-        if (jobsCache) {
-            setJobsCache([createdJob, ...jobsCache.data]);
-        }
+        invalidateCache();
         return createdJob;
     } catch (error: any) {
         console.error(`Error creating job from pasted text:`, error);

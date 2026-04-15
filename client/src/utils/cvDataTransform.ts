@@ -218,10 +218,10 @@ export function transformJsonResumeToResumeData(jsonResume: JsonResumeSchema, se
   const location = basics.location || {};
   const { firstName, lastName } = splitName(basics.name);
 
-  // EXTRA AGGRESSIVE LOGGING
-  console.log('--- CV_TRANSFORM DEBUG START ---');
-  console.log('Full JSON Resume basics:', JSON.stringify(basics, null, 2));
-  console.log('JSON Resume basics.profiles:', JSON.stringify(basics.profiles, null, 2));
+  // Debug logging to help diagnose empty CV issues
+  if (Object.keys(basics).length === 0) {
+    console.warn('⚠️ CV Transform: basics section is empty. Available top-level keys:', Object.keys(jsonResume).join(', '));
+  }
 
   const experiences: Experience[] = (jsonResume.work || []).map((workItem, index) => {
     const company = workItem.name || workItem.company || '';
@@ -240,6 +240,10 @@ export function transformJsonResumeToResumeData(jsonResume: JsonResumeSchema, se
       description: formatDescription(workItem),
     };
   });
+
+  if (experiences.length === 0) {
+    console.warn('⚠️ CV Transform: No work experience data found');
+  }
 
   const education: Education[] = (jsonResume.education || []).map((eduItem) => {
     const endDate = eduItem.endDate || '';

@@ -29,6 +29,7 @@ type GenerationStep = 'idle' | 'analyzing' | 'matching' | 'tailoring' | 'finaliz
 interface TailoredCvPageProps {
     // CV State
     hasLocalCv: boolean;
+    isCvTailored: boolean;
     cvData: JsonResumeSchema;
     currentCvId: string | null;
     currentCvFilename: string | null;
@@ -93,6 +94,7 @@ interface TailoredCvPageProps {
     resetLocalCvState: () => void;
     showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
     handleGenerateSpecificCv: () => Promise<void>;
+    handleUseBaseCvAsIs: () => Promise<void>;
     handleScanAts: () => Promise<void>;
     handleDeleteAts: () => Promise<void>;
     handleApplyAtsSuggestionBatch: (items: { suggestion: string; index: number }[]) => Promise<void>;
@@ -100,6 +102,7 @@ interface TailoredCvPageProps {
 
 const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     hasLocalCv,
+    isCvTailored,
     cvData,
     currentCvId,
     currentCvFilename,
@@ -150,6 +153,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     resetLocalCvState,
     showToast,
     handleGenerateSpecificCv,
+    handleUseBaseCvAsIs,
     handleScanAts,
     handleDeleteAts,
     handleApplyAtsSuggestionBatch,
@@ -181,8 +185,9 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
 
     return (
         <div>
-            {/* Raw PDF attached — no JSON, show placeholder */}
-            {hasLocalCv && (!cvData || !cvData.basics || Object.keys(cvData.basics).length === 0) && !liveCvDescriptor ? (
+            {/* Raw PDF placeholder: shown for base-CVs-in-CV-Management (no jobId, no JSON)
+                AND for job CVs that were attached "as-is" (not AI-tailored). */}
+            {(hasLocalCv && !isCvTailored) ? (
                 <RawPdfPlaceholder
                     filename={currentCvFilename}
                     isLoadingRawPdf={isLoadingRawPdf}
@@ -385,6 +390,24 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                     </Card>
 
                     <div className="mt-8 flex items-center justify-end gap-4">
+                        <Button
+                            onClick={handleUseBaseCvAsIs}
+                            disabled={isGeneratingCv || !hasMasterCv}
+                            variant="secondary"
+                            className="font-semibold shadow-md hover:shadow-lg"
+                        >
+                            {isGeneratingCv ? (
+                                <>
+                                    <Spinner size="sm" className="text-gray-700 dark:text-gray-300" />
+                                    <span>Applying...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="material-symbols-outlined">description</span>
+                                    <span>Use base CV as is</span>
+                                </>
+                            )}
+                        </Button>
                         <Button
                             onClick={handleGenerateSpecificCv}
                             disabled={isGeneratingCv || !hasMasterCv || !tailoredJobDescription}

@@ -1,9 +1,10 @@
 {
+  "tools": {
+    "approvalMode": "yolo"
+  },
   "permissions": {
     "allow": [
-      "WebFetch(www.npmjs.com)",
-      "Bash(dir)",
-      "Bash(npm run *)"
+      "*"
     ]
   },
   "$version": 3

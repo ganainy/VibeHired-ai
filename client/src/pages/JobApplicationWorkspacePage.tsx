@@ -363,6 +363,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
         generationStep,
         generationProgress,
         handleGenerateSpecificCv,
+        handleUseBaseCvAsIs,
     } = useReviewGeneration({
         jobId,
         jobApplication,
@@ -768,6 +769,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
                             {activeTab === 'cv' && jobId && (
                                 <TailoredCvPage
                                     hasLocalCv={hasLocalCv}
+                                    isCvTailored={!!(tailoringChanges && tailoringChanges.length > 0)}
                                     cvData={cvData}
                                     currentCvId={currentCvId}
                                     currentCvFilename={currentCvFilename}
@@ -825,6 +827,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
                                     resetLocalCvState={resetLocalCvState}
                                     showToast={showToast}
                                     handleGenerateSpecificCv={handleGenerateSpecificCv}
+                                    handleUseBaseCvAsIs={handleUseBaseCvAsIs}
                                     handleScanAts={handleScanAts}
                                     handleDeleteAts={handleDeleteAts}
                                     handleApplyAtsSuggestionBatch={handleApplyAtsSuggestionBatch}

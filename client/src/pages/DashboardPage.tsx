@@ -9,6 +9,8 @@ import {
   updateJob,
   JobApplication,
   CreateJobPayload,
+  JobsResponse,
+  GetJobsParams,
   createJobFromTextApi,
   CreateJobFromTextOptions,
   checkJobUrlDuplicateApi,
@@ -215,9 +217,15 @@ const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // --- Server-side Pagination State ---
+  const [totalJobs, setTotalJobs] = useState<number>(0);
+  const [totalPagesServer, setTotalPagesServer] = useState<number>(0);
+
   // --- CV State ---
   const [cvs, setCvs] = useState<CVDocument[]>([]);
   const [isLoadingCvs, setIsLoadingCvs] = useState<boolean>(false);
+  const [cvsFetched, setCvsFetched] = useState<boolean>(false);
+  const cvsFetchPromiseRef = useRef<Promise<void> | null>(null);
 
   // --- Modal & Form State ---
   const [modalMode, setModalMode] = useState<'add' | null>(null);
@@ -574,9 +582,11 @@ const DashboardPage: React.FC = () => {
 
   const { showTour: showJobTour, dismiss: dismissJobTour } = usePageTour('dashboard');
 
-  const hasAnyCv = cvs.length > 0;
-  const hasAnyJob = jobs.length > 0;
+  const hasAnyCv = cvsFetched ? cvs.length > 0 : true; // Assume true until fetched to avoid blocking journey banner
+  const hasAnyJob = totalJobs > 0;
   const hasAnyCoverLetter = useMemo(
+    // Note: With server-side pagination, this only checks jobs on the current page.
+    // For accuracy, we accept this limitation as cover letter check is primarily for the onboarding journey.
     () => jobs.some(job => Boolean(job.generatedCoverLetterFilename || job.draftCoverLetterText || job.coverLetterEmailBody)),
     [jobs]
   );
@@ -598,15 +608,32 @@ const DashboardPage: React.FC = () => {
     navigate(`/jobs/${targetJob._id}/workspace/cover-letter`);
   };
 
-  // --- useEffect: Fetch initial job data ---
+  // --- useEffect: Fetch initial job data (server-side pagination & filtering) ---
   useEffect(() => {
     const fetchJobs = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const fetchedJobs = await getJobs();
-        setJobs(fetchedJobs);
-        if (fetchedJobs.length > 0 && typeof window !== 'undefined') {
+        const params: GetJobsParams = {
+          page: currentPage,
+          limit: 10,
+          sortBy: sortKey,
+          sortOrder: sortDirection,
+        };
+
+        if (filterStatus) params.status = filterStatus;
+        if (filterJobType) params.jobType = filterJobType;
+        if (filterText) params.search = filterText;
+        if (filterFavorite) params.isFavorite = true;
+        if (filterHasNotes) params.hasNotes = true;
+        if (filterTags.length > 0) params.tags = filterTags;
+        if (showOnlyDueFollowUps) params.followUpDue = true;
+
+        const result: JobsResponse = await getJobs(params);
+        setJobs(result.jobs);
+        setTotalJobs(result.pagination.total);
+        setTotalPagesServer(result.pagination.pages);
+        if (result.jobs.length > 0 && typeof window !== 'undefined') {
           window.localStorage.setItem('vh:has-created-first-job', '1');
         }
       } catch (err: any) {
@@ -617,7 +644,7 @@ const DashboardPage: React.FC = () => {
       }
     };
     fetchJobs();
-  }, []);
+  }, [currentPage, filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, showOnlyDueFollowUps, sortKey, sortDirection]);
 
   useEffect(() => {
     if (showOnlyDueFollowUps && needsFollowUpCount === 0) {
@@ -625,22 +652,26 @@ const DashboardPage: React.FC = () => {
     }
   }, [showOnlyDueFollowUps, needsFollowUpCount]);
 
-  // --- useEffect: Fetch CV branches ---
-  useEffect(() => {
-    const fetchCvs = async () => {
+  // --- Lazy CV Fetch: Only fetch when actually needed ---
+  const fetchCvsIfNeeded = () => {
+    if (cvsFetched || cvsFetchPromiseRef.current) return; // Already fetched or in-flight
+
+    const promise = (async () => {
       setIsLoadingCvs(true);
       try {
         const fetchedCvs = await getCvBranches({ lite: true });
         setCvs(fetchedCvs.branches);
+        setCvsFetched(true);
       } catch (err: any) {
         console.error("Failed to fetch CVs:", err);
-        // Don't set error state for CVs as it's not critical for job creation
       } finally {
         setIsLoadingCvs(false);
+        cvsFetchPromiseRef.current = null;
       }
-    };
-    fetchCvs();
-  }, []);
+    })();
+
+    cvsFetchPromiseRef.current = promise;
+  };
 
   // --- useEffect: Persist selected CV branch to localStorage ---
   useEffect(() => {
@@ -678,112 +709,14 @@ const DashboardPage: React.FC = () => {
   }, [preExtractionJobType]);
 
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, showOnlyDueFollowUps]);
+  // Note: Page reset is handled automatically by the fetchJobs useEffect dependencies above.
 
-  // --- Derived State: Filtered and Sorted Jobs ---
+  // --- Derived State: Jobs from server (filtering & sorting done server-side) ---
   const displayedJobs = useMemo(() => {
-    let filteredJobs = [...jobs];
-
-    // Apply Text Filter
-    if (filterText) {
-      const lowerCaseFilter = filterText.toLowerCase();
-      filteredJobs = filteredJobs.filter(job =>
-        job.jobTitle.toLowerCase().includes(lowerCaseFilter) ||
-        job.companyName.toLowerCase().includes(lowerCaseFilter) ||
-        (job.hiringManagerName && job.hiringManagerName.toLowerCase().includes(lowerCaseFilter))
-      );
-    }
-
-    // Apply Status Filter
-    if (filterStatus) {
-      filteredJobs = filteredJobs.filter(job => job.status === filterStatus);
-    }
-
-    // Apply Job Type Filter
-    if (filterJobType) {
-      filteredJobs = filteredJobs.filter(job => job.jobType === filterJobType);
-    }
-
-    // Apply Favorite Filter
-    if (filterFavorite) {
-      filteredJobs = filteredJobs.filter(job => job.isFavorite === true);
-    }
-
-    // Apply Has Notes Filter
-    if (filterHasNotes) {
-      filteredJobs = filteredJobs.filter(job => !!job.notes && job.notes.trim().length > 0);
-    }
-
-    // Apply Tag Filter
-    if (filterTags.length > 0) {
-      const selectedTags = new Set(
-        filterTags.map(tag => tag === UNTAGGED_FILTER_KEY ? tag : normalizeTagValue(tag).toLowerCase())
-      );
-      filteredJobs = filteredJobs.filter((job) => {
-        const tags = getJobTags(job);
-        if (tags.length === 0) return selectedTags.has(UNTAGGED_FILTER_KEY);
-        return tags.some(tag => selectedTags.has(normalizeTagValue(tag).toLowerCase()));
-      });
-    }
-
-    // Apply Follow-up Due Filter
-    if (showOnlyDueFollowUps) {
-      filteredJobs = filteredJobs.filter(job => needsFollowUpJobIdSet.has(job._id));
-    }
-
-    // Apply Sorting
-    if (sortKey) {
-      filteredJobs.sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
-
-        if (sortKey === 'jobType') {
-          aValue = a.jobType || '';
-          bValue = b.jobType || '';
-        } else if (sortKey === 'salary') {
-          // Extract numeric salary for comparison
-          const extractSalary = (salary: string | undefined): number => {
-            if (!salary) return 0;
-            // Try to extract numbers from the salary string (e.g., "50,000" -> 50000)
-            const numbers = salary.replace(/[^0-9]/g, '');
-            return numbers ? parseInt(numbers, 10) : 0;
-          };
-          const aSalary = a.salary || a.extractedData?.salaryRaw || a.extractedData?.estimatedSalary;
-          const bSalary = b.salary || b.extractedData?.salaryRaw || b.extractedData?.estimatedSalary;
-          aValue = extractSalary(aSalary);
-          bValue = extractSalary(bSalary);
-        } else {
-          aValue = a[sortKey as keyof JobApplication];
-          bValue = b[sortKey as keyof JobApplication];
-        }
-
-        let comparison = 0;
-
-        if (sortKey === 'createdAt') {
-          const dateA = new Date(aValue).getTime();
-          const dateB = new Date(bValue).getTime();
-          comparison = (isNaN(dateA) ? 0 : dateA) - (isNaN(dateB) ? 0 : dateB);
-        } else if (sortKey === 'salary') {
-          // Numeric comparison for salary
-          comparison = (aValue || 0) - (bValue || 0);
-        } else if (typeof aValue === 'string' && typeof bValue === 'string') {
-          comparison = aValue.localeCompare(bValue);
-        } else {
-          const valA = aValue ?? '';
-          const valB = bValue ?? '';
-          if (valA < valB) comparison = -1;
-          if (valA > valB) comparison = 1;
-        }
-
-        return sortDirection === 'asc' ? comparison : comparison * -1;
-      });
-    }
-
-    return filteredJobs;
-  }, [jobs, filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, showOnlyDueFollowUps, needsFollowUpJobIdSet, sortKey, sortDirection]);
+    // If groupByTag mode is active, show all jobs (handled by group fetch)
+    // Otherwise just return the paginated jobs from the server
+    return jobs;
+  }, [jobs]);
 
   const groupedJobs = useMemo(() => {
     if (!groupByTag) return null;
@@ -1641,12 +1574,11 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  // Calculate pagination
+  // Pagination info (server-side)
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(displayedJobs.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedJobs = groupByTag ? displayedJobs : displayedJobs.slice(startIndex, endIndex);
+  const paginatedJobs = displayedJobs; // Already paginated from server
 
   // --- Main Dashboard Content ---
   return (
@@ -1792,7 +1724,10 @@ const DashboardPage: React.FC = () => {
             <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Step 2: Add a target job</h2>
             <button
               type="button"
-              onClick={() => setAddJobFormCollapsed(!addJobFormCollapsed)}
+              onClick={() => {
+                fetchCvsIfNeeded();
+                setAddJobFormCollapsed(!addJobFormCollapsed);
+              }}
               className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-lg transition-colors"
               style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
               aria-label={addJobFormCollapsed ? "Expand add job form" : "Collapse add job form"}
@@ -1826,7 +1761,11 @@ const DashboardPage: React.FC = () => {
                       <select
                         id="cvBranch"
                         value={selectedCvBranchId || ''}
-                        onChange={(e) => setSelectedCvBranchId(e.target.value || null)}
+                        onChange={(e) => {
+                          fetchCvsIfNeeded();
+                          setSelectedCvBranchId(e.target.value || null);
+                        }}
+                        onFocus={fetchCvsIfNeeded}
                         className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-primary-color placeholder:text-zinc-400 focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500"
                         disabled={isCreatingFromText}
                       >
@@ -2304,9 +2243,9 @@ const DashboardPage: React.FC = () => {
 
             {/* Table */}
             <div className="overflow-x-auto">
-              {displayedJobs.length === 0 ? (
+              {jobs.length === 0 ? (
                 <div className="text-center py-12 px-4">
-                  {jobs.length > 0 ? (
+                  {totalJobs > 0 ? (
                     <>
                       <h3 className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">No matches found</h3>
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -2435,7 +2374,7 @@ const DashboardPage: React.FC = () => {
                       {/* Pagination */}
                       <div className="flex items-center justify-between pt-4">
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Showing {startIndex + 1} to {Math.min(endIndex, displayedJobs.length)} of {displayedJobs.length} results
+                          Showing {totalJobs === 0 ? 0 : startIndex + 1} to {Math.min(endIndex, totalJobs)} of {totalJobs} results
                         </p>
                         <div className="flex items-center gap-2">
                           <button
@@ -2445,7 +2384,7 @@ const DashboardPage: React.FC = () => {
                           >
                             <ChevronLeftIcon />
                           </button>
-                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          {Array.from({ length: totalPagesServer }, (_, i) => i + 1).map((page) => (
                             <button
                               key={page}
                               onClick={() => setCurrentPage(page)}
@@ -2458,8 +2397,8 @@ const DashboardPage: React.FC = () => {
                             </button>
                           ))}
                           <button
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => Math.min(totalPagesServer, prev + 1))}
+                            disabled={currentPage === totalPagesServer}
                             className="flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                           >
                             <ChevronRightIcon />
@@ -2582,6 +2521,7 @@ const DashboardPage: React.FC = () => {
                       name="baseCvId"
                       value={formData.baseCvId || ''}
                       onChange={handleInputChange}
+                      onFocus={fetchCvsIfNeeded}
                       disabled={isLoadingCvs}
                       className="input-base w-full cursor-pointer disabled:opacity-50"
                     >

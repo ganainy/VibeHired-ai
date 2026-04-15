@@ -4,6 +4,7 @@ import { updateJob, JobApplication } from '../../../services/jobApi';
 import { generateCvOnly } from '../../../services/generatorApi';
 import { DEFAULT_CV_PROMPT, DEFAULT_COVER_LETTER_PROMPT } from '../../../constants/prompts';
 import { generateCoverLetter } from '../../../services/coverLetterApi';
+import { createJobCvFromBase } from '../../../services/cvApi';
 import { JsonResumeSchema } from '../../../../../server/src/types/jsonresume';
 import { parseApiErrorMessage } from '../../../utils/parseApiError';
 
@@ -281,6 +282,42 @@ export const useReviewGeneration = ({
         }
     };
 
+    const handleUseBaseCvAsIs = async () => {
+        if (!jobId || !jobApplication) return;
+
+        if (!hasMasterCv) {
+            showToast('Please upload a CV first at the CV Management page.', 'error');
+            return;
+        }
+
+        setIsGeneratingCv(true);
+        setGenerateCvError(null);
+        setGenerationStep('finalizing');
+        setGenerationProgress(50);
+
+        try {
+            await createJobCvFromBase(jobId, selectedBaseCvId === 'master' ? undefined : selectedBaseCvId);
+
+            setGenerationProgress(100);
+            await new Promise(resolve => setTimeout(resolve, 400));
+
+            await fetchJobData();
+            showToast('Base CV applied to this job successfully', 'success');
+            try {
+                await refreshUsage();
+            } catch (e) {
+                console.error('Failed to refresh credits UI:', e);
+            }
+        } catch (error: any) {
+            console.error('Error applying base CV:', error);
+            setGenerateCvError(parseApiErrorMessage(error));
+        } finally {
+            setIsGeneratingCv(false);
+            setGenerationProgress(0);
+            setGenerationStep('idle');
+        }
+    };
+
     return {
         isGeneratingCoverLetter,
         coverLetterError,
@@ -294,5 +331,6 @@ export const useReviewGeneration = ({
         generationStep,
         generationProgress,
         handleGenerateSpecificCv,
+        handleUseBaseCvAsIs,
     };
 };
