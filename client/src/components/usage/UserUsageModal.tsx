@@ -584,7 +584,7 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                                 <Spinner size="lg" />
                             </div>
                         ) : templatePreviewCv ? (
-                            <div className="flex-1 overflow-hidden border dark:border-gray-700 rounded-lg">
+                            <div className="flex-1 overflow-y-auto border dark:border-gray-700 rounded-lg">
                                 <InPlaceCvEditor
                                     value={templatePreviewCv.cvJson}
                                     readonly={true}
