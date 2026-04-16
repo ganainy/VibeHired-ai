@@ -15,6 +15,8 @@ import {
   uploadCvBranch,
   getCvUsage,
   CvUsageJob,
+  getCvOriginalPdf,
+  updateEditedPdf,
 } from '../services/cvApi';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
 import { CvSectionDescriptor, CvDynamicPayload } from '../types/cvDescriptor';
@@ -23,7 +25,6 @@ import Toast from '../components/common/Toast';
 import { fetchAllSectionsAnalysis, fetchSectionAnalysis, SectionAnalysisResult } from '../services/analysisApi';
 import { improveSection } from '../services/generatorApi';
 import { scanAts, getAtsScores, getLatestAts, AtsScores, getAtsForJob } from '../services/atsApi';
-import { getAllTemplates } from '../templates/config';
 import Sidebar from '../components/cv-management/Sidebar';
 import CreateBranchModal from '../components/cv-management/CreateBranchModal';
 import { validateCvFile, formatFileSize } from '../lib/utils';
@@ -60,10 +61,14 @@ const CVManagementPage: React.FC = () => {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('german-latex');
   const [creationMode, setCreationMode] = useState<'choose' | 'upload' | 'scratch'>('upload');
   const [isNudgeDismissed, setIsNudgeDismissed] = useState<boolean>(false);
   const [hasCreatedFirstJob, setHasCreatedFirstJob] = useState<boolean>(false);
+
+  // PDF editing state for raw PDF CVs
+  const [editingPdfBase64, setEditingPdfBase64] = useState<string | null>(null);
+  const [isSavingPdf, setIsSavingPdf] = useState(false);
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
 
   // Analysis state
   const [analyses, setAnalyses] = useState<Record<string, SectionAnalysisResult[]>>({});
@@ -214,6 +219,38 @@ const CVManagementPage: React.FC = () => {
       setLiveCvData(null);
     }
   }, [activeCv?._id]); // Only when the active CV identity changes, not on every render
+
+  // Load PDF for inline editing for any CV that has an original PDF file
+  useEffect(() => {
+    if (!activeCv?._id) {
+      setEditingPdfBase64(null);
+      return;
+    }
+
+    // Load the original PDF for inline editing
+    let cancelled = false;
+    const loadPdf = async () => {
+      try {
+        setIsLoadingPdf(true);
+        const { pdfBase64 } = await getCvOriginalPdf(activeCv._id);
+        if (!cancelled) {
+          setEditingPdfBase64(pdfBase64);
+        }
+      } catch (err) {
+        console.error('Failed to load PDF for editing:', err);
+        if (!cancelled) {
+          setEditingPdfBase64(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingPdf(false);
+        }
+      }
+    };
+
+    loadPdf();
+    return () => { cancelled = true; };
+  }, [activeCv?._id]);
 
   // Calculate unsaved changes
   const hasUnsavedChanges = useMemo(() => {
@@ -390,11 +427,6 @@ const CVManagementPage: React.FC = () => {
         originalCvDataRef.current = cvData ? JSON.parse(JSON.stringify(cvData)) : null;
         // Reset save trigger to ensure proper comparison
         setSaveTrigger(0);
-
-        // Load saved template preference from CV document
-        if (cvDoc?.templateId) {
-          setSelectedTemplate(cvDoc.templateId);
-        }
 
         // Load cached analysis if available
         // Backend has already verified the hash matches, so we can trust the cache
@@ -697,19 +729,6 @@ const CVManagementPage: React.FC = () => {
     }
   };
 
-  const handleTemplateChange = (newTemplate: string) => {
-    setSelectedTemplate(newTemplate);
-    // Save template preference immediately when changed
-    if (currentCvData && masterCvId) {
-      // Use a separate timeout to avoid conflicts with CV auto-save
-      setTimeout(() => {
-        updateCv(masterCvId, { cvJson: currentCvData, templateId: newTemplate }).catch((error: any) => {
-          console.error("Error saving template preference:", error);
-        });
-      }, 100);
-    }
-  };
-
   const handleSaveCv = useCallback(async (isAutoSave: boolean = false) => {
     if (!activeCvData) {
       setToast({ message: 'No CV data to save.', type: 'error' });
@@ -734,7 +753,6 @@ const CVManagementPage: React.FC = () => {
         cvJson: activeCvData,
         cvDescriptor: liveCvDescriptor ?? undefined,
         cvData: liveCvData ?? undefined,
-        templateId: activeCv.isMasterCv ? selectedTemplate : undefined
       });
       message = response.message || message;
 
@@ -773,7 +791,7 @@ const CVManagementPage: React.FC = () => {
         setIsSaving(false);
       }
     }
-  }, [activeCvData, activeCv, selectedTemplate, liveCvDescriptor, liveCvData]);
+  }, [activeCvData, activeCv, liveCvDescriptor, liveCvData]);
 
   const handleDynamicChange = useCallback((payload: CvDynamicPayload) => {
     setLiveCvDescriptor(payload.descriptor);
@@ -793,6 +811,23 @@ const CVManagementPage: React.FC = () => {
       autoSaveTimeoutRef.current = setTimeout(() => handleSaveCv(true), 500);
     }
   }, [activeCvId, autoSaveEnabled, handleSaveCv]);
+
+  // Save edited PDF back to the CV document
+  const handlePdfSave = async (updatedPdfBase64: string) => {
+    if (!activeCv?._id) return;
+
+    setIsSavingPdf(true);
+    try {
+      await updateEditedPdf(activeCv._id, updatedPdfBase64);
+      setEditingPdfBase64(updatedPdfBase64);
+      setToast({ message: 'PDF saved successfully', type: 'success' });
+    } catch (err: any) {
+      console.error('Failed to save PDF:', err);
+      setToast({ message: `Failed to save PDF: ${err.message}`, type: 'error' });
+    } finally {
+      setIsSavingPdf(false);
+    }
+  };
 
   const handleDeleteCv = (cvId: string) => {
     setConfirmModal({
@@ -1440,8 +1475,6 @@ const CVManagementPage: React.FC = () => {
             onSave={() => handleSaveCv()}
             saveStatus={saveStatus}
             hasUnsavedChanges={hasUnsavedChanges}
-            templateId={selectedTemplate}
-            onTemplateChange={handleTemplateChange}
             onImproveSection={handleImproveSection}
             improvingSections={improvingSections}
             className={isBaseCv ? 'flex-1 min-h-0' : 'h-full'}
@@ -1449,6 +1482,11 @@ const CVManagementPage: React.FC = () => {
             cvDescriptor={liveCvDescriptor}
             cvData={liveCvData}
             onDynamicChange={handleDynamicChange}
+            pdfBase64={editingPdfBase64}
+            pdfFilename={activeCv?.filename || null}
+            onPdfSave={handlePdfSave}
+            isPdfSaving={isSavingPdf}
+            isLoadingPdf={isLoadingPdf}
           />
           {/* Used in Jobs section  only for base CVs */}
           {isBaseCv && (

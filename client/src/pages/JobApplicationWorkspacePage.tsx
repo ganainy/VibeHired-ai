@@ -95,8 +95,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
     const [reminders, setReminders] = useState<IReminder[]>([]);
     const [googleCalConnected, setGoogleCalConnected] = useState<boolean>(false);
 
-    const [selectedTemplate, setSelectedTemplate] = useState<string>('german-latex');
-
     // Tailor Job CV Form State
     const [tailoredJobTitle, setTailoredJobTitle] = useState<string>('');
     const [tailoredCompanyName, setTailoredCompanyName] = useState<string>('');
@@ -159,11 +157,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
                         setCvData(EMPTY_CV_DATA);
                         lastSavedCvDataRef.current = JSON.stringify(EMPTY_CV_DATA);
                     }
-
-                    // Sync template from the CV document so both pages use the same template
-                    if (cvResponse.cv.templateId) {
-                        setSelectedTemplate(cvResponse.cv.templateId);
-                    }
                 } else {
                     // No CV document  clear all CV state first
                     setCurrentCvId(null);
@@ -210,10 +203,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
             try {
                 const masterCvResponse = await getMasterCv();
                 setHasMasterCv(!!masterCvResponse.cv);
-                // Use master CV's template as fallback if job CV didn't specify one
-                if (masterCvResponse.cv?.templateId && selectedTemplate === 'german-latex') {
-                    setSelectedTemplate(masterCvResponse.cv.templateId);
-                }
             } catch (error) {
                 console.error("Error checking master CV:", error);
                 setHasMasterCv(false);
@@ -797,8 +786,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
                                     generationStep={generationStep}
                                     generationProgress={generationProgress}
 
-                                    selectedTemplate={selectedTemplate}
-                                    setSelectedTemplate={setSelectedTemplate}
                                     cvSaveStatus={cvSaveStatus}
                                     lastSavedCvDataRef={lastSavedCvDataRef}
                                     improvingSections={improvingSections}

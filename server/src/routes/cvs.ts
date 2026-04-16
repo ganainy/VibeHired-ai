@@ -1279,6 +1279,44 @@ router.get('/:id/original-pdf', asyncHandler(async (req: Request, res: Response)
 }));
 
 /**
+ * PUT /api/cvs/:id/edited-pdf
+ * Save an edited PDF back to the CV document.
+ * Body: { pdfBase64: string } - base64-encoded PDF binary
+ */
+router.put('/:id/edited-pdf', asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!._id as string;
+    const cvId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(cvId)) {
+        throw new ValidationError('Invalid CV ID');
+    }
+
+    const { pdfBase64 } = req.body;
+    if (!pdfBase64 || typeof pdfBase64 !== 'string') {
+        throw new ValidationError('pdfBase64 is required');
+    }
+
+    const cv = await CV.findOne({ _id: cvId, userId }).select('+originalPdf');
+    if (!cv) throw new NotFoundError('CV not found');
+    if (!cv.originalPdf) {
+        throw new ValidationError('This CV does not have an original PDF to update');
+    }
+
+    // Decode base64 and update the original PDF
+    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+    cv.originalPdf = pdfBuffer;
+    await cv.save();
+
+    res.json({
+        message: 'PDF updated successfully.',
+        cv: {
+            _id: cv._id,
+            updatedAt: cv.updatedAt,
+        }
+    });
+}));
+
+/**
  * POST /api/cvs/:id/restructure
  * Re-generate the AI descriptor and data from the stored cvJson.
  * Useful for legacy CVs or when the user wants to re-analyse structure.

@@ -159,6 +159,11 @@ export interface PreviewCvResponse {
     pdfBase64: string;
 }
 
+export interface UpdateEditedPdfResponse {
+    message: string;
+    cv: { _id: string; updatedAt: string };
+}
+
 export interface ToggleStarResponse {
     message: string;
     cv: { _id: string; isStarred: boolean; updatedAt: string };
@@ -385,6 +390,25 @@ export const getCvOriginalPdf = async (cvId: string): Promise<{ pdfBase64: strin
             throw error.response.data;
         }
         throw { message: 'An unknown error occurred fetching the original PDF.' };
+    }
+};
+
+/**
+ * Save an edited PDF back to the CV document.
+ */
+export const updateEditedPdf = async (cvId: string, pdfBase64: string): Promise<UpdateEditedPdfResponse> => {
+    try {
+        const response = await axios.put<UpdateEditedPdfResponse>(
+            `${API_BASE_URL}/${cvId}/edited-pdf`,
+            { pdfBase64 }
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error('Update edited PDF API error:', error);
+        if (axios.isAxiosError(error) && error.response) {
+            throw error.response.data;
+        }
+        throw { message: 'An unknown error occurred updating the PDF.' };
     }
 };
 

@@ -25,6 +25,7 @@ import {
     TailoringChange,
     TailoringResponse,
     tailoringResponseJsonSchema,
+    freeformTailoringResponseJsonSchema,
     changesOnlyJsonSchema,
 } from '../schemas/cvTailoring.schema';
 
@@ -587,6 +588,7 @@ function buildFreeformCvPrompt(
     languageName: string,
     requestedLanguage: string,
 ): string {
+    const sectionKeys = Object.keys(baseCvJson).filter(k => k !== '__vh_tags').join(', ');
     return `
 You are an expert career advisor specialized in the ${languageName} job market.
 Tailor the provided freeform CV JSON for the specific job below.
@@ -603,23 +605,48 @@ ${JSON.stringify(baseCvJson, null, 2)}
 ${jobDescription}
 ---
 
-**Instructions:**
-- Keep the CV as freeform JSON, preserving the same top-level keys and structure.
-- Preserve and return __vh_tags if present; if missing, create one mapping important fields.
-- Use only canonical tags: name, email, phone, url, location, address, city, linkedin, github, website, portfolio, date, date_range, title, subtitle, paragraph, bullets, key_value, contact_block, personal_info.
-- The base CV uses these canonical field names within array entries:
-  - "title" for job title / degree name
-  - "subtitle" for company / institution
-  - "dates" for date ranges
-  - "bullets" for bullet point arrays
-  - "content" for key-value content
-  - "category" for category labels
-  You MUST use exactly these field names in the tailored output.
+**Tailoring Instructions:**
+- PRESERVE the exact same top-level keys and structure as the base CV. Existing keys: ${sectionKeys}.
+- Rewrite bullet points and summaries to emphasize relevance to the job using keywords from the description.
 - Do NOT invent skills, experiences, or qualifications not present in the base CV.
-- You may reorder items for relevance but do not drop important sections.
+- You may reorder items within sections for relevance but do NOT drop sections or entries.
 - All CV text must be in ${languageName}.
-- The tailored CV must be detailed and not shorter than the base CV.
+- The tailored CV must not be shorter than the base CV.
 - The changes array descriptions/reasons/before/after must ALWAYS be in ENGLISH.
+
+**STRICT FIELD NAME CONTRACT — within ALL array entries use ONLY these field names:**
+- "title"    → job title / degree name / category label
+- "subtitle" → company / institution / employer
+- "dates"    → date or period information
+- "bullets"  → bullet point arrays
+- "content"  → key-value content text (skill values, language levels)
+- "category" → category name in skill/language sections
+DO NOT use synonyms like: degree, institution, period, company, employer, description, role, position, value.
+
+**REQUIRED: __vh_tags MUST be present and complete in your output.**
+The __vh_tags object maps dot-paths to rendering tags — without it the CV WILL NOT render.
+Copy ALL existing tags from the base CV's __vh_tags and add tags for any new or modified sections.
+
+Tag rules (use * as a wildcard for array item indices):
+- Personal/contact block (the section with name, email, phone):
+    "<sectionKey>": "contact_block"
+    "<sectionKey>.<nameField>": "name"
+    "<sectionKey>.<locationField>": "location"
+    "<sectionKey>.<phoneField>": "phone"
+    "<sectionKey>.<emailField>": "email"
+    "<sectionKey>.<urlField>": "url"
+- Profile / summary (free-text paragraph):
+    "<sectionKey>": "paragraph"
+- Experience / Education / Certificate entries (arrays of objects):
+    "<sectionKey>.*.title": "title"
+    "<sectionKey>.*.dates": "date_range"
+    "<sectionKey>.*.subtitle": "subtitle"
+    "<sectionKey>.*.bullets": "bullets"
+- Skills / Language / Knowledge category sections:
+    "<sectionKey>.*.category": "title"
+    "<sectionKey>.*.content": "key_value"
+
+Allowed tag values: name, email, phone, url, location, address, city, linkedin, github, website, portfolio, date, date_range, title, subtitle, paragraph, bullets, key_value, contact_block, personal_info.
 `.trim();
 }
 
@@ -706,10 +733,20 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             console.log('Alternative fields found:', foundAlternatives);
         }
 
-        // STEP 1: Normalize section names (German → English, non-standard → canonical)
-        baseCvJson = normalizeSectionNames(baseCvJson as Record<string, any>) as JsonResumeSchema;
-        console.log('=== After section name normalization ===');
-        console.log('Top-level keys:', Object.keys(baseCvJson));
+        // Detect freeform BEFORE normalization — a freeform CV has __vh_tags and/or non-standard section names.
+        // We must NOT run normalizeSectionNames on freeform CVs because it renames their custom section keys
+        // (BERUFSERFAHRUNG → work, SPRACHEN → languages, etc.), making them falsely appear JSON-Resume-like
+        // and stripping the structure the AI needs to preserve.
+        const isFreeformCv = Boolean((baseCvJson as any).__vh_tags && typeof (baseCvJson as any).__vh_tags === 'object');
+
+        // STEP 1: Normalize section names ONLY for non-freeform CVs
+        if (!isFreeformCv) {
+            baseCvJson = normalizeSectionNames(baseCvJson as Record<string, any>) as JsonResumeSchema;
+            console.log('=== After section name normalization ===');
+            console.log('Top-level keys:', Object.keys(baseCvJson));
+        } else {
+            console.log('=== Skipping section name normalization for freeform CV ===');
+        }
 
         // STEP 2: Normalize field names within sections (company → subtitle, etc.)
         baseCvJson = normalizeCvFieldNames(baseCvJson as Record<string, any>) as JsonResumeSchema;
@@ -721,12 +758,16 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         const hasWork = Array.isArray(baseCvJson.work) && baseCvJson.work.length > 0;
         const hasEducation = Array.isArray(baseCvJson.education) && baseCvJson.education.length > 0;
         const hasSkills = Array.isArray(baseCvJson.skills) && baseCvJson.skills.length > 0;
+        // For freeform CVs, check for any non-empty, non-tag array/object section
+        const hasFreeformContent = isFreeformCv && Object.entries(baseCvJson as Record<string, any>)
+            .filter(([k]) => k !== '__vh_tags')
+            .some(([, v]) => (Array.isArray(v) && v.length > 0) || (v && typeof v === 'object' && Object.keys(v).length > 0) || (typeof v === 'string' && v.trim().length > 0));
 
         console.log('=== DEBUG: After normalization ===');
         console.log('Top-level keys:', Object.keys(baseCvJson));
-        console.log('hasBasics:', hasBasics, 'hasWork:', hasWork, 'hasEducation:', hasEducation, 'hasSkills:', hasSkills);
+        console.log('isFreeformCv:', isFreeformCv, 'hasBasics:', hasBasics, 'hasWork:', hasWork, 'hasEducation:', hasEducation, 'hasSkills:', hasSkills, 'hasFreeformContent:', hasFreeformContent);
 
-        if (!hasBasics && !hasWork && !hasEducation && !hasSkills) {
+        if (!hasBasics && !hasWork && !hasEducation && !hasSkills && !hasFreeformContent) {
             console.error('Base CV is empty or has no meaningful content. CV ID:', usedBaseCvId);
             console.error('All keys:', JSON.stringify(Object.keys(baseCvJson)));
             res.status(400).json({
@@ -735,18 +776,18 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             return;
         }
 
-        if (!hasBasics) {
+        if (!hasBasics && !isFreeformCv) {
             console.warn('Base CV has empty "basics" section. CV ID:', usedBaseCvId);
         }
 
-        console.log(`Base CV validation - basics: ${hasBasics ? '✓' : '✗'}, work: ${baseCvJson.work?.length || 0}, education: ${baseCvJson.education?.length || 0}, skills: ${baseCvJson.skills?.length || 0}`);
+        console.log(`Base CV validation - isFreeform: ${isFreeformCv}, basics: ${hasBasics ? '✓' : '✗'}, work: ${(baseCvJson.work as any)?.length || 0}, education: ${(baseCvJson.education as any)?.length || 0}, skills: ${(baseCvJson.skills as any)?.length || 0}`);
 
         // 3. Fetch Custom Prompt (if any) or use override
         const profile = await Profile.findOne({ userId: userId });
         let customPrompt = customInstructionsOverride || profile?.customPrompts?.cvPrompt;
 
-        // 4. Pick the schema (single unified schema works for both JSON Resume and freeform)
-        const responseSchema = tailoringResponseJsonSchema;
+        // 4. Pick the schema (freeform gets a looser schema to avoid biasing Gemini toward JSON Resume keys)
+        const responseSchema = isFreeformCv ? freeformTailoringResponseJsonSchema : tailoringResponseJsonSchema;
 
         // 5. Build a concise, schema-aligned prompt
         let prompt: string;
@@ -761,11 +802,12 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             if (!customPrompt.includes('{{baseCv}}')) {
                 prompt += `\n\n**Context Data:**\nBase CV: ${JSON.stringify(baseCvJson, null, 2)}\nJob Description: ${job.jobDescriptionText}\nTarget Language: ${languageName}`;
             }
-        } else if (isJsonResumeLike(baseCvJson)) {
-            prompt = buildJsonResumePrompt(baseCvJson, job.jobDescriptionText, languageName, requestedLanguage);
-        } else {
+        } else if (isFreeformCv) {
             prompt = buildFreeformCvPrompt(baseCvJson, job.jobDescriptionText, languageName, requestedLanguage);
+        } else {
+            prompt = buildJsonResumePrompt(baseCvJson, job.jobDescriptionText, languageName, requestedLanguage);
         }
+
 
         // 6. Generate — schema-enforced, no fallback parsing needed
         console.log(`Generating ${languageName} CV only for job ${jobId}...`);
@@ -820,11 +862,12 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         
         finalCvJson = finalCvAny as JsonResumeSchema;
 
-        normalizeFreeformCvTags(finalCvJson);
-        // Safety-net: canonicalize section names (in case AI used non-standard names)
+        // Safety-net: canonicalize section names first (in case AI used non-standard names)
         finalCvJson = normalizeSectionNames(finalCvJson as Record<string, any>) as JsonResumeSchema;
-        // Safety-net: canonicalize field names in case Gemini ignored the prompt contract
+        // Safety-net: canonicalize field names second
         finalCvJson = normalizeCvFieldNames(finalCvJson as Record<string, any>) as JsonResumeSchema;
+        // Tag enrichment LAST so tags are based on final canonical field/section names
+        normalizeFreeformCvTags(finalCvJson);
 
         // Debug: Log final CV structure
         console.log('=== Final CV structure before saving ===');

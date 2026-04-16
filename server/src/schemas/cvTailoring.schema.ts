@@ -65,6 +65,34 @@ export const tailoringResponseJsonSchema = {
   },
 };
 
+/**
+ * Looser schema for freeform CVs to avoid biasing Gemini toward JSON Resume keys.
+ */
+export const freeformTailoringResponseJsonSchema = {
+  type: 'object' as const,
+  required: ['tailoredCv', 'changes'],
+  properties: {
+    tailoredCv: {
+      type: 'object' as const,
+      description: 'Tailored CV JSON. You MUST PRESERVE the EXACT same top-level keys and structure as the base CV provided.',
+    },
+    changes: {
+      type: 'array' as const,
+      items: {
+        type: 'object' as const,
+        required: ['section', 'description', 'reason'],
+        properties: {
+          section:     { type: 'string' as const, description: "CV section key" },
+          description: { type: 'string' as const, description: 'What changed (in English)' },
+          reason:      { type: 'string' as const, description: 'Why it changed, referencing the job (in English)' },
+          before:      { type: 'string' as const, description: 'Short original snippet (in English)' },
+          after:       { type: 'string' as const, description: 'Short updated snippet (in English)' },
+        },
+      },
+    },
+  },
+};
+
 // Lightweight schema for the generateAiTailoringChanges diff call (changes only)
 export const changesOnlyJsonSchema = {
   type: 'object' as const,

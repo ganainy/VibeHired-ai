@@ -11,7 +11,7 @@ import ErrorAlert from '../common/ErrorAlert';
 import Spinner from '../common/Spinner';
 import SimpleLoader from '../common/SimpleLoader';
 import PromptChecklist from '../common/PromptChecklist';
-import { getCvOriginalPdf, detachJobCv, deleteCv, getJobCv } from '../../services/cvApi';
+import { getCvOriginalPdf, detachJobCv, deleteCv, getJobCv, updateEditedPdf } from '../../services/cvApi';
 import { AtsScores } from '../../services/atsApi';
 import { JobApplication } from '../../services/jobApi';
 import RawPdfPlaceholder from '../cv-workspace/RawPdfPlaceholder';
@@ -60,8 +60,6 @@ interface TailoredCvPageProps {
     generationProgress: number;
     
     // CV Editor State
-    selectedTemplate: string;
-    setSelectedTemplate: (template: string) => void;
     cvSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
     lastSavedCvDataRef: React.MutableRefObject<string | null>;
     improvingSections: Record<string, boolean>;
@@ -127,8 +125,6 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     setGenerateCvError,
     generationStep,
     generationProgress,
-    selectedTemplate,
-    setSelectedTemplate,
     cvSaveStatus,
     lastSavedCvDataRef,
     improvingSections,
@@ -159,6 +155,44 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     handleApplyAtsSuggestionBatch,
 }) => {
     const [showRemoveCvConfirm, setShowRemoveCvConfirm] = React.useState(false);
+    const [editingPdfBase64, setEditingPdfBase64] = React.useState<string | null>(null);
+    const [isSavingPdf, setIsSavingPdf] = React.useState(false);
+
+    // Load PDF for editing when component mounts (for raw PDF CVs)
+    React.useEffect(() => {
+        if (hasLocalCv && !isCvTailored && currentCvId) {
+            // Pre-load PDF for inline editing
+            let cancelled = false;
+            const loadPdf = async () => {
+                try {
+                    const { pdfBase64 } = await getCvOriginalPdf(currentCvId);
+                    if (!cancelled) {
+                        setEditingPdfBase64(pdfBase64);
+                    }
+                } catch (err) {
+                    console.error('Failed to load PDF for editing:', err);
+                }
+            };
+            loadPdf();
+            return () => { cancelled = true; };
+        }
+    }, [hasLocalCv, isCvTailored, currentCvId]);
+
+    const handlePdfSave = async (updatedPdfBase64: string) => {
+        if (!currentCvId) return;
+        
+        setIsSavingPdf(true);
+        try {
+            await updateEditedPdf(currentCvId, updatedPdfBase64);
+            setEditingPdfBase64(updatedPdfBase64);
+            showToast('PDF saved successfully', 'success');
+        } catch (err: any) {
+            console.error('Failed to save PDF:', err);
+            showToast(`Failed to save PDF: ${err.message}`, 'error');
+        } finally {
+            setIsSavingPdf(false);
+        }
+    };
 
     const handleRemoveAttachedCv = async () => {
         try {
@@ -185,36 +219,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
 
     return (
         <div>
-            {/* Raw PDF placeholder: shown for base-CVs-in-CV-Management (no jobId, no JSON)
-                AND for job CVs that were attached "as-is" (not AI-tailored). */}
-            {(hasLocalCv && !isCvTailored) ? (
-                <RawPdfPlaceholder
-                    filename={currentCvFilename}
-                    isLoadingRawPdf={isLoadingRawPdf}
-                    onPreview={async () => {
-                        setIsLoadingRawPdf(true);
-                        try {
-                            let cvIdToPreview = currentCvId;
-                            if (!cvIdToPreview && jobId) {
-                                const latestJobCv = await getJobCv(jobId);
-                                cvIdToPreview = latestJobCv.cv?._id ?? null;
-                            }
-                            if (!cvIdToPreview) {
-                                showToast('Could not find the attached CV. Please refresh and try again.', 'error');
-                                return;
-                            }
-                            const { pdfBase64 } = await getCvOriginalPdf(cvIdToPreview);
-                            setPreviewPdfBase64(pdfBase64);
-                            setIsPreviewOpen(true);
-                        } catch {
-                            showToast('Failed to load PDF preview', 'error');
-                        } finally {
-                            setIsLoadingRawPdf(false);
-                        }
-                    }}
-                    onRemove={async () => setShowRemoveCvConfirm(true)}
-                />
-            ) : hasLocalCv ? (
+            {hasLocalCv ? (
                 <CvEditorPanel
                     data={cvData}
                     onChange={handleCvChange}
@@ -224,8 +229,6 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                         lastSavedCvDataRef.current !== null &&
                         JSON.stringify(cvData) !== lastSavedCvDataRef.current
                     }
-                    templateId={selectedTemplate}
-                    onTemplateChange={setSelectedTemplate}
                     defaultEditorOpen={false}
                     onImproveSection={handleImproveSection}
                     improvingSections={improvingSections}
@@ -235,6 +238,11 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                     onDynamicChange={handleDynamicChange}
                     diffChanges={tailoringChanges || []}
                     showDiffOverlay={showInlineCvDiff}
+                    pdfBase64={editingPdfBase64}
+                    pdfFilename={currentCvFilename}
+                    onPdfSave={handlePdfSave}
+                    isPdfSaving={isSavingPdf}
+                    isLoadingPdf={isLoadingRawPdf}
                     onDelete={async () => {
                         if (window.confirm('Are you sure you want to delete this CV? You will need to regenerate it.')) {
                             if (currentCvId) {

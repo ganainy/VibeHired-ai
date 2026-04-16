@@ -155,9 +155,9 @@ export function normalizeFreeformCvTags(
   const hasHeaderKey = Object.prototype.hasOwnProperty.call(cvJson, headerKey);
   const hasUnsectioned = Object.prototype.hasOwnProperty.call(cvJson, 'unsectioned');
 
-  if (!hasTagMap && !hasHeaderKey && !hasUnsectioned) {
-    return cvJson;
-  }
+  // if (!hasTagMap && !hasHeaderKey && !hasUnsectioned) {
+  //   return cvJson;
+  // }
 
   let tags: Record<string, string> = {};
   if (hasTagMap) {
@@ -177,6 +177,24 @@ export function normalizeFreeformCvTags(
     tagContactFields(headerKey, cvJson[headerKey] as Record<string, JsonValue>, tags);
   }
 
+  // Also auto-detect contact sections by content — handles cases where the AI renamed
+  // "Header Info" to "basics" or another key. A section is a contact block if it is a
+  // plain object with a name field + at least one other contact field (email/phone/url).
+  for (const [sectionKey, sectionValue] of Object.entries(cvJson)) {
+    if (isMetaKey(sectionKey) || sectionKey === headerKey) continue;
+    if (!isPlainObject(sectionValue)) continue;
+    if (tags[sectionKey]) continue; // already tagged — skip
+
+    const fieldKeys = Object.keys(sectionValue as Record<string, unknown>);
+    const hasName = fieldKeys.some(k => /^name$/i.test(k));
+    const hasContact = fieldKeys.some(k =>
+      CONTACT_FIELD_TAGS.some(([re]) => re.test(k)) && !/^name$/i.test(k),
+    );
+    if (hasName && hasContact) {
+      tagContactFields(sectionKey, sectionValue as Record<string, JsonValue>, tags);
+    }
+  }
+
   for (const [sectionKey, sectionValue] of Object.entries(cvJson)) {
     if (isMetaKey(sectionKey)) continue;
 
@@ -187,10 +205,54 @@ export function normalizeFreeformCvTags(
         }
       });
     } else if (isPlainObject(sectionValue)) {
-      if (sectionKey !== headerKey) {
+      if (sectionKey !== headerKey && tags[sectionKey] !== 'contact_block' && tags[sectionKey] !== 'personal_info') {
         tagEntryFields(sectionKey, sectionValue, tags);
       }
     }
+  }
+
+  function ensureFallbackTags(node: any, pathParts: string[]) {
+    const pathStr = pathParts.join('.');
+    
+    // Simple wildcard matcher checking if current explicit tags dictionary contains this path
+    let hasTag = Object.keys(tags).some(tagPath => {
+        const regexStr = '^' + tagPath.replace(/\*/g, '[^.]+') + '$';
+        return new RegExp(regexStr).test(pathStr);
+    });
+
+    if (!hasTag) {
+        if (Array.isArray(node)) {
+            const allPrim = node.every(i => typeof i !== 'object' || i === null);
+            if (allPrim && node.length > 0) {
+               tags[pathStr] = 'bullets';
+            } else {
+               node.forEach((item, index) => {
+                  ensureFallbackTags(item, [...pathParts, String(index)]);
+               });
+            }
+        } else if (isPlainObject(node)) {
+            for (const [k, v] of Object.entries(node)) {
+               ensureFallbackTags(v, [...pathParts, k]);
+            }
+        } else if (node !== null && node !== undefined && String(node).trim().length > 0) {
+            tags[pathStr] = 'paragraph';
+        }
+    } else {
+        if (isPlainObject(node)) {
+            for (const [k, v] of Object.entries(node)) {
+               ensureFallbackTags(v, [...pathParts, k]);
+            }
+        } else if (Array.isArray(node) && tags[pathStr] !== 'bullets') {
+            node.forEach((item, index) => {
+                ensureFallbackTags(item, [...pathParts, String(index)]);
+            });
+        }
+    }
+  }
+
+  for (const [k, v] of Object.entries(cvJson)) {
+     if (isMetaKey(k)) continue;
+     ensureFallbackTags(v, [k]);
   }
 
   cvJson.__vh_tags = pruneTags(cvJson, tags);

@@ -17,7 +17,7 @@ import {
 } from '../services/adminApi';
 import Spinner from '../components/common/Spinner';
 import CvPreviewModal from '../components/cv-editor/CvPreviewModal';
-import CvLivePreview from '../components/cv-editor/CvLivePreview';
+import InPlaceCvEditor from '../components/cv-editor/InPlaceCvEditor';
 import { TableOrCards } from '../components/common/TableOrCards';
 import ConfirmModal from '../components/common/ConfirmModal';
 
@@ -736,11 +736,9 @@ const AdminUserDetailPage: React.FC = () => {
                             </div>
                         ) : templatePreviewCv ? (
                             <div className="flex-1 overflow-hidden border dark:border-gray-700 rounded-lg">
-                                <CvLivePreview
-                                    data={templatePreviewCv.cvJson}
-                                    templateId={templatePreviewCv.templateId || 'modern-clean'}
-                                    dynamicPayload={dynamicPayload}
-                                    className="h-full"
+                                <InPlaceCvEditor
+                                    value={templatePreviewCv.cvJson}
+                                    readonly={true}
                                 />
                             </div>
                         ) : (
