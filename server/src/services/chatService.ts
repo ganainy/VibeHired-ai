@@ -53,7 +53,7 @@ async function resolveCvContext(
         }
     }
 
-    const primaryCv = await CV.findOne({ userId: userObjectId, isPrimary: true, jobApplicationId: null }).lean();
+    const primaryCv = await CV.findOne({ userId: userObjectId, isDefault: true, jobApplicationId: null }).lean();
     if (primaryCv?.cvJson) {
         return {
             source: `primary CV (${primaryCv.displayName || 'unnamed'})`,

@@ -6,17 +6,17 @@ import { CvSectionDescriptor } from '../types/cvDescriptor';
 /**
  * Unified CV Model
  * 
- * Stores both master CVs and job-specific CVs in a single collection.
- * - Primary CV: isPrimary = true, jobApplicationId = null (only ONE per user)
- * - Category CV: isPrimary = false, category = "Cybersecurity", jobApplicationId = null
+ * Stores both base CVs and job-specific CVs in a single collection.
+ * - Default base CV: isDefault = true, jobApplicationId = null (only ONE per user)
+ * - Other base CV: isDefault = false, category = "Cybersecurity", jobApplicationId = null
  * - Job CV: jobApplicationId = <job_id> (tailored for specific job)
  */
 export interface ICV extends Document {
     _id: Types.ObjectId;
     userId: Types.ObjectId;
     
-    // NEW FIELDS: CV Branch System
-    isPrimary: boolean;           // One primary CV per user (default)
+    // CV Branch System
+    isDefault: boolean;           // One default base CV per user (used by AI generation)
     category: string | null;       // e.g., "Software Engineering", "Cybersecurity", null = primary
     displayName: string;           // User-friendly name: "My SE Resume", "Cyber CV"
     cvFormat?: 'json-resume' | 'freeform' | null;
@@ -77,8 +77,8 @@ const CVSchema = new Schema<ICV>(
             required: true,
             index: true,
         },
-        // NEW FIELDS: CV Branch System
-        isPrimary: {
+        // CV Branch System
+        isDefault: {
             type: Boolean,
             required: true,
             default: false,
@@ -191,15 +191,15 @@ const CVSchema = new Schema<ICV>(
 );
 
 /**
- * Unique partial index: Ensures only ONE primary CV per user
- * Only applies when isPrimary = true
+ * Unique partial index: Ensures only ONE default base CV per user
+ * Only applies when isDefault = true
  */
 CVSchema.index(
-    { userId: 1, isPrimary: 1 },
+    { userId: 1, isDefault: 1 },
     {
         unique: true,
-        partialFilterExpression: { isPrimary: true },
-        name: 'unique_primary_cv_per_user',
+        partialFilterExpression: { isDefault: true },
+        name: 'unique_default_cv_per_user',
     }
 );
 
@@ -232,24 +232,24 @@ CVSchema.virtual('jobApplication', {
 });
 
 /**
- * Static method: Get primary CV for a user
+ * Static method: Get default base CV for a user
  */
-CVSchema.statics.getPrimaryCv = async function (userId: Types.ObjectId | string) {
-    return this.findOne({ userId, isPrimary: true });
+CVSchema.statics.getDefaultCv = async function (userId: Types.ObjectId | string) {
+    return this.findOne({ userId, isDefault: true });
 };
 
 /**
- * Static method: Get all base CVs for a user (primary + category CVs, excludes job CVs)
+ * Static method: Get all base CVs for a user (default + category CVs, excludes job CVs)
  */
 CVSchema.statics.getBaseCvs = async function (userId: Types.ObjectId | string) {
-    return this.find({ userId, jobApplicationId: null }).sort({ isPrimary: -1, createdAt: -1 });
+    return this.find({ userId, jobApplicationId: null }).sort({ isDefault: -1, createdAt: -1 });
 };
 
 /**
  * Static method: Get all CVs for a user
  */
 CVSchema.statics.getUserCvs = async function (userId: Types.ObjectId | string) {
-    return this.find({ userId }).sort({ isPrimary: -1, createdAt: -1 });
+    return this.find({ userId }).sort({ isDefault: -1, createdAt: -1 });
 };
 
 /**
@@ -260,11 +260,11 @@ CVSchema.statics.getJobCv = async function (jobApplicationId: Types.ObjectId | s
 };
 
 /**
- * Static method: Promote a CV to primary
- * - Unsets current primary CV
- * - Sets target CV as new primary
+ * Static method: Set a base CV as the default
+ * - Unsets current default CV
+ * - Sets target CV as new default
  */
-CVSchema.statics.setAsPrimary = async function (
+CVSchema.statics.setAsDefault = async function (
     cvId: Types.ObjectId | string,
     userId: Types.ObjectId | string
 ) {
@@ -273,12 +273,12 @@ CVSchema.statics.setAsPrimary = async function (
         throw new Error('CV not found or does not belong to user');
     }
 
-    if (cv.isPrimary) {
-        throw new Error('CV is already the primary CV');
+    if (cv.isDefault) {
+        throw new Error('CV is already the default base CV');
     }
 
     if (cv.jobApplicationId) {
-        throw new Error('Cannot set a job-specific CV as primary');
+        throw new Error('Cannot set a job-specific CV as default');
     }
 
     // Start a session for transaction
@@ -286,14 +286,14 @@ CVSchema.statics.setAsPrimary = async function (
     session.startTransaction();
 
     try {
-        // Unset current primary CV
+        // Unset current default CV
         await this.updateMany(
-            { userId, isPrimary: true },
-            { $set: { isPrimary: false } }
+            { userId, isDefault: true },
+            { $set: { isDefault: false } }
         ).session(session);
 
-        // Set target CV as primary
-        cv.isPrimary = true;
+        // Set target CV as default
+        cv.isDefault = true;
         await cv.save({ session });
 
         await session.commitTransaction();
@@ -307,11 +307,11 @@ CVSchema.statics.setAsPrimary = async function (
 };
 
 export interface ICVModel extends mongoose.Model<ICV> {
-    getPrimaryCv(userId: Types.ObjectId | string): Promise<ICV | null>;
+    getDefaultCv(userId: Types.ObjectId | string): Promise<ICV | null>;
     getBaseCvs(userId: Types.ObjectId | string): Promise<ICV[]>;
     getUserCvs(userId: Types.ObjectId | string): Promise<ICV[]>;
     getJobCv(jobApplicationId: Types.ObjectId | string): Promise<ICV | null>;
-    setAsPrimary(cvId: Types.ObjectId | string, userId: Types.ObjectId | string): Promise<ICV>;
+    setAsDefault(cvId: Types.ObjectId | string, userId: Types.ObjectId | string): Promise<ICV>;
 }
 
 const CV = mongoose.model<ICV, ICVModel>('CV', CVSchema);

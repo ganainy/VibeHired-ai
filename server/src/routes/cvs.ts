@@ -318,7 +318,7 @@ router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
     res.json({
         branches: branches.map(cv => ({
             _id: cv._id,
-            isPrimary: cv.isPrimary,
+            isDefault: cv.isDefault,
             category: cv.category,
             displayName: cv.displayName,
             jobApplicationId: cv.jobApplicationId,
@@ -394,7 +394,7 @@ router.get('/master', asyncHandler(async (req: Request, res: Response) => {
     res.json({
         cv: {
             _id: baseCv._id,
-            isPrimary: baseCv.isPrimary,
+            isDefault: baseCv.isDefault,
             cvJson: baseCv.cvJson,
             cvDescriptor: baseCv.cvDescriptor ?? null,
             cvData: baseCv.cvData ?? null,
@@ -437,7 +437,7 @@ router.post('/create-branch', asyncHandler(async (req: Request, res: Response) =
     // Create new branch (deep-copy descriptor + data as well)
     const newBranch = await CV.create({
         userId,
-        isPrimary: false,
+        isDefault: false,
         category,
         displayName,
         cvJson: JSON.parse(JSON.stringify(sourceCv.cvJson)), // Deep copy
@@ -453,7 +453,7 @@ router.post('/create-branch', asyncHandler(async (req: Request, res: Response) =
         message: 'CV branch created successfully.',
         branch: {
             _id: newBranch._id,
-            isPrimary: newBranch.isPrimary,
+            isDefault: newBranch.isDefault,
             category: newBranch.category,
             displayName: newBranch.displayName,
             cvJson: newBranch.cvJson,
@@ -472,7 +472,7 @@ router.post('/create-branch', asyncHandler(async (req: Request, res: Response) =
 
 /**
  * PATCH /api/cvs/:id/set-primary
- * Set a CV as primary
+ * Set a base CV as default
  */
 router.patch('/:id/set-primary', asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id as string;
@@ -482,13 +482,13 @@ router.patch('/:id/set-primary', asyncHandler(async (req: Request, res: Response
         throw new ValidationError('Invalid CV ID');
     }
 
-    const result = await CV.setAsPrimary(cvId, userId);
+    const result = await CV.setAsDefault(cvId, userId);
 
     res.json({
-        message: 'CV set as primary successfully.',
+        message: 'CV set as default successfully.',
         branch: {
             _id: result._id,
-            isPrimary: result.isPrimary,
+            isDefault: result.isDefault,
             category: result.category,
             displayName: result.displayName,
             updatedAt: result.updatedAt,
@@ -522,7 +522,7 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
     res.json({
         cv: {
             _id: cv._id,
-            isPrimary: cv.isPrimary,
+            isDefault: cv.isDefault,
             jobApplicationId: cv.jobApplicationId,
             jobApplication: (cv as any).jobApplication || null,
             cvJson: cv.cvJson,
@@ -604,7 +604,7 @@ router.get('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
     res.json({
         cv: {
             _id: cv._id,
-            isPrimary: cv.isPrimary,
+            isDefault: cv.isDefault,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
             cvDescriptor: cv.cvDescriptor ?? null,
@@ -621,7 +621,7 @@ router.get('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * POST /api/cvs/upload
- * Upload and parse a new CV file (creates/replaces the primary CV)
+ * Upload and parse a new CV file (creates/replaces the default CV)
  */
 router.post(
     '/upload',
@@ -651,7 +651,7 @@ router.post(
 
         const newCv = await CV.create({
             userId,
-            isPrimary: false,
+            isDefault: false,
             category: 'General',
             displayName: req.file.originalname.replace(/\.[^.]+$/, '') || 'Uploaded CV',
             cvJson: normalizedCvJson,
@@ -673,7 +673,7 @@ router.post(
             message: 'CV uploaded and parsed successfully.',
             cv: {
                 _id: newCv._id,
-                isPrimary: false,
+                isDefault: false,
                 category: newCv.category,
                 displayName: newCv.displayName,
                 cvJson: normalizedCvJson,
@@ -726,7 +726,7 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
         extractionTimestamp = new Date();
     } else {
         // Copy from primary CV
-        const primaryCv = await CV.getPrimaryCv(userId as string);
+        const primaryCv = await CV.getDefaultCv(userId as string);
         if (!primaryCv) {
             throw new ValidationError('No primary CV found. Please upload a CV first.');
         }
@@ -738,7 +738,7 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
 
     const newCv = await CV.create({
         userId,
-        isPrimary: false,
+        isDefault: false,
         displayName: `Job CV - ${job.jobTitle} at ${job.companyName}`,
         jobApplicationId: new mongoose.Types.ObjectId(jobId),
         cvJson,
@@ -797,7 +797,7 @@ router.post(
 
         const newCv = await CV.create({
             userId,
-            isPrimary: false,
+            isDefault: false,
             category: category.trim(),
             displayName: displayName.trim(),
             cvJson: normalizedCvJson,
@@ -819,7 +819,7 @@ router.post(
             message: 'CV branch uploaded and parsed successfully.',
             branch: {
                 _id: newCv._id,
-                isPrimary: false,
+                isDefault: false,
                 category: newCv.category,
                 displayName: newCv.displayName,
                 cvJson: normalizedCvJson,
@@ -857,7 +857,7 @@ router.post('/job/:jobId/from-base', asyncHandler(async (req: Request, res: Resp
     // Determine source CV: explicit baseCvId or the user\'s primary CV
     let sourceId = baseCvId;
     if (!sourceId || !mongoose.Types.ObjectId.isValid(sourceId)) {
-        const primary = await CV.getPrimaryCv(userId as string);
+        const primary = await CV.getDefaultCv(userId as string);
         if (!primary) throw new ValidationError('No primary CV found. Please upload a CV first.');
         sourceId = String(primary._id);
     }
@@ -872,7 +872,7 @@ router.post('/job/:jobId/from-base', asyncHandler(async (req: Request, res: Resp
     // Create fully independent copy
     const jobCv = await CV.create({
         userId,
-        isPrimary: false,
+        isDefault: false,
         displayName: `Job CV – ${job.jobTitle} at ${job.companyName}`,
         jobApplicationId: new mongoose.Types.ObjectId(jobId),
         cvJson: JSON.parse(JSON.stringify(sourceCv.cvJson)), // deep-copy JSON
@@ -932,7 +932,7 @@ router.post(
         // Store raw file only — no AI parsing
         const jobCv = await CV.create({
             userId,
-            isPrimary: false,
+            isDefault: false,
             displayName: `Job CV – ${job.jobTitle} at ${job.companyName}`,
             jobApplicationId: new mongoose.Types.ObjectId(jobId),
             cvJson: null,
@@ -1021,7 +1021,7 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
         message: 'CV updated successfully.',
         cv: {
             _id: cv._id,
-            isPrimary: cv.isPrimary,
+            isDefault: cv.isDefault,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
@@ -1097,7 +1097,7 @@ router.post('/:id/reset-from-source', asyncHandler(async (req: Request, res: Res
         message: 'CV has been reset to the original extracted version.',
         cv: {
             _id: cv._id,
-            isPrimary: cv.isPrimary,
+            isDefault: cv.isDefault,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
@@ -1141,7 +1141,7 @@ router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * POST /api/cvs/:id/promote
- * Promote a job CV to become the primary CV
+ * Promote a job CV to become the default base CV
  */
 router.post('/:id/promote', asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id as string;
@@ -1151,15 +1151,15 @@ router.post('/:id/promote', asyncHandler(async (req: Request, res: Response) => 
         throw new ValidationError('Invalid CV ID');
     }
 
-    const promotedCv = await CV.setAsPrimary(cvId, userId);
+    const promotedCv = await CV.setAsDefault(cvId, userId);
 
-    console.log(`CV ${cvId} promoted to primary for user ${req.user!.email}`);
+    console.log(`CV ${cvId} promoted to default for user ${req.user!.email}`);
 
     res.json({
-        message: 'CV promoted to primary successfully.',
+        message: 'CV promoted to default base CV successfully.',
         cv: {
             _id: promotedCv._id,
-            isPrimary: promotedCv.isPrimary,
+            isDefault: promotedCv.isDefault,
             cvJson: promotedCv.cvJson,
             templateId: promotedCv.templateId,
             isStarred: promotedCv.isStarred ?? false,

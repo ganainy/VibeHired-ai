@@ -58,7 +58,7 @@ async function autoCreateJobCvCopy(
     if (!fallbackCv) return;
     await CV.create({
       userId,
-      isPrimary: false,
+      isDefault: false,
       displayName: `Job CV (auto-copy)`,
       jobApplicationId: new mongoose.Types.ObjectId(jobId),
       cvJson: JSON.parse(JSON.stringify(fallbackCv.cvJson)),
@@ -71,7 +71,7 @@ async function autoCreateJobCvCopy(
 
   await CV.create({
     userId,
-    isPrimary: false,
+    isDefault: false,
     displayName: `Job CV (copy of ${sourceCv.displayName})`,
     jobApplicationId: new mongoose.Types.ObjectId(jobId),
     // Deep-copy JSON so edits to the base CV won't affect this copy

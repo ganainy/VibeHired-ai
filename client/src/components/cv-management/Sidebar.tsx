@@ -196,13 +196,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             label: 'CV Name',
             render: (cv) => {
                 const displayName = cv.displayName || cv.category || 'Unnamed CV';
-                const isPrimary = cv.isPrimary || cv.isMasterCv;
+                const isDefault = cv.isDefault;
                 return (
                     <div className="flex items-center gap-2 min-w-0">
                         <div className="flex flex-col min-w-0">
                             <span className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{displayName}</span>
                         </div>
-                        {isPrimary && (
+                        {isDefault && (
                             <span
                                 className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1"
                                 style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #f59e0b' }}
@@ -210,7 +210,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                                 </svg>
-                                Primary
+                                Default
                             </span>
                         )}
                     </div>
@@ -351,8 +351,8 @@ const Sidebar: React.FC<SidebarProps> = ({
             if (activeCvId === cv._id) {
                 return { text: 'Selected', className: 'bg-[var(--accent)] text-[var(--text-on-accent)]' };
             }
-            if (cv.isPrimary || cv.isMasterCv) {
-                return { text: 'Primary', className: 'bg-amber-100 text-amber-700' };
+            if (cv.isDefault) {
+                return { text: 'Default', className: 'bg-amber-100 text-amber-700' };
             }
             return null;
         },
@@ -529,7 +529,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             const baseClass = 'hover:bg-[var(--bg-elevated)] ring-1 ring-transparent';
                             if (isMock) return `pointer-events-none opacity-70 ${baseClass}`;
                             return isActive
-                                ? `ring-2 ring-[var(--accent)] shadow-[0_10px_28px_-14px_rgba(15,23,42,0.45)] before:content-[''] before:absolute before:inset-y-3 before:left-0 before:w-1.5 before:rounded-full before:bg-[var(--accent)] ${baseClass}`
+                                ? `bg-amber-50 dark:bg-amber-950/40 ${baseClass}`
                                 : baseClass;
                         }}
                         emptyMessage="No CVs found."

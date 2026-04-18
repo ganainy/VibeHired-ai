@@ -109,7 +109,7 @@ const renderFinalPdfsHandler: RequestHandler = async (req: ValidatedRequest, res
         // --- MODIFICATION: Ensure name is available for filenames (check Master CV fallback) ---
         const currentName1 = cvJsonData.basics?.name;
         if (!currentName1 || currentName1 === 'Applicant') {
-            const masterCv = await CV.findOne({ userId, isPrimary: true });
+            const masterCv = await CV.findOne({ userId, isDefault: true });
             const masterName = masterCv?.cvJson?.basics?.name;
             if (masterName) {
                 if (!cvJsonData.basics) {
@@ -313,7 +313,7 @@ const renderCvPdfHandler: RequestHandler = async (req: ValidatedRequest, res): P
         // --- MODIFICATION: Ensure name is available for filenames (check Master CV fallback) ---
         const currentName2 = cvJsonData.basics?.name;
         if (!currentName2 || currentName2 === 'Applicant') {
-            const masterCv = await CV.findOne({ userId, isPrimary: true });
+            const masterCv = await CV.findOne({ userId, isDefault: true });
             const masterName = masterCv?.cvJson?.basics?.name;
             if (masterName) {
                 if (!cvJsonData.basics) {
@@ -413,7 +413,7 @@ const renderCoverLetterPdfHandler: RequestHandler = async (req: ValidatedRequest
         // --- MODIFICATION: Ensure name is available for filenames (check Master CV fallback) ---
         const currentName3 = cvJsonData.basics?.name;
         if (!currentName3 || currentName3 === 'Applicant') {
-            const masterCv = await CV.findOne({ userId, isPrimary: true });
+            const masterCv = await CV.findOne({ userId, isDefault: true });
             const masterName = masterCv?.cvJson?.basics?.name;
             if (masterName) {
                 if (!cvJsonData.basics) {
@@ -535,7 +535,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         }
 
         if (!baseCvJson) {
-            const primaryCv = await CV.findOne({ userId, isPrimary: true });
+            const primaryCv = await CV.findOne({ userId, isDefault: true });
             if (primaryCv && primaryCv.cvJson) {
                 baseCvJson = primaryCv.cvJson;
                 usedBaseCvId = primaryCv._id.toString();
@@ -748,7 +748,7 @@ let finalCvJson = tailoredCvJson;
             jobCv = await CV.create({
                 userId,
                 jobApplicationId: jobId,
-                isPrimary: false,
+                isDefault: false,
                 displayName,
                 cvJson: finalCvJson,
                 cvFormat: isFreeformCv ? 'freeform' : 'json-resume',

@@ -351,6 +351,7 @@ export function TableOrCards<T extends Record<string, any>>({
                   className={`
                     transition-all duration-200
                     ${onRowClick ? 'cursor-pointer' : ''}
+                    ${rowClassName?.(item) || ''}
                   `}
                   onClick={onRowClick ? () => onRowClick(item) : undefined}
                   style={{

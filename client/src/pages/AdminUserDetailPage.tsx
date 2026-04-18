@@ -606,8 +606,8 @@ const AdminUserDetailPage: React.FC = () => {
                                     cardConfig={{
                                         title: (cv: UserCvSummary) => cv.displayName || 'Untitled CV',
                                         subtitle: (cv: UserCvSummary) => cv.filename || 'No filename',
-                                        badge: (cv: UserCvSummary) => cv.isPrimary
-                                            ? { text: 'Primary', className: 'bg-blue-100 text-blue-700' }
+                                        badge: (cv: UserCvSummary) => cv.isDefault
+                                            ? { text: 'Default', className: 'bg-blue-100 text-blue-700' }
                                             : null,
                                         fields: [
                                             {

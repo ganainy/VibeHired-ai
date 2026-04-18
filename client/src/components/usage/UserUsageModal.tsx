@@ -487,9 +487,9 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                                                         <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                                                             {cv.displayName || 'Untitled CV'}
                                                         </span>
-                                                        {cv.isPrimary && (
+                                                        {cv.isDefault && (
                                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase" style={{ backgroundColor: 'rgba(59,130,246,0.12)', color: '#2563eb' }}>
-                                                                Primary
+                                                                Default
                                                             </span>
                                                         )}
                                                         {cv.category && (

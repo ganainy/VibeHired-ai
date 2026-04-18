@@ -54,7 +54,7 @@ export const scanAts = async (req: ValidatedRequest, res: Response) => {
             console.log('[ATS] Using legacy tailored CV (draftCvJson) for ATS analysis');
         } else {
             // Fallback to master CV if no tailored CV exists
-            const masterCv = await CV.findOne({ userId: new Types.ObjectId(userId), isPrimary: true });
+            const masterCv = await CV.findOne({ userId: new Types.ObjectId(userId), isDefault: true });
 
             if (masterCv && masterCv.cvJson) {
                 cvJson = masterCv.cvJson;
@@ -65,7 +65,7 @@ export const scanAts = async (req: ValidatedRequest, res: Response) => {
         }
     } else {
         // No job application - use master CV
-        const masterCv = await CV.findOne({ userId: new Types.ObjectId(userId), isPrimary: true });
+        const masterCv = await CV.findOne({ userId: new Types.ObjectId(userId), isDefault: true });
 
         if (masterCv && masterCv.cvJson) {
             cvJson = masterCv.cvJson;
@@ -180,7 +180,7 @@ export const scanAtsForAnalysis = async (req: ValidatedRequest, res: Response) =
             console.log('[ATS] Using legacy tailored CV (draftCvJson) for ATS analysis');
         } else {
             // Fallback to master CV if no tailored CV exists
-            const masterCv = await CV.findOne({ userId: new Types.ObjectId(userId), isPrimary: true });
+            const masterCv = await CV.findOne({ userId: new Types.ObjectId(userId), isDefault: true });
 
             if (masterCv && masterCv.cvJson) {
                 cvJson = masterCv.cvJson;
@@ -191,7 +191,7 @@ export const scanAtsForAnalysis = async (req: ValidatedRequest, res: Response) =
         }
     } else {
         // No job application - use master CV
-        const masterCv = await CV.findOne({ userId: new Types.ObjectId(userId), isPrimary: true });
+        const masterCv = await CV.findOne({ userId: new Types.ObjectId(userId), isDefault: true });
 
         if (masterCv && masterCv.cvJson) {
             cvJson = masterCv.cvJson;

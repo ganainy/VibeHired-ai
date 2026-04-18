@@ -54,7 +54,7 @@ async function getSenderNameForUser(userId: string): Promise<string | undefined>
   const profileName = typeof profile?.name === 'string' ? profile.name.trim() : '';
   if (profileName) return profileName;
 
-  const primaryCv = await CV.findOne({ userId: new mongoose.Types.ObjectId(userId), isPrimary: true }).select('cvJson').lean();
+  const primaryCv = await CV.findOne({ userId: new mongoose.Types.ObjectId(userId), isDefault: true }).select('cvJson').lean();
   const cvName =
     typeof (primaryCv as any)?.cvJson?.basics?.name === 'string'
       ? String((primaryCv as any).cvJson.basics.name).trim()

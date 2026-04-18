@@ -222,18 +222,18 @@ export const useReviewBaseAssets = ({
 
                 const options: { id: string; name: string; data: any }[] = [];
 
-                const primaryCv = branches.find((cv: CVDocument) => cv.isPrimary);
-                if (primaryCv) {
-                    const primaryName = primaryCv.displayName
-                        ? `${primaryCv.displayName} (Primary)`
-                        : primaryCv.filename
-                            ? `${primaryCv.filename} (Primary)`
-                            : 'Primary CV';
-                    options.push({ id: primaryCv._id, name: primaryName, data: primaryCv.cvJson });
+                const defaultCv = branches.find((cv: CVDocument) => cv.isDefault);
+                if (defaultCv) {
+                    const defaultName = defaultCv.displayName
+                        ? `${defaultCv.displayName} (Default)`
+                        : defaultCv.filename
+                            ? `${defaultCv.filename} (Default)`
+                            : 'Default CV';
+                    options.push({ id: defaultCv._id, name: defaultName, data: defaultCv.cvJson });
                 }
 
                 branches.forEach((cv: CVDocument) => {
-                    if (!cv.jobApplicationId && cv._id !== primaryCv?._id) {
+                    if (!cv.jobApplicationId && cv._id !== defaultCv?._id) {
                         const branchName = cv.displayName
                             ? cv.displayName
                             : cv.category

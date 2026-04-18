@@ -94,7 +94,7 @@ export interface UserCvSummary {
     id: string;
     displayName: string;
     category: string | null;
-    isPrimary: boolean;
+    isDefault: boolean;
     templateId: string | null;
     filename: string | null;
     createdAt: string;

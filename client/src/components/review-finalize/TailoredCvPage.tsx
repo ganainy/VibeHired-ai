@@ -220,7 +220,37 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     return (
         <div>
             {hasLocalCv ? (
-                <CvEditorPanel
+                <>
+                    {!isCvTailored && (
+                        <div className="mb-4 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 flex items-start gap-3">
+                            <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0">info</span>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-amber-900 dark:text-amber-200 text-sm">Base CV — not yet tailored</h3>
+                                <p className="text-amber-700 dark:text-amber-300 text-sm mt-0.5">
+                                    This is your base CV copied without AI modifications. Tailor it to match this job's requirements for a stronger application.
+                                </p>
+                            </div>
+                            <Button
+                                onClick={handleGenerateSpecificCv}
+                                disabled={isGeneratingCv}
+                                size="sm"
+                                className="flex-shrink-0 font-semibold whitespace-nowrap"
+                            >
+                                {isGeneratingCv ? (
+                                    <>
+                                        <Spinner size="sm" className="text-white" />
+                                        <span>Tailoring...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined text-white" style={{ fontSize: '16px' }}>auto_awesome</span>
+                                        <span>Tailor for this job</span>
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    )}
+                    <CvEditorPanel
                     data={cvData}
                     onChange={handleCvChange}
                     onSave={handleManualSaveCv}
@@ -258,11 +288,13 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                         }
                     }}
                 >
-                    <TailoringChangesPanel
-                        tailoringChanges={tailoringChanges}
-                        showInlineCvDiff={showInlineCvDiff}
-                        onToggleDiff={setShowInlineCvDiff}
-                    />
+                    {isCvTailored && (
+                        <TailoringChangesPanel
+                            tailoringChanges={tailoringChanges}
+                            showInlineCvDiff={showInlineCvDiff}
+                            onToggleDiff={setShowInlineCvDiff}
+                        />
+                    )}
 
                     <AtsAnalysisCard
                         atsScores={atsScores}
@@ -276,6 +308,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                         onDelete={handleDeleteAts}
                     />
                 </CvEditorPanel>
+                </>
             ) : !hasMasterCv ? (
                 <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
                     <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-zinc-800 mb-6">
@@ -397,42 +430,48 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                         </div>
                     </Card>
 
-                    <div className="mt-8 flex items-center justify-end gap-4">
-                        <Button
-                            onClick={handleUseBaseCvAsIs}
-                            disabled={isGeneratingCv || !hasMasterCv}
-                            variant="secondary"
-                            className="font-semibold shadow-md hover:shadow-lg"
-                        >
-                            {isGeneratingCv ? (
-                                <>
-                                    <Spinner size="sm" className="text-gray-700 dark:text-gray-300" />
-                                    <span>Applying...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="material-symbols-outlined">description</span>
-                                    <span>Use base CV as is</span>
-                                </>
-                            )}
-                        </Button>
-                        <Button
-                            onClick={handleGenerateSpecificCv}
-                            disabled={isGeneratingCv || !hasMasterCv || !tailoredJobDescription}
-                            className="font-semibold shadow-md hover:shadow-lg"
-                        >
-                            {isGeneratingCv ? (
-                                <>
-                                    <Spinner size="sm" className="text-white" />
-                                    <span>Generating...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="material-symbols-outlined text-white">auto_awesome</span>
-                                    <span>Generate Tailored CV</span>
-                                </>
-                            )}
-                        </Button>
+                    <div className="mt-8 space-y-3">
+                        <div className="flex items-center justify-end gap-4">
+                            <Button
+                                onClick={handleUseBaseCvAsIs}
+                                disabled={isGeneratingCv || !hasMasterCv}
+                                variant="secondary"
+                                className="font-semibold shadow-md hover:shadow-lg"
+                            >
+                                {isGeneratingCv ? (
+                                    <>
+                                        <Spinner size="sm" className="text-gray-700 dark:text-gray-300" />
+                                        <span>Applying...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined">description</span>
+                                        <span>Use base CV as is</span>
+                                    </>
+                                )}
+                            </Button>
+                            <Button
+                                onClick={handleGenerateSpecificCv}
+                                disabled={isGeneratingCv || !hasMasterCv || !tailoredJobDescription}
+                                className="font-semibold shadow-md hover:shadow-lg"
+                            >
+                                {isGeneratingCv ? (
+                                    <>
+                                        <Spinner size="sm" className="text-white" />
+                                        <span>Generating...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined text-white">auto_awesome</span>
+                                        <span>Generate Tailored CV</span>
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                        <div className="flex items-center justify-end gap-6 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="max-w-[200px] text-right">Copies your base CV without AI modifications</span>
+                            <span className="max-w-[200px] text-right">AI tailors your CV to match this job</span>
+                        </div>
                     </div>
                 </div>
             )}

@@ -387,8 +387,8 @@ export async function getUserCvLibrary(req: Request, res: Response) {
         }
 
         const cvs = await CV.find({ userId, jobApplicationId: null })
-            .select('displayName category isPrimary templateId filename createdAt updatedAt cvJson originalCvJson extractionMode extractionTimestamp +originalPdf')
-            .sort({ isPrimary: -1, createdAt: -1 })
+            .select('displayName category isDefault templateId filename createdAt updatedAt cvJson originalCvJson extractionMode extractionTimestamp +originalPdf')
+            .sort({ isDefault: -1, createdAt: -1 })
             .lean();
 
         res.json({
@@ -396,7 +396,7 @@ export async function getUserCvLibrary(req: Request, res: Response) {
                 id: cv._id.toString(),
                 displayName: cv.displayName,
                 category: cv.category ?? null,
-                isPrimary: cv.isPrimary,
+                isDefault: cv.isDefault,
                 templateId: cv.templateId ?? null,
                 filename: cv.filename ?? null,
                 createdAt: cv.createdAt,

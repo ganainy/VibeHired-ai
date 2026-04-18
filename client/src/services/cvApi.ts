@@ -2,8 +2,8 @@
 /**
  * Unified CV API Service
  * 
- * Uses the unified CV model with isPrimary flag.
- * All CVs (master and job-specific) are stored in the same collection.
+ * Uses the unified CV model with isDefault flag.
+ * All CVs (base and job-specific) are stored in the same collection.
  */
 import axios from 'axios';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
@@ -44,7 +44,7 @@ export const invalidateCvBranchesCache = (): void => {
 
 export interface CVDocument {
     _id: string;
-    isPrimary?: boolean;
+    isDefault?: boolean;
     category?: string | null;
     displayName?: string;
     jobApplicationId?: string | null;
@@ -121,17 +121,6 @@ export interface CreateBranchRequest {
 export interface CreateBranchResponse {
     message: string;
     branch: CVDocument;
-}
-
-export interface SetPrimaryResponse {
-    message: string;
-    branch: {
-        _id: string;
-        isPrimary: boolean;
-        category: string | null;
-        displayName: string;
-        updatedAt: string;
-    };
 }
 
 export interface RenameBranchRequest {
@@ -286,21 +275,32 @@ export const uploadCvBranch = async (
 };
 
 /**
- * Set a CV as primary
+ * Set a base CV as the default
  */
-export const setCvPrimary = async (cvId: string): Promise<SetPrimaryResponse> => {
+export const setCvDefault = async (cvId: string): Promise<SetDefaultResponse> => {
     try {
         invalidateCvBranchesCache();
-        const response = await axios.patch<SetPrimaryResponse>(`${API_BASE_URL}/${cvId}/set-primary`);
+        const response = await axios.patch<SetDefaultResponse>(`${API_BASE_URL}/${cvId}/set-primary`);
         return response.data;
     } catch (error: any) {
-        console.error('Set CV primary API error:', error);
+        console.error('Set CV as default API error:', error);
         if (axios.isAxiosError(error) && error.response) {
             throw error.response.data;
         }
-        throw { message: 'An unknown error occurred setting CV as primary.' };
+        throw { message: 'An unknown error occurred setting CV as default.' };
     }
 };
+
+export interface SetDefaultResponse {
+    message: string;
+    branch: {
+        _id: string;
+        isDefault: boolean;
+        category: string | null;
+        displayName: string;
+        updatedAt: string;
+    };
+}
 
 /**
  * Rename a CV branch
@@ -702,12 +702,12 @@ export const getEffectiveTemplate = (cv: CVDocument, userDefault?: string): stri
 /**
  * Filter CVs by type (updated for branch system)
  */
-export const filterPrimaryCv = (cvs: CVDocument[]): CVDocument | undefined => {
-    return cvs.find(cv => cv.isPrimary);
+export const filterDefaultCv = (cvs: CVDocument[]): CVDocument | undefined => {
+    return cvs.find(cv => cv.isDefault);
 };
 
 export const filterBranchCvs = (cvs: CVDocument[]): CVDocument[] => {
-    return cvs.filter(cv => !cv.isPrimary);
+    return cvs.filter(cv => !cv.isDefault);
 };
 
 export const filterJobCvs = (cvs: CVDocument[]): CVDocument[] => {

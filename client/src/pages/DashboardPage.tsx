@@ -331,6 +331,7 @@ const DashboardPage: React.FC = () => {
 
   // --- Filtering & Sorting State ---
   const [filterText, setFilterText] = useState<string>('');
+  const [debouncedFilterText, setDebouncedFilterText] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterFavorite, setFilterFavorite] = useState<boolean>(false);
   const [filterHasNotes, setFilterHasNotes] = useState<boolean>(false);
@@ -343,6 +344,15 @@ const DashboardPage: React.FC = () => {
   const fieldMenuRef = useRef<HTMLDivElement>(null);
   const fieldMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const [fieldMenuStyle, setFieldMenuStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedFilterText(filterText), 400);
+    return () => clearTimeout(timer);
+  }, [filterText]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedFilterText]);
 
   // --- Toast State ---
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -584,6 +594,8 @@ const DashboardPage: React.FC = () => {
 
   const hasAnyCv = cvsFetched ? cvs.length > 0 : true; // Assume true until fetched to avoid blocking journey banner
   const hasAnyJob = totalJobs > 0;
+  const everHadJobsRef = useRef(false);
+  if (totalJobs > 0) everHadJobsRef.current = true;
   const hasAnyCoverLetter = useMemo(
     // Note: With server-side pagination, this only checks jobs on the current page.
     // For accuracy, we accept this limitation as cover letter check is primarily for the onboarding journey.
@@ -623,7 +635,7 @@ const DashboardPage: React.FC = () => {
 
         if (filterStatus) params.status = filterStatus;
         if (filterJobType) params.jobType = filterJobType;
-        if (filterText) params.search = filterText;
+        if (debouncedFilterText) params.search = debouncedFilterText;
         if (filterFavorite) params.isFavorite = true;
         if (filterHasNotes) params.hasNotes = true;
         if (filterTags.length > 0) params.tags = filterTags;
@@ -644,7 +656,7 @@ const DashboardPage: React.FC = () => {
       }
     };
     fetchJobs();
-  }, [currentPage, filterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, showOnlyDueFollowUps, sortKey, sortDirection]);
+  }, [currentPage, debouncedFilterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, showOnlyDueFollowUps, sortKey, sortDirection]);
 
   useEffect(() => {
     if (showOnlyDueFollowUps && needsFollowUpCount === 0) {
@@ -1772,7 +1784,7 @@ const DashboardPage: React.FC = () => {
                         <option value="">Select CV (optional)</option>
                         {cvs.filter(cv => !cv.jobApplication).map(cv => (
                           <option key={cv._id} value={cv._id}>
-                            {cv.displayName || cv.category || 'CV'} {cv.isPrimary ? '(Primary)' : ''}
+                            {cv.displayName || cv.category || 'CV'} {cv.isDefault ? '(Default)' : ''}
                           </option>
                         ))}
                       </select>
@@ -2245,7 +2257,7 @@ const DashboardPage: React.FC = () => {
             <div className="overflow-x-auto">
               {jobs.length === 0 ? (
                 <div className="text-center py-12 px-4">
-                  {totalJobs > 0 ? (
+                  {everHadJobsRef.current ? (
                     <>
                       <h3 className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">No matches found</h3>
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -2531,7 +2543,7 @@ const DashboardPage: React.FC = () => {
                       {cvs.map(cv => (
                         <option key={cv._id} value={cv._id}>
                           {cv.displayName || cv.category || 'Unnamed CV'}
-                          {cv.isPrimary ? ' (Primary)' : ''}
+                          {cv.isDefault ? ' (Default)' : ''}
                         </option>
                       ))}
                     </select>

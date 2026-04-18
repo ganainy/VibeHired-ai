@@ -75,7 +75,7 @@ export const MOCK_CV = {
   _id: '__mock_cv__',
   displayName: 'My Professional CV',
   category: 'Base',
-  isPrimary: true,
+  isDefault: true,
   jobApplicationId: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

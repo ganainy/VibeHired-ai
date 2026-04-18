@@ -45,7 +45,7 @@ const CVManagementPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [currentCvData, setCurrentCvData] = useState<JsonResumeSchema | null>(null);
-  const [masterCvId, setMasterCvId] = useState<string | null>(null); // Store master CV's MongoDB ID
+  const [defaultCvId, setDefaultCvId] = useState<string | null>(null);
 
   // Dynamic (AI-driven) editor state  the live editing payload for the active CV
   const [liveCvDescriptor, setLiveCvDescriptor] = useState<CvSectionDescriptor[] | null>(null);
@@ -172,19 +172,19 @@ const CVManagementPage: React.FC = () => {
   // Derived state from allCvs
   // Base CVs: no job association (jobApplicationId is null/undefined)
   const baseCvs = useMemo(() => allCvs.filter(cv => !cv.jobApplicationId), [allCvs]);
-  const masterCv = useMemo(() => allCvs.find(cv => cv.isMasterCv), [allCvs]); // Keep for backward compatibility
-  const jobCvs = useMemo(() => allCvs.filter(cv => !cv.isMasterCv), [allCvs]); // Keep for backward compatibility
+  const defaultCv = useMemo(() => allCvs.find(cv => cv.isDefault), [allCvs]);
+  const jobCvs = useMemo(() => allCvs.filter(cv => !!cv.jobApplicationId), [allCvs]);
   const hasBaseCvs = baseCvs.length > 0;
 
   // Get active CV document
   const activeCv = useMemo(() => {
-    if (!activeCvId) return masterCv || null;
+    if (!activeCvId) return defaultCv || null;
     return allCvs.find(cv => cv._id === activeCvId) || null;
-  }, [activeCvId, allCvs, masterCv]);
+  }, [activeCvId, allCvs, defaultCv]);
 
   // Get active job (for job CVs)
   const activeJob = useMemo(() => {
-    return activeCv?.isMasterCv === false ? activeCv.jobApplication : null;
+    return !!activeCv?.jobApplicationId ? activeCv.jobApplication : null;
   }, [activeCv]);
 
   // Get active CV data (cvJson)
@@ -257,7 +257,7 @@ const CVManagementPage: React.FC = () => {
     if (!activeCvData) return false;
 
     // For master CV
-    if (activeCv?.isMasterCv) {
+    if (activeCv?.isDefault) {
       if (!originalCvDataRef.current) return false;
       try {
         const currentStr = JSON.stringify(activeCvData);
@@ -379,9 +379,8 @@ const CVManagementPage: React.FC = () => {
     setAtsScores(null); // Clear previous scores
 
     try {
-      // Trigger ATS scan
-      // If activeCv is master, pass undefined for jobId
-      const jobId = activeCv?.isMasterCv ? undefined : activeCv?.jobApplicationId || undefined;
+      // If activeCv is a base CV, pass undefined for jobId
+      const jobId = !activeCv?.jobApplicationId ? undefined : activeCv?.jobApplicationId || undefined;
 
       const response = await scanAts(jobId, atsAnalysisId || undefined);
       setAtsAnalysisId(response.analysisId);
@@ -525,7 +524,7 @@ const CVManagementPage: React.FC = () => {
       setAtsScores(null); // Clear while loading
 
       try {
-        if (activeCv?.isMasterCv) {
+        if (activeCv?.isDefault) {
           const atsResponse = await getLatestAts();
           if (atsResponse.atsScores) {
             setAtsScores(atsResponse.atsScores);
@@ -695,7 +694,7 @@ const CVManagementPage: React.FC = () => {
       ));
     }
 
-    if (activeCv?.isMasterCv) {
+    if (activeCv?.isDefault) {
       setCurrentCvData(updatedCv);
     }
 
@@ -756,7 +755,7 @@ const CVManagementPage: React.FC = () => {
       });
       message = response.message || message;
 
-      if (activeCv.isMasterCv) {
+      if (activeCv.isDefault) {
         // Deep copy to ensure proper comparison - update the ref with the exact data that was saved
         originalCvDataRef.current = JSON.parse(JSON.stringify(activeCvData));
         // Trigger recalculation of hasUnsaved changes
@@ -845,12 +844,12 @@ const CVManagementPage: React.FC = () => {
             const nextCv = remaining.find(cv => !cv.jobApplicationId) || remaining[0] || null;
             setActiveCvId(nextCv?._id || null);
           }
-          // If the deleted CV was the master or no CVs remain, clear the legacy
+          // If the deleted CV was the default or no CVs remain, clear the legacy
           // currentCvData fallback so the editor/preview don't ghost the deleted content.
-          const deletedWasMaster = cvId === masterCvId;
-          if (deletedWasMaster || remaining.length === 0) {
+          const deletedWasDefault = cvId === defaultCvId;
+          if (deletedWasDefault || remaining.length === 0) {
             setCurrentCvData(null);
-            if (deletedWasMaster) setMasterCvId(null);
+            if (deletedWasDefault) setDefaultCvId(null);
           }
           setToast({ message: 'CV deleted successfully.', type: 'success' });
         } catch (error: any) {
