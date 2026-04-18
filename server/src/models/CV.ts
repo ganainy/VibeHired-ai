@@ -15,13 +15,11 @@ export interface ICV extends Document {
     _id: Types.ObjectId;
     userId: Types.ObjectId;
     
-    // DEPRECATED: Keep for backward compatibility during migration
-    isMasterCv: boolean;
-    
     // NEW FIELDS: CV Branch System
     isPrimary: boolean;           // One primary CV per user (default)
     category: string | null;       // e.g., "Software Engineering", "Cybersecurity", null = primary
     displayName: string;           // User-friendly name: "My SE Resume", "Cyber CV"
+    cvFormat?: 'json-resume' | 'freeform' | null;
     
     jobApplicationId?: Types.ObjectId | null;
     cvJson?: JsonResumeSchema | null;
@@ -54,6 +52,15 @@ export interface ICV extends Document {
         before?: string;       // Optional before snapshot
         after?: string;        // Optional after snapshot
     }> | null;
+    tailoringDetails?: {
+        extractedKeywords?: string[];
+        summaryRewrite?: string;
+        reorderedExperience?: string[];
+        selectedProjects?: string[];
+        omittedProjects?: string[];
+        competencyGrid?: string[];
+        keywordInjections?: Array<{ original: string; jdKeyword: string; tailored: string }>;
+    } | null;
     version: number;           // For optimistic concurrency in workspace
     snapshotVersion?: number;
     lastEditedAt?: Date;
@@ -70,18 +77,17 @@ const CVSchema = new Schema<ICV>(
             required: true,
             index: true,
         },
-        isMasterCv: {
-            type: Boolean,
-            required: true,
-            default: false,
-            index: true,
-        },
         // NEW FIELDS: CV Branch System
         isPrimary: {
             type: Boolean,
             required: true,
             default: false,
             index: true,
+        },
+        cvFormat: {
+            type: String,
+            enum: ['json-resume', 'freeform'],
+            default: null,
         },
         category: {
             type: String,
@@ -153,6 +159,10 @@ const CVSchema = new Schema<ICV>(
             }],
             default: null,
         },
+        tailoringDetails: {
+            type: Schema.Types.Mixed,
+            default: null,
+        },
         version: {
             type: Number,
             default: 0,
@@ -177,19 +187,6 @@ const CVSchema = new Schema<ICV>(
         timestamps: true,
         toJSON: { virtuals: true },
         toObject: { virtuals: true },
-    }
-);
-
-/**
- * Unique partial index: Ensures only ONE master CV per user
- * Only applies when isMasterCv = true
- */
-CVSchema.index(
-    { userId: 1, isMasterCv: 1 },
-    {
-        unique: true,
-        partialFilterExpression: { isMasterCv: true },
-        name: 'unique_master_cv_per_user',
     }
 );
 
@@ -249,17 +246,10 @@ CVSchema.statics.getBaseCvs = async function (userId: Types.ObjectId | string) {
 };
 
 /**
- * Static method: Get master CV for a user (DEPRECATED - use getPrimaryCv)
- */
-CVSchema.statics.getMasterCv = async function (userId: Types.ObjectId | string) {
-    return this.findOne({ userId, isMasterCv: true });
-};
-
-/**
  * Static method: Get all CVs for a user
  */
 CVSchema.statics.getUserCvs = async function (userId: Types.ObjectId | string) {
-    return this.find({ userId }).sort({ isMasterCv: -1, isPrimary: -1, createdAt: -1 });
+    return this.find({ userId }).sort({ isPrimary: -1, createdAt: -1 });
 };
 
 /**
@@ -316,56 +306,12 @@ CVSchema.statics.setAsPrimary = async function (
     }
 };
 
-/**
- * Static method: Promote a CV to master (DEPRECATED - use setAsPrimary)
- * - Deletes the current master CV (if exists)
- * - Updates the target CV to be the new master
- */
-CVSchema.statics.promoteToMaster = async function (
-    cvId: Types.ObjectId | string,
-    userId: Types.ObjectId | string
-) {
-    const cv = await this.findOne({ _id: cvId, userId });
-    if (!cv) {
-        throw new Error('CV not found or does not belong to user');
-    }
-
-    if (cv.isMasterCv) {
-        throw new Error('CV is already the master CV');
-    }
-
-    // Start a session for transaction
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-        // Delete current master CV
-        await this.deleteOne({ userId, isMasterCv: true }).session(session);
-
-        // Promote the target CV to master
-        cv.isMasterCv = true;
-        cv.jobApplicationId = null;  // Remove job association
-        await cv.save({ session });
-
-        await session.commitTransaction();
-        return cv;
-    } catch (error) {
-        await session.abortTransaction();
-        throw error;
-    } finally {
-        session.endSession();
-    }
-};
-
-// Add static methods to the interface
 export interface ICVModel extends mongoose.Model<ICV> {
     getPrimaryCv(userId: Types.ObjectId | string): Promise<ICV | null>;
     getBaseCvs(userId: Types.ObjectId | string): Promise<ICV[]>;
-    getMasterCv(userId: Types.ObjectId | string): Promise<ICV | null>; // DEPRECATED
     getUserCvs(userId: Types.ObjectId | string): Promise<ICV[]>;
     getJobCv(jobApplicationId: Types.ObjectId | string): Promise<ICV | null>;
     setAsPrimary(cvId: Types.ObjectId | string, userId: Types.ObjectId | string): Promise<ICV>;
-    promoteToMaster(cvId: Types.ObjectId | string, userId: Types.ObjectId | string): Promise<ICV>; // DEPRECATED
 }
 
 const CV = mongoose.model<ICV, ICVModel>('CV', CVSchema);

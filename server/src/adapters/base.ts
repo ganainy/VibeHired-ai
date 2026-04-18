@@ -11,6 +11,8 @@ export interface GenerateContentOptions {
   maxTokens?: number;
   topP?: number;
   topK?: number;
+  modelPreference?: 'fast' | 'quality';
+  debugLabel?: string;
 }
 
 export interface GenerateContentResult {

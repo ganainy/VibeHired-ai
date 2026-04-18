@@ -2,7 +2,7 @@
 /**
  * Unified CV API Service
  * 
- * Uses the new unified CV model with isMasterCv flag.
+ * Uses the unified CV model with isPrimary flag.
  * All CVs (master and job-specific) are stored in the same collection.
  */
 import axios from 'axios';
@@ -31,6 +31,13 @@ const setCvBranchesCache = (mode: 'full' | 'lite', payload: GetCvBranchesRespons
     cvBranchesCacheByMode[mode] = { data: payload, fetchedAt: Date.now() };
 };
 
+export const invalidateCvBranchesCache = (): void => {
+    cvBranchesCacheByMode.full = null;
+    cvBranchesCacheByMode.lite = null;
+    cvBranchesInFlightByMode.full = null;
+    cvBranchesInFlightByMode.lite = null;
+};
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -40,7 +47,6 @@ export interface CVDocument {
     isPrimary?: boolean;
     category?: string | null;
     displayName?: string;
-    isMasterCv?: boolean; // Keep for backward compatibility
     jobApplicationId?: string | null;
     jobApplication?: {
         _id: string;
@@ -241,6 +247,7 @@ export const getCvUsage = async (cvId: string): Promise<GetCvUsageResponse> => {
  */
 export const createCvBranch = async (data: CreateBranchRequest): Promise<CreateBranchResponse> => {
     try {
+        invalidateCvBranchesCache();
         const response = await axios.post<CreateBranchResponse>(`${API_BASE_URL}/create-branch`, data);
         return response.data;
     } catch (error: any) {
@@ -266,6 +273,7 @@ export const uploadCvBranch = async (
     formData.append('displayName', displayName);
 
     try {
+        invalidateCvBranchesCache();
         const response = await axios.post<UploadBranchResponse>(`${API_BASE_URL}/upload-branch`, formData);
         return response.data;
     } catch (error: any) {
@@ -282,6 +290,7 @@ export const uploadCvBranch = async (
  */
 export const setCvPrimary = async (cvId: string): Promise<SetPrimaryResponse> => {
     try {
+        invalidateCvBranchesCache();
         const response = await axios.patch<SetPrimaryResponse>(`${API_BASE_URL}/${cvId}/set-primary`);
         return response.data;
     } catch (error: any) {
@@ -298,6 +307,7 @@ export const setCvPrimary = async (cvId: string): Promise<SetPrimaryResponse> =>
  */
 export const renameCvBranch = async (cvId: string, data: RenameBranchRequest): Promise<RenameBranchResponse> => {
     try {
+        invalidateCvBranchesCache();
         const response = await axios.patch<RenameBranchResponse>(`${API_BASE_URL}/${cvId}/rename`, data);
         return response.data;
     } catch (error: any) {
@@ -420,6 +430,7 @@ export const uploadCV = async (file: File): Promise<UploadCvResponse> => {
     formData.append('cvFile', file);
 
     try {
+        invalidateCvBranchesCache();
         const response = await axios.post<UploadCvResponse>(`${API_BASE_URL}/upload`, formData);
         return response.data;
     } catch (error: any) {
@@ -589,6 +600,7 @@ export const improveSectionDynamic = async (
  */
 export const deleteCv = async (cvId: string): Promise<DeleteCvResponse> => {
     try {
+        invalidateCvBranchesCache();
         const response = await axios.delete<DeleteCvResponse>(`${API_BASE_URL}/${cvId}`);
         return response.data;
     } catch (error: any) {
@@ -694,16 +706,12 @@ export const filterPrimaryCv = (cvs: CVDocument[]): CVDocument | undefined => {
     return cvs.find(cv => cv.isPrimary);
 };
 
-export const filterMasterCv = (cvs: CVDocument[]): CVDocument | undefined => {
-    return cvs.find(cv => cv.isMasterCv);
-};
-
 export const filterBranchCvs = (cvs: CVDocument[]): CVDocument[] => {
-    return cvs.filter(cv => !cv.isPrimary && !cv.isMasterCv);
+    return cvs.filter(cv => !cv.isPrimary);
 };
 
 export const filterJobCvs = (cvs: CVDocument[]): CVDocument[] => {
-    return cvs.filter(cv => !cv.isMasterCv);
+    return cvs.filter(cv => !!cv.jobApplicationId);
 };
 
 /**

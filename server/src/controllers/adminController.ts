@@ -7,7 +7,6 @@ import { getUsageRecord, grantBonusCredits, resetBillingPeriod } from '../servic
 import { PlanType } from '../constants/plans';
 import { stripe } from '../services/stripeService';
 import { generateCvPdfBuffer } from '../utils/pdfGenerator';
-import { CVTemplate } from '../utils/cvTemplates';
 
 // ---------------------------------------------------------------------------
 // Simple in-memory cache for expensive Stripe stats queries (5-minute TTL)
@@ -511,8 +510,8 @@ export async function getUserCvPreview(req: Request, res: Response) {
             return;
         }
 
-        const templateId = template || cv.templateId || 'modern-clean';
-        const pdfBuffer = await generateCvPdfBuffer(snapshot, templateId as CVTemplate);
+        const templateId = template || cv.templateId || 'ats-optimized';
+        const pdfBuffer = await generateCvPdfBuffer(snapshot, { lang: 'en', pageFormat: 'a4' });
         const pdfBase64 = pdfBuffer.toString('base64');
 
         res.json({

@@ -58,9 +58,9 @@ const migrate = async () => {
             needsUpdate = true;
         }
 
-        // Just in case templateId is modern-clean, swap it or remove it
+        // Normalize templateId to ats-optimized
         if (cv.templateId === 'modern-clean' || cv.templateId === 'ats-optimized' || !cv.templateId) {
-            cv.templateId = 'german-latex';
+            cv.templateId = 'ats-optimized';
             needsUpdate = true;
         }
 

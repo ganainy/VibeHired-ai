@@ -1,12 +1,75 @@
 import puppeteer, { Browser, Page } from 'puppeteer';
 import path from 'path';
 import fs from 'fs/promises';
-import { getCvHtml, getCoverLetterHtml } from './pdfTemplates';
-import { getCvTemplateHtml, CVTemplate } from './cvTemplates';
+import { getCoverLetterHtml } from './pdfTemplates';
+import { renderAtsCvHtml, AtsTemplateOptions } from './atsTemplate';
+import { freeformToJsonResume } from './freeformToJsonResume';
+import { detectCvFormat } from './cvFormatDetector';
 import { JsonResumeSchema } from '../types/jsonresume';
 
 // Ensure temp directory exists
 const TEMP_PDF_DIR = path.join(__dirname, '..', '..', 'temp_pdfs');
+
+// Font directory for ATS template
+const FONTS_DIR = path.join(__dirname, '..', 'assets', 'fonts');
+
+/**
+ * Normalize text for ATS compatibility by converting problematic Unicode.
+ * Ported from career-ops generate-pdf.mjs
+ * Only touches body text — preserves CSS, JS, tag attributes, and URLs.
+ */
+function normalizeTextForATS(html: string): { html: string; replacements: Record<string, number> } {
+    const replacements: Record<string, number> = {};
+    const bump = (key: string, n: number) => { replacements[key] = (replacements[key] || 0) + n; };
+
+    const masks: string[] = [];
+    const masked = html.replace(
+        /<(style|script)\b[^>]*>[\s\S]*?<\/\1>/gi,
+        (match) => {
+            const token = `\u0000MASK${masks.length}\u0000`;
+            masks.push(match);
+            return token;
+        }
+    );
+
+    let out = '';
+    let i = 0;
+    while (i < masked.length) {
+        const lt = masked.indexOf('<', i);
+        if (lt === -1) { out += sanitizeText(masked.slice(i)); break; }
+        out += sanitizeText(masked.slice(i, lt));
+        const gt = masked.indexOf('>', lt);
+        if (gt === -1) { out += masked.slice(lt); break; }
+        out += masked.slice(lt, gt + 1);
+        i = gt + 1;
+    }
+
+    const restored = out.replace(/\u0000MASK(\d+)\u0000/g, (_, n) => masks[Number(n)]);
+    return { html: restored, replacements };
+
+    function sanitizeText(text: string): string {
+        if (!text) return text;
+        let t = text;
+        t = t.replace(/\u2014/g, () => { bump('em-dash', 1); return '-'; });
+        t = t.replace(/\u2013/g, () => { bump('en-dash', 1); return '-'; });
+        t = t.replace(/[\u201C\u201D\u201E\u201F]/g, () => { bump('smart-double-quote', 1); return '"'; });
+        t = t.replace(/[\u2018\u2019\u201A\u201B]/g, () => { bump('smart-single-quote', 1); return "'"; });
+        t = t.replace(/\u2026/g, () => { bump('ellipsis', 1); return '...'; });
+        t = t.replace(/[\u200B\u200C\u200D\u2060\uFEFF]/g, () => { bump('zero-width', 1); return ''; });
+        t = t.replace(/\u00A0/g, () => { bump('nbsp', 1); return ' '; });
+        return t;
+    }
+}
+
+/**
+ * Resolve font paths in HTML to absolute file:// URIs so Puppeteer can load them.
+ */
+function resolveFontPaths(html: string, fontsDir: string): string {
+    return html.replace(
+        /url\(['"]?\.\/fonts\//g,
+        `url('file://${fontsDir}/`
+    );
+}
 
 // --- Function to ensure directory exists ---
 const ensureDirExists = async (dirPath: string) => {
@@ -124,61 +187,112 @@ const prepareResumeData = (cvJsonResumeObject: JsonResumeSchema): JsonResumeSche
     return resumeDataForTemplate;
 };
 
+const prepareHtmlForPuppeteer = (htmlContent: string, useAts: boolean = false): string => {
+    let html = htmlContent;
+
+    if (useAts) {
+        // Resolve font paths to absolute file:// URIs
+        html = resolveFontPaths(html, FONTS_DIR);
+
+        // Normalize text for ATS compatibility
+        const normalized = normalizeTextForATS(html);
+        html = normalized.html;
+        const totalReplacements = Object.values(normalized.replacements).reduce((a, b) => a + b, 0);
+        if (totalReplacements > 0) {
+            const breakdown = Object.entries(normalized.replacements).map(([k, v]) => `${k}=${v}`).join(', ');
+            console.log(`ATS normalization: ${totalReplacements} replacements (${breakdown})`);
+        }
+    }
+
+    return html;
+};
+
+const renderWithPuppeteer = async (
+    htmlContent: string,
+    pdfOptions: Parameters<Page['pdf']>[0],
+    useAts: boolean = false
+): Promise<Buffer> => {
+    const page = await (await getBrowser()).newPage();
+    try {
+        const processedHtml = prepareHtmlForPuppeteer(htmlContent, useAts);
+
+        await page.goto('about:blank', { waitUntil: 'networkidle0' });
+        await page.setContent(processedHtml, { waitUntil: 'networkidle0' });
+
+        // Wait for fonts to load (important for ATS template)
+        if (useAts) {
+            await page.evaluate(() => document.fonts.ready);
+        }
+
+        const pdfBuffer = await page.pdf(pdfOptions);
+        return Buffer.from(pdfBuffer);
+    } finally {
+        try { await page.close(); } catch { /* ignore */ }
+    }
+};
+
 // Helper function to generate PDF buffer (used for preview)
 export const generateCvPdfBuffer = async (
     cvJsonResumeObject: JsonResumeSchema,
-    template: CVTemplate = CVTemplate.HARVARD
+    atsOptions?: AtsTemplateOptions
 ): Promise<Buffer> => {
-    console.log(`Attempting to generate CV PDF buffer using template: ${template}...`);
+    console.log(`Attempting to generate CV PDF buffer using ATS template...`);
 
-    let page: Page | undefined;
     const browser = await getBrowser();
 
     try {
         const resumeDataForTemplate = prepareResumeData(cvJsonResumeObject);
 
-        // 1. Generate HTML using our new template function
-        console.log(`Rendering HTML using template: ${template}...`);
-        const htmlContent = getCvTemplateHtml(resumeDataForTemplate, template);
+        // If this is a freeform CV, convert it to JSON Resume structure
+        // so the ATS template can render it correctly.
+        const looksLikeFreeform = (
+            (!resumeDataForTemplate.basics?.name || resumeDataForTemplate.basics.name === 'Applicant') &&
+            (cvJsonResumeObject as any).__vh_tags
+        ) || detectCvFormat(cvJsonResumeObject as Record<string, any>) === 'freeform';
+
+        let templateInput = resumeDataForTemplate;
+        if (looksLikeFreeform) {
+            console.log('Freeform CV detected in PDF generator — converting to JSON Resume structure');
+            templateInput = freeformToJsonResume(cvJsonResumeObject as Record<string, any>);
+            // Ensure basics has minimum content
+            if (!templateInput.basics || Object.keys(templateInput.basics).length === 0) {
+                templateInput.basics = { name: 'Applicant', profiles: [] };
+            }
+        }
+
+        let htmlContent: string;
+        if (atsOptions) {
+            htmlContent = renderAtsCvHtml(templateInput, atsOptions);
+        } else {
+            htmlContent = renderAtsCvHtml(templateInput, { lang: 'en', pageFormat: 'a4' });
+        }
 
         if (!htmlContent || typeof htmlContent !== 'string' || htmlContent.trim().length < 100) {
             throw new Error(`Internal template rendered empty or invalid HTML.`);
         }
         console.log(`HTML rendered successfully`);
 
-        // 2. Generate PDF using Puppeteer and return buffer
-        console.log(`Generating PDF buffer...`);
-        page = await browser.newPage();
-        await page.goto('about:blank', { waitUntil: 'networkidle0' });
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
         const pdfOptions = {
-            format: 'A4' as const,
+                format: (atsOptions?.pageFormat === 'letter' ? 'Letter' : 'A4') as 'Letter' | 'A4',
             printBackground: true,
-            margin: { top: '25px', right: '25px', bottom: '25px', left: '25px' },
+            margin: { top: '0.6in', right: '0.6in', bottom: '0.6in', left: '0.6in' },
         };
-        const pdfUint8Array = await page.pdf(pdfOptions);
-        // Convert Uint8Array to Buffer
-        const pdfBuffer = Buffer.from(pdfUint8Array);
-        console.log(`CV PDF buffer generated successfully`);
-        return pdfBuffer;
+
+        return renderWithPuppeteer(htmlContent, pdfOptions, !!atsOptions);
 
     } catch (error: any) {
         console.error(`Error generating CV PDF buffer:`, error);
         throw new Error(`CV PDF generation failed: ${error.message || error}`);
-    } finally {
-        if (page) {
-            try { await page.close(); } catch (closeError) { console.error(`Error closing page:`, closeError); }
-        }
     }
 };
 
 export const generateCvPdfFromJsonResume = async (
     cvJsonResumeObject: JsonResumeSchema,
     filenamePrefix: string,
-    template: CVTemplate = CVTemplate.HARVARD
+    atsOptions?: AtsTemplateOptions
 ): Promise<string> => {
     await ensureDirExists(TEMP_PDF_DIR);
-    console.log(`Attempting to generate CV PDF using template: ${template}...`);
+    console.log(`Attempting to generate CV PDF using ATS template...`);
 
     const browser = await getBrowser();
     const uniqueFilename = `${filenamePrefix}.pdf`;
@@ -187,28 +301,54 @@ export const generateCvPdfFromJsonResume = async (
     try {
         const resumeDataForTemplate = prepareResumeData(cvJsonResumeObject);
 
-        // 1. Generate HTML using our new template function
-        console.log(`Rendering HTML using template: ${template}...`);
-        const htmlContent = getCvTemplateHtml(resumeDataForTemplate, template);
+        const looksLikeFreeform = (
+            (!resumeDataForTemplate.basics?.name || resumeDataForTemplate.basics.name === 'Applicant') &&
+            (cvJsonResumeObject as any).__vh_tags
+        ) || detectCvFormat(cvJsonResumeObject as Record<string, any>) === 'freeform';
+
+        let templateInput = resumeDataForTemplate;
+        if (looksLikeFreeform) {
+            console.log('Freeform CV detected in PDF generator — converting to JSON Resume structure');
+            templateInput = freeformToJsonResume(cvJsonResumeObject as Record<string, any>);
+            if (!templateInput.basics || Object.keys(templateInput.basics).length === 0) {
+                templateInput.basics = { name: 'Applicant', profiles: [] };
+            }
+        }
+
+        let htmlContent: string;
+        if (atsOptions) {
+            htmlContent = renderAtsCvHtml(templateInput, atsOptions);
+        } else {
+            htmlContent = renderAtsCvHtml(templateInput, { lang: 'en', pageFormat: 'a4' });
+        }
 
         if (!htmlContent || typeof htmlContent !== 'string' || htmlContent.trim().length < 100) {
             throw new Error(`Internal template rendered empty or invalid HTML.`);
         }
         console.log(`HTML rendered successfully`);
 
-        // 2. Generate PDF using Puppeteer
-        console.log(`Generating PDF for: ${uniqueFilename}`);
         const page = await browser.newPage();
-        await page.goto('about:blank', { waitUntil: 'networkidle0' });
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-        const pdfOptions = {
-            path: filePath,
-            format: 'A4' as const,
-            printBackground: true,
-            margin: { top: '25px', right: '25px', bottom: '25px', left: '25px' },
-        };
-        await page.pdf(pdfOptions);
-        await page.close();
+        try {
+            const processedHtml = prepareHtmlForPuppeteer(htmlContent, !!atsOptions);
+
+            await page.goto('about:blank', { waitUntil: 'networkidle0' });
+            await page.setContent(processedHtml, { waitUntil: 'networkidle0' });
+
+            if (atsOptions) {
+                await page.evaluate(() => document.fonts.ready);
+            }
+
+            const pdfOptions = {
+                path: filePath,
+            format: (atsOptions?.pageFormat === 'letter' ? 'Letter' : 'A4') as 'Letter' | 'A4',
+                printBackground: true,
+                margin: { top: '0.6in', right: '0.6in', bottom: '0.6in', left: '0.6in' },
+            };
+            await page.pdf(pdfOptions);
+        } finally {
+            try { await page.close(); } catch { /* ignore */ }
+        }
+
         console.log(`CV PDF saved temporarily to: ${filePath}`);
         return uniqueFilename;
 

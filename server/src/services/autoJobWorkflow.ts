@@ -37,7 +37,7 @@ const getUserResumeText = async (userId: string): Promise<string> => {
         // Fetch master CV from unified CV model
         const masterCv = await CV.findOne({
             userId: new mongoose.Types.ObjectId(userId),
-            isMasterCv: true
+            isPrimary: true
         });
 
         if (!masterCv || !masterCv.cvJson) {

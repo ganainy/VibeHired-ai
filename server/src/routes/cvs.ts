@@ -17,11 +17,11 @@ import { generateContentWithFile } from '../utils/aiService';
 import { generateDescriptorFromJson, improveDynamicSectionWithAi } from '../services/generatorService';
 import { normalizeFreeformCvTags } from '../utils/vhTagNormalizer';
 import { normalizeCvFieldNames } from '../utils/cvNormalizer';
+import { detectCvFormat } from '../utils/cvFormatDetector';
 import { GoogleGenerativeAIError } from '@google/generative-ai';
 import { NotFoundError, ValidationError } from '../utils/errors/AppError';
 import { JsonResumeSchema } from '../types/jsonresume';
 import { generateCvPdfBuffer } from '../utils/pdfGenerator';
-import { CVTemplate } from '../utils/cvTemplates';
 import { asyncHandler } from '../utils/asyncHandler';
 import fs from 'fs';
 import path from 'path';
@@ -319,7 +319,6 @@ router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
         branches: branches.map(cv => ({
             _id: cv._id,
             isPrimary: cv.isPrimary,
-            isMasterCv: cv.isPrimary, // For backward compatibility
             category: cv.category,
             displayName: cv.displayName,
             jobApplicationId: cv.jobApplicationId,
@@ -396,7 +395,6 @@ router.get('/master', asyncHandler(async (req: Request, res: Response) => {
         cv: {
             _id: baseCv._id,
             isPrimary: baseCv.isPrimary,
-            isMasterCv: true, // Keep for backward compatibility
             cvJson: baseCv.cvJson,
             cvDescriptor: baseCv.cvDescriptor ?? null,
             cvData: baseCv.cvData ?? null,
@@ -524,7 +522,7 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
     res.json({
         cv: {
             _id: cv._id,
-            isMasterCv: cv.isMasterCv,
+            isPrimary: cv.isPrimary,
             jobApplicationId: cv.jobApplicationId,
             jobApplication: (cv as any).jobApplication || null,
             cvJson: cv.cvJson,
@@ -606,7 +604,7 @@ router.get('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
     res.json({
         cv: {
             _id: cv._id,
-            isMasterCv: cv.isMasterCv,
+            isPrimary: cv.isPrimary,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
             cvDescriptor: cv.cvDescriptor ?? null,
@@ -642,6 +640,7 @@ router.post(
         console.log(`Processing CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
+        const detectedFormat = detectCvFormat(cvJsonResume as Record<string, any>);
         const normalizedCvJson = normalizeCvFieldNames(cvJsonResume);
         const originalCvJson = JSON.parse(JSON.stringify(normalizedCvJson));
 
@@ -656,6 +655,7 @@ router.post(
             category: 'General',
             displayName: req.file.originalname.replace(/\.[^.]+$/, '') || 'Uploaded CV',
             cvJson: normalizedCvJson,
+            cvFormat: detectedFormat,
             originalCvJson,
             extractionMode: 'strict',
             extractionTimestamp: new Date(),
@@ -738,7 +738,6 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
 
     const newCv = await CV.create({
         userId,
-        isMasterCv: false,
         isPrimary: false,
         displayName: `Job CV - ${job.jobTitle} at ${job.companyName}`,
         jobApplicationId: new mongoose.Types.ObjectId(jobId),
@@ -753,7 +752,6 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
         message: 'Job CV created successfully.',
         cv: {
             _id: newCv._id,
-            isMasterCv: false,
             jobApplicationId: newCv.jobApplicationId,
             cvJson: newCv.cvJson,
             templateId: newCv.templateId,
@@ -790,6 +788,7 @@ router.post(
         console.log(`Processing branch CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
+        const detectedFormat = detectCvFormat(cvJsonResume as Record<string, any>);
         const normalizedCvJson = normalizeCvFieldNames(cvJsonResume);
         const originalCvJson = JSON.parse(JSON.stringify(normalizedCvJson));
 
@@ -802,6 +801,7 @@ router.post(
             category: category.trim(),
             displayName: displayName.trim(),
             cvJson: normalizedCvJson,
+            cvFormat: detectedFormat,
             originalCvJson,
             extractionMode: 'strict',
             extractionTimestamp: new Date(),
@@ -872,7 +872,6 @@ router.post('/job/:jobId/from-base', asyncHandler(async (req: Request, res: Resp
     // Create fully independent copy
     const jobCv = await CV.create({
         userId,
-        isMasterCv: false,
         isPrimary: false,
         displayName: `Job CV – ${job.jobTitle} at ${job.companyName}`,
         jobApplicationId: new mongoose.Types.ObjectId(jobId),
@@ -933,7 +932,6 @@ router.post(
         // Store raw file only — no AI parsing
         const jobCv = await CV.create({
             userId,
-            isMasterCv: false,
             isPrimary: false,
             displayName: `Job CV – ${job.jobTitle} at ${job.companyName}`,
             jobApplicationId: new mongoose.Types.ObjectId(jobId),
@@ -1023,7 +1021,7 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
         message: 'CV updated successfully.',
         cv: {
             _id: cv._id,
-            isMasterCv: cv.isMasterCv,
+            isPrimary: cv.isPrimary,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
@@ -1099,7 +1097,7 @@ router.post('/:id/reset-from-source', asyncHandler(async (req: Request, res: Res
         message: 'CV has been reset to the original extracted version.',
         cv: {
             _id: cv._id,
-            isMasterCv: cv.isMasterCv,
+            isPrimary: cv.isPrimary,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
@@ -1136,7 +1134,7 @@ router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
     console.log(`CV ${cvId} deleted for user ${req.user!.email}`);
 
     res.json({
-        message: cv.isMasterCv ? 'Master CV deleted successfully.' : 'Job CV deleted successfully.',
+        message: 'CV deleted successfully.',
         deletedCvId: cvId,
     });
 }));
@@ -1153,7 +1151,7 @@ router.post('/:id/promote', asyncHandler(async (req: Request, res: Response) => 
         throw new ValidationError('Invalid CV ID');
     }
 
-    const promotedCv = await CV.promoteToMaster(cvId, userId);
+    const promotedCv = await CV.setAsPrimary(cvId, userId);
 
     console.log(`CV ${cvId} promoted to primary for user ${req.user!.email}`);
 
@@ -1161,7 +1159,7 @@ router.post('/:id/promote', asyncHandler(async (req: Request, res: Response) => 
         message: 'CV promoted to primary successfully.',
         cv: {
             _id: promotedCv._id,
-            isMasterCv: true,
+            isPrimary: promotedCv.isPrimary,
             cvJson: promotedCv.cvJson,
             templateId: promotedCv.templateId,
             isStarred: promotedCv.isStarred ?? false,
@@ -1188,14 +1186,14 @@ router.post('/:id/preview', asyncHandler(async (req: Request, res: Response) => 
     }
 
     const { template } = req.body;
-    const templateId = template || cv.templateId || 'modern-clean';
+    const templateId = template || cv.templateId || 'ats-optimized';
 
     if (!cv.cvJson) {
         return res.status(400).json({ message: 'This CV has no JSON data to generate a PDF preview from.' });
     }
 
     try {
-        const pdfBuffer = await generateCvPdfBuffer(cv.cvJson, templateId as CVTemplate);
+        const pdfBuffer = await generateCvPdfBuffer(cv.cvJson, { lang: 'en', pageFormat: 'a4' });
         const pdfBase64 = pdfBuffer.toString('base64');
 
         res.json({

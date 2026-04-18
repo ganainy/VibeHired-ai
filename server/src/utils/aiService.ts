@@ -14,14 +14,21 @@ function getMasterApiKey(): string {
   return key;
 }
 
-// Cache the resolved model once at startup — avoids a network round-trip per request
-let _cachedModel: string | null = null;
+// Cache the resolved models once at startup
+let _cachedFastModel: string | null = null;
+let _cachedQualityModel: string | null = null;
 
-async function getResolvedModel(apiKey: string): Promise<string> {
-  if (!_cachedModel) {
-    _cachedModel = await resolveBestGeminiModel(apiKey, 'fast');
+async function getResolvedModel(apiKey: string, preference: 'fast' | 'quality' = 'fast'): Promise<string> {
+  if (preference === 'quality') {
+    if (!_cachedQualityModel) {
+      _cachedQualityModel = await resolveBestGeminiModel(apiKey, 'quality');
+    }
+    return _cachedQualityModel;
   }
-  return _cachedModel;
+  if (!_cachedFastModel) {
+    _cachedFastModel = await resolveBestGeminiModel(apiKey, 'fast');
+  }
+  return _cachedFastModel;
 }
 
 /**
@@ -30,10 +37,13 @@ async function getResolvedModel(apiKey: string): Promise<string> {
 export async function getModelAdapter(
   _userId: string,
   modelName?: string,
-  _providerOverride?: string
+  _providerOverride?: string,
+  preference?: 'fast' | 'quality'
 ): Promise<ModelAdapter> {
   const apiKey = getMasterApiKey();
-  const selectedModel = modelName || await getResolvedModel(apiKey);
+  const selectedModel = modelName || await getResolvedModel(apiKey, preference);
+
+  console.log(`[aiService] Model adapter: ${selectedModel} (preference: ${preference || 'fast'})`);
 
   return new GeminiAdapter(
     apiKey,
@@ -73,10 +83,10 @@ export async function generateContentWithFile(
 export async function generateStructuredResponse<T>(
   userId: string,
   prompt: string,
-  options?: GenerateContentOptions & { responseJsonSchema?: object },
+  options?: GenerateContentOptions & { responseJsonSchema?: object; modelPreference?: 'fast' | 'quality' },
   _providerOverride?: string
 ): Promise<T> {
-  const adapter = await getModelAdapter(userId);
+  const adapter = await getModelAdapter(userId, undefined, undefined, options?.modelPreference);
   return adapter.generateStructuredResponse<T>(prompt, options);
 }
 

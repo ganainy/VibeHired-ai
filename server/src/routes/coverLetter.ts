@@ -62,7 +62,7 @@ const generateCoverLetterHandler: RequestHandler = async (req, res) => {
             baseCvJson = req.body.baseCvData;
         } else {
             // Fetch Base CV from Unified CV Model
-            const masterCv = await CV.findOne({ userId, isMasterCv: true });
+            const masterCv = await CV.findOne({ userId, isPrimary: true });
             if (masterCv && masterCv.cvJson) {
                 baseCvJson = masterCv.cvJson;
             }

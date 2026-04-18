@@ -169,7 +169,7 @@ export class GeminiAdapter extends ModelAdapter {
 
   async generateStructuredResponse<T>(
     prompt: string,
-    options?: GenerateContentOptions & { responseJsonSchema?: object }
+    options?: GenerateContentOptions & { responseJsonSchema?: object; debugLabel?: string }
   ): Promise<T> {
     try {
       const generationConfig: any = {};
@@ -178,7 +178,6 @@ export class GeminiAdapter extends ModelAdapter {
       if (options?.topP !== undefined) generationConfig.topP = options.topP;
       if (options?.topK !== undefined) generationConfig.topK = options.topK;
 
-      // When a schema is provided, enforce it at the API level
       const hasSchema = !!options?.responseJsonSchema;
       if (hasSchema) {
         generationConfig.responseMimeType = 'application/json';
@@ -197,14 +196,63 @@ export class GeminiAdapter extends ModelAdapter {
         throw new Error(`AI content generation failed or was blocked: ${blockReason || 'No content generated'}`);
       }
 
-      // When schema is enforced, the response is guaranteed valid JSON
-      const text = response.text();
+      // Log finish reason and safety ratings BEFORE parsing
+      const candidate = response.candidates[0];
+      const finishReason = candidate.finishReason;
+      const safetyRatings = candidate.safetyRatings;
 
-      if (hasSchema) {
-        return JSON.parse(text) as T;
+      if (finishReason && finishReason !== 'STOP') {
+        console.warn(`⚠️  Gemini finish reason: ${finishReason}`);
+        console.warn(`   Safety ratings: ${JSON.stringify(safetyRatings)}`);
       }
 
-      // Fallback: legacy parsing for non-schema calls
+      const text = response.text();
+
+      // Always log raw response details when debugLabel is provided
+      if (options?.debugLabel) {
+        console.log(`=== RAW RESPONSE [${options.debugLabel}] ===`);
+        console.log(`  Model: ${this.modelName}`);
+        console.log(`  Length: ${text.length} chars`);
+        console.log(`  Finish reason: ${finishReason}`);
+        console.log(`  Safety: ${JSON.stringify(safetyRatings)}`);
+        console.log(`  First 500 chars: ${text.substring(0, 500)}`);
+        if (text.length > 500) {
+          console.log(`  Last 200 chars: ${text.slice(-200)}`);
+        }
+        const partsInfo = candidate.content?.parts?.map((p: any) => ({ text: (p.text || '').substring(0, 200) }));
+        console.log(`  Full candidate content parts: ${JSON.stringify(partsInfo)}`);
+        console.log(`=== END RAW RESPONSE [${options.debugLabel}] ===`);
+      }
+
+      // Guard against empty/suspiciously short responses
+      if (text.trim().length < 10) {
+        console.error('=== GEMINI EMPTY/SUSPICIOUS RESPONSE ===');
+        console.error(`Response length: ${text.length} chars`);
+        console.error(`Finish reason: ${finishReason}`);
+        console.error(`Full candidate: ${JSON.stringify(candidate, null, 2).substring(0, 1000)}`);
+        console.error('=== END ===');
+        throw new Error(`Gemini returned empty or suspiciously short response (${text.length} chars, finish: ${finishReason})`);
+      }
+
+      if (hasSchema) {
+        let cleanText = text.trim();
+        // Strip markdown fences if Gemini wraps JSON despite schema
+        if (cleanText.startsWith('```')) {
+          cleanText = cleanText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+        }
+        try {
+          return JSON.parse(cleanText) as T;
+        } catch (err: any) {
+          console.error('=== GEMINI RAW RESPONSE (truncated or malformed) ===');
+          console.error(`Response length: ${cleanText.length} chars`);
+          console.error(`Finish reason: ${finishReason}`);
+          console.error(`Last 200 chars: ${cleanText.slice(-200)}`);
+          console.error(`Full response: ${cleanText.substring(0, 2000)}${cleanText.length > 2000 ? '...' : ''}`);
+          console.error('=== END RAW RESPONSE ===');
+          throw new Error(`Failed to parse Gemini JSON: ${err.message}`);
+        }
+      }
+
       return parseJsonResponse<T>(text);
     } catch (error: any) {
       console.error('Error during Gemini structured response generation:', error);

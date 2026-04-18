@@ -58,7 +58,6 @@ async function autoCreateJobCvCopy(
     if (!fallbackCv) return;
     await CV.create({
       userId,
-      isMasterCv: false,
       isPrimary: false,
       displayName: `Job CV (auto-copy)`,
       jobApplicationId: new mongoose.Types.ObjectId(jobId),
@@ -72,7 +71,6 @@ async function autoCreateJobCvCopy(
 
   await CV.create({
     userId,
-    isMasterCv: false,
     isPrimary: false,
     displayName: `Job CV (copy of ${sourceCv.displayName})`,
     jobApplicationId: new mongoose.Types.ObjectId(jobId),
