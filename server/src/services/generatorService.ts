@@ -208,51 +208,6 @@ Output should be:
 };
 
 /**
- * Applies one or more ATS improvement suggestions to a full CV using AI in a single pass
- */
-export const applyAtsSuggestionWithAi = async (
-    userId: string,
-    cvJson: any,
-    suggestions: string[],
-    jobDescription?: string
-): Promise<any> => {
-    console.log(`Applying ${suggestions.length} ATS suggestion(s): ${suggestions[0].substring(0, 60)}...`);
-
-    const numberedList = suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n');
-
-    const prompt = `You are a professional CV optimization expert. Apply ALL of the following ATS improvements to the CV in a single pass.
-
-Current CV (JSON Resume format):
-${JSON.stringify(cvJson, null, 2)}
-
-${jobDescription ? `Job Description:\n${jobDescription}\n\n` : ''}ATS Improvements to Apply:
-${numberedList}
-
-Instructions:
-1. Apply ALL improvements listed above. Do not skip any.
-2. For each improvement, make the minimal edit necessary to address it.
-3. If an improvement mentions adding a missing keyword or skill, add it naturally to the most relevant section (e.g. skills array or a bullet point highlight).
-4. If it is about rewording, rewrite only the affected sentence/bullet.
-5. Maintain the EXACT same JSON Resume schema structure as the input — same keys, same arrays.
-6. Preserve all dates, company names, and factual information.
-7. Do NOT invent experience that does not exist.
-8. Do NOT apply the same change twice if multiple suggestions address the same area.
-
-Return ONLY the complete updated CV as a valid JSON object with the same structure as the input.`;
-
-    try {
-        const updatedCv = await generateStructuredResponse<any>(userId, prompt);
-        if (!updatedCv || typeof updatedCv !== 'object') {
-            throw new Error('AI did not return valid CV data');
-        }
-        return updatedCv;
-    } catch (error: any) {
-        console.error('Error applying ATS suggestions:', error);
-        throw new Error(`Failed to apply ATS suggestions: ${error.message}`);
-    }
-};
-
-/**
  * Generate customized resume HTML for a specific job
  * Used by auto-job workflow
  */

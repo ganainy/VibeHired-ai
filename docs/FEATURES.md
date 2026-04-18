@@ -270,7 +270,7 @@ No AI features — analytics are computed from stored job application data.
 |---|---|
 | **Route** | `/jobs/:jobId/review/:tab?` |
 | **Auth required** | Yes |
-| **Screenshots** | `demo/custom-job-cv.png`, `demo/custom-job-coverletter.png`, `demo/ats-analysis.png`, `demo/materials-tab.png` |
+| **Screenshots** | `demo/custom-job-cv.png`, `demo/custom-job-coverletter.png`, `demo/materials-tab.png` |
 | **Component** | `ReviewFinalizePage.tsx` |
 
 **Tabs**
@@ -279,7 +279,6 @@ No AI features — analytics are computed from stored job application data.
 |---|---|
 | `cv` | AI-generated CV draft editor + template selection + PDF download |
 | `cover-letter` | AI-generated cover letter editor (`CoverLetterEditor`) + format picker (`EmailFormatModal`) |
-| `ats` | ATS scoring panel — score card + keyword breakdown + improvement suggestions |
 | `chat` | Per-job AI chat window (`JobChatWindow`) |
 | `materials` | Interview prep material upload and management panel (`InterviewMaterialsPanel`) |
 

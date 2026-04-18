@@ -48,11 +48,6 @@ Access the application in your browser (`http://localhost:5173`) and perform the
    - *Verification:* The backend should pick up your *latest edits* (which are now in the `CV` model) and generate the PDF.
    - Download the PDF and check if your edits are there.
 
-### QA 3: ATS Scan
-1. In **Review & Finalize** page, click the **ATS Analysis** tab (or "Scan ATS" button).
-2. Run a scan.
-   - *Verification:* The ATS score should reflect the *current* CV content shown in the editor.
-
 ### QA 4: Job CV Card (Jobs List)
 1. Go to **Jobs Board**.
 2. Click **Expand & Edit** on a job card.

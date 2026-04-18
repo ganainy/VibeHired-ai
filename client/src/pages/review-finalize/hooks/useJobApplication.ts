@@ -34,10 +34,6 @@ export const useJobApplication = (jobId: string | undefined) => {
             if (data.reminders) {
                 // Reminders state handled by useReminders hook
             }
-
-            if (data.appliedAtsSuggestions && data.appliedAtsSuggestions.length > 0) {
-                // ATS state handled by useAtsAnalysis hook
-            }
         } catch (error: any) {
             console.error('Error fetching job application:', error);
             setError(error.response?.data instanceof Blob

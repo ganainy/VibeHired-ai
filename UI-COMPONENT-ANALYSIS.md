@@ -979,11 +979,6 @@ interface CardConfig<T> {
 - [JobCvCard.tsx](client/src/components/jobs/JobCvCard.tsx)
 - [JobStatusBadge.tsx](client/src/components/jobs/JobStatusBadge.tsx)
 
-**ATS Analysis:**
-- [AtsScoreCard.tsx](client/src/components/ats/AtsScoreCard.tsx)
-- [AtsReportView.tsx](client/src/components/ats/AtsReportView.tsx)
-- [AtsInlinePanel.tsx](client/src/components/ats/AtsInlinePanel.tsx)
-
 **Common Components:**
 - [ConfirmModal.tsx](client/src/components/common/ConfirmModal.tsx)
 - [TableOrCards.tsx](client/src/components/common/TableOrCards.tsx)

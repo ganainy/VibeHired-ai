@@ -13,9 +13,9 @@ import CV, { ICV } from '../models/CV'; // Import Unified CV Model
 import { generateCvPdfFromJsonResume, generateCoverLetterPdf } from '../utils/pdfGenerator'; // Import PDF generators
 import { validateRequest, ValidatedRequest } from '../middleware/validateRequest';
 import { usageLimiter } from '../middleware/usageLimiter';
-import { generateDocumentsBodySchema, improveSectionBodySchema, applyAtsSuggestionBodySchema } from '../validations/generatorSchemas';
+import { generateDocumentsBodySchema, improveSectionBodySchema } from '../validations/generatorSchemas';
 import { jobIdParamSchema, filenameParamSchema } from '../validations/commonSchemas';
-import { improveCvSection, applyAtsSuggestion } from '../controllers/generatorController';
+import { improveCvSection } from '../controllers/generatorController';
 import { asyncHandler } from '../utils/asyncHandler';
 import { generateDescriptorFromJson } from '../services/generatorService';
 import { CvSectionDescriptor } from '../types/cvDescriptor';
@@ -490,6 +490,8 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         jobDescription?: string;
         customInstructions?: string;
         maxOutputTokens?: number;
+        matchAddress?: boolean;
+        showChanges?: boolean;
     };
 
     const baseCvDataOverride = requestBody?.baseCvData;
@@ -497,6 +499,8 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
     const jobDescriptionOverride = requestBody?.jobDescription;
     const customInstructionsOverride = requestBody?.customInstructions;
     const maxOutputTokens = requestBody?.maxOutputTokens;
+    const matchAddress = requestBody?.matchAddress ?? false;
+    const showChanges = requestBody?.showChanges ?? true;
 
     const languageName = requestedLanguage === 'de' ? 'German' : 'English';
     const userId = user._id.toString();
@@ -635,6 +639,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             job.jobDescriptionText,
             languageName,
             isFreeformCv,
+            showChanges,
         );
 
         const tailoredCvJson = pipelineResult.tailoredCv;
@@ -700,6 +705,41 @@ let finalCvJson = tailoredCvJson;
         }
         // Tag enrichment runs on all CVs
         normalizeFreeformCvTags(finalCvJson);
+
+        // Address matching: replace CV address with job location when enabled
+        if (matchAddress) {
+            const jobLocation = job.extractedData?.location;
+            if (jobLocation) {
+                if (!isFreeformCv && finalCvJson.basics) {
+                    console.log(`  → Matching address to job location: "${jobLocation}"`);
+                    finalCvJson.basics.location = {
+                        ...(finalCvJson.basics.location || {}),
+                        address: jobLocation,
+                    };
+                } else if (isFreeformCv) {
+                    // For freeform CVs, look for a section containing location/address info
+                    const headerKey = Object.keys(finalCvJson).find(k =>
+                        /header|personal|contact|info/i.test(k) && k !== '__vh_tags'
+                    );
+                    if (headerKey && Array.isArray(finalCvJson[headerKey])) {
+                        const headerArr = finalCvJson[headerKey] as any[];
+                        const locationEntry = headerArr.find((e: any) =>
+                            e && typeof e === 'object' && (
+                                e.__vh_field_type === 'location' ||
+                                /location|address|stadt|ort|wohnort/i.test(e.category || '') ||
+                                /location|address|stadt|ort|wohnort/i.test(e.content || '')
+                            )
+                        );
+                        if (locationEntry) {
+                            console.log(`  → Matching freeform address to job location: "${jobLocation}"`);
+                            locationEntry.content = jobLocation;
+                        }
+                    }
+                }
+            } else {
+                console.log('  → matchAddress enabled but no job location found in extractedData');
+            }
+        }
 
         // Debug: Log final CV structure
         console.log('=== Final CV structure before saving ===');
@@ -797,7 +837,6 @@ let finalCvJson = tailoredCvJson;
 };
 
 // === ROUTE DEFINITIONS (Order Matters!) ===
-router.post('/apply-ats-suggestion', usageLimiter('cvGeneration'), validateRequest({ body: applyAtsSuggestionBodySchema }), asyncHandler(applyAtsSuggestion)); // Apply ATS suggestion to CV
 router.post('/improve-section', usageLimiter('cvGeneration'), validateRequest({ body: improveSectionBodySchema }), asyncHandler(improveCvSection)); // Improve CV section
 router.post('/:jobId/render-pdf', validateRequest({ params: jobIdParamSchema }), renderFinalPdfsHandler); // Render both PDFs
 router.post('/:jobId/render-cv-pdf', validateRequest({ params: jobIdParamSchema }), renderCvPdfHandler); // Render CV PDF only

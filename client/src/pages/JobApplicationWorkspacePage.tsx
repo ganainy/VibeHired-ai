@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getJobById, updateJob, JobApplication, deleteJob, IReminder } from '../services/jobApi';
 import { getGoogleCalendarStatus } from '../services/googleCalendarApi';
-import { improveSection, applyAtsSuggestion } from '../services/generatorApi';
+import { improveSection } from '../services/generatorApi';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
 // import { downloadCvAsPdf } from '../services/pdfService'; // Removed as we use react-to-print now
 import { useAuth } from '../context/AuthContext';
@@ -33,7 +33,6 @@ import RecommendationModal from '../components/review-finalize/RecommendationMod
 import GenerationProgressModal from '../components/review-finalize/GenerationProgressModal';
 import { useReviewTabState } from '../hooks/useReviewTabState';
 import { formatDateForInput } from './review-finalize/jobDetailsFormUtils';
-import { useAtsWorkflow } from './review-finalize/hooks/useAtsWorkflow';
 import { useReviewCvPersistence } from './review-finalize/hooks/useReviewCvPersistence';
 import { useReviewCoverLetterPdf } from './review-finalize/hooks/useReviewCoverLetterPdf';
 import { useReviewGeneration } from './review-finalize/hooks/useReviewGeneration';
@@ -68,8 +67,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
 
     const [hasMasterCv, setHasMasterCv] = useState<boolean>(false);
     const [toast, setToast] = useState<ToastState | null>(null);
-    const [isApplyingAtsBatch, setIsApplyingAtsBatch] = useState<boolean>(false);
-    const [appliedAtsSuggestions, setAppliedAtsSuggestions] = useState<string[]>([]);
     // --- AI Application Advice State ---
     const [recommendation, setRecommendation] = useState<JobRecommendation | null>(null);
     const [isLoadingRecommendation, setIsLoadingRecommendation] = useState<boolean>(false);
@@ -109,22 +106,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
         setToast({ message, type });
     };
 
-    const {
-        atsScores,
-        isLoadingAts,
-        isScanningAts,
-        atsProgressMessage,
-        handleScanAts,
-        handleDeleteAts,
-    } = useAtsWorkflow({
-        jobId,
-        jobApplication,
-        cvData,
-        appliedAtsSuggestions,
-        showToast,
-        onError: (error) => setAiActionError(parseApiError(error)),
-    });
-
     const fetchJobData = useCallback(async () => {
         if (!jobId) return;
         setIsLoading(true);
@@ -134,10 +115,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
             setJobApplication(data);
             // Initialize reminders from loaded job
             setReminders(data.reminders ?? []);
-            // Seed applied ATS suggestions history from DB
-            if (data.appliedAtsSuggestions && data.appliedAtsSuggestions.length > 0) {
-                setAppliedAtsSuggestions(data.appliedAtsSuggestions);
-            }
 
             // Fetch Job CV from Unified Model
             try {
@@ -524,32 +501,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
         }
     };
 
-    const handleApplyAtsSuggestionBatch = async (items: { suggestion: string; index: number }[]) => {
-        if (!jobApplication) return;
-        setIsApplyingAtsBatch(true);
-        try {
-            const updatedCv = await applyAtsSuggestion(
-                cvData,
-                items.map(i => i.suggestion),
-                jobApplication.jobDescriptionText ?? undefined
-            );
-            setCvData(updatedCv);
-            // Persist applied suggestions list to DB
-            const newApplied = [...appliedAtsSuggestions, ...items.map(i => i.suggestion)];
-            setAppliedAtsSuggestions(newApplied);
-            await updateJob(jobId!, { appliedAtsSuggestions: newApplied });
-            const count = items.length;
-            showToast(`CV updated  ${count} ATS improvement${count !== 1 ? 's' : ''} applied `, 'success');
-            try { await refreshUsage(); } catch (e) { console.error('Failed to refresh credits UI:', e); }
-        } catch (error: any) {
-            console.error('Error applying ATS suggestions:', error);
-            setAiActionError(parseApiError(error));
-            throw error; // re-throw so AtsInlinePanel doesn't mark items as applied
-        } finally {
-            setIsApplyingAtsBatch(false);
-        }
-    };
-
     const handleCvChange = (updatedCv: JsonResumeSchema) => {
         setCvData(updatedCv);
     };
@@ -790,12 +741,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
                                     lastSavedCvDataRef={lastSavedCvDataRef}
                                     improvingSections={improvingSections}
 
-                                    atsScores={atsScores}
-                                    isLoadingAts={isLoadingAts}
-                                    isScanningAts={isScanningAts}
-                                    atsProgressMessage={atsProgressMessage}
-                                    isApplyingAtsBatch={isApplyingAtsBatch}
-
                                     isPreviewOpen={isPreviewOpen}
                                     setIsPreviewOpen={setIsPreviewOpen}
                                     previewPdfBase64={previewPdfBase64}
@@ -815,9 +760,6 @@ const JobApplicationWorkspacePage: React.FC = () => {
                                     showToast={showToast}
                                     handleGenerateSpecificCv={handleGenerateSpecificCv}
                                     handleUseBaseCvAsIs={handleUseBaseCvAsIs}
-                                    handleScanAts={handleScanAts}
-                                    handleDeleteAts={handleDeleteAts}
-                                    handleApplyAtsSuggestionBatch={handleApplyAtsSuggestionBatch}
                                 />
                             )}
 

@@ -278,9 +278,6 @@ async function run(): Promise<void> {
       await navigate(page, `/jobs/${jobId}/review/cover-letter`);
       await capture(page, 'custom-job-coverletter.png');
 
-      await navigate(page, `/jobs/${jobId}/review/ats`);
-      await capture(page, 'ats-analysis.png');
-
       // Job details — navigate to dashboard and expand a row
       await navigate(page, '/dashboard');
       const jobRow = await page.$('tr[data-job-id], .job-row, tbody tr:first-child').catch(() => null);

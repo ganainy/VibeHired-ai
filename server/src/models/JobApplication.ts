@@ -126,8 +126,6 @@ export interface IJobApplication extends Document {
     };
     // --- Favorite Flag ---
     isFavorite?: boolean; // User can mark job as favorite
-    // --- ATS Applied History ---
-    appliedAtsSuggestions?: string[]; // History of applied ATS improvements (used to exclude from future scans)
     // --- Reminders ---
     reminders?: IReminder[];
     // --- Follow-up suggestions ---
@@ -247,8 +245,6 @@ const JobApplicationSchema: Schema = new Schema(
         },
         // --- Favorite Flag Schema ---
         isFavorite: { type: Boolean, default: false, index: true },
-        // --- ATS Applied History Schema ---
-        appliedAtsSuggestions: { type: [String], default: [] },
         // --- Reminders Schema ---
         reminders: [{
             id: { type: String, required: true },

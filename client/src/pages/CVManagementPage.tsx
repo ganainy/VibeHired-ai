@@ -24,7 +24,6 @@ import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 import Toast from '../components/common/Toast';
 import { fetchAllSectionsAnalysis, fetchSectionAnalysis, SectionAnalysisResult } from '../services/analysisApi';
 import { improveSection } from '../services/generatorApi';
-import { scanAts, getAtsScores, getLatestAts, AtsScores, getAtsForJob } from '../services/atsApi';
 import Sidebar from '../components/cv-management/Sidebar';
 import CreateBranchModal from '../components/cv-management/CreateBranchModal';
 import { validateCvFile, formatFileSize } from '../lib/utils';
@@ -75,11 +74,6 @@ const CVManagementPage: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [improvingSections, setImprovingSections] = useState<Record<string, boolean>>({});
 
-  // ATS Analysis state
-  const [atsScores, setAtsScores] = useState<AtsScores | null>(null);
-  const [isScanningAts, setIsScanningAts] = useState<boolean>(false);
-  const [atsAnalysisId, setAtsAnalysisId] = useState<string | null>(null);
-  const [isAnalysisOutdated, setIsAnalysisOutdated] = useState<boolean>(false);
   const atsPollingIntervalIdRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -319,98 +313,8 @@ const CVManagementPage: React.FC = () => {
       await handleSaveCv();
     }
 
-    // Run both analyses
+    // Run analysis
     runFullCvAnalysis(activeCvData);
-    runAtsAnalysis(activeCvData);
-    setIsAnalysisOutdated(false);
-  };
-
-  // Poll ATS scores until analysis is complete
-  const pollAtsScores = async (analysisIdToPoll: string, startTime: number, maxWaitTime: number = 60000): Promise<boolean> => {
-    const elapsed = Date.now() - startTime;
-    if (elapsed > maxWaitTime) {
-      setIsScanningAts(false);
-      setToast({ message: 'ATS analysis is taking longer than expected. Please check back later.', type: 'info' });
-      return true; // Stop polling
-    }
-
-    try {
-      const response = await getAtsScores(analysisIdToPoll);
-      if (response.atsScores) {
-        if (response.atsScores.error) {
-          setIsScanningAts(false);
-          setToast({ message: `ATS analysis error: ${response.atsScores.error}`, type: 'error' });
-          return true; // Stop polling
-        }
-        if (response.atsScores.score !== null && response.atsScores.score !== undefined) {
-          setAtsScores(response.atsScores);
-          setIsScanningAts(false);
-          setToast({ message: 'ATS analysis completed!', type: 'success' });
-          return true; // Stop polling
-        }
-      }
-      return false; // Continue polling
-    } catch (error: any) {
-      console.error('Error polling ATS scores:', error);
-      // Don't stop polling on transient errors, but log them
-      return false;
-    }
-  };
-
-  // Trigger ATS analysis for general CV review (no job description)
-  const runAtsAnalysis = async (cvDataOverride?: JsonResumeSchema | null) => {
-    const cvDataToUse = cvDataOverride !== undefined ? cvDataOverride : activeCvData;
-    if (!cvDataToUse) {
-      // Silently return if no CV data - don't show error toast
-      return;
-    }
-
-    if (isScanningAts) {
-      return; // Already scanning
-    }
-
-    // Clear any existing polling
-    if (atsPollingIntervalIdRef.current) {
-      clearInterval(atsPollingIntervalIdRef.current);
-      atsPollingIntervalIdRef.current = null;
-    }
-
-    setIsScanningAts(true);
-    setAtsScores(null); // Clear previous scores
-
-    try {
-      // If activeCv is a base CV, pass undefined for jobId
-      const jobId = !activeCv?.jobApplicationId ? undefined : activeCv?.jobApplicationId || undefined;
-
-      const response = await scanAts(jobId, atsAnalysisId || undefined);
-      setAtsAnalysisId(response.analysisId);
-      setToast({ message: 'ATS analysis started. Analyzing your CV...', type: 'info' });
-
-      const startTime = Date.now();
-      const POLLING_INTERVAL = 2000; // Poll every 2 seconds
-
-      // Set up interval polling
-      const intervalId = setInterval(async () => {
-        const result = await pollAtsScores(response.analysisId, startTime);
-        if (result) {
-          clearInterval(intervalId);
-          atsPollingIntervalIdRef.current = null;
-        }
-      }, POLLING_INTERVAL);
-
-      atsPollingIntervalIdRef.current = intervalId;
-
-      // Start polling immediately
-      const checkResult = await pollAtsScores(response.analysisId, startTime);
-      if (checkResult) {
-        clearInterval(intervalId);
-        atsPollingIntervalIdRef.current = null;
-      }
-    } catch (error: any) {
-      console.error('Error starting ATS scan:', error);
-      setIsScanningAts(false);
-      setToast({ message: error.message || 'Failed to start ATS analysis.', type: 'error' });
-    }
   };
 
   // Fetch current CV on mount
@@ -439,37 +343,12 @@ const CVManagementPage: React.FC = () => {
           }
         }
 
-        // Load existing ATS scores if available
-        let hasExistingAtsScores = false;
-        if (cvData && isJsonResumeLike(cvData)) {
-          try {
-            const atsResponse = await getLatestAts();
-            if (atsResponse.atsScores && atsResponse.analysisId) {
-              console.log('Loading existing ATS scores');
-              setAtsScores(atsResponse.atsScores);
-              setAtsAnalysisId(atsResponse.analysisId);
-              hasExistingAtsScores = true;
-            }
-          } catch (atsError: any) {
-            // If no ATS scores exist, that's fine - we'll trigger analysis below
-            console.log('No existing ATS scores found, will trigger new analysis');
-          }
-        }
-
         setIsLoadingCv(false);
 
         // Run analysis after CV is loaded (only if no valid cache)
         const cache = cvDoc?.analysisCache as { analyses?: Record<string, any> } | null;
         if (cvData && isJsonResumeLike(cvData) && (!cache || !cache.analyses)) {
-          // We can optionally auto-run here or just let the user decide.
-          // For better UX on first load, maybe we just show "Analysis needed"
           setIsAnalysisOutdated(true);
-        }
-
-        // Trigger ATS analysis only if no existing scores were found
-        if (cvData && isJsonResumeLike(cvData) && !hasExistingAtsScores) {
-          // Same here, let user trigger it
-          // setIsAnalysisOutdated(true); // Already set above
         }
       } catch (error: any) {
         console.error("Error fetching current CV:", error);
@@ -478,14 +357,6 @@ const CVManagementPage: React.FC = () => {
       }
     };
     fetchCv();
-
-    // Cleanup polling on unmount
-    return () => {
-      if (atsPollingIntervalIdRef.current) {
-        clearInterval(atsPollingIntervalIdRef.current);
-        atsPollingIntervalIdRef.current = null;
-      }
-    };
   }, [isJsonResumeLike]);
 
   // Fetch all CV branches from unified API
@@ -517,36 +388,6 @@ const CVManagementPage: React.FC = () => {
   useEffect(() => {
     if (allCvs.length > 0) dismissCvTour();
   }, [allCvs.length]);
-
-  // Fetch ATS scores when switching context
-  useEffect(() => {
-    const fetchContextAts = async () => {
-      setAtsScores(null); // Clear while loading
-
-      try {
-        if (activeCv?.isDefault) {
-          const atsResponse = await getLatestAts();
-          if (atsResponse.atsScores) {
-            setAtsScores(atsResponse.atsScores);
-            setAtsAnalysisId(atsResponse.analysisId);
-          }
-        } else if (activeCv?.jobApplicationId) {
-          // Fetch for specific job
-          const atsResponse = await getAtsForJob(activeCv.jobApplicationId);
-          if (atsResponse.atsScores) {
-            setAtsScores(atsResponse.atsScores);
-            setAtsAnalysisId(atsResponse.analysisId);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching ATS scores for context:', error);
-      }
-    };
-
-    if (activeCvData && isJsonResumeLike(activeCvData)) {
-      fetchContextAts();
-    }
-  }, [activeCv, activeCvData, isJsonResumeLike]);
 
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -662,7 +503,6 @@ const CVManagementPage: React.FC = () => {
 
       if (cvData && isJsonResumeLike(cvData)) {
         runFullCvAnalysis(cvData);
-        runAtsAnalysis(cvData);
         setIsAnalysisOutdated(false);
       }
 
@@ -715,8 +555,6 @@ const CVManagementPage: React.FC = () => {
         const currentHash = generateCvHash(updatedCv);
         if (isJsonResumeLike(updatedCv) && lastAnalyzedCvHashRef.current !== currentHash) {
           runFullCvAnalysis(updatedCv);
-          runAtsAnalysis(updatedCv);
-          setIsAnalysisOutdated(false);
         }
       }, 500);
     }

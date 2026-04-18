@@ -114,7 +114,6 @@ export interface JobApplication {
     jobCategory?: string | null; // Category of the job (e.g., "IT Helpdesk", "Programming")
     jobTags?: string[]; // Optional job field/industry tags
     isFavorite?: boolean; // User can mark job as favorite
-    appliedAtsSuggestions?: string[]; // History of applied ATS improvements
     createdAt: string; // Dates are often strings in JSON
     updatedAt: string; // Dates are often strings in JSON
     extractedData?: {

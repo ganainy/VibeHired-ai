@@ -7,6 +7,7 @@ import { generateCoverLetter } from '../../../services/coverLetterApi';
 import { createJobCvFromBase } from '../../../services/cvApi';
 import { JsonResumeSchema } from '../../../../../server/src/types/jsonresume';
 import { parseApiErrorMessage } from '../../../utils/parseApiError';
+import type { TailoringSettings } from '../../../components/review-finalize/TailoredCvPage';
 
 export type ReviewGenerationStep = 'idle' | 'analyzing' | 'matching' | 'tailoring' | 'finalizing';
 
@@ -190,7 +191,7 @@ export const useReviewGeneration = ({
         setTimeout(() => setIsClCopied(false), 2000);
     };
 
-    const handleGenerateSpecificCv = async () => {
+    const handleGenerateSpecificCv = async (settings?: TailoringSettings) => {
         if (!jobId || !jobApplication) return;
 
         if (!tailoredJobDescription) {
@@ -251,6 +252,8 @@ export const useReviewGeneration = ({
                 jobDescription: tailoredJobDescription,
                 customInstructions,
                 maxOutputTokens: 16384,
+                matchAddress: settings?.matchAddress ?? false,
+                showChanges: settings?.showChanges ?? true,
             });
 
             setGenerationStep('finalizing');

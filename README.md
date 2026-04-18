@@ -96,7 +96,6 @@ The official hosted service at [vibehired.ganainy.dev](https://vibehired.ganainy
 | **Job Details** | View detailed job information and manage individual job applications. | ![Job Details](demo/job-details.png) |
 | **Custom Job CV** | Review and customize AI-generated CVs tailored to specific job applications. | ![Custom Job CV](demo/custom-job-cv.png) |
 | **Custom Job Cover Letter** | Review and customize AI-generated cover letters tailored to specific job applications. | ![Custom Job Cover Letter](demo/custom-job-coverletter.png) |
-| **ATS Analysis** | Get detailed ATS compatibility scores and feedback to optimize your application. | ![ATS Analysis](demo/ats-analysis.png) |
 | **CV Management** | Upload, parse, and edit your CV with a rich editor that supports section-by-section editing and AI-powered analysis. | ![CV Management](demo/cv-management.png) |
 | **Portfolio Setup** | Single-page portfolio configurator — connect GitHub to import repos, sync LinkedIn data, set a custom username, and toggle public visibility. | ![Portfolio Setup](demo/portfolio-setup.png) |
 | **Public Portfolio** | Share your professional portfolio with a clean, modern public page. | ![Public Portfolio](demo/custom-portfolio.png) |

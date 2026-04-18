@@ -110,31 +110,6 @@ export const renderCoverLetterPdf = async (jobId: string): Promise<RenderCoverLe
     }
 };
 
-// Apply one or more ATS suggestions to the full CV using AI in a single pass
-export const applyAtsSuggestion = async (
-    cvJson: any,
-    suggestions: string[],
-    jobDescription?: string
-): Promise<any> => {
-    const token = localStorage.getItem('authToken');
-    if (!token) throw new Error('No authentication token found.');
-
-    try {
-        const response = await axios.post(
-            `${API_BASE_URL}/generator/apply-ats-suggestion`,
-            { cvJson, suggestions, jobDescription },
-            { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
-        );
-        // Server returns { cvJson: updatedCvJson }
-        return response.data.cvJson;
-    } catch (error: any) {
-        if (axios.isAxiosError(error)) {
-            throw new Error(error.response?.data?.message || 'Failed to apply ATS suggestions');
-        }
-        throw error;
-    }
-};
-
 // Helper function to get download URL for generated files
 export const getDownloadUrl = (filename: string): string => {
     return `${API_BASE_URL}/generator/download/${filename}`;

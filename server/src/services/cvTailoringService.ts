@@ -256,6 +256,7 @@ export async function runTailoringPipeline(
   jobDescription: string,
   languageName: string,
   isFreeformCv: boolean,
+  showChanges: boolean = true,
 ): Promise<TailoringPipelineResult> {
   // ── Call 1: JD Analysis ──
   console.log('  → Pipeline Call 1/4: JD Analysis...');
@@ -351,12 +352,16 @@ Do not include any explanation or markdown. Only the JSON object.`;
   console.log(`     After validation: ${Object.keys(sanitizedPatch).length} sections applied`);
 
   // ── Call 4: Changes List (diff snippets only) ──
-  console.log('  → Pipeline Call 3/4: Changes Generation...');
-
   let changesResult: TailoringChangesResult;
 
-  // If no patches were applied, generate changes from the JD analysis alone
-  if (patchKeys.length === 0) {
+  if (!showChanges) {
+    console.log('  → Pipeline Call 3/4: Changes Generation — SKIPPED (showChanges=false)');
+    changesResult = { changes: [] };
+  } else {
+    console.log('  → Pipeline Call 3/4: Changes Generation...');
+
+    // If no patches were applied, generate changes from the JD analysis alone
+    if (patchKeys.length === 0) {
     console.log('     No patches to compare — generating changes from JD analysis only');
     const baseSnippets = buildSnippets(baseCvJson, tailorableKeys);
     const analysisSnippet = `Keywords extracted: ${jdAnalysis.extractedKeywords.slice(0, 10).join(', ')}...`;

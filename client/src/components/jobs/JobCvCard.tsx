@@ -1,4 +1,4 @@
-// Component for displaying individual job-specific CV cards with editing and ATS analysis
+// Component for displaying individual job-specific CV cards with editing
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { JobApplication } from '../../services/jobApi';
@@ -6,8 +6,6 @@ import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
 import { getJobCv, updateCv, createJobCv, getAllCvs, createJobCvFromBase, uploadCvForJob, CVDocument } from '../../services/cvApi';
 import CvFormEditor from '../cv-editor/CvFormEditor';
 import { Button, Select } from '../common';
-import GeneralCvAtsPanel from '../ats/GeneralCvAtsPanel';
-import { scanAts, getAtsScores, AtsScores } from '../../services/atsApi';
 
 interface JobCvCardProps {
     jobApplication: JobApplication;
@@ -20,10 +18,6 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
-    const [atsScores, setAtsScores] = useState<AtsScores | null>(null);
-    const [isScanningAts, setIsScanningAts] = useState<boolean>(false);
-    const [atsAnalysisId, setAtsAnalysisId] = useState<string | null>(null);
-    const [atsPollingIntervalId, setAtsPollingIntervalId] = useState<NodeJS.Timeout | null>(null);
     const [currentCvId, setCurrentCvId] = useState<string | null>(null);
 
     // --- CV Attach / Replace Panel ---
@@ -103,78 +97,15 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
     };
 
     const AUTO_SAVE_DELAY_MS = 2000;
-    const ATS_POLLING_INTERVAL_MS = 3000;
-    const ATS_POLLING_TIMEOUT_MS = 120000;
 
-    // Cleanup polling on unmount
+    // Cleanup auto-save timeout on unmount
     useEffect(() => {
         return () => {
-            if (atsPollingIntervalId) {
-                clearInterval(atsPollingIntervalId);
-            }
             if (autoSaveTimeoutRef.current) {
                 clearTimeout(autoSaveTimeoutRef.current);
             }
         };
-    }, [atsPollingIntervalId]);
-
-    // Poll ATS scores
-    const pollAtsScores = useCallback(async (analysisIdToPoll: string, startTime: number): Promise<boolean> => {
-        const elapsed = Date.now() - startTime;
-        if (elapsed > ATS_POLLING_TIMEOUT_MS) {
-            setIsScanningAts(false);
-            return true;
-        }
-
-        try {
-            const response = await getAtsScores(analysisIdToPoll);
-            if (response.atsScores && (response.atsScores.score !== null && response.atsScores.score !== undefined)) {
-                setAtsScores(response.atsScores);
-                setIsScanningAts(false);
-                return true;
-            }
-            return false;
-        } catch (error) {
-            console.error('Error polling ATS scores:', error);
-            return false;
-        }
     }, []);
-
-    // Trigger ATS analysis
-    const handleScanAts = async () => {
-        if (atsPollingIntervalId) {
-            clearInterval(atsPollingIntervalId);
-            setAtsPollingIntervalId(null);
-        }
-
-        setIsScanningAts(true);
-        setAtsScores(null);
-
-        try {
-            const response = await scanAts(jobApplication._id, atsAnalysisId || undefined);
-            setAtsAnalysisId(response.analysisId);
-
-            const startTime = Date.now();
-            const intervalId = setInterval(async () => {
-                const result = await pollAtsScores(response.analysisId, startTime);
-                if (result) {
-                    clearInterval(intervalId);
-                    setAtsPollingIntervalId(null);
-                }
-            }, ATS_POLLING_INTERVAL_MS);
-
-            setAtsPollingIntervalId(intervalId);
-
-            const checkResult = await pollAtsScores(response.analysisId, startTime);
-            if (checkResult) {
-                clearInterval(intervalId);
-                setAtsPollingIntervalId(null);
-            }
-        } catch (error: any) {
-            console.error('Error starting ATS scan:', error);
-            setIsScanningAts(false);
-        }
-    };
 
     // Handle CV changes with auto-save
     const handleCvChange = (updatedCv: JsonResumeSchema) => {
@@ -344,26 +275,6 @@ const JobCvCard: React.FC<JobCvCardProps> = ({ jobApplication, onUpdate }) => {
                             <span>This is a tailored copy — edits here don't affect your base resume.</span>
                         </div>
                     )}
-
-                    {/* ATS Analysis Section */}
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">ATS Analysis</h4>
-                            {!isScanningAts && (
-                                <Button
-                                    onClick={handleScanAts}
-                                    disabled={isScanningAts}
-                                    className="px-4 py-2 rounded-lg text-sm flex items-center gap-2"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    {atsScores ? 'Rescan' : 'Scan ATS'}
-                                </Button>
-                            )}
-                        </div>
-                        <GeneralCvAtsPanel atsScores={atsScores} isLoading={isScanningAts} />
-                    </div>
 
                     {/* CV Editor Section */}
                     <div>
