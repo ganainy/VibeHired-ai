@@ -326,7 +326,6 @@ const CVManagementPage: React.FC = () => {
         const cvDoc = response.cv;
         const cvData = cvDoc?.cvJson || null;
         setCurrentCvData(cvData);
-        setMasterCvId(cvDoc?._id || null); // Store the CV's MongoDB ID
         originalCvDataRef.current = cvData ? JSON.parse(JSON.stringify(cvData)) : null;
         // Reset save trigger to ensure proper comparison
         setSaveTrigger(0);
@@ -482,7 +481,6 @@ const CVManagementPage: React.FC = () => {
       setUploadProgress(60);
       const cvData = response.cv?.cvJson || null;
       setCurrentCvData(cvData);
-      setMasterCvId(response.cv?._id || null); // Store the new CV's MongoDB ID
       setAllCvs((prev: CVDocument[]) => {
         if (!response.cv?._id) return prev;
         const existingIndex = prev.findIndex((cv) => cv._id === response.cv._id);
