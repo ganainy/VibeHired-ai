@@ -61,10 +61,8 @@ export const changesOnlyJsonSchema = {
         required: ['section', 'description', 'reason'],
         properties: {
           section: { type: 'string' as const, description: "CV section key" },
-          description: { type: 'string' as const, description: 'What changed (in English)' },
-          reason: { type: 'string' as const, description: 'Why this change was made (in English)' },
-          before: { type: 'string' as const, description: 'Original text snippet (in English)' },
-          after: { type: 'string' as const, description: 'Updated text snippet (in English)' },
+          description: { type: 'string' as const, description: 'What changed (one line, in English)' },
+          reason: { type: 'string' as const, description: 'Why this change was made (one line, in English)' },
         },
       },
     },

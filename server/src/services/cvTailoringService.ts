@@ -153,12 +153,12 @@ ${diffs}
 Based on the changes above, return a JSON object with a "changes" array.
 Do NOT repeat any content from <context> in your output values.
 
-Each change entry must have:
-- section: the section key that changed
-- description: what changed (English, max 100 chars)
-- reason: why, referencing the job (English, max 100 chars)
-- before: ≤80 chars snippet of original text only (truncate with "..." if longer)
-- after: ≤80 chars snippet of new text only (truncate with "..." if longer)
+Each change entry must have exactly these fields:
+- section: the section key that changed (e.g., "work", "skills")
+- description: one-line summary of what changed (English, max 60 chars)
+- reason: why this change was made, referencing the job (English, max 60 chars)
+
+Do NOT include "before" or "after" fields — they are not needed.
 
 Respond with valid JSON only. No markdown. No explanation.
 </instructions>
@@ -231,7 +231,15 @@ function buildSnippets(obj: Record<string, any>, keys: string[]): Record<string,
     } else if (typeof val === 'string') {
       snippets[key] = val.substring(0, 100);
     } else if (Array.isArray(val)) {
-      snippets[key] = `[${val.length} items]`;
+      const texts = val.slice(0, 3).map((item: any) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          return item.title || item.name || item.description || item.content ||
+                 item.company || item.institution || item.skill || JSON.stringify(item).substring(0, 80);
+        }
+        return String(item);
+      }).filter(Boolean).join('; ');
+      snippets[key] = texts.length > 100 ? texts.substring(0, 100) + '...' : texts;
     } else if (typeof val === 'object') {
       const str = JSON.stringify(val);
       snippets[key] = str.substring(0, 100);
@@ -353,18 +361,18 @@ Do not include any explanation or markdown. Only the JSON object.`;
     const baseSnippets = buildSnippets(baseCvJson, tailorableKeys);
     const analysisSnippet = `Keywords extracted: ${jdAnalysis.extractedKeywords.slice(0, 10).join(', ')}...`;
     changesResult = await generateStructuredResponse<TailoringChangesResult>(userId, buildChangesPrompt(tailorableKeys, baseSnippets, { analysis: analysisSnippet }, jobDescription.split('\n')[0].substring(0, 80)), {
-      maxTokens: 2048,
+      maxTokens: 4096,
       responseJsonSchema: changesOnlyJsonSchema,
-      modelPreference: 'fast',
+      modelPreference: 'quality',
     });
     console.log(`     Generated ${changesResult.changes.length} changes`);
   } else {
     const baseSnippets = buildSnippets(baseCvJson, patchKeys);
     const patchSnippets = buildSnippets(sanitizedPatch, patchKeys);
     changesResult = await generateStructuredResponse<TailoringChangesResult>(userId, buildChangesPrompt(patchKeys, baseSnippets, patchSnippets, jobDescription.split('\n')[0].substring(0, 80)), {
-      maxTokens: 8192,
+      maxTokens: 4096,
       responseJsonSchema: changesOnlyJsonSchema,
-      modelPreference: 'fast',
+      modelPreference: 'quality',
     });
     console.log(`     Generated ${changesResult.changes.length} changes`);
   }
