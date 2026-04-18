@@ -9,7 +9,7 @@ import { generateContent, generateStructuredResponse } from '../utils/aiService'
 import { GoogleGenerativeAIError } from '@google/generative-ai';
 import { JsonResumeSchema } from '../types/jsonresume';
 import mongoose from 'mongoose';
-import CV from '../models/CV'; // Import Unified CV Model
+import CV, { ICV } from '../models/CV'; // Import Unified CV Model
 import { generateCvPdfFromJsonResume, generateCoverLetterPdf } from '../utils/pdfGenerator'; // Import PDF generators
 import { validateRequest, ValidatedRequest } from '../middleware/validateRequest';
 import { usageLimiter } from '../middleware/usageLimiter';
@@ -21,13 +21,8 @@ import { generateDescriptorFromJson } from '../services/generatorService';
 import { CvSectionDescriptor } from '../types/cvDescriptor';
 import { normalizeFreeformCvTags } from '../utils/vhTagNormalizer';
 import { normalizeCvFieldNames, normalizeSectionNames } from '../utils/cvNormalizer';
-import {
-    TailoringChange,
-    TailoringResponse,
-    tailoringResponseJsonSchema,
-    freeformTailoringResponseJsonSchema,
-    changesOnlyJsonSchema,
-} from '../schemas/cvTailoring.schema';
+import { detectCvFormat } from '../utils/cvFormatDetector';
+
 
 const router: Router = express.Router();
 router.use(authMiddleware as RequestHandler); // Apply auth to all routes in this file
@@ -66,81 +61,7 @@ function stringifyCompact(value: unknown): string {
     return String(value).trim();
 }
 
-function normalizeTailoringChanges(raw: unknown): TailoringChange[] | null {
-    if (!Array.isArray(raw)) return null;
 
-    const normalized = raw
-        .map((item): TailoringChange | null => {
-            if (!item || typeof item !== 'object') return null;
-            const obj = item as Record<string, unknown>;
-
-            const section = String(obj.section ?? obj.sectionKey ?? obj.key ?? '').trim();
-            const description = String(obj.description ?? obj.explanation ?? obj.change ?? '').trim();
-            const reason = String(obj.reason ?? obj.why ?? 'Tailored to better match the job requirements.').trim();
-            const before = String(obj.before ?? obj.from ?? obj.previous ?? '').trim();
-            const after = String(obj.after ?? obj.to ?? obj.updated ?? '').trim();
-
-            if (!section || !description) return null;
-
-            return {
-                section,
-                description,
-                reason,
-                before: before || undefined,
-                after: after || undefined,
-            };
-        })
-        .filter((v): v is TailoringChange => v !== null);
-
-    return normalized.length > 0 ? normalized : null;
-}
-
-async function generateAiTailoringChanges(
-    userId: string,
-    languageName: string,
-    jobDescription: string,
-    baseSnapshot: unknown,
-    tailoredSnapshot: unknown,
-): Promise<TailoringChange[] | null> {
-    const prompt = `You are a CV comparison assistant.
-
-Compare the ORIGINAL CV snapshot and the TAILORED CV snapshot and return concrete, section-level changes.
-
-Target language of CV content: ${languageName}
-
-Job description context:
----
-${jobDescription.slice(0, 5000)}
----
-
-ORIGINAL snapshot:
-\`\`\`json
-${JSON.stringify(baseSnapshot, null, 2).slice(0, 30000)}
-\`\`\`
-
-TAILORED snapshot:
-\`\`\`json
-${JSON.stringify(tailoredSnapshot, null, 2).slice(0, 30000)}
-\`\`\`
-
-Rules:
-- Return 3-12 meaningful changes when possible.
-- Use section names that are present in the CV.
-- Each change must include a concise before and after snippet.
-- Write description/reason/before/after in English.
-- If very few true changes exist, still include the most important ones.`;
-
-    try {
-        const parsed = await generateStructuredResponse<{ changes: TailoringChange[] }>(userId, prompt, {
-            maxTokens: 2500,
-            responseJsonSchema: changesOnlyJsonSchema,
-        });
-        return normalizeTailoringChanges(parsed?.changes);
-    } catch (err: any) {
-        console.warn(`AI comparison changes fallback failed: ${err.message}`);
-        return null;
-    }
-}
 
 
 // --- NEW: Render Final PDFs Endpoint ---
@@ -188,7 +109,7 @@ const renderFinalPdfsHandler: RequestHandler = async (req: ValidatedRequest, res
         // --- MODIFICATION: Ensure name is available for filenames (check Master CV fallback) ---
         const currentName1 = cvJsonData.basics?.name;
         if (!currentName1 || currentName1 === 'Applicant') {
-            const masterCv = await CV.findOne({ userId, isMasterCv: true });
+            const masterCv = await CV.findOne({ userId, isPrimary: true });
             const masterName = masterCv?.cvJson?.basics?.name;
             if (masterName) {
                 if (!cvJsonData.basics) {
@@ -259,10 +180,18 @@ const renderFinalPdfsHandler: RequestHandler = async (req: ValidatedRequest, res
 
         // 4. Call PDF Generators
         console.log(`Generating final CV PDF for job ${jobId}...`);
+        console.log(`  → Template: ATS-optimized (career-ops)`);
+        console.log(`  → Language: ${language}`);
+        console.log(`  → Paper format: ${language === 'en' ? 'letter' : 'a4'}`);
+        console.log(`  → Sections: Summary, Competencies, Experience, Projects, Education, Certifications, Skills`);
+        console.log(`  → Fonts: Space Grotesk (headings) + DM Sans (body), self-hosted`);
+        console.log(`  → ATS normalization: em-dashes, smart quotes, zero-width chars, non-breaking spaces`);
         const generatedCvFilename = await generateCvPdfFromJsonResume(
             cvJsonData,
-            `${cvFilenamePrefix}_${language}`
+            `${cvFilenamePrefix}_${language}`,
+            { lang: language, pageFormat: language === 'en' ? 'letter' : 'a4' }
         );
+        console.log(`  → CV PDF saved: ${generatedCvFilename}`);
 
         console.log(`Generating final Cover Letter PDF for job ${jobId}...`);
         const generatedClFilename = await generateCoverLetterPdf(
@@ -384,7 +313,7 @@ const renderCvPdfHandler: RequestHandler = async (req: ValidatedRequest, res): P
         // --- MODIFICATION: Ensure name is available for filenames (check Master CV fallback) ---
         const currentName2 = cvJsonData.basics?.name;
         if (!currentName2 || currentName2 === 'Applicant') {
-            const masterCv = await CV.findOne({ userId, isMasterCv: true });
+            const masterCv = await CV.findOne({ userId, isPrimary: true });
             const masterName = masterCv?.cvJson?.basics?.name;
             if (masterName) {
                 if (!cvJsonData.basics) {
@@ -420,7 +349,7 @@ const renderCvPdfHandler: RequestHandler = async (req: ValidatedRequest, res): P
         const langSuffix = language.toUpperCase();
         const cvFilenamePrefix = `CV_${companySanitized}_${langSuffix}`;
 
-        const generatedCvFilename = await generateCvPdfFromJsonResume(cvJsonData, cvFilenamePrefix);
+        const generatedCvFilename = await generateCvPdfFromJsonResume(cvJsonData, cvFilenamePrefix, { lang: language, pageFormat: language === 'en' ? 'letter' : 'a4' });
 
         // Update job with new CV filename
         await JobApplication.updateOne({ _id: jobId, userId: userId }, {
@@ -484,7 +413,7 @@ const renderCoverLetterPdfHandler: RequestHandler = async (req: ValidatedRequest
         // --- MODIFICATION: Ensure name is available for filenames (check Master CV fallback) ---
         const currentName3 = cvJsonData.basics?.name;
         if (!currentName3 || currentName3 === 'Applicant') {
-            const masterCv = await CV.findOne({ userId, isMasterCv: true });
+            const masterCv = await CV.findOne({ userId, isPrimary: true });
             const masterName = masterCv?.cvJson?.basics?.name;
             if (masterName) {
                 if (!cvJsonData.basics) {
@@ -546,111 +475,7 @@ const renderCoverLetterPdfHandler: RequestHandler = async (req: ValidatedRequest
 
 // --- Prompt builders (concise, schema-aligned — no output format examples needed) ---
 
-function buildJsonResumePrompt(
-    baseCvJson: Record<string, any>,
-    jobDescription: string,
-    languageName: string,
-    requestedLanguage: string,
-): string {
-    return `
-You are an expert career advisor specialized in the ${languageName} job market.
-Tailor the provided base CV (JSON Resume format) for the specific job below.
-
-**Target Language:** ${languageName}
-
-**Base CV (JSON Resume):**
-\`\`\`json
-${JSON.stringify(baseCvJson, null, 2)}
-\`\`\`
-
-**Job Description:**
----
-${jobDescription}
----
-
-**Instructions:**
-- Rewrite content to emphasize relevance to the job, using keywords from the description.
-- Include ALL projects from the base CV — never filter, summarize, or omit any.
-- Do NOT condense to one page; 2+ pages is fine if the content requires it.
-- STRICT: Do NOT invent skills, experiences, or qualifications not present in the base CV.
-- Optimize ordering of items within sections for relevance; do not delete less relevant ones.
-- Populate basics.summary with a strong tailored professional summary.
-- Do NOT mention the target company name anywhere in the CV.
-- All CV text must be in ${languageName}.
-- Include meta.sectionLabels with translated section names in ${languageName}.
-- The changes array descriptions/reasons/before/after must ALWAYS be in ENGLISH.
-`.trim();
-}
-
-function buildFreeformCvPrompt(
-    baseCvJson: Record<string, any>,
-    jobDescription: string,
-    languageName: string,
-    requestedLanguage: string,
-): string {
-    const sectionKeys = Object.keys(baseCvJson).filter(k => k !== '__vh_tags').join(', ');
-    return `
-You are an expert career advisor specialized in the ${languageName} job market.
-Tailor the provided freeform CV JSON for the specific job below.
-
-**Target Language:** ${languageName}
-
-**Base CV (freeform JSON):**
-\`\`\`json
-${JSON.stringify(baseCvJson, null, 2)}
-\`\`\`
-
-**Job Description:**
----
-${jobDescription}
----
-
-**Tailoring Instructions:**
-- PRESERVE the exact same top-level keys and structure as the base CV. Existing keys: ${sectionKeys}.
-- Rewrite bullet points and summaries to emphasize relevance to the job using keywords from the description.
-- Do NOT invent skills, experiences, or qualifications not present in the base CV.
-- You may reorder items within sections for relevance but do NOT drop sections or entries.
-- All CV text must be in ${languageName}.
-- The tailored CV must not be shorter than the base CV.
-- The changes array descriptions/reasons/before/after must ALWAYS be in ENGLISH.
-
-**STRICT FIELD NAME CONTRACT — within ALL array entries use ONLY these field names:**
-- "title"    → job title / degree name / category label
-- "subtitle" → company / institution / employer
-- "dates"    → date or period information
-- "bullets"  → bullet point arrays
-- "content"  → key-value content text (skill values, language levels)
-- "category" → category name in skill/language sections
-DO NOT use synonyms like: degree, institution, period, company, employer, description, role, position, value.
-
-**REQUIRED: __vh_tags MUST be present and complete in your output.**
-The __vh_tags object maps dot-paths to rendering tags — without it the CV WILL NOT render.
-Copy ALL existing tags from the base CV's __vh_tags and add tags for any new or modified sections.
-
-Tag rules (use * as a wildcard for array item indices):
-- Personal/contact block (the section with name, email, phone):
-    "<sectionKey>": "contact_block"
-    "<sectionKey>.<nameField>": "name"
-    "<sectionKey>.<locationField>": "location"
-    "<sectionKey>.<phoneField>": "phone"
-    "<sectionKey>.<emailField>": "email"
-    "<sectionKey>.<urlField>": "url"
-- Profile / summary (free-text paragraph):
-    "<sectionKey>": "paragraph"
-- Experience / Education / Certificate entries (arrays of objects):
-    "<sectionKey>.*.title": "title"
-    "<sectionKey>.*.dates": "date_range"
-    "<sectionKey>.*.subtitle": "subtitle"
-    "<sectionKey>.*.bullets": "bullets"
-- Skills / Language / Knowledge category sections:
-    "<sectionKey>.*.category": "title"
-    "<sectionKey>.*.content": "key_value"
-
-Allowed tag values: name, email, phone, url, location, address, city, linkedin, github, website, portfolio, date, date_range, title, subtitle, paragraph, bullets, key_value, contact_block, personal_info.
-`.trim();
-}
-
-// --- Generate CV Only Endpoint (schema-enforced) ---
+// --- Generate CV Only Endpoint (multi-call pipeline) ---
 const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res) => {
     const user = req.user as AuthenticatedUser;
     if (!user) { res.status(401).json({ message: 'User not authenticated correctly.' }); return; }
@@ -694,6 +519,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         // 2. Resolve base CV
         let baseCvJson: JsonResumeSchema | null = null;
         let usedBaseCvId: string | undefined = undefined;
+        let baseCvDocument: (ICV & { _id: mongoose.Types.ObjectId }) | null = null;
 
         if (baseCvDataOverride && typeof baseCvDataOverride === 'object' && !Array.isArray(baseCvDataOverride)) {
             baseCvJson = baseCvDataOverride;
@@ -702,16 +528,18 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             if (specificCv && specificCv.cvJson) {
                 baseCvJson = specificCv.cvJson;
                 usedBaseCvId = specificCv._id.toString();
+                baseCvDocument = specificCv;
             } else {
-                console.warn(`Specific Base CV (${baseCvId}) not found, falling back to Master CV.`);
+                console.warn(`Specific Base CV (${baseCvId}) not found, falling back to primary CV.`);
             }
         }
 
         if (!baseCvJson) {
-            const masterCv = await CV.findOne({ userId, isMasterCv: true });
-            if (masterCv && masterCv.cvJson) {
-                baseCvJson = masterCv.cvJson;
-                usedBaseCvId = masterCv._id.toString();
+            const primaryCv = await CV.findOne({ userId, isPrimary: true });
+            if (primaryCv && primaryCv.cvJson) {
+                baseCvJson = primaryCv.cvJson;
+                usedBaseCvId = primaryCv._id.toString();
+                baseCvDocument = primaryCv;
             }
         }
 
@@ -733,11 +561,18 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             console.log('Alternative fields found:', foundAlternatives);
         }
 
-        // Detect freeform BEFORE normalization — a freeform CV has __vh_tags and/or non-standard section names.
-        // We must NOT run normalizeSectionNames on freeform CVs because it renames their custom section keys
-        // (BERUFSERFAHRUNG → work, SPRACHEN → languages, etc.), making them falsely appear JSON-Resume-like
-        // and stripping the structure the AI needs to preserve.
-        const isFreeformCv = Boolean((baseCvJson as any).__vh_tags && typeof (baseCvJson as any).__vh_tags === 'object');
+        // Detect freeform BEFORE normalization.
+        // Prefer the stored cvFormat flag set at upload time.
+        // For legacy CVs (cvFormat === null), fall back to key-ratio detection.
+        let isFreeformCv: boolean;
+        if (baseCvDocument?.cvFormat === 'freeform') {
+            isFreeformCv = true;
+        } else if (baseCvDocument?.cvFormat === 'json-resume') {
+            isFreeformCv = false;
+        } else {
+            // No stored format (legacy or override data) — detect from raw JSON
+            isFreeformCv = detectCvFormat(baseCvJson as Record<string, any>) === 'freeform';
+        }
 
         // STEP 1: Normalize section names ONLY for non-freeform CVs
         if (!isFreeformCv) {
@@ -786,87 +621,84 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         const profile = await Profile.findOne({ userId: userId });
         let customPrompt = customInstructionsOverride || profile?.customPrompts?.cvPrompt;
 
-        // 4. Pick the schema (freeform gets a looser schema to avoid biasing Gemini toward JSON Resume keys)
-        const responseSchema = isFreeformCv ? freeformTailoringResponseJsonSchema : tailoringResponseJsonSchema;
-
-        // 5. Build a concise, schema-aligned prompt
-        let prompt: string;
-
-        if (customPrompt) {
-            // User-provided custom prompt — inject context variables
-            prompt = customPrompt
-                .replace('{{language}}', languageName)
-                .replace('{{baseCv}}', JSON.stringify(baseCvJson, null, 2))
-                .replace('{{jobDescription}}', job.jobDescriptionText);
-
-            if (!customPrompt.includes('{{baseCv}}')) {
-                prompt += `\n\n**Context Data:**\nBase CV: ${JSON.stringify(baseCvJson, null, 2)}\nJob Description: ${job.jobDescriptionText}\nTarget Language: ${languageName}`;
-            }
-        } else if (isFreeformCv) {
-            prompt = buildFreeformCvPrompt(baseCvJson, job.jobDescriptionText, languageName, requestedLanguage);
-        } else {
-            prompt = buildJsonResumePrompt(baseCvJson, job.jobDescriptionText, languageName, requestedLanguage);
-        }
-
-
-        // 6. Generate — schema-enforced, no fallback parsing needed
+        // 4. Generate — multi-call pipeline (career-ops style)
+        const tokenLimit = maxOutputTokens ?? 16384;
         console.log(`Generating ${languageName} CV only for job ${jobId}...`);
+        console.log(`  → Pipeline: 3 sequential AI calls (analysis → content → changes)`);
+        console.log(`  → Max output tokens per call: ${tokenLimit}`);
         await JobApplication.updateOne({ _id: jobId, userId: userId }, { $set: { generationStatus: 'pending_generation' } });
 
-        const tokenLimit = maxOutputTokens ?? 8192;
+        const { runTailoringPipeline } = await import('../services/cvTailoringService');
+        const pipelineResult = await runTailoringPipeline(
+            userId,
+            baseCvJson,
+            job.jobDescriptionText,
+            languageName,
+            isFreeformCv,
+        );
 
-        const parsedResponse = await generateStructuredResponse<TailoringResponse>(userId, prompt, {
-            maxTokens: tokenLimit,
-            responseJsonSchema: responseSchema,
-        });
+        const tailoredCvJson = pipelineResult.tailoredCv;
+        const tailoringChanges = pipelineResult.changes;
+        const jdAnalysis = pipelineResult.jdAnalysis;
+        const patch = pipelineResult.patch;
 
-        console.log(`Received CV generation response. tailoredCv keys: ${parsedResponse.tailoredCv ? Object.keys(parsedResponse.tailoredCv).slice(0, 10).join(', ') : 'MISSING'}. Changes count: ${parsedResponse.changes?.length || 0}`);
-
-        const tailoredCvJson = parsedResponse.tailoredCv;
-        const tailoringChanges = parsedResponse.changes;
-
-        // If tailoredCv is empty, fall back to base CV (Gemini may have returned unchanged content)
-        let finalCvJson = tailoredCvJson;
+        // Reject if pipeline returned empty tailoredCv
         if (!isNonEmptyObject(tailoredCvJson)) {
-            console.warn('Gemini returned an empty or missing tailoredCv. Using base CV as fallback.');
-            if (isNonEmptyObject(baseCvJson)) {
-                finalCvJson = { ...baseCvJson };
-            } else {
-                console.error('Both tailored and base CV are empty. Raw response keys:', parsedResponse ? Object.keys(parsedResponse) : 'N/A');
-                throw new Error('AI returned an empty CV. The base CV is also unavailable.');
-            }
+            console.error('Pipeline returned an empty tailoredCv. Aborting.');
+            throw new Error('AI failed to produce tailored CV content. Please try again.');
         }
 
-        // Validate that the final CV has all major sections - copy missing ones from base CV
-        const majorSections = ['basics', 'summary', 'work', 'education', 'skills', 'languages', 'certifications', 'projects'];
-        const finalCvAny = finalCvJson as Record<string, any>;
-        const baseCvAny = baseCvJson as Record<string, any>;
-        
-        for (const section of majorSections) {
-            const hasInFinal = finalCvAny[section] && (
-                (Array.isArray(finalCvAny[section]) && finalCvAny[section].length > 0) ||
-                (typeof finalCvAny[section] === 'object' && !Array.isArray(finalCvAny[section]) && Object.keys(finalCvAny[section]).length > 0)
-            );
-            
-            if (!hasInFinal && baseCvAny[section]) {
-                const hasInBase = Array.isArray(baseCvAny[section]) 
-                    ? baseCvAny[section].length > 0 
-                    : (typeof baseCvAny[section] === 'object' && Object.keys(baseCvAny[section]).length > 0);
-                
-                if (hasInBase) {
-                    console.log(`Copying ${section} from base CV (missing in AI response)`);
-                    finalCvAny[section] = JSON.parse(JSON.stringify(baseCvAny[section]));
+let finalCvJson = tailoredCvJson;
+
+        if (!isFreeformCv) {
+            // For JSON Resume CVs: copy any missing standard sections from base CV
+            const majorSections = ['basics', 'summary', 'work', 'education', 'skills', 'languages', 'certifications', 'projects'];
+            const finalCvAny = finalCvJson as Record<string, any>;
+            const baseCvAny = baseCvJson as Record<string, any>;
+
+            for (const section of majorSections) {
+                const hasInFinal = finalCvAny[section] && (
+                    (Array.isArray(finalCvAny[section]) && finalCvAny[section].length > 0) ||
+                    (typeof finalCvAny[section] === 'object' && !Array.isArray(finalCvAny[section]) && Object.keys(finalCvAny[section]).length > 0)
+                );
+
+                if (!hasInFinal && baseCvAny[section]) {
+                    const hasInBase = Array.isArray(baseCvAny[section])
+                        ? baseCvAny[section].length > 0
+                        : (typeof baseCvAny[section] === 'object' && Object.keys(baseCvAny[section]).length > 0);
+
+                    if (hasInBase) {
+                        console.log(`Copying ${section} from base CV (missing in AI response)`);
+                        finalCvAny[section] = JSON.parse(JSON.stringify(baseCvAny[section]));
+                    }
                 }
             }
-        }
-        
-        finalCvJson = finalCvAny as JsonResumeSchema;
+            finalCvJson = finalCvAny as JsonResumeSchema;
+        } else {
+            // For freeform CVs: verify all original top-level sections are present in the patch result
+            const finalCvAny = finalCvJson as Record<string, any>;
+            const baseCvAny = baseCvJson as Record<string, any>;
+            const baseKeys = Object.keys(baseCvAny).filter(k => k !== '__vh_tags');
 
-        // Safety-net: canonicalize section names first (in case AI used non-standard names)
-        finalCvJson = normalizeSectionNames(finalCvJson as Record<string, any>) as JsonResumeSchema;
-        // Safety-net: canonicalize field names second
-        finalCvJson = normalizeCvFieldNames(finalCvJson as Record<string, any>) as JsonResumeSchema;
-        // Tag enrichment LAST so tags are based on final canonical field/section names
+            for (const key of baseKeys) {
+                if (!(key in finalCvAny)) {
+                    console.log(`Freeform section "${key}" missing from tailored CV — restoring from base`);
+                    finalCvAny[key] = JSON.parse(JSON.stringify(baseCvAny[key]));
+                }
+            }
+            // Always preserve the original __vh_tags from base CV for freeform
+            finalCvAny.__vh_tags = baseCvAny.__vh_tags;
+            finalCvJson = finalCvAny as JsonResumeSchema;
+        }
+
+        // Safety-net normalizers: only run on JSON Resume CVs.
+        // Freeform CVs must preserve their original section keys exactly
+        // because __vh_tags paths are keyed to those exact names.
+        if (!isFreeformCv) {
+            finalCvJson = normalizeSectionNames(finalCvJson as Record<string, any>) as JsonResumeSchema;
+            finalCvJson = normalizeCvFieldNames(finalCvJson as Record<string, any>) as JsonResumeSchema;
+        }
+        // Tag enrichment runs on all CVs
         normalizeFreeformCvTags(finalCvJson);
 
         // Debug: Log final CV structure
@@ -885,9 +717,27 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         );
 
         let jobCv = await CV.findOne({ jobApplicationId: jobId, userId: userId });
+        const tailoringDetailsData = {
+            extractedKeywords: jdAnalysis.extractedKeywords,
+            summaryRewrite: '',
+            reorderedExperience: [],
+            selectedProjects: [],
+            omittedProjects: [],
+            competencyGrid: jdAnalysis.competencyGrid,
+            keywordInjections: jdAnalysis.keywordInjections.map(i => ({ original: i.cvConcept, jdKeyword: i.jdKeyword, tailored: '' })),
+        };
+
+        // Extract summary from patch for logging
+        const summaryKey = Object.keys(patch).find(k => /summary|profil/i.test(k));
+        if (summaryKey && typeof patch[summaryKey] === 'string') {
+            tailoringDetailsData.summaryRewrite = patch[summaryKey];
+        }
+
         if (jobCv) {
             jobCv.cvJson = finalCvJson;
+            jobCv.cvFormat = isFreeformCv ? 'freeform' : 'json-resume';
             jobCv.tailoringChanges = tailoringChanges;
+            jobCv.tailoringDetails = tailoringDetailsData;
             await jobCv.save();
         } else {
             const jobInfo = await JobApplication.findById(jobId).select('jobTitle companyName');
@@ -898,11 +748,12 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             jobCv = await CV.create({
                 userId,
                 jobApplicationId: jobId,
-                isMasterCv: false,
                 isPrimary: false,
                 displayName,
                 cvJson: finalCvJson,
+                cvFormat: isFreeformCv ? 'freeform' : 'json-resume',
                 tailoringChanges,
+                tailoringDetails: tailoringDetailsData,
             });
         }
 
@@ -924,6 +775,12 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             message: `CV generated successfully in ${languageName}. Ready for review.`,
             jobId,
             changesCount: tailoringChanges.length,
+            tailoringSummary: {
+                keywordsCount: jdAnalysis.extractedKeywords?.length || 0,
+                competencyCount: jdAnalysis.competencyGrid?.length || 0,
+                patchedSectionsCount: Object.keys(patch).length,
+                keywordInjectionsCount: jdAnalysis.keywordInjections?.length || 0,
+            },
         });
 
     } catch (error: any) {
