@@ -159,7 +159,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     const [showRemoveCvConfirm, setShowRemoveCvConfirm] = React.useState(false);
     const [editingPdfBase64, setEditingPdfBase64] = React.useState<string | null>(null);
     const [isSavingPdf, setIsSavingPdf] = React.useState(false);
-    const [showSettings, setShowSettings] = React.useState(false);
+    const [showRetractForm, setShowRetractForm] = React.useState(false);
     const [tailoringSettings, setTailoringSettings] = React.useState<TailoringSettings>(() => loadTailoringSettings(jobId));
 
     // Load PDF for editing when component mounts (for raw PDF CVs)
@@ -223,10 +223,10 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
 
     return (
         <div>
-            {hasLocalCv ? (
+            {hasLocalCv && !showRetractForm ? (
                 <>
                     {!isCvTailored && (
-                        <div className="mb-4 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 flex items-start gap-3">
+                        <div className="mb-4 p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 flex items-center gap-3">
                             <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0">info</span>
                             <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-amber-900 dark:text-amber-200 text-sm">Base CV — not yet tailored</h3>
@@ -235,9 +235,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                 </p>
                             </div>
                             <Button
-                                onClick={() => handleGenerateSpecificCv(tailoringSettings)}
-                                disabled={isGeneratingCv}
-                                size="sm"
+                                onClick={() => setShowRetractForm(true)}
                                 className="flex-shrink-0 font-semibold whitespace-nowrap"
                             >
                                 {isGeneratingCv ? (
@@ -320,6 +318,15 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
             ) : (
                 <div>
                     <div className="mb-6">
+                        {showRetractForm && (
+                            <button
+                                onClick={() => setShowRetractForm(false)}
+                                className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mb-3"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                                Back to CV editor
+                            </button>
+                        )}
                         <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Tailor Your CV</h2>
                         <p className="text-gray-600 dark:text-gray-400 text-lg">
                             Generate a tailored version of your base CV for this job.
@@ -419,6 +426,63 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                 type="cv"
                                 onChange={setCustomInstructions}
                             />
+
+                            <div className="pt-4 space-y-3 border-t border-gray-200 dark:border-gray-600">
+                                <div className="flex items-center gap-2 pt-1">
+                                    <span className="material-symbols-outlined" style={{ color: "var(--accent)" }}>tune</span>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Options</h3>
+                                </div>
+
+                                {/* Match Address Toggle */}
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                        <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100" htmlFor="gen-toggle-match-address">
+                                            Match address to job location
+                                        </label>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                            Replace your CV's address with the job posting's location.
+                                        </p>
+                                    </div>
+                                    <button
+                                        id="gen-toggle-match-address"
+                                        role="switch"
+                                        aria-checked={tailoringSettings.matchAddress}
+                                        onClick={() => {
+                                            const next = { ...tailoringSettings, matchAddress: !tailoringSettings.matchAddress };
+                                            setTailoringSettings(next);
+                                            saveTailoringSettings(jobId, next);
+                                        }}
+                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${tailoringSettings.matchAddress ? 'bg-[var(--accent)] focus:ring-[var(--accent)]' : 'bg-gray-200 dark:bg-gray-600 focus:ring-gray-400'}`}
+                                    >
+                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${tailoringSettings.matchAddress ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+
+                                {/* Show Changes Toggle */}
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                        <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100" htmlFor="gen-toggle-show-changes">
+                                            Show tailoring changes
+                                        </label>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                            Generate a summary of changes made to your base CV. Disabling saves tokens.
+                                        </p>
+                                    </div>
+                                    <button
+                                        id="gen-toggle-show-changes"
+                                        role="switch"
+                                        aria-checked={tailoringSettings.showChanges}
+                                        onClick={() => {
+                                            const next = { ...tailoringSettings, showChanges: !tailoringSettings.showChanges };
+                                            setTailoringSettings(next);
+                                            saveTailoringSettings(jobId, next);
+                                        }}
+                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${tailoringSettings.showChanges ? 'bg-[var(--accent)] focus:ring-[var(--accent)]' : 'bg-gray-200 dark:bg-gray-600 focus:ring-gray-400'}`}
+                                    >
+                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${tailoringSettings.showChanges ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </Card>
 
@@ -442,15 +506,6 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                                     </>
                                 )}
                             </Button>
-                            <button
-                                type="button"
-                                onClick={() => setShowSettings(true)}
-                                disabled={isGeneratingCv}
-                                className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
-                                title="Tailoring settings"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">settings</span>
-                            </button>
                             <Button
                                 onClick={() => handleGenerateSpecificCv(tailoringSettings)}
                                 disabled={isGeneratingCv || !hasMasterCv || !tailoredJobDescription}
@@ -548,79 +603,6 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                 onConfirm={() => { void handleRemoveAttachedCv(); }}
                 onClose={() => setShowRemoveCvConfirm(false)}
             />
-
-            {/* Tailoring Settings Modal */}
-            {showSettings && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
-                    <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-gray-500 dark:text-gray-400">settings</span>
-                                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Tailoring Settings</h2>
-                            </div>
-                            <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-5">
-                            {/* Match Address Toggle */}
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1 min-w-0">
-                                    <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100" htmlFor="toggle-match-address">
-                                        Match address to job location
-                                    </label>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        When enabled, the AI will replace your CV's address with the job posting's location.
-                                    </p>
-                                </div>
-                                <button
-                                    id="toggle-match-address"
-                                    role="switch"
-                                    aria-checked={tailoringSettings.matchAddress}
-                                    onClick={() => {
-                                        const next = { ...tailoringSettings, matchAddress: !tailoringSettings.matchAddress };
-                                        setTailoringSettings(next);
-                                        saveTailoringSettings(jobId, next);
-                                    }}
-                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${tailoringSettings.matchAddress ? 'bg-[var(--accent)] focus:ring-[var(--accent)]' : 'bg-gray-200 dark:bg-gray-600 focus:ring-gray-400'}`}
-                                >
-                                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${tailoringSettings.matchAddress ? 'translate-x-5' : 'translate-x-0'}`} />
-                                </button>
-                            </div>
-
-                            {/* Show Changes Toggle */}
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1 min-w-0">
-                                    <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100" htmlFor="toggle-show-changes">
-                                        Show tailoring changes
-                                    </label>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        When enabled, an extra AI call generates a summary of changes made to your base CV. Disabling saves tokens.
-                                    </p>
-                                </div>
-                                <button
-                                    id="toggle-show-changes"
-                                    role="switch"
-                                    aria-checked={tailoringSettings.showChanges}
-                                    onClick={() => {
-                                        const next = { ...tailoringSettings, showChanges: !tailoringSettings.showChanges };
-                                        setTailoringSettings(next);
-                                        saveTailoringSettings(jobId, next);
-                                    }}
-                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${tailoringSettings.showChanges ? 'bg-[var(--accent)] focus:ring-[var(--accent)]' : 'bg-gray-200 dark:bg-gray-600 focus:ring-gray-400'}`}
-                                >
-                                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${tailoringSettings.showChanges ? 'translate-x-5' : 'translate-x-0'}`} />
-                                </button>
-                            </div>
-                        </div>
-                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end">
-                            <Button onClick={() => setShowSettings(false)} size="sm" className="font-semibold">
-                                Done
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

@@ -362,24 +362,25 @@ Do not include any explanation or markdown. Only the JSON object.`;
 
     // If no patches were applied, generate changes from the JD analysis alone
     if (patchKeys.length === 0) {
-    console.log('     No patches to compare — generating changes from JD analysis only');
-    const baseSnippets = buildSnippets(baseCvJson, tailorableKeys);
-    const analysisSnippet = `Keywords extracted: ${jdAnalysis.extractedKeywords.slice(0, 10).join(', ')}...`;
-    changesResult = await generateStructuredResponse<TailoringChangesResult>(userId, buildChangesPrompt(tailorableKeys, baseSnippets, { analysis: analysisSnippet }, jobDescription.split('\n')[0].substring(0, 80)), {
-      maxTokens: 4096,
-      responseJsonSchema: changesOnlyJsonSchema,
-      modelPreference: 'quality',
-    });
-    console.log(`     Generated ${changesResult.changes.length} changes`);
-  } else {
-    const baseSnippets = buildSnippets(baseCvJson, patchKeys);
-    const patchSnippets = buildSnippets(sanitizedPatch, patchKeys);
-    changesResult = await generateStructuredResponse<TailoringChangesResult>(userId, buildChangesPrompt(patchKeys, baseSnippets, patchSnippets, jobDescription.split('\n')[0].substring(0, 80)), {
-      maxTokens: 4096,
-      responseJsonSchema: changesOnlyJsonSchema,
-      modelPreference: 'quality',
-    });
-    console.log(`     Generated ${changesResult.changes.length} changes`);
+      console.log('     No patches to compare — generating changes from JD analysis only');
+      const baseSnippets = buildSnippets(baseCvJson, tailorableKeys);
+      const analysisSnippet = `Keywords extracted: ${jdAnalysis.extractedKeywords.slice(0, 10).join(', ')}...`;
+      changesResult = await generateStructuredResponse<TailoringChangesResult>(userId, buildChangesPrompt(tailorableKeys, baseSnippets, { analysis: analysisSnippet }, jobDescription.split('\n')[0].substring(0, 80)), {
+        maxTokens: 4096,
+        responseJsonSchema: changesOnlyJsonSchema,
+        modelPreference: 'quality',
+      });
+      console.log(`     Generated ${changesResult.changes.length} changes`);
+    } else {
+      const baseSnippets = buildSnippets(baseCvJson, patchKeys);
+      const patchSnippets = buildSnippets(sanitizedPatch, patchKeys);
+      changesResult = await generateStructuredResponse<TailoringChangesResult>(userId, buildChangesPrompt(patchKeys, baseSnippets, patchSnippets, jobDescription.split('\n')[0].substring(0, 80)), {
+        maxTokens: 4096,
+        responseJsonSchema: changesOnlyJsonSchema,
+        modelPreference: 'quality',
+      });
+      console.log(`     Generated ${changesResult.changes.length} changes`);
+    }
   }
 
   // ── Log tailoring details ──
