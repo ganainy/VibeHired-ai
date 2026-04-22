@@ -1,12 +1,13 @@
 # Project State
 
-**Last activity:** 2026-04-22 - Completed plan 02-01: Refactor CvEditorPanel with JsonResume-first rendering
+**Last activity:** 2026-04-22 - Completed plan 02-02: Robust JsonResume normalization pipeline
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 - Phase 1 added: Pre-warmed Gemini Chat Sessions & Streaming Responses for Interview Buddy speed optimization
 - Phase 2 plan 02-01 completed: CvEditorPanel dual rendering with structured JsonResume editor as primary
+- Phase 2 plan 02-02 completed: Upload pipeline now compacts freeform CVs to JsonResume with batch migration script
 
 ## Phase 02: Unify CV Editor
 
@@ -14,9 +15,11 @@
 - **02-01** — Refactor CvEditorPanel with JsonResume-first rendering ✅
   - Commits: `8ef95c7`, `9e1953d`, `3757a38`
   - Files: `client/src/utils/isJsonResume.ts`, `client/src/components/cv-workspace/CvEditorPanel.tsx`, `client/src/components/cv-editor/CvDocumentRenderer.tsx`
+- **02-02** — Robust JsonResume normalization pipeline ✅
+  - Commits: `501de89`, `c4520d7`, `53e3cda`, `679d613`
+  - Files: `server/src/utils/cvNormalizer.ts`, `server/src/utils/cvFormatDetector.ts`, `server/src/routes/cvs.ts`, `server/src/scripts/migrate-freeform-to-jsonresume.ts`
 
 ### Plans Remaining
-- [ ] 02-02 — Robust JsonResume normalization pipeline
 - [ ] 02-03 — Verify unified experience across both pages
 
 ## Quick Tasks Completed
