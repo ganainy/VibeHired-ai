@@ -55,7 +55,14 @@ export interface CVDocument {
         status: string;
         jobUrl?: string;
     } | null;
+    /**
+     * CV data in JsonResume format.
+     * Legacy freeform CVs may not fully conform — client should use isJsonResumeLike()
+     * to determine which editor to render.
+     */
     cvJson?: JsonResumeSchema | null;
+    /** Format classification set at upload time. Helps the client choose the right editor. */
+    cvFormat?: 'json-resume' | 'freeform' | null;
     hasOriginalCvJson?: boolean;
     extractionMode?: 'strict' | 'standard' | null;
     extractionTimestamp?: string | null;

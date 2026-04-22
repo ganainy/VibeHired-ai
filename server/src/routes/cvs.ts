@@ -323,6 +323,7 @@ router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
             displayName: cv.displayName,
             jobApplicationId: cv.jobApplicationId,
             cvJson: lite ? undefined : cv.cvJson,
+            cvFormat: cv.cvFormat ?? null,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
             extractionMode: cv.extractionMode ?? null,
             extractionTimestamp: cv.extractionTimestamp ?? null,
@@ -396,6 +397,7 @@ router.get('/master', asyncHandler(async (req: Request, res: Response) => {
             _id: baseCv._id,
             isDefault: baseCv.isDefault,
             cvJson: baseCv.cvJson,
+            cvFormat: baseCv.cvFormat ?? null,
             cvDescriptor: baseCv.cvDescriptor ?? null,
             cvData: baseCv.cvData ?? null,
             templateId: effectiveTemplate,
@@ -457,6 +459,7 @@ router.post('/create-branch', asyncHandler(async (req: Request, res: Response) =
             category: newBranch.category,
             displayName: newBranch.displayName,
             cvJson: newBranch.cvJson,
+            cvFormat: newBranch.cvFormat ?? null,
             hasOriginalCvJson: Boolean(newBranch.originalCvJson),
             extractionMode: newBranch.extractionMode ?? null,
             extractionTimestamp: newBranch.extractionTimestamp ?? null,
@@ -526,6 +529,7 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
             jobApplicationId: cv.jobApplicationId,
             jobApplication: (cv as any).jobApplication || null,
             cvJson: cv.cvJson,
+            cvFormat: cv.cvFormat ?? null,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
             extractionMode: cv.extractionMode ?? null,
             extractionTimestamp: cv.extractionTimestamp ?? null,
@@ -607,6 +611,7 @@ router.get('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
             isDefault: cv.isDefault,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
+            cvFormat: cv.cvFormat ?? null,
             cvDescriptor: cv.cvDescriptor ?? null,
             cvData: cv.cvData ?? null,
             templateId: effectiveTemplate,
@@ -677,6 +682,7 @@ router.post(
                 category: newCv.category,
                 displayName: newCv.displayName,
                 cvJson: normalizedCvJson,
+                cvFormat: newCv.cvFormat ?? null,
                 hasOriginalCvJson: Boolean(newCv.originalCvJson),
                 extractionMode: newCv.extractionMode ?? null,
                 cvDescriptor: newCv.cvDescriptor ?? null,
@@ -719,11 +725,13 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
     let originalCvJson: JsonResumeSchema | null = null;
     let extractionMode: 'strict' | 'standard' | null = null;
     let extractionTimestamp: Date | null = null;
+    let cvFormat: 'json-resume' | 'freeform' | null = null;
     if (req.body.cvJson) {
         cvJson = req.body.cvJson;
         originalCvJson = JSON.parse(JSON.stringify(req.body.cvJson));
         extractionMode = 'standard';
         extractionTimestamp = new Date();
+        cvFormat = detectCvFormat(cvJson, true);
     } else {
         // Copy from primary CV
         const primaryCv = await CV.getDefaultCv(userId as string);
@@ -734,6 +742,7 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
         originalCvJson = primaryCv.originalCvJson ? JSON.parse(JSON.stringify(primaryCv.originalCvJson)) : null;
         extractionMode = primaryCv.extractionMode ?? null;
         extractionTimestamp = primaryCv.extractionTimestamp ?? null;
+        cvFormat = primaryCv.cvFormat ?? null;
     }
 
     const newCv = await CV.create({
@@ -742,6 +751,7 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
         displayName: `Job CV - ${job.jobTitle} at ${job.companyName}`,
         jobApplicationId: new mongoose.Types.ObjectId(jobId),
         cvJson,
+        cvFormat,
         originalCvJson,
         extractionMode,
         extractionTimestamp,
@@ -754,6 +764,7 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
             _id: newCv._id,
             jobApplicationId: newCv.jobApplicationId,
             cvJson: newCv.cvJson,
+            cvFormat: newCv.cvFormat ?? null,
             templateId: newCv.templateId,
             isStarred: newCv.isStarred ?? false,
             createdAt: newCv.createdAt,
@@ -823,6 +834,7 @@ router.post(
                 category: newCv.category,
                 displayName: newCv.displayName,
                 cvJson: normalizedCvJson,
+                cvFormat: newCv.cvFormat ?? null,
                 hasOriginalCvJson: Boolean(newCv.originalCvJson),
                 extractionMode: newCv.extractionMode ?? null,
                 cvDescriptor: newCv.cvDescriptor ?? null,
@@ -897,6 +909,7 @@ router.post('/job/:jobId/from-base', asyncHandler(async (req: Request, res: Resp
             jobApplicationId: jobCv.jobApplicationId,
             displayName: jobCv.displayName,
             cvJson: jobCv.cvJson,
+            cvFormat: jobCv.cvFormat ?? null,
             filename: jobCv.filename,
             templateId: jobCv.templateId,
             isStarred: jobCv.isStarred ?? false,
@@ -950,6 +963,7 @@ router.post(
                 jobApplicationId: jobCv.jobApplicationId,
                 displayName: jobCv.displayName,
                 cvJson: null,
+                cvFormat: jobCv.cvFormat ?? null,
                 filename: jobCv.filename,
                 isStarred: jobCv.isStarred ?? false,
                 createdAt: jobCv.createdAt,
@@ -1024,6 +1038,7 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
             isDefault: cv.isDefault,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
+            cvFormat: cv.cvFormat ?? null,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
             extractionMode: cv.extractionMode ?? null,
             extractionTimestamp: cv.extractionTimestamp ?? null,
@@ -1100,6 +1115,7 @@ router.post('/:id/reset-from-source', asyncHandler(async (req: Request, res: Res
             isDefault: cv.isDefault,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
+            cvFormat: cv.cvFormat ?? null,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
             extractionMode: cv.extractionMode ?? null,
             extractionTimestamp: cv.extractionTimestamp ?? null,
