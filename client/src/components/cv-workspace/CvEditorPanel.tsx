@@ -18,10 +18,10 @@ const showToast = (message: string, _type: 'success' | 'error' | 'info' = 'info'
 export type CvSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 export interface CvEditorPanelProps {
-  /** Unified CV data */
-  data: FreeformJsonObject | null;
+  /** Unified CV data — may be JsonResume (structured) or freeform */
+  data: FreeformJsonObject | JsonResumeSchema | null;
   /** Called on every edit */
-  onChange: (data: FreeformJsonObject) => void;
+  onChange: (data: FreeformJsonObject | JsonResumeSchema) => void;
   /** Called when the user clicks Save */
   onSave: () => Promise<void> | void;
   /** Save lifecycle status */
@@ -47,7 +47,7 @@ export interface CvEditorPanelProps {
 
   // ── Structured editor props (forwarded to CvDocumentRenderer) ───────────
   analyses?: Record<string, SectionAnalysisResult[]>;
-  onImproveSection?: (sectionName: string, sectionIndex: number, originalData: any) => void;
+  onImproveSection?: (sectionName: string, sectionIndex: number, originalData: any, instructions?: string) => void;
   improvingSections?: Record<string, boolean>;
 
   // ── Dynamic editor props (kept for backward compat) ──────────────────────

@@ -11,7 +11,7 @@ interface CvDocumentRendererProps {
     data: JsonResumeSchema;
     onChange: (data: JsonResumeSchema) => void;
     analyses?: Record<string, SectionAnalysisResult[]>;
-    onImproveSection?: (sectionName: string, sectionIndex: number, originalData: any) => void;
+    onImproveSection?: (sectionName: string, sectionIndex: number, originalData: any, instructions?: string) => void;
     improvingSections?: Record<string, boolean>;
 }
 
