@@ -16,7 +16,7 @@ import JobApplication from '../models/JobApplication';
 import { generateContentWithFile } from '../utils/aiService';
 import { generateDescriptorFromJson, improveDynamicSectionWithAi } from '../services/generatorService';
 import { normalizeFreeformCvTags } from '../utils/vhTagNormalizer';
-import { normalizeCvFieldNames } from '../utils/cvNormalizer';
+import { normalizeCvFieldNames, compactFreeformToJsonResume } from '../utils/cvNormalizer';
 import { detectCvFormat } from '../utils/cvFormatDetector';
 import { GoogleGenerativeAIError } from '@google/generative-ai';
 import { NotFoundError, ValidationError } from '../utils/errors/AppError';
@@ -640,9 +640,9 @@ router.post(
         console.log(`Processing CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
-        const detectedFormat = detectCvFormat(cvJsonResume as Record<string, any>);
-        const normalizedCvJson = normalizeCvFieldNames(cvJsonResume);
-        const originalCvJson = JSON.parse(JSON.stringify(normalizedCvJson));
+        const originalCvJson = JSON.parse(JSON.stringify(cvJsonResume));
+        const normalizedCvJson = compactFreeformToJsonResume(cvJsonResume);
+        const detectedFormat = detectCvFormat(normalizedCvJson);
 
         // Generate AI-driven descriptor + structured data in one additional call.
         // Errors here are non-fatal: the CV is still created with the legacy cvJson.
@@ -788,9 +788,9 @@ router.post(
         console.log(`Processing branch CV file: ${req.file.originalname}, MIME Type: ${req.file.mimetype}`);
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
-        const detectedFormat = detectCvFormat(cvJsonResume as Record<string, any>);
-        const normalizedCvJson = normalizeCvFieldNames(cvJsonResume);
-        const originalCvJson = JSON.parse(JSON.stringify(normalizedCvJson));
+        const originalCvJson = JSON.parse(JSON.stringify(cvJsonResume));
+        const normalizedCvJson = compactFreeformToJsonResume(cvJsonResume);
+        const detectedFormat = detectCvFormat(normalizedCvJson);
 
         const branchCvDescriptor = null;
         const branchCvData = null;
