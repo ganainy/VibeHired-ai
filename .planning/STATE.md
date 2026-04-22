@@ -1,6 +1,6 @@
 # Project State
 
-**Last activity:** 2026-04-22 - Completed plan 02-02: Robust JsonResume normalization pipeline
+**Last activity:** 2026-04-22 - Completed plan 02-03: Verify unified experience across both pages
 
 ## Accumulated Context
 
@@ -18,9 +18,12 @@
 - **02-02** — Robust JsonResume normalization pipeline ✅
   - Commits: `501de89`, `c4520d7`, `53e3cda`, `679d613`
   - Files: `server/src/utils/cvNormalizer.ts`, `server/src/utils/cvFormatDetector.ts`, `server/src/routes/cvs.ts`, `server/src/scripts/migrate-freeform-to-jsonresume.ts`
+- **02-03** — Verify unified experience across both pages ✅
+  - Commits: `64ec017`, `d1e46ea`, `aaa27e4`
+  - Files: `client/src/components/cv-workspace/CvEditorPanel.tsx`, `client/src/components/cv-editor/CvDocumentRenderer.tsx`, `client/src/services/cvApi.ts`, `client/src/utils/isJsonResume.ts`, `server/src/routes/cvs.ts`
 
 ### Plans Remaining
-- [ ] 02-03 — Verify unified experience across both pages
+- None — Phase 02 complete
 
 ## Quick Tasks Completed
 
