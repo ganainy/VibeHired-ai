@@ -2,8 +2,12 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Button } from '../common';
 import InPlaceCvEditor from '../cv-editor/InPlaceCvEditor';
+import CvDocumentRenderer from '../cv-editor/CvDocumentRenderer';
 import { FreeformJsonObject } from '../cv-freeform/freeformUtils';
 import { hasMeaningfulContent } from '../../utils/hasMeaningfulContent';
+import { isJsonResumeLike } from '../../utils/isJsonResume';
+import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
+import { SectionAnalysisResult } from '../../services/analysisApi';
 import RawPdfPlaceholder from './RawPdfPlaceholder';
 
 const showToast = (message: string, _type: 'success' | 'error' | 'info' = 'info') => {
@@ -40,6 +44,19 @@ export interface CvEditorPanelProps {
   onPdfSave?: (updatedPdfBase64: string) => Promise<void> | void;
   isPdfSaving?: boolean;
   isLoadingPdf?: boolean;
+
+  // ── Structured editor props (forwarded to CvDocumentRenderer) ───────────
+  analyses?: Record<string, SectionAnalysisResult[]>;
+  onImproveSection?: (sectionName: string, sectionIndex: number, originalData: any) => void;
+  improvingSections?: Record<string, boolean>;
+
+  // ── Dynamic editor props (kept for backward compat) ──────────────────────
+  cvDescriptor?: any;
+  cvData?: any;
+  onDynamicChange?: (payload: any) => void;
+  diffChanges?: any[];
+  showDiffOverlay?: boolean;
+  cvId?: string;
 }
 
 const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
@@ -58,6 +75,9 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   onPdfSave,
   isPdfSaving = false,
   isLoadingPdf = false,
+  analyses,
+  onImproveSection,
+  improvingSections,
 }) => {
   const [rightView] = useState<'preview' | 'ats'>(atsPanel ? defaultRightView : 'preview');
   const previewRef = useRef<HTMLDivElement>(null);
@@ -89,6 +109,8 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   const statusDisplay = saveStatusConfig[saveStatus];
 
   const isPdfEditing = Boolean(pdfBase64 && onPdfSave);
+
+  const jsonResumeData: JsonResumeSchema | null = isJsonResumeLike(data) ? (data as JsonResumeSchema) : null;
 
   // Recalculate total pages whenever data changes or the container resizes.
   useEffect(() => {
@@ -256,7 +278,17 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                 id="cv-preview-wrapper"
                 className="flex flex-col items-center min-w-full pb-10"
               >
-                <InPlaceCvEditor value={data} onChange={onChange} />
+                {jsonResumeData ? (
+                  <CvDocumentRenderer
+                    data={jsonResumeData}
+                    onChange={(updated) => onChange(updated as FreeformJsonObject)}
+                    analyses={analyses}
+                    onImproveSection={onImproveSection}
+                    improvingSections={improvingSections}
+                  />
+                ) : (
+                  <InPlaceCvEditor value={data} onChange={onChange} />
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full w-full text-gray-400">
