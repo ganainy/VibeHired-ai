@@ -642,7 +642,7 @@ router.post(
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
         const originalCvJson = JSON.parse(JSON.stringify(cvJsonResume));
         const normalizedCvJson = compactFreeformToJsonResume(cvJsonResume);
-        const detectedFormat = detectCvFormat(normalizedCvJson);
+        const detectedFormat = detectCvFormat(normalizedCvJson, true);
 
         // Generate AI-driven descriptor + structured data in one additional call.
         // Errors here are non-fatal: the CV is still created with the legacy cvJson.
@@ -790,7 +790,7 @@ router.post(
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
         const originalCvJson = JSON.parse(JSON.stringify(cvJsonResume));
         const normalizedCvJson = compactFreeformToJsonResume(cvJsonResume);
-        const detectedFormat = detectCvFormat(normalizedCvJson);
+        const detectedFormat = detectCvFormat(normalizedCvJson, true);
 
         const branchCvDescriptor = null;
         const branchCvData = null;
