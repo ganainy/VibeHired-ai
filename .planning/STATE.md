@@ -1,11 +1,23 @@
 # Project State
 
-**Last activity:** 2026-03-28 - Completed quick task 260328-twj: Show loading indicator in Interview Buddy during transcription
+**Last activity:** 2026-04-22 - Completed plan 02-01: Refactor CvEditorPanel with JsonResume-first rendering
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 - Phase 1 added: Pre-warmed Gemini Chat Sessions & Streaming Responses for Interview Buddy speed optimization
+- Phase 2 plan 02-01 completed: CvEditorPanel dual rendering with structured JsonResume editor as primary
+
+## Phase 02: Unify CV Editor
+
+### Plans Completed
+- **02-01** — Refactor CvEditorPanel with JsonResume-first rendering ✅
+  - Commits: `8ef95c7`, `9e1953d`, `3757a38`
+  - Files: `client/src/utils/isJsonResume.ts`, `client/src/components/cv-workspace/CvEditorPanel.tsx`, `client/src/components/cv-editor/CvDocumentRenderer.tsx`
+
+### Plans Remaining
+- [ ] 02-02 — Robust JsonResume normalization pipeline
+- [ ] 02-03 — Verify unified experience across both pages
 
 ## Quick Tasks Completed
 
