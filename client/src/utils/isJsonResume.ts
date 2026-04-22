@@ -21,6 +21,8 @@ function isMetaLikeKey(key: string): boolean {
   return META_KEY_PATTERNS.some((pattern) => pattern.test(key));
 }
 
+export type CvEditorMode = 'structured' | 'freeform' | 'pdf-only';
+
 /**
  * Lenient check: does the object look like a JsonResume?
  * Returns true if the object has at least 2 known JsonResume top-level keys,
@@ -104,4 +106,36 @@ export function isValidJsonResume(data: unknown): data is JsonResumeSchema {
   }
 
   return true;
+}
+
+/**
+ * Determine the best editor mode for a given CV document.
+ *
+ * - 'pdf-only': The CV has an original PDF but no parseable JSON data
+ * - 'structured': The CV has valid JsonResume data — use CvDocumentRenderer
+ * - 'freeform': The CV has JSON data but it's not valid JsonResume — use InPlaceCvEditor
+ */
+export function getCvEditorMode(cv: { cvJson?: any; originalPdf?: boolean; hasOriginalCvJson?: boolean }): CvEditorMode {
+  if (!cv.cvJson || Object.keys(cv.cvJson).length === 0) {
+    // No JSON data — if PDF exists, show PDF editor
+    if (cv.originalPdf || cv.hasOriginalCvJson) {
+      return 'pdf-only';
+    }
+    return 'freeform'; // Empty state, will show placeholder
+  }
+
+  // Edge case: cvJson has ONLY __vh_tags and no real content
+  const keys = Object.keys(cv.cvJson).filter((k) => !isMetaLikeKey(k));
+  if (keys.length === 0) {
+    if (cv.originalPdf || cv.hasOriginalCvJson) {
+      return 'pdf-only';
+    }
+    return 'freeform';
+  }
+
+  if (isJsonResumeLike(cv.cvJson)) {
+    return 'structured';
+  }
+
+  return 'freeform';
 }
