@@ -1322,6 +1322,7 @@ const CVManagementPage: React.FC = () => {
             onPdfSave={handlePdfSave}
             isPdfSaving={isSavingPdf}
             isLoadingPdf={isLoadingPdf}
+            onDelete={activeCv?._id ? () => handleDeleteCv(activeCv._id) : undefined}
           />
           {/* Used in Jobs section  only for base CVs */}
           {isBaseCv && (
