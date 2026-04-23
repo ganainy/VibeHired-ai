@@ -16,7 +16,7 @@ import {
 } from '../../services/adminApi';
 import Spinner from '../common/Spinner';
 import CvPreviewModal from '../cv-editor/CvPreviewModal';
-import InPlaceCvEditor from '../cv-editor/InPlaceCvEditor';
+import CvDocumentRenderer from '../cv-editor/CvDocumentRenderer';
 import ConfirmModal from '../common/ConfirmModal';
 
 interface UserUsageModalProps {
@@ -585,9 +585,9 @@ const UserUsageModal: React.FC<UserUsageModalProps> = ({ userId, onClose, onUpda
                             </div>
                         ) : templatePreviewCv ? (
                             <div className="flex-1 overflow-y-auto border dark:border-gray-700 rounded-lg">
-                                <InPlaceCvEditor
-                                    value={templatePreviewCv.cvJson}
-                                    readonly={true}
+                                <CvDocumentRenderer
+                                    data={templatePreviewCv.cvJson}
+                                    onChange={() => {}}
                                 />
                             </div>
                         ) : (

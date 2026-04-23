@@ -14,6 +14,15 @@ export interface TailoringPipelineResult {
   tailoredCv: Record<string, any>;
 }
 
+export type ProgressEvent = {
+  step: string;
+  stepLabel: string;
+  description: string;
+  progress: number;
+};
+
+export type ProgressCallback = (event: ProgressEvent) => void;
+
 // Sections that typically need tailoring. We send only these to Gemini
 // to keep the prompt small and focused.
 const TAILORABLE_SECTION_PATTERNS = [
@@ -257,8 +266,10 @@ export async function runTailoringPipeline(
   languageName: string,
   isFreeformCv: boolean,
   showChanges: boolean = true,
+  onProgress?: ProgressCallback,
 ): Promise<TailoringPipelineResult> {
   // ── Call 1: JD Analysis ──
+  onProgress?.({ step: 'analyzing', stepLabel: 'Analyzing Job Description', description: 'Extracting keywords, competencies, and requirements from the job description...', progress: 15 });
   console.log('  → Pipeline Call 1/4: JD Analysis...');
   const jdAnalysis = await generateStructuredResponse<JdAnalysisResult>(userId, buildJdAnalysisPrompt(jobDescription), {
     maxTokens: 2048,
@@ -270,6 +281,8 @@ export async function runTailoringPipeline(
     console.log(`     Detected archetype: ${jdAnalysis.detectedArchetype}`);
   }
 
+  onProgress?.({ step: 'matching', stepLabel: 'Matching Skills & Experience', description: `Found ${jdAnalysis.extractedKeywords.length} key requirements. Matching your experience to the role...`, progress: 30 });
+
   // ── Extract only tailorable sections for Call 2 ──
   const { sections: tailorableSections, keys: tailorableKeys } = extractTailorableSections(baseCvJson);
   const allBaseKeys = Object.keys(baseCvJson).filter(k => k !== '__vh_tags');
@@ -278,6 +291,7 @@ export async function runTailoringPipeline(
   console.log(`  → Tailorable sections: ${tailorableKeys.join(', ')} (${tailorableSize} bytes vs ${fullSize} bytes full CV)`);
 
   // ── Call 2: Sparse Content Patch (only tailorable sections) ──
+  onProgress?.({ step: 'tailoring', stepLabel: 'Tailoring Your CV', description: 'Rewriting your CV content to highlight relevant experience and skills...', progress: 40 });
   console.log('  → Pipeline Call 2/4: Sparse Content Patch...');
   const prompt2 = buildContentPatchPrompt(tailorableSections, tailorableKeys, allBaseKeys, jobDescription, jdAnalysis, languageName);
   console.log(`     Prompt size: ${prompt2.length} chars`);
@@ -299,6 +313,7 @@ export async function runTailoringPipeline(
 
   // Attempt 2: fast model (if quality failed or returned empty)
   if (patchKeys.length === 0) {
+    onProgress?.({ step: 'tailoring', stepLabel: 'Tailoring Your CV', description: 'Retrying with alternative approach for better results...', progress: 48 });
     console.log('  → Retrying with fast model...');
     try {
       patch = await generateStructuredResponse<ContentPatchResult>(userId, prompt2, {
@@ -314,6 +329,7 @@ export async function runTailoringPipeline(
 
   // Attempt 3: fast model with explicit retry prompt
   if (patchKeys.length === 0) {
+    onProgress?.({ step: 'tailoring', stepLabel: 'Tailoring Your CV', description: 'Optimizing content generation...', progress: 54 });
     console.log('  → Retrying with explicit instruction prompt...');
     const retryPrompt = prompt2 + `
 
@@ -345,6 +361,7 @@ Do not include any explanation or markdown. Only the JSON object.`;
   console.log(`     Patched ${patchKeys.length} sections: ${patchKeys.join(', ')}`);
 
   // ── Step 3: Validate & Merge ──
+  onProgress?.({ step: 'tailoring', stepLabel: 'Tailoring Your CV', description: `Tailored ${patchKeys.length} sections. Validating and merging changes...`, progress: 65 });
   const validatedPatch = validatePatch(patch, baseCvJson);
   const sanitizedPatch = sanitizePatchNulls(validatedPatch, baseCvJson);
   const tailoredCv = { ...baseCvJson, ...sanitizedPatch };
@@ -355,9 +372,17 @@ Do not include any explanation or markdown. Only the JSON object.`;
   let changesResult: TailoringChangesResult;
 
   if (!showChanges) {
+    onProgress?.({ step: 'finalizing', stepLabel: 'Finalizing Document', description: 'Preparing your tailored CV...', progress: 85 });
     console.log('  → Pipeline Call 3/4: Changes Generation — SKIPPED (showChanges=false)');
-    changesResult = { changes: [] };
+    changesResult = {
+      changes: [{
+        section: 'Full CV',
+        description: `AI tailored your CV for this role — ${patchKeys.length} section${patchKeys.length !== 1 ? 's' : ''} updated to match job requirements`,
+        reason: 'Optimized content, keywords, and emphasis to align with the target position.',
+      }],
+    };
   } else {
+    onProgress?.({ step: 'finalizing', stepLabel: 'Finalizing Document', description: 'Summarizing the tailoring changes for your review...', progress: 80 });
     console.log('  → Pipeline Call 3/4: Changes Generation...');
 
     // If no patches were applied, generate changes from the JD analysis alone

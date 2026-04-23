@@ -1,0 +1,6 @@
+[submodule "external/career-ops"]
+	path = external/career-ops
+	url = https://github.com/santifer/career-ops.git
+[submodule "career-ops"]
+	path = career-ops
+	url = https://github.com/santifer/career-ops

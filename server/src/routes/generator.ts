@@ -505,20 +505,45 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
     const languageName = requestedLanguage === 'de' ? 'German' : 'English';
     const userId = user._id.toString();
 
+    // Set up SSE headers for streaming progress
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    const startTime = Date.now();
+    const sendProgress = (event: { step: string; stepLabel: string; description: string; progress: number }) => {
+        res.write(`data: ${JSON.stringify({ type: 'progress', ...event, elapsedMs: Date.now() - startTime })}\n\n`);
+    };
+
     try {
+        sendProgress({ step: 'analyzing', stepLabel: 'Preparing', description: 'Validating your CV and job description...', progress: 5 });
         // 1. Fetch Job & User data
         const job = await JobApplication.findOne({ _id: jobId, userId: userId });
-        if (!job) { res.status(404).json({ message: 'Job application not found or access denied.' }); return; }
+        if (!job) {
+            res.write(`data: ${JSON.stringify({ type: 'error', error: 'Job application not found or access denied.' })}\n\n`);
+            res.end();
+            return;
+        }
 
         if (jobDescriptionOverride) {
             job.jobDescriptionText = jobDescriptionOverride;
             await job.save();
         }
 
-        if (!job.jobDescriptionText) { res.status(400).json({ message: 'Job description text is missing.' }); return; }
+        if (!job.jobDescriptionText) {
+            res.write(`data: ${JSON.stringify({ type: 'error', error: 'Job description text is missing.' })}\n\n`);
+            res.end();
+            return;
+        }
 
         const currentUser = await User.findById(userId);
-        if (!currentUser) { res.status(404).json({ message: "User not found." }); return; }
+        if (!currentUser) {
+            res.write(`data: ${JSON.stringify({ type: 'error', error: 'User not found.' })}\n\n`);
+            res.end();
+            return;
+        }
 
         // 2. Resolve base CV
         let baseCvJson: JsonResumeSchema | null = null;
@@ -547,7 +572,11 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             }
         }
 
-        if (!baseCvJson) { res.status(400).json({ message: 'No base CV found in user profile or provided override.' }); return; }
+        if (!baseCvJson) {
+            res.write(`data: ${JSON.stringify({ type: 'error', error: 'No base CV found in user profile or provided override.' })}\n\n`);
+            res.end();
+            return;
+        }
 
         // DEBUG: Log the raw CV structure before normalization
         console.log('=== DEBUG: Raw base CV structure ===');
@@ -609,9 +638,8 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
         if (!hasBasics && !hasWork && !hasEducation && !hasSkills && !hasFreeformContent) {
             console.error('Base CV is empty or has no meaningful content. CV ID:', usedBaseCvId);
             console.error('All keys:', JSON.stringify(Object.keys(baseCvJson)));
-            res.status(400).json({
-                message: 'The base CV has no meaningful content. Please upload a properly formatted CV or use the CV editor to add your information first.'
-            });
+            res.write(`data: ${JSON.stringify({ type: 'error', error: 'The base CV has no meaningful content. Please upload a properly formatted CV or use the CV editor to add your information first.' })}\n\n`);
+            res.end();
             return;
         }
 
@@ -640,6 +668,7 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             languageName,
             isFreeformCv,
             showChanges,
+            sendProgress,
         );
 
         const tailoredCvJson = pipelineResult.tailoredCv;
@@ -750,6 +779,7 @@ let finalCvJson = tailoredCvJson;
         console.log('skills:', Array.isArray(finalCvJson.skills) ? `${finalCvJson.skills.length} items` : 'MISSING');
 
         // 8. Save CV draft
+        sendProgress({ step: 'finalizing', stepLabel: 'Finalizing Document', description: 'Saving your tailored CV...', progress: 92 });
         await JobApplication.findOneAndUpdate(
             { _id: jobId, userId: userId },
             { $set: { language: requestedLanguage, generationStatus: 'draft_ready' } },
@@ -810,7 +840,8 @@ let finalCvJson = tailoredCvJson;
             }
         }
 
-        res.status(200).json({
+        res.write(`data: ${JSON.stringify({
+            type: 'complete',
             status: "draft_ready",
             message: `CV generated successfully in ${languageName}. Ready for review.`,
             jobId,
@@ -821,7 +852,8 @@ let finalCvJson = tailoredCvJson;
                 patchedSectionsCount: Object.keys(patch).length,
                 keywordInjectionsCount: jdAnalysis.keywordInjections?.length || 0,
             },
-        });
+        })}\n\n`);
+        res.end();
 
     } catch (error: any) {
         console.error(`Error generating CV for job ${jobId}:`, error);
@@ -832,7 +864,8 @@ let finalCvJson = tailoredCvJson;
                 { $set: { generationStatus: 'error' } }
             ).catch(err => console.error("Failed to update job status to error:", err));
         }
-        res.status(500).json({ message: error.message || 'Failed to generate CV.' });
+        res.write(`data: ${JSON.stringify({ type: 'error', error: error.message || 'Failed to generate CV.' })}\n\n`);
+        res.end();
     }
 };
 

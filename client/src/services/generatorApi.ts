@@ -38,25 +38,112 @@ export interface GenerateDraftReadyResponse {
     changesCount?: number;
 }
 
-// Function to generate CV only (without cover letter)
-export const generateCvOnly = async (
+export interface GenerationProgressEvent {
+    type: 'progress';
+    step: string;
+    stepLabel: string;
+    description: string;
+    progress: number;
+    elapsedMs: number;
+}
+
+export interface GenerationCompleteEvent {
+    type: 'complete';
+    status: "draft_ready";
+    message: string;
+    jobId: string;
+    changesCount?: number;
+    tailoringSummary?: {
+        keywordsCount: number;
+        competencyCount: number;
+        patchedSectionsCount: number;
+        keywordInjectionsCount: number;
+    };
+}
+
+export interface GenerationErrorEvent {
+    type: 'error';
+    error: string;
+}
+
+export type GenerationSseEvent = GenerationProgressEvent | GenerationCompleteEvent | GenerationErrorEvent;
+
+export type GenerationProgressCallback = (event: GenerationProgressEvent) => void;
+
+export const generateCvWithProgress = async (
     jobId: string,
     language: 'en' | 'de' = 'en',
-    options: any = {}
+    options: any = {},
+    onProgress?: GenerationProgressCallback,
 ): Promise<GenerateDraftReadyResponse> => {
-    try {
-        const response = await axios.post<GenerateDraftReadyResponse>(
-            `${API_BASE_URL}/generator/${jobId}/generate-cv`,
-            { language, ...options }
-        );
-        return response.data;
-    } catch (error: any) {
-        console.error('Error generating CV:', error);
-        if (axios.isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.message || `HTTP error! status: ${error.response.status}`);
-        }
-        throw new Error(error.message || 'Failed to generate CV');
+    const token = localStorage.getItem('authToken');
+    const response = await fetch(`${API_BASE_URL}/generator/${jobId}/generate-cv`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ language, ...options }),
+    });
+
+    if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error((errBody as any).message || `HTTP error! status: ${response.status}`);
     }
+
+    if (!response.body) {
+        throw new Error('No response body');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let finalResult: GenerateDraftReadyResponse | null = null;
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith('data: ')) continue;
+            const jsonStr = trimmed.slice(6);
+            if (!jsonStr) continue;
+
+            try {
+                const event: GenerationSseEvent = JSON.parse(jsonStr);
+
+                if (event.type === 'progress' && onProgress) {
+                    onProgress(event);
+                } else if (event.type === 'complete') {
+                    finalResult = {
+                        status: event.status,
+                        message: event.message,
+                        jobId: event.jobId,
+                        changesCount: event.changesCount,
+                    };
+                } else if (event.type === 'error') {
+                    throw new Error(event.error || 'Failed to generate CV');
+                }
+            } catch (e) {
+                if (e instanceof Error && e.message !== 'Failed to generate CV' && !e.message.includes('HTTP error')) {
+                    console.warn('Failed to parse SSE event:', jsonStr, e);
+                } else {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    if (!finalResult) {
+        throw new Error('Generation completed but no result was received from the server.');
+    }
+
+    return finalResult;
 };
 
 // Function to render final PDFs when draft is ready

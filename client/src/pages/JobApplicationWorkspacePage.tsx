@@ -328,6 +328,9 @@ const JobApplicationWorkspacePage: React.FC = () => {
         setGenerateCvError,
         generationStep,
         generationProgress,
+        generationStepLabel,
+        generationDescription,
+        estimatedTimeRemaining,
         handleGenerateSpecificCv,
         handleUseBaseCvAsIs,
     } = useReviewGeneration({
@@ -709,7 +712,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
                             {activeTab === 'cv' && jobId && (
                                 <TailoredCvPage
                                     hasLocalCv={hasLocalCv}
-                                    isCvTailored={!!(tailoringChanges && tailoringChanges.length > 0)}
+                                    isCvTailored={!!(tailoringChanges && tailoringChanges.length > 0) || jobApplication?.generationStatus === 'draft_ready'}
                                     cvData={cvData}
                                     currentCvId={currentCvId}
                                     currentCvFilename={currentCvFilename}
@@ -736,6 +739,9 @@ const JobApplicationWorkspacePage: React.FC = () => {
 
                                     generationStep={generationStep}
                                     generationProgress={generationProgress}
+                                    generationStepLabel={generationStepLabel ?? ''}
+                                    generationDescription={generationDescription ?? ''}
+                                    estimatedTimeRemaining={estimatedTimeRemaining ?? null}
 
                                     cvSaveStatus={cvSaveStatus}
                                     lastSavedCvDataRef={lastSavedCvDataRef}
@@ -797,6 +803,9 @@ const JobApplicationWorkspacePage: React.FC = () => {
                 isOpen={isGeneratingCv}
                 generationStep={generationStep}
                 generationProgress={generationProgress}
+                stepLabel={generationStepLabel ?? ''}
+                description={generationDescription ?? ''}
+                estimatedTimeRemaining={estimatedTimeRemaining ?? null}
             />
 
             {/* CV Preview Modal */}

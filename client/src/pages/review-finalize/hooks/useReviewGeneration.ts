@@ -1,7 +1,7 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useState, useRef, type Dispatch, type SetStateAction } from 'react';
 import { updateCustomPrompts } from '../../../services/settingsApi';
 import { updateJob, JobApplication } from '../../../services/jobApi';
-import { generateCvOnly } from '../../../services/generatorApi';
+import { generateCvWithProgress, type GenerationProgressEvent } from '../../../services/generatorApi';
 import { DEFAULT_CV_PROMPT, DEFAULT_COVER_LETTER_PROMPT } from '../../../constants/prompts';
 import { generateCoverLetter } from '../../../services/coverLetterApi';
 import { createJobCvFromBase } from '../../../services/cvApi';
@@ -10,6 +10,13 @@ import { parseApiErrorMessage } from '../../../utils/parseApiError';
 import type { TailoringSettings } from '../../../components/review-finalize/TailoredCvPage';
 
 export type ReviewGenerationStep = 'idle' | 'analyzing' | 'matching' | 'tailoring' | 'finalizing';
+
+const STEP_WEIGHTS: Record<string, { label: string; startPct: number; estimatedMs: number }> = {
+    analyzing:  { label: 'Analyzing Job Description', startPct: 0,  estimatedMs: 8000  },
+    matching:   { label: 'Matching Skills & Experience', startPct: 25, estimatedMs: 12000 },
+    tailoring:  { label: 'Tailoring Your CV', startPct: 40, estimatedMs: 25000 },
+    finalizing: { label: 'Finalizing Document', startPct: 80, estimatedMs: 8000  },
+};
 
 interface UseReviewGenerationParams {
     jobId?: string;
@@ -64,29 +71,10 @@ export const useReviewGeneration = ({
     const [generateCvError, setGenerateCvError] = useState<string | null>(null);
     const [generationStep, setGenerationStep] = useState<ReviewGenerationStep>('idle');
     const [generationProgress, setGenerationProgress] = useState<number>(0);
-
-    useEffect(() => {
-        let interval: NodeJS.Timeout | undefined;
-        if (isGeneratingCv && generationProgress < 90) {
-            interval = setInterval(() => {
-                setGenerationProgress(prev => {
-                    const increment = Math.random() * 8;
-                    const newProgress = Math.min(prev + increment, 90);
-                    if (newProgress >= 20 && generationStep === 'analyzing') {
-                        setGenerationStep('matching');
-                    } else if (newProgress >= 50 && generationStep === 'matching') {
-                        setGenerationStep('tailoring');
-                    } else if (newProgress >= 80 && generationStep === 'tailoring') {
-                        setGenerationStep('finalizing');
-                    }
-                    return newProgress;
-                });
-            }, 500);
-        }
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [isGeneratingCv, generationProgress, generationStep]);
+    const [generationStepLabel, setGenerationStepLabel] = useState<string>('');
+    const [generationDescription, setGenerationDescription] = useState<string>('');
+    const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number | null>(null);
+    const generationStartRef = useRef<number | null>(null);
 
     const handleGenerateCoverLetter = async () => {
         if (!jobId || !jobApplication) return;
@@ -203,6 +191,10 @@ export const useReviewGeneration = ({
         setGenerateCvError(null);
         setGenerationStep('analyzing');
         setGenerationProgress(5);
+        setGenerationStepLabel('Preparing');
+        setGenerationDescription('Validating your CV and job description...');
+        setEstimatedTimeRemaining(null);
+        generationStartRef.current = Date.now();
 
         try {
             if (
@@ -239,25 +231,41 @@ export const useReviewGeneration = ({
 
             const language = jobApplication.language || 'en';
 
-            await new Promise(resolve => setTimeout(resolve, 800));
-            setGenerationStep('matching');
-            setGenerationProgress(25);
+            const onProgress = (event: GenerationProgressEvent) => {
+                const step = event.step as ReviewGenerationStep;
+                if (step) setGenerationStep(step);
+                if (event.stepLabel) setGenerationStepLabel(event.stepLabel);
+                if (event.description) setGenerationDescription(event.description);
+                setGenerationProgress(event.progress);
 
-            await new Promise(resolve => setTimeout(resolve, 800));
-            setGenerationStep('tailoring');
-            setGenerationProgress(45);
+                if (generationStartRef.current && STEP_WEIGHTS[event.step]) {
+                    const stepInfo = STEP_WEIGHTS[event.step];
+                    const progressWithinStep = Math.max(0, Math.min(1, (event.progress - stepInfo.startPct) / (100 - stepInfo.startPct)));
+                    const remainingInStep = stepInfo.estimatedMs * (1 - progressWithinStep);
+                    const stepsAfter = Object.entries(STEP_WEIGHTS)
+                        .filter(([key]) => {
+                            const order = ['analyzing', 'matching', 'tailoring', 'finalizing'];
+                            return order.indexOf(key) > order.indexOf(event.step);
+                        })
+                        .reduce((sum, [, val]) => sum + val.estimatedMs, 0);
+                    setEstimatedTimeRemaining(Math.round((remainingInStep + stepsAfter) / 1000));
+                }
+            };
 
-            const response = await generateCvOnly(jobId, language as 'en' | 'de', {
+            const response = await generateCvWithProgress(jobId, language as 'en' | 'de', {
                 baseCvId: selectedBaseCvId === 'master' ? undefined : selectedBaseCvId,
                 jobDescription: tailoredJobDescription,
                 customInstructions,
                 maxOutputTokens: 16384,
                 matchAddress: settings?.matchAddress ?? false,
                 showChanges: settings?.showChanges ?? true,
-            });
+            }, onProgress);
 
             setGenerationStep('finalizing');
             setGenerationProgress(100);
+            setGenerationStepLabel('Complete');
+            setGenerationDescription('Your tailored CV is ready!');
+            setEstimatedTimeRemaining(0);
 
             await new Promise(resolve => setTimeout(resolve, 600));
 
@@ -270,8 +278,6 @@ export const useReviewGeneration = ({
                 } catch (e) {
                     console.error('Failed to refresh credits UI:', e);
                 }
-            } else if (response.status === 'pending_input') {
-                setGenerateCvError('Generation requires additional input. Please check the console for details.');
             } else {
                 setGenerateCvError('Unexpected response from generation service.');
             }
@@ -282,6 +288,10 @@ export const useReviewGeneration = ({
             setIsGeneratingCv(false);
             setGenerationProgress(0);
             setGenerationStep('idle');
+            setGenerationStepLabel('');
+            setGenerationDescription('');
+            setEstimatedTimeRemaining(null);
+            generationStartRef.current = null;
         }
     };
 
@@ -318,6 +328,9 @@ export const useReviewGeneration = ({
             setIsGeneratingCv(false);
             setGenerationProgress(0);
             setGenerationStep('idle');
+            setGenerationStepLabel('');
+            setGenerationDescription('');
+            setEstimatedTimeRemaining(null);
         }
     };
 
@@ -333,6 +346,9 @@ export const useReviewGeneration = ({
         setGenerateCvError,
         generationStep,
         generationProgress,
+        generationStepLabel,
+        generationDescription,
+        estimatedTimeRemaining,
         handleGenerateSpecificCv,
         handleUseBaseCvAsIs,
     };

@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Button } from '../common';
 import CvDocumentRenderer from '../cv-editor/CvDocumentRenderer';
-import { FreeformJsonObject } from '../cv-freeform/freeformUtils';
+
 import { hasMeaningfulContent } from '../../utils/hasMeaningfulContent';
 import { isJsonResumeLike } from '../../utils/isJsonResume';
 import { JsonResumeSchema } from '../../../../server/src/types/jsonresume';
@@ -17,10 +17,10 @@ const showToast = (message: string, _type: 'success' | 'error' | 'info' = 'info'
 export type CvSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 export interface CvEditorPanelProps {
-  /** Unified CV data — may be JsonResume (structured) or freeform */
-  data: FreeformJsonObject | JsonResumeSchema | null;
+  /** Unified CV data in JsonResume format */
+  data: JsonResumeSchema | null;
   /** Called on every edit */
-  onChange: (data: FreeformJsonObject | JsonResumeSchema) => void;
+  onChange: (data: JsonResumeSchema) => void;
   /** Called when the user clicks Save */
   onSave: () => Promise<void> | void;
   /** Save lifecycle status */
@@ -33,6 +33,8 @@ export interface CvEditorPanelProps {
   onDelete?: () => void;
   /** Called when the user wants to download the original PDF (e.g. for non-JsonResume CVs) */
   onDownload?: () => void;
+  /** Hide the Download PDF and Delete toolbar actions */
+  hideToolbarActions?: boolean;
   className?: string;
   /** Optional ATS analysis panel */
   atsPanel?: React.ReactNode;
@@ -69,6 +71,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   children,
   onDelete,
   onDownload,
+  hideToolbarActions,
   className = '',
   atsPanel,
   defaultRightView = 'preview',
@@ -200,28 +203,32 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
               </div>
             )}
 
-            <Button
-              onClick={() => {
-                if (!previewRef.current) return showToast('Preview is not ready', 'error');
-                handlePrint();
-              }}
-              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 text-sm"
-            >
-              <span className="hidden sm:inline">Download PDF</span>
-            </Button>
-
-            {onDelete && (
+            {!hideToolbarActions && (
               <>
-                <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" />
                 <Button
-                  variant="danger"
-                  onClick={onDelete}
-                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-medium"
-                  title="Delete this tailored CV to regenerate with new instructions"
+                  onClick={() => {
+                    if (!previewRef.current) return showToast('Preview is not ready', 'error');
+                    handlePrint();
+                  }}
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 text-sm"
                 >
-                  <span className="material-symbols-outlined text-[18px]">delete</span>
-                  <span className="hidden sm:inline">Delete</span>
+                  <span className="hidden sm:inline">Download PDF</span>
                 </Button>
+
+                {onDelete && (
+                  <>
+                    <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" />
+                    <Button
+                      variant="danger"
+                      onClick={onDelete}
+                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-medium"
+                      title="Delete this tailored CV to regenerate with new instructions"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                      <span className="hidden sm:inline">Delete</span>
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -273,7 +280,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                 >
                   <CvDocumentRenderer
                     data={jsonResumeData}
-                    onChange={(updated) => onChange(updated as FreeformJsonObject)}
+                    onChange={(updated) => onChange(updated)}
                     analyses={analyses}
                     onImproveSection={onImproveSection}
                     improvingSections={improvingSections}
