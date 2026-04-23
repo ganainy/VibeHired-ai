@@ -72,6 +72,7 @@ const CVManagementPage: React.FC = () => {
   // Analysis state
   const [analyses, setAnalyses] = useState<Record<string, SectionAnalysisResult[]>>({});
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [isAnalysisOutdated, setIsAnalysisOutdated] = useState<boolean>(false);
   const [improvingSections, setImprovingSections] = useState<Record<string, boolean>>({});
 
   const atsPollingIntervalIdRef = useRef<NodeJS.Timeout | null>(null);
