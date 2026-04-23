@@ -31,6 +31,8 @@ export interface CvEditorPanelProps {
   children?: React.ReactNode;
   /** Called when the user clicks Delete */
   onDelete?: () => void;
+  /** Called when the user wants to download the original PDF (e.g. for non-JsonResume CVs) */
+  onDownload?: () => void;
   className?: string;
   /** Optional ATS analysis panel */
   atsPanel?: React.ReactNode;
@@ -66,6 +68,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   hasUnsavedChanges = false,
   children,
   onDelete,
+  onDownload,
   className = '',
   atsPanel,
   defaultRightView = 'preview',
@@ -287,12 +290,20 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                   <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-6">
                     This CV doesn't match the standard resume format. Please remove it and upload again to use the structured editor.
                   </p>
-                  {onDelete && (
-                    <Button variant="danger" onClick={onDelete} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                      Remove and Re-upload
-                    </Button>
-                  )}
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    {onDownload && (
+                      <Button variant="secondary" onClick={onDownload} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
+                        <span className="material-symbols-outlined text-[18px]">download</span>
+                        Download Original CV
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button variant="danger" onClick={onDelete} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                        Remove and Re-upload
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )
             ) : (

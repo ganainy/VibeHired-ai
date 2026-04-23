@@ -78,6 +78,9 @@ interface TailoredCvPageProps {
     // Generation Progress
     generationStep: GenerationStep;
     generationProgress: number;
+    generationStepLabel: string;
+    generationDescription: string;
+    estimatedTimeRemaining: number | null;
     
     // CV Editor State
     cvSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
@@ -135,6 +138,9 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
     setGenerateCvError,
     generationStep,
     generationProgress,
+    generationStepLabel,
+    generationDescription,
+    estimatedTimeRemaining,
     cvSaveStatus,
     lastSavedCvDataRef,
     improvingSections,
@@ -184,7 +190,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
 
     const handlePdfSave = async (updatedPdfBase64: string) => {
         if (!currentCvId) return;
-        
+
         setIsSavingPdf(true);
         try {
             await updateEditedPdf(currentCvId, updatedPdfBase64);
@@ -197,6 +203,19 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
             setIsSavingPdf(false);
         }
     };
+
+    const handleDownloadOriginalPdf = React.useCallback(() => {
+        if (!editingPdfBase64) {
+            showToast('Original PDF is not available', 'error');
+            return;
+        }
+        const link = document.createElement('a');
+        link.href = `data:application/pdf;base64,${editingPdfBase64}`;
+        link.download = currentCvFilename?.endsWith('.pdf') ? currentCvFilename : `${currentCvFilename || 'cv'}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }, [editingPdfBase64, currentCvFilename, showToast]);
 
     const handleRemoveAttachedCv = async () => {
         try {
@@ -275,6 +294,7 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                     onPdfSave={handlePdfSave}
                     isPdfSaving={isSavingPdf}
                     isLoadingPdf={isLoadingRawPdf}
+                    onDownload={handleDownloadOriginalPdf}
                     onDelete={async () => {
                         if (window.confirm('Are you sure you want to delete this CV? You will need to regenerate it.')) {
                             if (currentCvId) {
@@ -539,18 +559,18 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                         <div className="p-8">
                             <div className="flex justify-center mb-6">
                                 <SimpleLoader
-                                    message={
+                                    message={generationStepLabel || (
                                         generationStep === 'analyzing' ? 'Analyzing Job Requirements...' :
                                             generationStep === 'matching' ? 'Matching Skills & Experience...' :
                                                 generationStep === 'tailoring' ? 'Tailoring Your Resume...' :
                                                     'Finalizing Document...'
-                                    }
-                                    description={
+                                    )}
+                                    description={generationDescription || (
                                         generationStep === 'analyzing' ? 'Identifying key keywords and requirements from the job description.' :
                                             generationStep === 'matching' ? 'Finding the best projects and experiences from your history.' :
                                                 generationStep === 'tailoring' ? 'Rewriting descriptions to highlight relevance and impact.' :
                                                     'Formatting your new CV for maximum impact.'
-                                    }
+                                    )}
                                     height="auto"
                                 />
                             </div>
@@ -559,6 +579,16 @@ const TailoredCvPage: React.FC<TailoredCvPageProps> = ({
                             <div className="space-y-4">
                                 <div className="relative pt-1">
                                     <div className="flex mb-2 items-center justify-between">
+                                        {estimatedTimeRemaining !== null && estimatedTimeRemaining > 0 && (
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                ~{estimatedTimeRemaining}s remaining
+                                            </span>
+                                        )}
+                                        {estimatedTimeRemaining === 0 && generationProgress >= 100 && (
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                Done!
+                                            </span>
+                                        )}
                                         <div className="text-right">
                                             <span className="text-xs font-semibold inline-block" style={{ color: 'var(--accent)' }}>
                                                 {Math.round(generationProgress)}%
