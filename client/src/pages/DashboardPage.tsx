@@ -213,6 +213,7 @@ const DashboardPage: React.FC = () => {
 
   // --- Core State ---
   const [jobs, setJobs] = useState<JobApplication[]>([]);
+  const [allJobs, setAllJobs] = useState<JobApplication[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -431,18 +432,18 @@ const DashboardPage: React.FC = () => {
 
   const tagCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    jobs.forEach((job) => {
+    allJobs.forEach((job) => {
       getJobTags(job).forEach((tag) => {
         const key = tag.toLowerCase();
         counts.set(key, (counts.get(key) || 0) + 1);
       });
     });
     return counts;
-  }, [jobs]);
+  }, [allJobs]);
 
   const availableTags = useMemo(() => {
     const tags = new Map<string, string>();
-    jobs.forEach((job) => {
+    allJobs.forEach((job) => {
       getJobTags(job).forEach((tag) => {
         const key = tag.toLowerCase();
         if (!tags.has(key)) {
@@ -455,11 +456,11 @@ const DashboardPage: React.FC = () => {
       if (countDiff !== 0) return countDiff;
       return a.localeCompare(b);
     });
-  }, [jobs, tagCounts]);
+  }, [allJobs, tagCounts]);
 
   const hasUntaggedJobs = useMemo(
-    () => jobs.some((job) => getJobTags(job).length === 0),
-    [jobs]
+    () => allJobs.some((job) => getJobTags(job).length === 0),
+    [allJobs]
   );
 
   const hasFieldOptions = availableTags.length > 0;
@@ -593,13 +594,13 @@ const DashboardPage: React.FC = () => {
     return daysElapsed > 14;
   };
 
-  const favoriteCount = useMemo(() => jobs.filter((job) => job.isFavorite === true).length, [jobs]);
-  const notesCount = useMemo(() => jobs.filter((job) => !!job.notes && job.notes.trim().length > 0).length, [jobs]);
+  const favoriteCount = useMemo(() => allJobs.filter((job) => job.isFavorite === true).length, [allJobs]);
+  const notesCount = useMemo(() => allJobs.filter((job) => !!job.notes && job.notes.trim().length > 0).length, [allJobs]);
   const needsFollowUpJobIds = useMemo(
-    () => jobs
+    () => allJobs
       .filter((job) => job.status === 'Applied' && Boolean(getRecipientEmail(job)) && isOlderThanTwoWeeks(job))
       .map((job) => job._id),
-    [jobs]
+    [allJobs]
   );
   const needsFollowUpCount = needsFollowUpJobIds.length;
   const needsFollowUpJobIdSet = useMemo(() => new Set(needsFollowUpJobIds), [needsFollowUpJobIds]);
@@ -766,14 +767,42 @@ const DashboardPage: React.FC = () => {
   }, [preExtractionJobType]);
 
 
+  // --- Fetch all matching jobs (unpaginated) for tag/filter computation ---
+  useEffect(() => {
+    const fetchAllJobsForFilters = async () => {
+      try {
+        const params: GetJobsParams = {
+          limit: 'all',
+          sortBy: sortKey,
+          sortOrder: sortDirection,
+        };
+
+        if (filterStatus) params.status = filterStatus;
+        if (filterJobType) params.jobType = filterJobType;
+        if (debouncedFilterText) params.search = debouncedFilterText;
+        if (filterFavorite) params.isFavorite = true;
+        if (filterHasNotes) params.hasNotes = true;
+        if (filterTags.length > 0) params.tags = filterTags;
+        if (showOnlyDueFollowUps) params.followUpDue = true;
+
+        const result: JobsResponse = await getJobs(params);
+        setAllJobs(result.jobs);
+      } catch (err: any) {
+        console.error("Failed to fetch all jobs for filters:", err);
+      }
+    };
+    fetchAllJobsForFilters();
+  }, [debouncedFilterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, showOnlyDueFollowUps, sortKey, sortDirection]);
+
   // Note: Page reset is handled automatically by the fetchJobs useEffect dependencies above.
 
   // --- Derived State: Jobs from server (filtering & sorting done server-side) ---
   const displayedJobs = useMemo(() => {
-    // If groupByTag mode is active, show all jobs (handled by group fetch)
+    // If groupByTag mode is active, show all unpaginated jobs so grouping covers the full dataset
+    if (groupByTag) return allJobs;
     // Otherwise just return the paginated jobs from the server
     return jobs;
-  }, [jobs]);
+  }, [jobs, allJobs, groupByTag]);
 
   const groupedJobs = useMemo(() => {
     if (!groupByTag) return null;
@@ -890,6 +919,7 @@ const DashboardPage: React.FC = () => {
       const payload = formData as CreateJobPayload;
       const createdJob = await createJob(payload);
       setJobs(prevJobs => [createdJob, ...prevJobs]);
+      setAllJobs(prevJobs => [createdJob, ...prevJobs]);
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('vh:has-created-first-job', '1');
       }
@@ -921,6 +951,7 @@ const DashboardPage: React.FC = () => {
     try {
       await deleteJob(jobId);
       setJobs(prevJobs => prevJobs.filter(job => job._id !== jobId));
+      setAllJobs(prevJobs => prevJobs.filter(job => job._id !== jobId));
       setDeleteConfirmModal({ isOpen: false, jobId: null, jobTitle: '' });
       setToast({ message: 'Job application deleted successfully!', type: 'success' });
     } catch (err: any) {
@@ -942,6 +973,7 @@ const DashboardPage: React.FC = () => {
       const newFavoriteStatus = !job.isFavorite;
       const updatedJob = await updateJob(job._id, { isFavorite: newFavoriteStatus });
       setJobs(prevJobs => prevJobs.map(j => j._id === job._id ? updatedJob : j));
+      setAllJobs(prevJobs => prevJobs.map(j => j._id === job._id ? updatedJob : j));
       setToast({
         message: newFavoriteStatus ? 'Job added to favorites!' : 'Job removed from favorites',
         type: 'success'
@@ -1013,6 +1045,7 @@ const DashboardPage: React.FC = () => {
       }
 
       setJobs(prevJobs => [newJob, ...prevJobs]);
+      setAllJobs(prevJobs => [newJob, ...prevJobs]);
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('vh:has-created-first-job', '1');
       }
@@ -1106,6 +1139,7 @@ const DashboardPage: React.FC = () => {
     try {
       await updateJob(jobId, { status: newStatus });
       setJobs(prev => prev.map(j => j._id === jobId ? { ...j, status: newStatus } : j));
+      setAllJobs(prev => prev.map(j => j._id === jobId ? { ...j, status: newStatus } : j));
     } catch (error) {
       console.error('Failed to update status:', error);
     }
@@ -1655,7 +1689,7 @@ const DashboardPage: React.FC = () => {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {(() => {
-              const todayCount = jobs.filter(job => {
+              const todayCount = allJobs.filter(job => {
                 const jobDate = new Date(job.createdAt);
                 const today = new Date();
                 return job.status === 'Applied' &&

@@ -18,7 +18,7 @@ export interface JobsResponse {
 
 export interface GetJobsParams {
     page?: number;
-    limit?: number;
+    limit?: number | 'all';
     status?: string;
     jobType?: string;
     search?: string;
@@ -38,7 +38,7 @@ type CacheEntry = {
     paramsKey: string;
 };
 let jobsCache: CacheEntry | null = null;
-let jobsInFlightRequest: Promise<JobsResponse> | null = null;
+const jobsInFlightRequests = new Map<string, Promise<JobsResponse>>();
 
 /**
  * Build a stable cache key from the request params.
@@ -47,7 +47,8 @@ let jobsInFlightRequest: Promise<JobsResponse> | null = null;
 const buildCacheKey = (params: GetJobsParams = {}): string => {
     const p = params;
     const tagsKey = p.tags ? p.tags.sort().join(',') : '';
-    return `p${p.page || 1}_l${p.limit || 10}_s${p.search || ''}_st${p.status || ''}_jt${p.jobType || ''}_fav${p.isFavorite ? '1' : '0'}_notes${p.hasNotes ? '1' : '0'}_tags${tagsKey}_followUp${p.followUpDue ? '1' : '0'}_sort${p.sortBy || 'createdAt'}_${p.sortOrder || 'desc'}`;
+    const limitKey = p.limit === 'all' ? 'all' : (p.limit || 10);
+    return `p${p.page || 1}_l${limitKey}_s${p.search || ''}_st${p.status || ''}_jt${p.jobType || ''}_fav${p.isFavorite ? '1' : '0'}_notes${p.hasNotes ? '1' : '0'}_tags${tagsKey}_followUp${p.followUpDue ? '1' : '0'}_sort${p.sortBy || 'createdAt'}_${p.sortOrder || 'desc'}`;
 };
 
 const isCacheFresh = (paramsKey: string): boolean => {
@@ -62,7 +63,7 @@ const setCache = (paramsKey: string, data: JobsResponse): void => {
 
 const invalidateCache = (): void => {
     jobsCache = null;
-    jobsInFlightRequest = null;
+    jobsInFlightRequests.clear();
 };
 
 const updateCachedJob = (paramsKey: string, jobId: string, updater: (job: JobApplication) => JobApplication): void => {
@@ -196,8 +197,9 @@ export const getJobs = async (params: GetJobsParams = {}): Promise<JobsResponse>
             return jobsCache!.data;
         }
 
-        if (jobsInFlightRequest) {
-            return jobsInFlightRequest;
+        const inFlight = jobsInFlightRequests.get(paramsKey);
+        if (inFlight) {
+            return inFlight;
         }
 
         const queryParams = new URLSearchParams();
@@ -215,17 +217,18 @@ export const getJobs = async (params: GetJobsParams = {}): Promise<JobsResponse>
 
         const url = `${API_BASE_URL}/job-applications?${queryParams.toString()}`;
 
-        jobsInFlightRequest = axios.get(url)
+        const request = axios.get(url)
             .then((response) => {
                 const result = response.data as JobsResponse;
                 setCache(paramsKey, result);
                 return result;
             })
             .finally(() => {
-                jobsInFlightRequest = null;
+                jobsInFlightRequests.delete(paramsKey);
             });
 
-        return jobsInFlightRequest;
+        jobsInFlightRequests.set(paramsKey, request);
+        return request;
     }
     catch (error) {
         console.error("Error fetching jobs:", error);

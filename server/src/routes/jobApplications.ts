@@ -100,8 +100,9 @@ const getJobsHandler: RequestHandler = async (req, res) => {
 
     // --- Pagination params ---
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
+    const limitParam = req.query.limit as string | undefined;
+    const limit = limitParam === 'all' ? undefined : (parseInt(limitParam as string) || 10);
+    const skip = limit ? (page - 1) * limit : 0;
 
     // --- Filter params ---
     const query: any = { userId, showInDashboard: true };
@@ -144,19 +145,21 @@ const getJobsHandler: RequestHandler = async (req, res) => {
     const total = await JobApplication.countDocuments(query);
 
     // --- Fetch paginated jobs ---
-    const jobs = await JobApplication.find(query)
+    let jobQuery = JobApplication.find(query)
       .select('-draftCvJson -draftCoverLetterText -jobDescriptionText -chatHistory')
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit);
+      .sort(sortOptions);
+    if (limit) {
+      jobQuery = jobQuery.skip(skip).limit(limit);
+    }
+    const jobs = await jobQuery;
 
     res.status(200).json({
       jobs,
       pagination: {
         page,
-        limit,
+        limit: limit ?? 'all',
         total,
-        pages: Math.ceil(total / limit),
+        pages: limit ? Math.ceil(total / limit) : 1,
       },
     });
   } catch (error) {
