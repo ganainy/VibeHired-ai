@@ -664,6 +664,22 @@ const CVManagementPage: React.FC = () => {
     }
   };
 
+  const handleDownloadOriginalPdf = useCallback(() => {
+    if (!editingPdfBase64) {
+      setToast({ message: 'Original PDF is not available', type: 'error' });
+      return;
+    }
+    const filename = activeCv?.filename?.endsWith('.pdf')
+      ? activeCv.filename
+      : `${activeCv?.filename || 'cv'}.pdf`;
+    const link = document.createElement('a');
+    link.href = `data:application/pdf;base64,${editingPdfBase64}`;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [editingPdfBase64, activeCv?.filename]);
+
   const handleDeleteCv = (cvId: string) => {
     setConfirmModal({
       show: true,
@@ -1322,6 +1338,7 @@ const CVManagementPage: React.FC = () => {
             onPdfSave={handlePdfSave}
             isPdfSaving={isSavingPdf}
             isLoadingPdf={isLoadingPdf}
+            onDownload={handleDownloadOriginalPdf}
             onDelete={activeCv?._id ? () => handleDeleteCv(activeCv._id) : undefined}
           />
           {/* Used in Jobs section  only for base CVs */}

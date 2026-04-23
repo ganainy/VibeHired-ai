@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useReactToPrint } from 'react-to-print';
 import { Button } from '../common';
 import CvDocumentRenderer from '../cv-editor/CvDocumentRenderer';
 
@@ -33,8 +32,6 @@ export interface CvEditorPanelProps {
   onDelete?: () => void;
   /** Called when the user wants to download the original PDF (e.g. for non-JsonResume CVs) */
   onDownload?: () => void;
-  /** Hide the Download PDF and Delete toolbar actions */
-  hideToolbarActions?: boolean;
   className?: string;
   /** Optional ATS analysis panel */
   atsPanel?: React.ReactNode;
@@ -71,7 +68,6 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   children,
   onDelete,
   onDownload,
-  hideToolbarActions,
   className = '',
   atsPanel,
   defaultRightView = 'preview',
@@ -85,7 +81,6 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   improvingSections,
 }) => {
   const [rightView] = useState<'preview' | 'ats'>(atsPanel ? defaultRightView : 'preview');
-  const previewRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -94,16 +89,6 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
   const PAGE_WIDTH = 794;
   const PAGE_GAP = 32;
   const STEP = PAGE_WIDTH + PAGE_GAP; // 826px
-
-  const handlePrint = useReactToPrint({
-    contentRef: previewRef,
-    documentTitle: 'CV',
-    onBeforePrint: async () => {
-      if (!previewRef.current) {
-        console.warn('Preview ref is not available');
-      }
-    },
-  });
 
   const saveStatusConfig: Record<CvSaveStatus, { label: string; color: string } | null> = {
     idle: hasUnsavedChanges ? { label: 'Unsaved changes', color: 'amber' } : null,
@@ -203,34 +188,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
               </div>
             )}
 
-            {!hideToolbarActions && (
-              <>
-                <Button
-                  onClick={() => {
-                    if (!previewRef.current) return showToast('Preview is not ready', 'error');
-                    handlePrint();
-                  }}
-                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 text-sm"
-                >
-                  <span className="hidden sm:inline">Download PDF</span>
-                </Button>
 
-                {onDelete && (
-                  <>
-                    <div className="w-px h-6 bg-gray-200 dark:bg-gray-600 mx-1" />
-                    <Button
-                      variant="danger"
-                      onClick={onDelete}
-                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-medium"
-                      title="Delete this tailored CV to regenerate with new instructions"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                      <span className="hidden sm:inline">Delete</span>
-                    </Button>
-                  </>
-                )}
-              </>
-            )}
           </div>
         </div>
 
@@ -274,7 +232,6 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
             ) : data ? (
               jsonResumeData ? (
                 <div
-                  ref={previewRef}
                   id="cv-preview-wrapper"
                   className="flex flex-col items-center min-w-full pb-10"
                 >
