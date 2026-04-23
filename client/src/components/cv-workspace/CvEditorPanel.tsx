@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Button } from '../common';
-import InPlaceCvEditor from '../cv-editor/InPlaceCvEditor';
 import CvDocumentRenderer from '../cv-editor/CvDocumentRenderer';
 import { FreeformJsonObject } from '../cv-freeform/freeformUtils';
 import { hasMeaningfulContent } from '../../utils/hasMeaningfulContent';
@@ -232,10 +231,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
              without clipping content inside the scroll container.
           2. The scroll container allows BOTH axes to scroll so the A4 sheet is
              never clipped regardless of panel width.
-          3. min-w-max removed from the preview div — the InPlaceCvEditor already
-             sets its own width (794 px A4). Keeping min-w-max caused the flex
-             container to grow wider than the scroll port and then get clipped.
-          4. pb-32 kept so the last line of text is not hidden behind the toolbar
+          3. pb-32 kept so the last line of text is not hidden behind the toolbar
              when scrolled to the bottom.
         */}
         <div className="flex-1 min-h-0 overflow-hidden bg-gray-100 dark:bg-gray-900">
@@ -266,19 +262,12 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
             ) : rightView === 'ats' && atsPanel ? (
               <div className="h-full">{atsPanel}</div>
             ) : data ? (
-              /*
-                The preview wrapper:
-                - inline-block keeps it as wide as its content (the A4 sheet)
-                  without forcing the scroll container to grow via min-w-max.
-                - mx-auto centres it when the panel is wider than 794 px.
-                - pb-32 gives breathing room below the last page.
-              */
-              <div
-                ref={previewRef}
-                id="cv-preview-wrapper"
-                className="flex flex-col items-center min-w-full pb-10"
-              >
-                {jsonResumeData ? (
+              jsonResumeData ? (
+                <div
+                  ref={previewRef}
+                  id="cv-preview-wrapper"
+                  className="flex flex-col items-center min-w-full pb-10"
+                >
                   <CvDocumentRenderer
                     data={jsonResumeData}
                     onChange={(updated) => onChange(updated as FreeformJsonObject)}
@@ -286,10 +275,26 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
                     onImproveSection={onImproveSection}
                     improvingSections={improvingSections}
                   />
-                ) : (
-                  <InPlaceCvEditor value={data} onChange={onChange} />
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                  <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+                    <span className="material-symbols-outlined text-3xl text-amber-600 dark:text-amber-400">warning</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                    CV Format Not Supported
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-6">
+                    This CV doesn't match the standard resume format. Please remove it and upload again to use the structured editor.
+                  </p>
+                  {onDelete && (
+                    <Button variant="danger" onClick={onDelete} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                      Remove and Re-upload
+                    </Button>
+                  )}
+                </div>
+              )
             ) : (
               <div className="flex items-center justify-center h-full w-full text-gray-400">
                 <p className="text-sm">Loading CV…</p>
