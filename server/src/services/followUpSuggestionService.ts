@@ -17,6 +17,8 @@ interface FollowUpDraftResponse {
 
 export interface FollowUpSuggestionPayload {
   jobId: string;
+  companyName?: string;
+  jobTitle?: string;
   status: FollowUpStatus;
   isDue: boolean;
   daysWithoutResponse: number;
@@ -116,6 +118,8 @@ function toPayload(job: IJobApplication, now: Date = new Date()): FollowUpSugges
 
   return {
     jobId: String(job._id),
+    companyName: job.companyName,
+    jobTitle: job.jobTitle,
     status: followUp?.status ?? 'none',
     isDue,
     daysWithoutResponse: getDaysWithoutResponse(job, now),

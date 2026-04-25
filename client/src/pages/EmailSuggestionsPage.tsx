@@ -1,5 +1,6 @@
 // client/src/pages/EmailSuggestionsPage.tsx
 import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Spinner from '../components/common/Spinner';
 import { useAuth } from '../context/AuthContext';
 import { parseApiError, parseApiErrorMessage } from '../utils/parseApiError';
@@ -16,6 +17,15 @@ import {
     type PollNowResult,
 } from '../services/emailSuggestionsApi';
 import { getGoogleConnectUrl } from '../services/googleCalendarApi';
+import {
+    getPendingFollowUpSuggestionsApi,
+    generateFollowUpDraftApi,
+    sendFollowUpApi,
+    dismissFollowUpApi,
+    snoozeFollowUpOneWeekApi,
+    type IFollowUpSuggestion,
+    type JobApplication,
+} from '../services/jobApi';
 import EditSuggestionModal from '../components/email-suggestions/EditSuggestionModal';
 
 //  Icons 
@@ -229,6 +239,7 @@ function buildPollToast(r: PollNowResult): string {
 
 const EmailSuggestionsPage: React.FC = () => {
     const { refreshUsage } = useAuth();
+    const navigate = useNavigate();
     const [suggestions, setSuggestions] = useState<EmailSuggestion[]>([]);
     const [loading, setLoading] = useState(true);
     const [polling, setPolling] = useState(false);
@@ -255,9 +266,19 @@ const EmailSuggestionsPage: React.FC = () => {
 
     const [settingsOpen, setSettingsOpen] = useState(false);
 
+    // Follow-up suggestions state
+    const [followUps, setFollowUps] = useState<IFollowUpSuggestion[]>([]);
+    const [followUpLoading, setFollowUpLoading] = useState(true);
+    const [followUpActionId, setFollowUpActionId] = useState<string | null>(null);
+    const [activeFollowUpTab, setActiveFollowUpTab] = useState<'email_suggestions' | 'follow_ups'>('email_suggestions');
+
     const switchTab = (tab: 'application_response' | 'job_offer') => {
         setActiveTab(tab);
         try { localStorage.setItem('emailSuggestions.activeTab', tab); } catch { }
+    };
+
+    const switchFollowUpTab = (tab: 'email_suggestions' | 'follow_ups') => {
+        setActiveFollowUpTab(tab);
     };
 
     const toggleHowItWorks = () => setHowItWorksOpen((v) => {
@@ -294,6 +315,73 @@ const EmailSuggestionsPage: React.FC = () => {
     }, []);
 
     useEffect(() => { load(); }, [load]);
+
+    // Load follow-up suggestions
+    const loadFollowUps = useCallback(async () => {
+        setFollowUpLoading(true);
+        try {
+            const followUpData = await getPendingFollowUpSuggestionsApi();
+            setFollowUps(followUpData);
+        } catch {
+            // non-fatal
+        } finally {
+            setFollowUpLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { loadFollowUps(); }, [loadFollowUps]);
+
+    const handleGenerateFollowUpDraft = async (jobId: string) => {
+        setFollowUpActionId(jobId);
+        try {
+            const updated = await generateFollowUpDraftApi(jobId);
+            setFollowUps((prev) => prev.map((f) => f.jobId === jobId ? updated : f));
+            showToast('AI follow-up email draft generated.', 'ok');
+        } catch (err: any) {
+            showToast(err?.response?.data?.message || 'Failed to generate follow-up email.', 'err');
+        } finally {
+            setFollowUpActionId(null);
+        }
+    };
+
+    const handleSendFollowUp = async (jobId: string) => {
+        setFollowUpActionId(jobId);
+        try {
+            await sendFollowUpApi(jobId);
+            setFollowUps((prev) => prev.filter((f) => f.jobId !== jobId));
+            showToast('Follow-up email sent!', 'ok');
+        } catch (err: any) {
+            showToast(err?.response?.data?.message || 'Failed to send follow-up email.', 'err');
+        } finally {
+            setFollowUpActionId(null);
+        }
+    };
+
+    const handleSnoozeFollowUp = async (jobId: string) => {
+        setFollowUpActionId(jobId);
+        try {
+            const updated = await snoozeFollowUpOneWeekApi(jobId);
+            setFollowUps((prev) => prev.map((f) => f.jobId === jobId ? updated : f));
+            showToast('Follow-up snoozed for 1 week.', 'ok');
+        } catch (err: any) {
+            showToast(err?.response?.data?.message || 'Failed to snooze follow-up.', 'err');
+        } finally {
+            setFollowUpActionId(null);
+        }
+    };
+
+    const handleDismissFollowUp = async (jobId: string) => {
+        setFollowUpActionId(jobId);
+        try {
+            await dismissFollowUpApi(jobId);
+            setFollowUps((prev) => prev.filter((f) => f.jobId !== jobId));
+            showToast('Follow-up dismissed.', 'ok');
+        } catch (err: any) {
+            showToast(err?.response?.data?.message || 'Failed to dismiss follow-up.', 'err');
+        } finally {
+            setFollowUpActionId(null);
+        }
+    };
 
     const handleAccept = async (s: EmailSuggestion) => {
         setActionIds((prev) => new Set(prev).add(s._id));
@@ -626,6 +714,7 @@ const EmailSuggestionsPage: React.FC = () => {
                     </div>
                 )}
 
+                {/* Email suggestions (original inbox) section */}
                 <section className="inbox-updates">
                     <div className="inbox-updates-header">
                         <h2>Recent Updates</h2>
@@ -865,6 +954,122 @@ const EmailSuggestionsPage: React.FC = () => {
                             })}
                         </div>
                     )}
+                </section>
+
+                {/* Follow-ups section */}
+                <section className="inbox-updates">
+                    <div className="inbox-updates-header">
+                        <h2>Follow-ups</h2>
+                        <div className="inbox-chips">
+                            <button
+                                type="button"
+                                onClick={() => switchFollowUpTab('follow_ups')}
+                                className={activeFollowUpTab === 'follow_ups' ? 'inbox-chip is-active' : 'inbox-chip'}
+                            >
+                                Suggested {followUps.length > 0 && <span>{followUps.length}</span>}
+                            </button>
+                        </div>
+                    </div>
+
+                    {activeFollowUpTab === 'follow_ups' && (
+                        <>
+                            {followUpLoading && (
+                                <div className="inbox-empty">
+                                    <Spinner />
+                                </div>
+                            )}
+
+                            {!followUpLoading && followUps.length === 0 && (
+                                <div className="inbox-empty">
+                                    <h3>No follow-ups needed</h3>
+                                    <p>Check back later when your applications need follow-ups.</p>
+                                </div>
+                            )}
+
+                            {!followUpLoading && followUps.length > 0 && (
+                                <div className="inbox-cards">
+                                    {followUps.map((fu) => {
+                                        return (
+                                            <div key={fu.jobId} className="inbox-card">
+                                                <div className="inbox-card-body">
+                                                    <div className="inbox-card-header">
+                                                        <div className="inbox-card-avatar">
+                                                            {(fu.companyName ?? '?').charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div className="inbox-card-meta">
+                                                            <h4>{fu.jobTitle ?? 'Unknown Position'}</h4>
+                                                            <p>{fu.companyName ?? 'Unknown Company'}</p>
+                                                        </div>
+                                                        <div className="inbox-card-tags">
+                                                            {fu.isDue && (
+                                                                <span style={{
+                                                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                                                    padding: '2px 8px', borderRadius: 99, fontSize: 10.5, fontWeight: 600,
+                                                                    color: 'var(--ember)', backgroundColor: 'rgba(240, 126, 56, 0.1)', border: '1px solid rgba(240, 126, 56, 0.3)',
+                                                                }}>
+                                                                    Due now
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="inbox-card-preview">
+                                                        <p className="inbox-card-subject">
+                                                            {fu.draftSubject || 'Follow-up on my application'}
+                                                        </p>
+                                                        {fu.draftBody && (
+                                                            <p className="inbox-card-snippet">
+                                                                {fu.draftBody.slice(0, 150)}...
+                                                            </p>
+                                                        )}
+                                                        <p className="inbox-card-from">
+                                                            {fu.isDue
+                                                                ? `It has been ${fu.daysWithoutResponse} days since this application.`
+                                                                : fu.dueDateISO
+                                                                    ? `Follow-up reminder: ${new Date(fu.dueDateISO).toLocaleDateString()}`
+                                                                    : 'Send a follow-up email to check on your application status.'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="inbox-card-actions">
+                                                        <button
+                                                            onClick={() => navigate(`/jobs/${fu.jobId}/workspace/reminders`)}
+                                                            className="inbox-ghost-btn"
+                                                        >
+                                                            <ExternalLinkIcon /> View Job
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDismissFollowUp(fu.jobId)}
+                                                            disabled={followUpActionId === fu.jobId}
+                                                            className="inbox-ghost-btn"
+                                                            style={{ color: 'var(--rose)' }}
+                                                        >
+                                                            Dismiss
+                                                        </button>
+                                                        {fu.draftBody ? (
+                                                            <button
+                                                                onClick={() => handleSendFollowUp(fu.jobId)}
+                                                                disabled={followUpActionId === fu.jobId}
+                                                                className="inbox-solid-btn"
+                                                            >
+                                                                {followUpActionId === fu.jobId ? 'Sending...' : 'Send Email'}
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleGenerateFollowUpDraft(fu.jobId)}
+                                                                disabled={followUpActionId === fu.jobId}
+                                                                className="inbox-solid-btn"
+                                                            >
+                                                                {followUpActionId === fu.jobId ? 'Generating...' : 'Generate Draft'}
+                                                            </button>
+)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </>
+                )}
                 </section>
 
                 {editingSuggestion && (

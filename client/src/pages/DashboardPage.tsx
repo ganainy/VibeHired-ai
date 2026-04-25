@@ -354,11 +354,10 @@ const DashboardPage: React.FC = () => {
  setCurrentPage(1);
  }, [debouncedFilterText]);
 
- // --- Toast State ---
- const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
- const [showOnlyDueFollowUps, setShowOnlyDueFollowUps] = useState<boolean>(false);
+// --- Toast State ---
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
- // --- Add Job Popup Modal State ---
+  // --- Add Job Popup Modal State ---
  const [isAddJobPopupOpen, setIsAddJobPopupOpen] = useState<boolean>(false);
  const addJobPopupRef = useRef<HTMLDivElement>(null);
  const addJobTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -594,20 +593,12 @@ const DashboardPage: React.FC = () => {
  return daysElapsed > 14;
  };
 
- const favoriteCount = useMemo(() => allJobs.filter((job) => job.isFavorite === true).length, [allJobs]);
- const notesCount = useMemo(() => allJobs.filter((job) => !!job.notes && job.notes.trim().length > 0).length, [allJobs]);
- const needsFollowUpJobIds = useMemo(
- () => allJobs
- .filter((job) => job.status === 'Applied' && Boolean(getRecipientEmail(job)) && isOlderThanTwoWeeks(job))
- .map((job) => job._id),
- [allJobs]
- );
- const needsFollowUpCount = needsFollowUpJobIds.length;
- const needsFollowUpJobIdSet = useMemo(() => new Set(needsFollowUpJobIds), [needsFollowUpJobIds]);
+const favoriteCount = useMemo(() => allJobs.filter((job) => job.isFavorite === true).length, [allJobs]);
+  const notesCount = useMemo(() => allJobs.filter((job) => !!job.notes && job.notes.trim().length > 0).length, [allJobs]);
 
 
 
- // --- Delete Confirmation Modal State ---
+  // --- Delete Confirmation Modal State ---
  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ isOpen: boolean; jobId: string | null; jobTitle: string }>({
  isOpen: false,
  jobId: null,
@@ -671,19 +662,18 @@ const DashboardPage: React.FC = () => {
  page: currentPage,
  limit: 10,
  sortBy: sortKey,
- sortOrder: sortDirection,
- };
+sortOrder: sortDirection,
+  };
 
- if (filterStatus) params.status = filterStatus;
- if (filterJobType) params.jobType = filterJobType;
- if (debouncedFilterText) params.search = debouncedFilterText;
- if (filterFavorite) params.isFavorite = true;
- if (filterHasNotes) params.hasNotes = true;
- if (filterTags.length > 0) params.tags = filterTags;
- if (showOnlyDueFollowUps) params.followUpDue = true;
+  if (filterStatus) params.status = filterStatus;
+  if (filterJobType) params.jobType = filterJobType;
+  if (debouncedFilterText) params.search = debouncedFilterText;
+  if (filterFavorite) params.isFavorite = true;
+  if (filterHasNotes) params.hasNotes = true;
+  if (filterTags.length > 0) params.tags = filterTags;
 
- const result: JobsResponse = await getJobs(params);
- setJobs(result.jobs);
+  const result: JobsResponse = await getJobs(params);
+  setJobs(result.jobs);
  setTotalJobs(result.pagination.total);
  setTotalPagesServer(result.pagination.pages);
  if (result.jobs.length > 0 && typeof window !== 'undefined') {
@@ -695,17 +685,11 @@ const DashboardPage: React.FC = () => {
  } finally {
  setIsLoading(false);
  }
- };
- fetchJobs();
- }, [currentPage, debouncedFilterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, showOnlyDueFollowUps, sortKey, sortDirection]);
+};
+  fetchJobs();
+  }, [currentPage, debouncedFilterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, sortKey, sortDirection]);
 
- useEffect(() => {
- if (showOnlyDueFollowUps && needsFollowUpCount === 0) {
- setShowOnlyDueFollowUps(false);
- }
- }, [showOnlyDueFollowUps, needsFollowUpCount]);
-
- // --- Lazy CV Fetch: Only fetch when actually needed ---
+  // --- Lazy CV Fetch: Only fetch when actually needed ---
  const fetchCvsIfNeeded = () => {
  if (cvsFetched || cvsFetchPromiseRef.current) return; // Already fetched or in-flight
 
@@ -777,22 +761,21 @@ const DashboardPage: React.FC = () => {
  sortOrder: sortDirection,
  };
 
- if (filterStatus) params.status = filterStatus;
- if (filterJobType) params.jobType = filterJobType;
- if (debouncedFilterText) params.search = debouncedFilterText;
- if (filterFavorite) params.isFavorite = true;
- if (filterHasNotes) params.hasNotes = true;
- if (filterTags.length > 0) params.tags = filterTags;
- if (showOnlyDueFollowUps) params.followUpDue = true;
+if (filterStatus) params.status = filterStatus;
+  if (filterJobType) params.jobType = filterJobType;
+  if (debouncedFilterText) params.search = debouncedFilterText;
+  if (filterFavorite) params.isFavorite = true;
+  if (filterHasNotes) params.hasNotes = true;
+  if (filterTags.length > 0) params.tags = filterTags;
 
- const result: JobsResponse = await getJobs(params);
- setAllJobs(result.jobs);
+  const result: JobsResponse = await getJobs(params);
+  setAllJobs(result.jobs);
  } catch (err: any) {
  console.error("Failed to fetch all jobs for filters:", err);
  }
- };
- fetchAllJobsForFilters();
- }, [debouncedFilterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, showOnlyDueFollowUps, sortKey, sortDirection]);
+};
+  fetchAllJobsForFilters();
+  }, [debouncedFilterText, filterStatus, filterFavorite, filterHasNotes, filterJobType, filterTags, sortKey, sortDirection]);
 
  // Note: Page reset is handled automatically by the fetchJobs useEffect dependencies above.
 
@@ -854,14 +837,10 @@ const DashboardPage: React.FC = () => {
  orderedGroups.push({ label: 'Untagged', jobs: untagged });
  }
 
- return orderedGroups;
- }, [groupByTag, displayedJobs, filterTags, availableTags]);
+return orderedGroups;
+  }, [groupByTag, displayedJobs, filterTags, availableTags]);
 
- const handleToggleDueFollowUpFilter = () => {
- setShowOnlyDueFollowUps(prev => !prev);
- };
-
- // --- Modal Event Handlers ---
+  // --- Modal Event Handlers ---
  const handleOpenAddModal = () => {
  const firstCv = cvs[0];
  setFormData({
@@ -1360,17 +1339,11 @@ const statusOptionColors: Record<JobApplication['status'], { dot: string; text: 
 
  const StarIcon = ({ filled }: { filled: boolean }) => (
  <svg className="w-5 h-5" fill={filled ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
- </svg>
- );
+<path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+  </svg>
+  );
 
- const FollowUpIcon = () => (
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 4.26a2.25 2.25 0 002.22 0L21 8M5.25 19.5h13.5A2.25 2.25 0 0021 17.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
- </svg>
- );
-
- // --- TableOrCards Configuration ---
+  // --- TableOrCards Configuration ---
 
  const jobColumns: ColumnDef<JobApplication>[] = [
  {
@@ -1507,13 +1480,10 @@ const statusOptionColors: Record<JobApplication['status'], { dot: string; text: 
  +{parseMultipleUrls(job.jobUrl).length - 2}
  </span>
  )}
- <button onClick={(e) => handleToggleFavorite(job, e)} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${job.isFavorite ? 'text-ember bg-[var(--ember-bg)] hover:bg-amber-200' : 'text-muted-color hover:text-amber-500 hover:bg-amber-100'}`} title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'} aria-label={job.isFavorite ? "Remove from favorites" : "Add to favorites"}>
- <StarIcon filled={!!job.isFavorite} />
- </button>
- <button onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job._id}/workspace/reminders`); }} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${needsFollowUpJobIdSet.has(job._id) ? 'text-ember bg-[var(--ember-bg)] hover:bg-amber-200' : 'text-muted-color hover:text-blue-600 hover:bg-blue-100'}`} title={needsFollowUpJobIdSet.has(job._id) ? 'Open follow-up email actions (recommended)' : 'Open follow-up email actions'} aria-label="Open follow-up email actions">
- <FollowUpIcon />
- </button>
- <button onClick={(e) => handleDeleteClick(job, e)} className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-error hover:bg-red-100 transition-colors" title="Delete" aria-label="Delete job application">
+<button onClick={(e) => handleToggleFavorite(job, e)} className={`flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md transition-colors ${job.isFavorite ? 'text-ember bg-[var(--ember-bg)] hover:bg-amber-200' : 'text-muted-color hover:text-amber-500 hover:bg-amber-100'}`} title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'} aria-label={job.isFavorite ? "Remove from favorites" : "Add to favorites"}>
+  <StarIcon filled={!!job.isFavorite} />
+  </button>
+  <button onClick={(e) => handleDeleteClick(job, e)} className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-error hover:bg-red-100 transition-colors" title="Delete" aria-label="Delete job application">
  <DeleteIcon />
  </button>
  </div>
@@ -1888,31 +1858,11 @@ const statusOptionColors: Record<JobApplication['status'], { dot: string; text: 
  <span className="material-symbols-outlined text-base" style={{ fontSize: '16px' }}>sticky_note_2</span>
  <span>Has Notes</span>
 <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-gold text-white">
-  {notesCount}
+   {notesCount}
 </span>
- </button>
+  </button>
 
- <button
- onClick={handleToggleDueFollowUpFilter}
- disabled={needsFollowUpCount === 0}
- className="inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
- style={showOnlyDueFollowUps
- ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
- : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
- title={needsFollowUpCount > 0 ? 'Show jobs that need a follow-up email' : 'No jobs currently need a follow-up email'}
- aria-label="Toggle follow-up filter"
- aria-pressed={showOnlyDueFollowUps}
- >
- <FollowUpIcon />
- <span>Needs Follow-up</span>
- {needsFollowUpCount > 0 && (
-<span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-gold text-white">
-  {needsFollowUpCount}
-</span>
- )}
- </button>
-
- <button
+  <button
  onClick={() => setGroupByTag(prev => !prev)}
  disabled={!hasFieldOptions}
  className="inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1944,7 +1894,7 @@ const statusOptionColors: Record<JobApplication['status'], { dot: string; text: 
  </p>
  <div className="mt-6">
  <button
- onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); setFilterTags([]); setGroupByTag(false); setShowOnlyDueFollowUps(false); }}
+ onClick={() => { setFilterText(''); setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); setFilterTags([]); setGroupByTag(false); }}
  className="btn-primary"
  >
  Clear Filters

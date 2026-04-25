@@ -91,6 +91,22 @@ export async function hasGmailScope(userId: string): Promise<boolean> {
     }
 }
 
+/**
+ * Returns true if the user has Google connected AND the stored token includes
+ * the gmail.compose scope (required for sending emails).
+ */
+export async function hasGmailComposeScope(userId: string): Promise<boolean> {
+    try {
+        const profile = await Profile.findOne({ userId });
+        const g = profile?.integrations?.google;
+        if (!g?.enabled || !g?.accessToken) return false;
+        const scope = g.scope ?? '';
+        return scope.includes('https://www.googleapis.com/auth/gmail.compose');
+    } catch {
+        return false;
+    }
+}
+
 /** Get or create the "vibe-hired-processed" label, returning its ID. */
 async function getOrCreateProcessedLabel(gmail: gmail_v1.Gmail): Promise<string> {
     const list = await gmail.users.labels.list({ userId: 'me' });
@@ -286,6 +302,76 @@ export async function fetchNewMessages(userId: string, limit: number, includeRea
             console.error('[GmailService] Detected insufficient scopes (403). User needs to re-authenticate.');
             const e: any = new Error('Gmail access is limited. Please reconnect your Google account to enable full email processing.');
             e.code = 'GMAIL_INSUFFICIENT_SCOPES';
+            throw e;
+        }
+
+        throw err;
+    }
+}
+
+/**
+ * Send an email via Gmail API.
+ */
+export interface SendEmailOptions {
+    to: string;
+    subject: string;
+    body: string;
+}
+
+export async function sendEmail(userId: string, options: SendEmailOptions): Promise<{ messageId: string }> {
+    const { to, subject, body } = options;
+    const t0 = Date.now();
+    console.log(`[GmailService] sendEmail start — to=${to}, subject="${subject}"`);
+
+    try {
+        const hasScope = await hasGmailComposeScope(userId);
+        if (!hasScope) {
+            throw new Error('Gmail compose access not authorized. Please reconnect your Google account.');
+        }
+
+        const auth = await getOAuth2Client(userId);
+        const gmail = google.gmail({ version: 'v1', auth });
+
+        const message =
+            `To: ${to}\r\n` +
+            `Subject: ${subject}\r\n` +
+            `Content-Type: text/plain; charset=UTF-8\r\n` +
+            `\r\n` +
+            `${body}`;
+
+        const encodedMessage = Buffer.from(message)
+            .toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+
+        const sent = await gmail.users.messages.send({
+            userId: 'me',
+            requestBody: {
+                raw: encodedMessage,
+            },
+        });
+
+        console.log(`[GmailService] sendEmail done — messageId=${sent.data.id} in ${Date.now() - t0}ms`);
+        return { messageId: sent.data.id! };
+    } catch (err: any) {
+        console.error('[GmailService] sendEmail failed:', err.message);
+
+        if (err?.response?.data?.error === 'invalid_grant' || err?.message?.includes('invalid_grant')) {
+            await Profile.updateOne(
+                { userId },
+                {
+                    $set: {
+                        'integrations.google.accessToken': null,
+                        'integrations.google.refreshToken': null,
+                        'integrations.google.email': null,
+                        'integrations.google.enabled': false,
+                        'integrations.google.scope': null,
+                    },
+                }
+            );
+            const e: any = new Error('Gmail authorization expired. Please reconnect your account.');
+            e.code = 'GMAIL_AUTH_EXPIRED';
             throw e;
         }
 

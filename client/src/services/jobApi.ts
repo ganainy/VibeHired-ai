@@ -144,6 +144,8 @@ export interface IReminder {
 
 export interface IFollowUpSuggestion {
     jobId: string;
+    companyName?: string;
+    jobTitle?: string;
     status: 'none' | 'suggested' | 'snoozed' | 'dismissed' | 'sent';
     isDue: boolean;
     daysWithoutResponse: number;
@@ -487,6 +489,13 @@ export const dismissFollowUpApi = async (jobId: string): Promise<IFollowUpSugges
 export const markFollowUpSentApi = async (jobId: string): Promise<IFollowUpSuggestion> => {
     const response = await axios.post<IFollowUpSuggestion>(
         `${API_BASE_URL}/job-applications/${jobId}/follow-up/mark-sent`
+    );
+    return response.data;
+};
+
+export const sendFollowUpApi = async (jobId: string): Promise<{ messageId: string; message: string }> => {
+    const response = await axios.post<{ messageId: string; message: string }>(
+        `${API_BASE_URL}/job-applications/${jobId}/follow-up/send`
     );
     return response.data;
 };

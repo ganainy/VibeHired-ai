@@ -38,6 +38,7 @@ const SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/gmail.labels',
     'https://www.googleapis.com/auth/gmail.modify',      // required for batchModify to apply processed label
+    'https://www.googleapis.com/auth/gmail.compose', // required for sending emails
 ];
 
 function buildOAuth2Client(redirectUri?: string) {

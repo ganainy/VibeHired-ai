@@ -1110,6 +1110,46 @@ const markFollowUpSentHandler: RequestHandler = async (req: ValidatedRequest, re
 };
 router.post('/:id/follow-up/mark-sent', validateRequest({ params: followUpJobIdParamSchema }), markFollowUpSentHandler);
 
+const sendFollowUpHandler: RequestHandler = async (req: ValidatedRequest, res) => {
+  const user = req.user as { _id: mongoose.Types.ObjectId | string };
+  if (!user) {
+    res.status(401).json({ message: 'User not authenticated correctly.' });
+    return;
+  }
+
+  const { id: jobId } = req.validated!.params!;
+  const userId = String(user._id);
+
+  try {
+    const job = await JobApplication.findOne({ _id: jobId, userId });
+    if (!job) {
+      res.status(404).json({ message: 'Job application not found.' });
+      return;
+    }
+
+    const suggestion = await getFollowUpSuggestionForJob(userId, jobId);
+    if (!suggestion?.draftBody || !suggestion?.recipientEmail || !suggestion?.draftSubject) {
+      res.status(400).json({ message: 'No follow-up draft available. Generate a draft first.' });
+      return;
+    }
+
+    const { sendEmail } = await import('../services/gmailService');
+    const result = await sendEmail(userId, {
+      to: suggestion.recipientEmail,
+      subject: suggestion.draftSubject,
+      body: suggestion.draftBody,
+    });
+
+    await markFollowUpSent(userId, jobId);
+
+    res.status(200).json({ messageId: result.messageId, message: 'Follow-up email sent successfully.' });
+  } catch (error: any) {
+    console.error(`Failed to send follow-up email for job ${jobId}:`, error);
+    res.status(500).json({ message: error.message || 'Failed to send follow-up email.' });
+  }
+};
+router.post('/:id/follow-up/send', validateRequest({ params: followUpJobIdParamSchema }), sendFollowUpHandler);
+
 
 // ============================================================================
 // REMINDER ENDPOINTS
