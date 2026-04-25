@@ -16,7 +16,6 @@ import {
     type EmailSuggestion,
     type PollNowResult,
 } from '../services/emailSuggestionsApi';
-import { getGoogleConnectUrl } from '../services/googleCalendarApi';
 import {
     getPendingFollowUpSuggestionsApi,
     generateFollowUpDraftApi,
@@ -484,13 +483,8 @@ const EmailSuggestionsPage: React.FC = () => {
     };
 
 
-    const handleConnectGmail = async () => {
-        try {
-            const url = await getGoogleConnectUrl();
-            window.location.href = url;
-        } catch (err: any) {
-            setActionError({ message: parseApiErrorMessage(err) });
-        }
+    const handleConnectGmail = () => {
+        navigate('/settings?googleCalendar');
     };
 
     const appCount = suggestions.filter(s => (s.emailCategory ?? 'application_response') === 'application_response').length;

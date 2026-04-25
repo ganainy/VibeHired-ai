@@ -32,18 +32,6 @@ export const improveSectionBodySchema = z.object({
 });
 
 /**
- * CV section analysis body schema
- */
-export const analyzeCvSectionBodySchema = z.object({
-  sectionName: z.string({
-    required_error: 'Section name is required',
-  }).min(1, 'Section name cannot be empty'),
-  sectionData: z.any({
-    required_error: 'Section data is required',
-  }), // Can be any JSON object representing a section item
-});
-
-/**
  * Analyze all CV sections body schema
  */
 export const analyzeAllCvSectionsBodySchema = z.object({

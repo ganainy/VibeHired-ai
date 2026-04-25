@@ -12,7 +12,7 @@ import {
     type EmailSuggestion,
     type PollNowResult,
 } from '../../services/emailSuggestionsApi';
-import { getGoogleConnectUrl } from '../../services/googleCalendarApi';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -132,6 +132,7 @@ interface Props {
 }
 
 const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }) => {
+    const navigate = useNavigate();
     const { refreshUsage } = useAuth();
     const [suggestions, setSuggestions] = useState<EmailSuggestion[]>([]);
     const [loading, setLoading] = useState(false);
@@ -257,13 +258,8 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
         }
     };
 
-    const handleConnectGmail = async () => {
-        try {
-            const url = await getGoogleConnectUrl();
-            window.location.href = url;
-        } catch {
-            showToast('Failed to start Gmail connection.');
-        }
+    const handleConnectGmail = () => {
+        navigate('/settings?googleCalendar');
     };
 
     if (!isOpen) return null;
