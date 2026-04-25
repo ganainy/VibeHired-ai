@@ -2,7 +2,7 @@
 import React, { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
+
 import { getGoogleLoginUrl, resendVerificationEmail } from '../services/authApi';
 import Spinner from '../components/common/Spinner';
 import { VibeHiredLogo } from '../components/VibeHiredLogo';
@@ -23,18 +23,6 @@ const EyeOffIcon = () => (
   </svg>
 );
 
-const SunIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-  </svg>
-);
-
-const MoonIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-  </svg>
-);
 
 //  Component 
 const LoginPage: React.FC = () => {
@@ -51,7 +39,7 @@ const LoginPage: React.FC = () => {
   const [showResendOption, setShowResendOption] = useState(false);
 
   const { login, error, isLoading, isAuthenticated } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -150,7 +138,7 @@ const LoginPage: React.FC = () => {
     padding: '0.7rem 1rem',
     outline: 'none',
     transition: 'border-color 0.15s, box-shadow 0.15s',
-    fontFamily: 'Outfit, sans-serif',
+    fontFamily: 'Inter, sans-serif',
   };
 
   const features = [
@@ -233,7 +221,7 @@ const LoginPage: React.FC = () => {
           <div>
             <h1
               className="text-4xl xl:text-5xl font-semibold leading-[1.1] tracking-tight"
-              style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
+              style={{ fontFamily: 'Lora, Georgia, serif', color: 'var(--text-primary)' }}
             >
               Tailored applications,<br />
               <span style={{ color: 'var(--accent)' }}>all in one place.</span>
@@ -252,7 +240,7 @@ const LoginPage: React.FC = () => {
               <li key={i} className="flex items-center gap-3">
                 <span
                   className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: 'var(--accent-bg, rgba(232,184,68,0.1))', border: '1px solid rgba(232,184,68,0.2)' }}
+                  style={{ backgroundColor: 'var(--accent-bg)', border: '1px solid rgba(0,98,65,0.2)' }}
                 >
                   {f.icon}
                 </span>
@@ -275,28 +263,13 @@ const LoginPage: React.FC = () => {
         className="flex flex-col justify-center w-full md:w-[440px] lg:w-[480px] xl:w-[520px] flex-shrink-0 p-8 md:p-12"
         style={{ backgroundColor: 'var(--bg-base)' }}
       >
-        {/* Theme toggle + mobile brand */}
-        <div className="flex items-center justify-between mb-10">
-          <div className="flex items-center gap-2 md:hidden">
-            <VibeHiredLogo size={22} className="px-0" />
-          </div>
-          <div className="md:ml-auto">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg transition-colors"
-              style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
-          </div>
-        </div>
+        <div className="mb-10" />
 
         {/* Heading */}
         <div className="mb-8">
           <h2
             className="text-[1.875rem] font-semibold tracking-tight"
-            style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
+            style={{ fontFamily: 'Lora, Georgia, serif', color: 'var(--text-primary)' }}
           >
             Welcome back
           </h2>
@@ -310,9 +283,9 @@ const LoginPage: React.FC = () => {
           <div
             className="flex items-start gap-2.5 rounded-lg p-3.5 mb-6 text-sm"
             style={{
-              backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))',
-              border: '1px solid rgba(244,100,100,0.2)',
-              color: 'var(--rose, var(--error))',
+              backgroundColor: 'var(--rose-bg)',
+              border: '1px solid rgba(200,32,20,0.2)',
+              color: 'var(--rose)',
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5">
@@ -362,17 +335,17 @@ const LoginPage: React.FC = () => {
               placeholder="you@example.com"
               style={{
                 ...inputStyle,
-                borderColor: touched.email && emailError ? 'rgba(244,100,100,0.6)'
+                borderColor: touched.email && emailError ? 'rgba(200,32,20,0.6)'
                   : email && touched.email && !emailError ? 'rgba(45,212,160,0.5)'
                     : 'var(--border)',
               }}
               onFocus={(e) => {
                 e.currentTarget.style.borderColor = 'var(--accent)';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(232,184,68,0.1)';
+                e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-bg)';
               }}
             />
             {touched.email && emailError && (
-              <p className="mt-1.5 text-xs" style={{ color: 'var(--rose, var(--error))' }}>{emailError}</p>
+              <p className="mt-1.5 text-xs" style={{ color: 'var(--rose)' }}>{emailError}</p>
             )}
           </div>
 
@@ -409,7 +382,7 @@ const LoginPage: React.FC = () => {
                 style={{ ...inputStyle, paddingRight: '2.75rem' }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = 'var(--accent)';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(232,184,68,0.1)';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-bg)';
                 }}
                 onBlurCapture={(e) => {
                   e.currentTarget.style.boxShadow = 'none';
@@ -435,7 +408,7 @@ const LoginPage: React.FC = () => {
             style={{
               backgroundColor: 'var(--accent)',
               color: 'var(--text-on-accent)',
-              boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(232,184,68,0.2)',
+              boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(0,98,65,0.2)',
               opacity: isLoading ? 0.7 : 1,
               cursor: isLoading ? 'not-allowed' : 'pointer',
             }}
@@ -466,9 +439,9 @@ const LoginPage: React.FC = () => {
           <div
             className="flex items-start gap-2.5 rounded-lg p-3.5 mt-5 text-sm"
             style={{
-              backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))',
-              border: '1px solid rgba(244,100,100,0.2)',
-              color: 'var(--rose, var(--error))',
+              backgroundColor: 'var(--rose-bg)',
+              border: '1px solid rgba(200,32,20,0.2)',
+              color: 'var(--rose)',
             }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5">

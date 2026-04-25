@@ -455,8 +455,8 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
                                     <div
                                         className="rounded-lg px-2.5 py-2 mb-2"
                                         style={{
-                                            backgroundColor: 'rgba(232,184,68,0.06)',
-                                            border: '1px solid rgba(232,184,68,0.15)',
+                                            backgroundColor: 'var(--accent-bg)',
+                                            border: '1px solid rgba(0,98,65,0.15)',
                                         }}
                                     >
                                         <div className="flex items-start justify-between gap-2">
@@ -473,9 +473,9 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
                                                 disabled={noteBusy || isNoteAdded}
                                                 className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[10.5px] font-medium transition-colors"
                                                 style={{
-                                                    backgroundColor: isNoteAdded ? 'rgba(34,197,94,0.12)' : 'rgba(232,184,68,0.15)',
+                                                    backgroundColor: isNoteAdded ? 'var(--jade-bg)' : 'var(--accent-bg)',
                                                     color: isNoteAdded ? '#22c55e' : 'var(--accent)',
-                                                    border: `1px solid ${isNoteAdded ? 'rgba(34,197,94,0.3)' : 'rgba(232,184,68,0.3)'}`,
+                                                    border: `1px solid ${isNoteAdded ? 'rgba(0,98,65,0.3)' : 'rgba(0,98,65,0.3)'}`,
                                                     opacity: noteBusy ? 0.6 : 1,
                                                     cursor: isNoteAdded ? 'default' : 'pointer',
                                                 }}
@@ -562,9 +562,9 @@ const EmailSuggestionPanel: React.FC<Props> = ({ isOpen, onClose, onJobUpdated }
                                             disabled={busy}
                                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs transition-colors"
                                             style={{
-                                                backgroundColor: 'rgba(244,100,100,0.07)',
+                                                backgroundColor: 'var(--rose-bg)',
                                                 color: 'var(--rose, #f46464)',
-                                                border: '1px solid rgba(244,100,100,0.18)',
+                                                border: '1px solid rgba(200,32,20,0.18)',
                                             }}
                                         >
                                             <XIcon /> Dismiss

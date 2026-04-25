@@ -15,7 +15,7 @@ const KNOWN_JSON_RESUME_KEYS = new Set([
   'references',
 ]);
 
-const META_KEY_PATTERNS = [/^__vh_/, /^_ai_/, /^meta$/];
+const META_KEY_PATTERNS = [/^_ai_/, /^meta$/];
 
 function isMetaLikeKey(key: string): boolean {
   return META_KEY_PATTERNS.some((pattern) => pattern.test(key));
@@ -27,7 +27,7 @@ export type CvEditorMode = 'structured' | 'pdf-only';
  * Lenient check: does the object look like a JsonResume?
  * Returns true if the object has at least 2 known JsonResume top-level keys,
  * OR if it has a `basics` key that is an object.
- * Ignores meta keys like __vh_tags, _ai_*, and meta.
+ * Ignores meta keys like _ai_*, and meta.
  */
 export function isJsonResumeLike(data: unknown): data is JsonResumeSchema {
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
@@ -117,15 +117,6 @@ export function isValidJsonResume(data: unknown): data is JsonResumeSchema {
 export function getCvEditorMode(cv: { cvJson?: any; originalPdf?: boolean; hasOriginalCvJson?: boolean }): CvEditorMode {
   if (!cv.cvJson || Object.keys(cv.cvJson).length === 0) {
     // No JSON data — if PDF exists, show PDF editor
-    if (cv.originalPdf || cv.hasOriginalCvJson) {
-      return 'pdf-only';
-    }
-    return 'structured';
-  }
-
-  // Edge case: cvJson has ONLY __vh_tags and no real content
-  const keys = Object.keys(cv.cvJson).filter((k) => !isMetaLikeKey(k));
-  if (keys.length === 0) {
     if (cv.originalPdf || cv.hasOriginalCvJson) {
       return 'pdf-only';
     }

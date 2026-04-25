@@ -51,7 +51,6 @@ function extractTailorableSections(baseCv: Record<string, any>): { sections: Rec
   const keys: string[] = [];
 
   for (const [key, value] of Object.entries(baseCv)) {
-    if (key === '__vh_tags') continue;
     if (TAILORABLE_SECTION_PATTERNS.some(p => p.test(key))) {
       sections[key] = value;
       keys.push(key);
@@ -61,7 +60,6 @@ function extractTailorableSections(baseCv: Record<string, any>): { sections: Rec
   // If no patterns matched, fall back to all non-metadata keys
   if (keys.length === 0) {
     for (const [key, value] of Object.entries(baseCv)) {
-      if (key === '__vh_tags') continue;
       if (typeof value === 'string' || Array.isArray(value) || typeof value === 'object') {
         sections[key] = value;
         keys.push(key);
@@ -131,7 +129,6 @@ Return a JSON object containing ALL of these sections, rewritten for the job.
 You MUST return all sections: ${tailorableKeys.join(', ')}.
 Even if a section only needs minor tweaks, include it in full.
 Copy key names VERBATIM from above. Preserve internal structure exactly.
-Do NOT include __vh_tags.
 
 Your response MUST start with:
 {
@@ -180,10 +177,6 @@ Respond with valid JSON only. No markdown. No explanation.
 function validatePatch(patch: ContentPatchResult, baseCv: Record<string, any>): ContentPatchResult {
   const validated: ContentPatchResult = {};
   for (const key of Object.keys(patch)) {
-    if (key === '__vh_tags') {
-      console.warn(`  ⚠️  Patch included __vh_tags — rejecting, preserving base`);
-      continue;
-    }
     if (key in baseCv) {
       validated[key] = patch[key];
     } else {
@@ -264,7 +257,6 @@ export async function runTailoringPipeline(
   baseCvJson: Record<string, any>,
   jobDescription: string,
   languageName: string,
-  isFreeformCv: boolean,
   showChanges: boolean = true,
   onProgress?: ProgressCallback,
 ): Promise<TailoringPipelineResult> {
@@ -285,7 +277,7 @@ export async function runTailoringPipeline(
 
   // ── Extract only tailorable sections for Call 2 ──
   const { sections: tailorableSections, keys: tailorableKeys } = extractTailorableSections(baseCvJson);
-  const allBaseKeys = Object.keys(baseCvJson).filter(k => k !== '__vh_tags');
+  const allBaseKeys = Object.keys(baseCvJson);
   const tailorableSize = JSON.stringify(tailorableSections).length;
   const fullSize = JSON.stringify(baseCvJson).length;
   console.log(`  → Tailorable sections: ${tailorableKeys.join(', ')} (${tailorableSize} bytes vs ${fullSize} bytes full CV)`);
@@ -365,7 +357,6 @@ Do not include any explanation or markdown. Only the JSON object.`;
   const validatedPatch = validatePatch(patch, baseCvJson);
   const sanitizedPatch = sanitizePatchNulls(validatedPatch, baseCvJson);
   const tailoredCv = { ...baseCvJson, ...sanitizedPatch };
-  tailoredCv.__vh_tags = baseCvJson.__vh_tags; // always preserved
   console.log(`     After validation: ${Object.keys(sanitizedPatch).length} sections applied`);
 
   // ── Call 4: Changes List (diff snippets only) ──

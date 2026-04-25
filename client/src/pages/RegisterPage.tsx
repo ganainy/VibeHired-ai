@@ -2,7 +2,7 @@
 import React, { useState, FormEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
+
 import { getGoogleLoginUrl, resendVerificationEmail } from '../services/authApi';
 import Spinner from '../components/common/Spinner';
 import { VibeHiredLogo } from '../components/VibeHiredLogo';
@@ -22,17 +22,7 @@ const EyeOffIcon = () => (
   </svg>
 );
 
-const SunIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-  </svg>
-);
 
-const MoonIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-  </svg>
-);
 
 //  Password strength 
 type PasswordStrength = 'weak' | 'fair' | 'good' | 'strong';
@@ -53,10 +43,10 @@ const calculatePasswordStrength = (password: string): PasswordStrength => {
 };
 
 const strengthConfig: Record<PasswordStrength, { label: string; color: string; segments: number }> = {
-  weak: { label: 'Weak', color: 'var(--rose, var(--error))', segments: 1 },
-  fair: { label: 'Fair', color: 'var(--ember, var(--warning))', segments: 2 },
+  weak: { label: 'Weak', color: 'var(--rose)', segments: 1 },
+  fair: { label: 'Fair', color: 'var(--ember)', segments: 2 },
   good: { label: 'Good', color: 'var(--accent)', segments: 3 },
-  strong: { label: 'Strong', color: 'var(--jade, var(--success))', segments: 4 },
+  strong: { label: 'Strong', color: 'var(--jade)', segments: 4 },
 };
 
 //  Component 
@@ -80,7 +70,7 @@ const RegisterPage: React.FC = () => {
 
   const { register, error: authError } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
 
@@ -143,19 +133,19 @@ const RegisterPage: React.FC = () => {
     padding: '0.7rem 1rem',
     outline: 'none',
     transition: 'border-color 0.15s, box-shadow 0.15s',
-    fontFamily: 'Outfit, sans-serif',
+    fontFamily: 'Inter, sans-serif',
   };
 
   const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.currentTarget.style.borderColor = 'var(--accent)';
-    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(232,184,68,0.1)';
+    e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-bg)';
   };
   const onBlurStyle = (e: React.FocusEvent<HTMLInputElement>) => {
     e.currentTarget.style.boxShadow = 'none';
   };
 
   const FieldError = ({ msg }: { msg: string | null | undefined }) =>
-    msg ? <p className="mt-1.5 text-xs" style={{ color: 'var(--rose, var(--error))' }}>{msg}</p> : null;
+    msg ? <p className="mt-1.5 text-xs" style={{ color: 'var(--rose)' }}>{msg}</p> : null;
 
   // Early return: show check-email screen after successful registration
   if (registrationSuccess) {
@@ -172,28 +162,24 @@ const RegisterPage: React.FC = () => {
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: 'var(--bg-base)' }}>
-        <div className="absolute top-5 right-5">
-          <button onClick={toggleTheme} className="p-2 rounded-lg transition-colors" style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }} aria-label="Toggle theme">
-            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-          </button>
-        </div>
+        
         <div className="w-full max-w-[420px] rounded-2xl p-8 text-center" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
           {/* Success confirmation  always shown regardless of email delivery status */}
-          <div className="rounded-xl p-3 mb-6 flex items-center justify-center gap-2" style={{ backgroundColor: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.25)' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--jade, var(--success))" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+          <div className="rounded-xl p-3 mb-6 flex items-center justify-center gap-2" style={{ backgroundColor: 'var(--jade-bg)', border: '1px solid rgba(0,98,65,0.2)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--jade)" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            <span className="text-sm font-semibold" style={{ color: 'var(--jade, var(--success))' }}>Account created successfully!</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--jade)' }}>Account created successfully!</span>
           </div>
 
           <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
-            style={{ backgroundColor: 'rgba(232,184,68,0.1)', border: '1px solid rgba(232,184,68,0.25)' }}>
+            style={{ backgroundColor: 'var(--accent-bg)', border: '1px solid rgba(0,98,65,0.2)' }}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
               <polyline points="22,6 12,13 2,6" />
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold mb-2" style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl font-semibold mb-2" style={{ fontFamily: 'Lora, Georgia, serif', color: 'var(--text-primary)' }}>
             {emailSendFailed ? 'One more step' : 'Check your inbox'}
           </h1>
           {emailSendFailed ? (
@@ -210,12 +196,12 @@ const RegisterPage: React.FC = () => {
             </>
           )}
           {resendStatus === 'sent' && (
-            <div className="rounded-lg p-3 text-sm mb-4" style={{ backgroundColor: 'rgba(45,212,160,0.08)', border: '1px solid rgba(45,212,160,0.25)', color: 'var(--jade, var(--success))' }}>
+            <div className="rounded-lg p-3 text-sm mb-4" style={{ backgroundColor: 'var(--jade-bg)', border: '1px solid rgba(0,98,65,0.2)', color: 'var(--jade)' }}>
               New verification email sent  check your inbox!
             </div>
           )}
           {resendStatus === 'error' && (
-            <div className="rounded-lg p-3 text-sm mb-4" style={{ backgroundColor: 'rgba(244,100,100,0.08)', border: '1px solid rgba(244,100,100,0.2)', color: 'var(--rose, var(--error))' }}>
+            <div className="rounded-lg p-3 text-sm mb-4" style={{ backgroundColor: 'var(--rose-bg)', border: '1px solid rgba(200,32,20,0.2)', color: 'var(--rose)' }}>
               Could not resend. Please try again later.
             </div>
           )}
@@ -262,7 +248,8 @@ const RegisterPage: React.FC = () => {
             </defs>
             <rect width="100%" height="100%" fill="url(#dots2)" />
           </svg>
-          <div className="absolute -bottom-28 -right-16 w-72 h-72 rounded-full opacity-[0.04]" style={{ backgroundColor: 'var(--jade, var(--success))' }} />
+<div className="absolute -bottom-28 -right-16 w-72 h-72 rounded-full opacity-[0.04]"
+            style={{ backgroundColor: 'var(--jade)' }} />
         </div>
 
         {/* Brand */}
@@ -274,7 +261,7 @@ const RegisterPage: React.FC = () => {
         <div className="relative z-10 space-y-6">
           <h1
             className="text-4xl xl:text-5xl font-semibold leading-[1.1] tracking-tight"
-            style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
+            style={{ fontFamily: 'Lora, Georgia, serif', color: 'var(--text-primary)' }}
           >
             Your job search,<br />
             <span style={{ color: 'var(--accent)' }}>in one place.</span>
@@ -293,7 +280,7 @@ const RegisterPage: React.FC = () => {
               <li key={step.num} className="flex items-center gap-4">
                 <span
                   className="font-mono text-xs font-semibold w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: 'var(--accent-bg, rgba(232,184,68,0.1))', color: 'var(--accent)', border: '1px solid rgba(232,184,68,0.2)' }}
+                  style={{ backgroundColor: 'var(--accent-bg, var(--accent-bg))', color: 'var(--accent)', border: '1px solid rgba(0,98,65,0.2)' }}
                 >
                   {step.num}
                 </span>
@@ -312,25 +299,11 @@ const RegisterPage: React.FC = () => {
         style={{ backgroundColor: 'var(--bg-base)' }}
       >
         {/* Top bar */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2 md:hidden">
-            <VibeHiredLogo size={22} className="px-0" />
-          </div>
-          <div className="md:ml-auto">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg"
-              style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
-          </div>
-        </div>
+        <div className="mb-8" />
 
         {/* Heading */}
         <div className="mb-7">
-          <h2 className="text-[1.75rem] font-semibold tracking-tight" style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}>
+          <h2 className="text-[1.75rem] font-semibold tracking-tight" style={{ fontFamily: 'Lora, Georgia, serif', color: 'var(--text-primary)' }}>
             Create account
           </h2>
           <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>Join VibeHired and start your journey</p>
@@ -338,7 +311,7 @@ const RegisterPage: React.FC = () => {
 
         {/* Error alert */}
         {(authError || localError) && !registrationSuccess && (
-          <div className="mb-6 flex items-start gap-2.5 rounded-lg p-3.5 text-sm" style={{ backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))', border: '1px solid rgba(244,100,100,0.2)', color: 'var(--rose, var(--error))' }}>
+          <div className="mb-6 flex items-start gap-2.5 rounded-lg p-3.5 text-sm" style={{ backgroundColor: 'var(--rose-bg)', border: '1px solid rgba(200,32,20,0.2)', color: 'var(--rose)' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5">
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
@@ -479,7 +452,7 @@ const RegisterPage: React.FC = () => {
             style={{
               backgroundColor: 'var(--accent)',
               color: 'var(--text-on-accent)',
-              boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(232,184,68,0.2)',
+              boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(0,98,65,0.2)',
               opacity: (isSubmitting || registrationSuccess) ? 0.7 : 1,
               cursor: (isSubmitting || registrationSuccess) ? 'not-allowed' : 'pointer',
             }}
@@ -514,9 +487,9 @@ const RegisterPage: React.FC = () => {
             <div
               className="flex items-start gap-2.5 rounded-lg p-3.5 mb-4 text-sm"
               style={{
-                backgroundColor: 'var(--rose-bg, rgba(244,100,100,0.08))',
-                border: '1px solid rgba(244,100,100,0.2)',
-                color: 'var(--rose, var(--error))',
+                backgroundColor: 'var(--rose-bg)',
+                border: '1px solid rgba(200,32,20,0.2)',
+                color: 'var(--rose)',
               }}
             >
               <span>{googleError}</span>

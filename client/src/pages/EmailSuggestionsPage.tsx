@@ -905,20 +905,20 @@ const EmailSuggestionsPage: React.FC = () => {
                     --text-muted: var(--text-muted);
                     --outline-variant: var(--border);
                     --error: var(--rose);
-                    --error-soft: var(--rose-bg, rgba(244, 100, 100, 0.08));
+                    --error-soft: var(--rose-bg);
                     --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.25);
                     background: var(--surface);
                     color: var(--text-primary-amber);
                     min-height: 100vh;
                     position: relative;
-                    font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif;
+                    font-family: 'Inter', sans-serif;
                 }
 
                 .inbox-amber h1,
                 .inbox-amber h2,
                 .inbox-amber h3,
                 .inbox-amber h4 {
-                    font-family: 'Manrope', 'Fraunces', serif;
+                    font-family: 'Manrope', 'Lora', serif;
                 }
 
                 .inbox-topbar {
@@ -1309,7 +1309,7 @@ const EmailSuggestionsPage: React.FC = () => {
                     padding: 1rem 1.25rem;
                     border-radius: 1rem;
                     background: var(--error-soft);
-                    border: 1px solid var(--rose, #f46464);
+                    border: 1px solid var(--rose);
                     color: var(--error);
                 }
 
@@ -1760,28 +1760,8 @@ const EmailSuggestionsPage: React.FC = () => {
                 }
 
                 .inbox-toast.is-error {
-                    background: var(--rose-bg, rgba(244, 100, 100, 0.08));
+                    background: var(--rose-bg);
                     color: var(--error);
-                }
-
-                @media (max-width: 768px) {
-                    .inbox-topbar-inner {
-                        flex-direction: column;
-                        align-items: stretch;
-                    }
-
-                    .inbox-topbar-actions {
-                        justify-content: space-between;
-                    }
-
-                    .inbox-card-meta {
-                        flex-direction: column;
-                    }
-
-                    .inbox-card-tags {
-                        justify-content: flex-start;
-                        flex-wrap: wrap;
-                    }
                 }
             `}</style>
         </div>

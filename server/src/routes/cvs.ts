@@ -14,10 +14,7 @@ import CV, { ICV } from '../models/CV';
 import User from '../models/User';
 import JobApplication from '../models/JobApplication';
 import { generateContentWithFile } from '../utils/aiService';
-import { generateDescriptorFromJson, improveDynamicSectionWithAi } from '../services/generatorService';
-import { normalizeFreeformCvTags } from '../utils/vhTagNormalizer';
-import { normalizeCvFieldNames, compactFreeformToJsonResume } from '../utils/cvNormalizer';
-import { detectCvFormat } from '../utils/cvFormatDetector';
+import { improveDynamicSectionWithAi } from '../services/generatorService';
 import { GoogleGenerativeAIError } from '@google/generative-ai';
 import { NotFoundError, ValidationError } from '../utils/errors/AppError';
 import { JsonResumeSchema } from '../types/jsonresume';
@@ -165,85 +162,29 @@ async function parseUploadedCv(
 
         try {
     const strictFreeformPrompt = `
-You are a CV transcription tool. Your ONLY job is to read the attached CV file (${reqFile.originalname}) and return a FREEFORM JSON representation that mirrors the CV exactly.
+You are a CV transcription tool. Your ONLY job is to read the attached CV file (${reqFile.originalname}) and return a JSON Resume format representation.
 
 === NON-NEGOTIABLE RULES ===
-- Do NOT use or force any predefined schema (do NOT force JSON Resume fields like basics/work/education unless those exact headings exist in the source).
-- Preserve section order exactly as in the source CV.
+- Return valid JSON Resume schema with standard keys: basics, work, education, skills, languages, certificates, projects, awards, volunteer, interests, references, publications.
 - Preserve text exactly as written, including punctuation, casing, and wording.
 - Do NOT normalize dates, names, locations, or formatting words.
 - Do NOT infer, synthesize, reword, summarize, or clean up content.
 - Do NOT merge/split bullets except where the source clearly defines bullet boundaries.
 - Do NOT omit sections. If a section exists, include it.
-- Ignore running headers/footers/page markers that repeat across pages (e.g. watermark-like text, page counters, or tokens like "NAME - 1", "NAME - 2"). Do NOT include those in output JSON.
-
-=== STRICT FIELD NAME CONTRACT ===
-Within ALL array entries (BERUFSERFAHRUNG, AUSBILDUNG, WEITERBILDUNG, IT-ERFAHRUNG, etc.) you MUST use exactly these field names:
-- "title" for the main label (job title, degree name, certificate name, category name)
-- "subtitle" for the secondary label (company, institution, organization, school, employer)
-- "dates" for date or period information (e.g. "01/2020 – 12/2023")
-- "bullets" for bullet point arrays (lists of responsibilities, achievements, tasks)
-- "content" for key-value content text (e.g. skill values, language proficiency levels, descriptions)
-- "category" for category labels in skill/language/knowledge sections
-
-DO NOT use synonyms such as: degree, institution, period, company, employer, description, responsibilities, details, role, position, specialization, value, text. Only the six field names above.
-
-Example — Education entry:
-{ "title": "B.Sc. Informatik", "subtitle": "TU München", "dates": "2018 – 2022" }
-
-Example — Work entry:
-{ "title": "Software Engineer", "subtitle": "Beispiel GmbH", "dates": "03/2022 – heute", "bullets": ["Backend mit Node.js", "API-Design", "Mentoring"] }
-
-Example — Skills entry:
-{ "category": "Programmiersprachen", "content": "JavaScript, TypeScript, Python" }
+- Ignore running headers/footers/page markers that repeat across pages.
 
 === STRUCTURE INSTRUCTIONS ===
-- Return one top-level JSON object.
-- Use section headings from the CV as keys whenever possible.
-- Keep each section value in the most natural freeform structure from the source (string, array, or object).
-- Keep entry ordering exactly as in the CV.
-- If there is content that does not fit a clean section, include it under a key named "Header Info".
-- If the first unlabeled block is personal/contact info (name, age, location, email, phone, links), keep it under "Header Info" and tag that section as contact info in "__vh_tags".
-- For key-value contact lines, store the value only (e.g. if source shows "Phone: +49...", save value as "+49...", not "Phone:").
-- For bullets/content fields that are strings, keep them as strings — do NOT split into arrays.
-- LANGUAGE SECTIONS: Each language entry MUST be its own separate object. Never merge multiple languages into one string.
-- NEVER include leading bullet characters (•, -, –) in stored strings. Strip them from the source text before storing.
-
-=== REQUIRED METADATA (__vh_tags) ===
-You MUST include a top-level "__vh_tags" key in every response.
-"__vh_tags" maps dot-paths to rendering tags. It is the ONLY way the renderer knows how to display each field.
-This metadata must NOT alter or omit any CV content. Use * as a wildcard for array item indices.
-
-PERSONAL INFO BLOCK (the unlabeled top block or any named contact/header section):
-- Section itself:                         "Header Info": "contact_block"
-- Person's full name field:               "Header Info.Name": "name"
-- Location / city / address fields:       "Header Info.Location": "location"
-- Phone / mobile / tel fields:            "Header Info.Phone": "phone"
-- Email fields:                           "Header Info.Email": "email"
-- Any URL (LinkedIn, GitHub, website):    "Header Info.LinkedIn": "url"
-
-PROFILE / SUMMARY / OBJECTIVE sections (free-text paragraph):
-- Tag the whole section as:               "Profil": "paragraph"
-
-EXPERIENCE / EDUCATION ENTRIES (arrays of objects — use * wildcard for all items):
-- Main title (job title, degree name):    "Experience.*.title": "title"
-- Date range / period:                    "Experience.*.dates": "date_range"
-- Company / institution / employer:       "Experience.*.subtitle": "subtitle"
-- Bullet point lists:                     "Experience.*.bullets": "bullets"
-
-LABELED LIST / CATEGORY SECTIONS (e.g. TECHNISCHE KENNTNISSE, SPRACHEN):
-- Tag the category/label field as "title":  "TECHNISCHE KENNTNISSE.*.category": "title"
-- Tag the content/value field:              "TECHNISCHE KENNTNISSE.*.content": "key_value"
-- For language sections, each language is its own object:
-    "SPRACHEN.*.category": "title"
-    "SPRACHEN.*.content": "key_value"
-
-TRAINING / CERTIFICATE / COURSE LISTS (e.g. WEITERBILDUNG):
-- Tag the title field:                      "WEITERBILDUNG.*.title": "title"
-- Tag the details field:                    "WEITERBILDUNG.*.content": "key_value"
-- If a date/period is separated, tag it:    "WEITERBILDUNG.*.dates": "date_range"
-
-Allowed tags: name, email, phone, url, location, address, city, linkedin, github, website, portfolio, date, date_range, title, subtitle, paragraph, bullets, key_value, contact_block, personal_info.
+- basics: { name, email, phone, url, location: { city, country }, profiles: [{ network, url }] }
+- work: [{ name (company), position, startDate, endDate, summary, highlights: [bullets] }]
+- education: [{ institution, studyType, area, startDate, endDate, score }]
+- skills: [{ name, keywords: [skill1, skill2] }]
+- languages: [{ language, fluency }]
+- certificates: [{ name, issuer, date, url }]
+- projects: [{ name, description, highlights: [bullets], url }]
+- For date ranges, use YYYY-MM format where possible (e.g., "2020-01", "2023-12"). Use "Present" for current positions.
+- For bullets/content fields that are strings, keep them as strings.
+- LANGUAGE SECTIONS: Each language entry MUST be its own separate object.
+- NEVER include leading bullet characters (•, -, –) in stored strings. Strip them before storing.
 
 === OUTPUT FORMAT ===
 Return ONLY a single valid JSON object enclosed in triple backticks (\`\`\`json ... \`\`\`).
@@ -271,7 +212,6 @@ No text, explanation, or commentary before or after the JSON block.
         const markerBaseCounts = new Map<string, number>();
         collectPageMarkerBaseCounts(cvJsonResume, markerBaseCounts);
         const sanitizedCvJsonResume = sanitizeParsedCvJson(cvJsonResume, markerBaseCounts) as JsonResumeSchema;
-        normalizeFreeformCvTags(sanitizedCvJsonResume as any);
 
         console.log('--- PARSED CV JSON ---');
         console.log(JSON.stringify(sanitizedCvJsonResume, null, 2));
@@ -315,29 +255,28 @@ router.get('/branches', asyncHandler(async (req: Request, res: Response) => {
         }
     });
 
-    res.json({
-        branches: branches.map(cv => ({
-            _id: cv._id,
-            isDefault: cv.isDefault,
-            category: cv.category,
-            displayName: cv.displayName,
-            jobApplicationId: cv.jobApplicationId,
-            cvJson: lite ? undefined : cv.cvJson,
-            cvFormat: cv.cvFormat ?? null,
-            hasOriginalCvJson: Boolean(cv.originalCvJson),
-            extractionMode: cv.extractionMode ?? null,
-            extractionTimestamp: cv.extractionTimestamp ?? null,
-            cvDescriptor: lite ? null : (cv.cvDescriptor ?? null),
-            cvData: lite ? null : (cv.cvData ?? null),
-            templateId: cv.templateId,
-            filename: cv.filename,
-            analysisCache: lite ? null : cv.analysisCache,
-            isStarred: cv.isStarred ?? false,
-            usedByJobCount: usageByBaseCv.get(String(cv._id)) || 0,
-            createdAt: cv.createdAt,
-            updatedAt: cv.updatedAt,
-        }))
-    });
+        res.json({
+            branches: branches.map(cv => ({
+                _id: cv._id,
+                isDefault: cv.isDefault,
+                category: cv.category,
+                displayName: cv.displayName,
+                jobApplicationId: cv.jobApplicationId,
+                cvJson: lite ? undefined : cv.cvJson,
+                hasOriginalCvJson: Boolean(cv.originalCvJson),
+                extractionMode: cv.extractionMode ?? null,
+                extractionTimestamp: cv.extractionTimestamp ?? null,
+                cvDescriptor: lite ? null : (cv.cvDescriptor ?? null),
+                cvData: lite ? null : (cv.cvData ?? null),
+                templateId: cv.templateId,
+                filename: cv.filename,
+                analysisCache: lite ? null : cv.analysisCache,
+                isStarred: cv.isStarred ?? false,
+                usedByJobCount: usageByBaseCv.get(String(cv._id)) || 0,
+                createdAt: cv.createdAt,
+                updatedAt: cv.updatedAt,
+            }))
+        });
 }));
 
 /**
@@ -397,7 +336,6 @@ router.get('/master', asyncHandler(async (req: Request, res: Response) => {
             _id: baseCv._id,
             isDefault: baseCv.isDefault,
             cvJson: baseCv.cvJson,
-            cvFormat: baseCv.cvFormat ?? null,
             cvDescriptor: baseCv.cvDescriptor ?? null,
             cvData: baseCv.cvData ?? null,
             templateId: effectiveTemplate,
@@ -459,7 +397,6 @@ router.post('/create-branch', asyncHandler(async (req: Request, res: Response) =
             category: newBranch.category,
             displayName: newBranch.displayName,
             cvJson: newBranch.cvJson,
-            cvFormat: newBranch.cvFormat ?? null,
             hasOriginalCvJson: Boolean(newBranch.originalCvJson),
             extractionMode: newBranch.extractionMode ?? null,
             extractionTimestamp: newBranch.extractionTimestamp ?? null,
@@ -529,7 +466,6 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
             jobApplicationId: cv.jobApplicationId,
             jobApplication: (cv as any).jobApplication || null,
             cvJson: cv.cvJson,
-            cvFormat: cv.cvFormat ?? null,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
             extractionMode: cv.extractionMode ?? null,
             extractionTimestamp: cv.extractionTimestamp ?? null,
@@ -611,7 +547,6 @@ router.get('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
             isDefault: cv.isDefault,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
-            cvFormat: cv.cvFormat ?? null,
             cvDescriptor: cv.cvDescriptor ?? null,
             cvData: cv.cvData ?? null,
             templateId: effectiveTemplate,
@@ -646,8 +581,6 @@ router.post(
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
         const originalCvJson = JSON.parse(JSON.stringify(cvJsonResume));
-        const normalizedCvJson = compactFreeformToJsonResume(cvJsonResume);
-        const detectedFormat = detectCvFormat(normalizedCvJson, true);
 
         // Generate AI-driven descriptor + structured data in one additional call.
         // Errors here are non-fatal: the CV is still created with the legacy cvJson.
@@ -659,17 +592,15 @@ router.post(
             isDefault: false,
             category: 'General',
             displayName: req.file.originalname.replace(/\.[^.]+$/, '') || 'Uploaded CV',
-            cvJson: normalizedCvJson,
-            cvFormat: detectedFormat,
+            cvJson: cvJsonResume,
             originalCvJson,
             extractionMode: 'strict',
             extractionTimestamp: new Date(),
             cvDescriptor,
             cvData,
             filename: req.file.originalname,
-            // Store the original binary so job copies are fully isolated
             originalPdf: req.file.buffer,
-            templateId: null, // Will inherit from user settings
+            templateId: null,
         });
 
         console.log(`Primary CV created for user ${req.user!.email}`);
@@ -681,8 +612,7 @@ router.post(
                 isDefault: false,
                 category: newCv.category,
                 displayName: newCv.displayName,
-                cvJson: normalizedCvJson,
-                cvFormat: newCv.cvFormat ?? null,
+                cvJson: cvJsonResume,
                 hasOriginalCvJson: Boolean(newCv.originalCvJson),
                 extractionMode: newCv.extractionMode ?? null,
                 cvDescriptor: newCv.cvDescriptor ?? null,
@@ -725,13 +655,11 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
     let originalCvJson: JsonResumeSchema | null = null;
     let extractionMode: 'strict' | 'standard' | null = null;
     let extractionTimestamp: Date | null = null;
-    let cvFormat: 'json-resume' | 'freeform' | null = null;
     if (req.body.cvJson) {
         cvJson = req.body.cvJson;
         originalCvJson = JSON.parse(JSON.stringify(req.body.cvJson));
         extractionMode = 'standard';
         extractionTimestamp = new Date();
-        cvFormat = detectCvFormat(cvJson, true);
     } else {
         // Copy from primary CV
         const primaryCv = await CV.getDefaultCv(userId as string);
@@ -742,7 +670,6 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
         originalCvJson = primaryCv.originalCvJson ? JSON.parse(JSON.stringify(primaryCv.originalCvJson)) : null;
         extractionMode = primaryCv.extractionMode ?? null;
         extractionTimestamp = primaryCv.extractionTimestamp ?? null;
-        cvFormat = primaryCv.cvFormat ?? null;
     }
 
     const newCv = await CV.create({
@@ -751,7 +678,6 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
         displayName: `Job CV - ${job.jobTitle} at ${job.companyName}`,
         jobApplicationId: new mongoose.Types.ObjectId(jobId),
         cvJson,
-        cvFormat,
         originalCvJson,
         extractionMode,
         extractionTimestamp,
@@ -764,7 +690,6 @@ router.post('/job/:jobId', asyncHandler(async (req: Request, res: Response) => {
             _id: newCv._id,
             jobApplicationId: newCv.jobApplicationId,
             cvJson: newCv.cvJson,
-            cvFormat: newCv.cvFormat ?? null,
             templateId: newCv.templateId,
             isStarred: newCv.isStarred ?? false,
             createdAt: newCv.createdAt,
@@ -800,8 +725,6 @@ router.post(
 
         const cvJsonResume = await parseUploadedCv(req.file, String(userId));
         const originalCvJson = JSON.parse(JSON.stringify(cvJsonResume));
-        const normalizedCvJson = compactFreeformToJsonResume(cvJsonResume);
-        const detectedFormat = detectCvFormat(normalizedCvJson, true);
 
         const branchCvDescriptor = null;
         const branchCvData = null;
@@ -811,17 +734,15 @@ router.post(
             isDefault: false,
             category: category.trim(),
             displayName: displayName.trim(),
-            cvJson: normalizedCvJson,
-            cvFormat: detectedFormat,
+            cvJson: cvJsonResume,
             originalCvJson,
             extractionMode: 'strict',
             extractionTimestamp: new Date(),
             cvDescriptor: branchCvDescriptor,
             cvData: branchCvData,
             filename: req.file.originalname,
-            // Store original binary for isolation
             originalPdf: req.file.buffer,
-            templateId: null, // Will inherit from user settings
+            templateId: null,
         });
 
         console.log(`Branch CV created for user ${req.user!.email}`);
@@ -833,8 +754,7 @@ router.post(
                 isDefault: false,
                 category: newCv.category,
                 displayName: newCv.displayName,
-                cvJson: normalizedCvJson,
-                cvFormat: newCv.cvFormat ?? null,
+                cvJson: cvJsonResume,
                 hasOriginalCvJson: Boolean(newCv.originalCvJson),
                 extractionMode: newCv.extractionMode ?? null,
                 cvDescriptor: newCv.cvDescriptor ?? null,
@@ -909,7 +829,6 @@ router.post('/job/:jobId/from-base', asyncHandler(async (req: Request, res: Resp
             jobApplicationId: jobCv.jobApplicationId,
             displayName: jobCv.displayName,
             cvJson: jobCv.cvJson,
-            cvFormat: jobCv.cvFormat ?? null,
             filename: jobCv.filename,
             templateId: jobCv.templateId,
             isStarred: jobCv.isStarred ?? false,
@@ -963,7 +882,6 @@ router.post(
                 jobApplicationId: jobCv.jobApplicationId,
                 displayName: jobCv.displayName,
                 cvJson: null,
-                cvFormat: jobCv.cvFormat ?? null,
                 filename: jobCv.filename,
                 isStarred: jobCv.isStarred ?? false,
                 createdAt: jobCv.createdAt,
@@ -1038,7 +956,6 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
             isDefault: cv.isDefault,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
-            cvFormat: cv.cvFormat ?? null,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
             extractionMode: cv.extractionMode ?? null,
             extractionTimestamp: cv.extractionTimestamp ?? null,
@@ -1115,7 +1032,6 @@ router.post('/:id/reset-from-source', asyncHandler(async (req: Request, res: Res
             isDefault: cv.isDefault,
             jobApplicationId: cv.jobApplicationId,
             cvJson: cv.cvJson,
-            cvFormat: cv.cvFormat ?? null,
             hasOriginalCvJson: Boolean(cv.originalCvJson),
             extractionMode: cv.extractionMode ?? null,
             extractionTimestamp: cv.extractionTimestamp ?? null,
@@ -1327,34 +1243,6 @@ router.put('/:id/edited-pdf', asyncHandler(async (req: Request, res: Response) =
             _id: cv._id,
             updatedAt: cv.updatedAt,
         }
-    });
-}));
-
-/**
- * POST /api/cvs/:id/restructure
- * Re-generate the AI descriptor and data from the stored cvJson.
- * Useful for legacy CVs or when the user wants to re-analyse structure.
- */
-router.post('/:id/restructure', usageLimiter('cvParsing'), asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user!._id as string;
-    const cvId = req.params.id;
-
-    if (!mongoose.Types.ObjectId.isValid(cvId)) {
-        throw new ValidationError('Invalid CV ID');
-    }
-
-    const cv = await CV.findOne({ _id: cvId, userId });
-    if (!cv) throw new NotFoundError('CV not found');
-
-    const payload = await generateDescriptorFromJson(cv.cvJson as Record<string, any>, userId);
-    cv.cvDescriptor = payload.descriptor as any;
-    cv.cvData = payload.data;
-    await cv.save();
-
-    res.json({
-        message: 'CV restructured successfully.',
-        cvDescriptor: cv.cvDescriptor,
-        cvData: cv.cvData,
     });
 }));
 

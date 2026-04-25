@@ -67,13 +67,6 @@ async function resolveCvContext(
         };
     }
 
-    if (jobApplication.draftCvJson) {
-        return {
-            source: 'job draft CV',
-            content: serializeContext(jobApplication.draftCvJson),
-        };
-    }
-
     return null;
 }
 

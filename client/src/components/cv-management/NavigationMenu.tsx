@@ -68,7 +68,7 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ scrollContainerRef }) =
 
 	return (
 		<div className="mb-4">
-			<div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-900/90 backdrop-blur px-4 py-3 shadow-sm">
+			<div className="rounded-2xl border border-theme bg-white/95 backdrop-blur px-4 py-3 shadow-sm">
 				<nav className="flex gap-2 overflow-x-auto text-sm font-medium pb-1">
 					{CV_SECTIONS.map((section) => {
 						const isActive = activeAnchor === section.anchorId;
@@ -77,10 +77,10 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ scrollContainerRef }) =
 								key={section.anchorId}
 								type="button"
 								onClick={() => handleNavigate(section.anchorId)}
-								className={`whitespace-nowrap rounded-xl px-4 py-2 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+								className={`whitespace-nowrap rounded-xl px-4 py-2 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-gold ${
 									isActive
-										? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-										: 'bg-gray-100/70 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
+										? 'bg-green text-white shadow-lg shadow-blue-600/30'
+										: 'bg-[var(--bg-raised)]/70 text-secondary-color hover:text-green-house'
 								}`}
 								aria-pressed={isActive}
 							>

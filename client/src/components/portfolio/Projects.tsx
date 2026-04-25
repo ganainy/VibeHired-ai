@@ -13,10 +13,10 @@ interface ProjectsProps {
 const getPlaceholderStyle = (index: number): React.CSSProperties => {
   const styles: React.CSSProperties[] = [
     { background: 'linear-gradient(135deg, var(--bg-elevated), var(--bg-raised))' },
-    { background: 'linear-gradient(135deg, rgba(232,184,68,0.12), var(--bg-elevated))' },
-    { background: 'linear-gradient(135deg, var(--bg-raised), rgba(232,184,68,0.08))' },
+    { background: 'linear-gradient(135deg, var(--accent-bg), var(--bg-elevated))' },
+    { background: 'linear-gradient(135deg, var(--bg-raised), var(--accent-bg))' },
     { background: 'linear-gradient(135deg, var(--bg-surface), var(--bg-elevated))' },
-    { background: 'linear-gradient(135deg, rgba(232,184,68,0.06), var(--bg-raised))' },
+    { background: 'linear-gradient(135deg, var(--accent-bg), var(--bg-raised))' },
     { background: 'linear-gradient(135deg, var(--bg-elevated), var(--bg-surface))' },
   ];
   return styles[index % styles.length];
@@ -172,7 +172,7 @@ const Projects: React.FC<ProjectsProps> = ({ projects }) => {
             className="px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 hover:scale-105"
             style={{
               background: selectedFilter === 'all' ? 'var(--accent)' : 'var(--bg-elevated)',
-              color: selectedFilter === 'all' ? 'var(--color-ink-950, #0e0e17)' : 'var(--text-secondary)',
+              color: selectedFilter === 'all' ? 'var(--color-green-house, #0e0e17)' : 'var(--text-secondary)',
               border: selectedFilter === 'all' ? 'none' : '1px solid var(--border)',
             }}
           >
@@ -185,7 +185,7 @@ const Projects: React.FC<ProjectsProps> = ({ projects }) => {
               className="px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 capitalize hover:scale-105"
               style={{
                 background: selectedFilter === tech ? 'var(--accent)' : 'var(--bg-elevated)',
-                color: selectedFilter === tech ? 'var(--color-ink-950, #0e0e17)' : 'var(--text-secondary)',
+                color: selectedFilter === tech ? 'var(--color-green-house, #0e0e17)' : 'var(--text-secondary)',
                 border: selectedFilter === tech ? 'none' : '1px solid var(--border)',
               }}
             >

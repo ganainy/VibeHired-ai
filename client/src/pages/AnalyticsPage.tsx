@@ -127,7 +127,7 @@ const AnalyticsPage: React.FC = () => {
         setJobsError(null);
         try {
             const data = await getJobs();
-            setJobs(data);
+            setJobs(data.jobs);
         } catch (error: any) {
             setJobsError(error.message || 'Failed to fetch jobs');
         } finally {

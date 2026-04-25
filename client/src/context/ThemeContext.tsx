@@ -1,10 +1,9 @@
 // client/src/context/ThemeContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-type Theme = 'light' | 'dark';
+// Light-only theme — dark mode has been removed
+import React, { createContext, useContext, ReactNode } from 'react';
 
 interface ThemeContextType {
-  theme: Theme;
+  theme: 'light';
   toggleTheme: () => void;
 }
 
@@ -23,32 +22,12 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    // Initialize from localStorage or default to 'light'
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    return savedTheme || 'light';
-  });
-
-  useEffect(() => {
-    // Apply theme to root element
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    // Persist to localStorage
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
+  // Ensure no dark class lingers from a previous session
+  document.documentElement.classList.remove('dark');
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme: 'light', toggleTheme: () => {} }}>
       {children}
     </ThemeContext.Provider>
   );
 };
-

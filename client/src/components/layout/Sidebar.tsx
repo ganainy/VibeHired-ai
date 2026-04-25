@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { VibeHiredLogo } from '../VibeHiredLogo';
 
 // ── Email inbox icon ──────────────────────────────────────────────────────────
@@ -86,18 +85,7 @@ const CalendarIcon = () => (
     </svg>
 );
 
-const SunIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="4" />
-        <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-    </svg>
-);
 
-const MoonIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-    </svg>
-);
 
 const LogoutIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -142,7 +130,6 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
     const { user, logout } = useAuth();
-    const { theme, toggleTheme } = useTheme();
     const location = useLocation();
     const navigate = useNavigate();
     const [isCollapsed, setIsCollapsed] = React.useState(false);
@@ -214,14 +201,14 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
         <aside
             data-onboarding="sidebar"
             style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
-            className={`hidden md:flex flex-col h-screen flex-shrink-0 transition-all duration-300 relative border-r
+            className={`flex flex-col h-screen flex-shrink-0 transition-all duration-300 relative border-r
                 ${isCollapsed ? 'w-[72px]' : 'w-[230px]'}`}
         >
             {/* Collapse toggle */}
             <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
                 style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
-                className="absolute -right-3.5 top-[52px] w-7 h-7 rounded-full border flex items-center justify-center z-50 transition-all hover:border-gold-400 group shadow-ink-sm"
+                className="absolute -right-3.5 top-[52px] w-7 h-7 rounded-full border flex items-center justify-center z-50 transition-all hover:border-[var(--accent)] group shadow-warm-sm"
                 aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
                 <span style={{ color: 'var(--text-muted)' }} className="group-hover:text-accent transition-colors">
@@ -246,7 +233,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                     {navSections.map((section, sectionIndex) => (
                         <div key={section.label} className={sectionIndex === 0 ? '' : 'mt-4'}>
                             {!isCollapsed && (
-                                <p className="px-4 mb-1.5 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                <p className="px-4 mb-1.5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
                                     {section.label}
                                 </p>
                             )}
@@ -296,7 +283,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                                                 padding: isCollapsed ? '10px' : '9px 12px',
                                                 justifyContent: isCollapsed ? 'center' : 'flex-start',
                                                 gap: isCollapsed ? '0' : '10px',
-                                                backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.09))' : 'transparent',
+                                                backgroundColor: isActive ? 'var(--accent-bg)' : 'transparent',
                                                 color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
                                             }}
                                             onMouseEnter={(e) => {
@@ -325,7 +312,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                                             {!isCollapsed && (item as any).badge && (
                                                 <span
                                                     className="ml-auto min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-bold px-1"
-                                                    style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+                                                    style={{ backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)' }}
                                                 >
                                                     {(item as any).badge > 9 ? '9+' : (item as any).badge}
                                                 </span>
@@ -333,7 +320,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                                             {isCollapsed && (item as any).badge && (
                                                 <span
                                                     className="absolute top-0.5 right-0.5 min-w-[14px] h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold px-0.5"
-                                                    style={{ backgroundColor: 'var(--accent)', color: '#000' }}
+                                                    style={{ backgroundColor: 'var(--accent)', color: 'var(--text-on-accent)' }}
                                                 >
                                                     {(item as any).badge > 9 ? '9+' : (item as any).badge}
                                                 </span>
@@ -349,7 +336,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                     {(user?.role === 'admin' || user?.role === 'owner') && (
                         <div className="mt-8 space-y-0.5">
                             {!isCollapsed && (
-                                <p className="px-4 mb-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">Admin</p>
+                                <p className="px-4 mb-2 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Admin</p>
                             )}
                             {[
                                 { path: '/admin', label: 'Admin Dashboard', icon: AnalyticsIcon },
@@ -367,7 +354,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                                             padding: isCollapsed ? '10px' : '9px 12px',
                                             justifyContent: isCollapsed ? 'center' : 'flex-start',
                                             gap: isCollapsed ? '0' : '10px',
-                                            backgroundColor: isActive ? 'var(--accent-bg, rgba(232,184,68,0.09))' : 'transparent',
+                                            backgroundColor: isActive ? 'var(--accent-bg)' : 'transparent',
                                             color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
                                         }}
                                         onMouseEnter={(e) => {
@@ -409,8 +396,8 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                 {/* Remaining Credits Badge */}
                 {user && (
                     <div
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold ${(user.credits ?? 0) < 10 ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-gold-500/10 text-gold-600 border border-gold-500/20'
-                            }`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold ${(user.credits ?? 0) < 10 ? 'bg-red-500/10 text-red-500 border border-red-500/20' : ''}`}
+                        style={(user.credits ?? 0) >= 10 ? { backgroundColor: 'var(--accent-bg)', color: 'var(--jade)', border: '1px solid rgba(0,98,65,0.2)' } : undefined}
                         title="Remaining AI Credits"
                     >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -433,7 +420,7 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                 >
                     <div
                         className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 font-mono"
-                        style={{ backgroundColor: 'var(--accent-bg, rgba(232,184,68,0.15))', color: 'var(--accent)', border: '1px solid rgba(232,184,68,0.25)' }}
+                        style={{ backgroundColor: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid rgba(0,98,65,0.25)' }}
                     >
                         {userInitial}
                     </div>
@@ -449,32 +436,13 @@ const Sidebar: React.FC<SidebarProps> = ({ pendingEmailCount = 0 }) => {
                 {/* Actions row */}
                 <div className={`flex gap-1.5 ${isCollapsed ? 'flex-col items-center' : ''}`}>
                     <button
-                        onClick={toggleTheme}
-                        className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 px-2.5 text-xs font-medium transition-all duration-150"
-                        style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
-                        onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)';
-                            (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-bright, var(--border))';
-                        }}
-                        onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
-                            (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
-                        }}
-                        aria-label="Toggle theme"
-                        title={isCollapsed ? (theme === 'dark' ? 'Light mode' : 'Dark mode') : undefined}
-                    >
-                        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-                        {!isCollapsed && <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>}
-                    </button>
-
-                    <button
                         onClick={handleLogout}
                         className="flex items-center justify-center rounded-lg p-2 transition-all duration-150"
                         style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
                         onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--rose-bg, rgba(244,100,100,0.08))';
-                            (e.currentTarget as HTMLElement).style.color = 'var(--rose, #f46464)';
-                            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(244,100,100,0.25)';
+                            (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--rose-bg)';
+                            (e.currentTarget as HTMLElement).style.color = 'var(--rose)';
+                            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(200,32,20,0.25)';
                         }}
                         onMouseLeave={(e) => {
                             (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-elevated)';

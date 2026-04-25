@@ -1,6 +1,7 @@
 // server/src/domain/adapters/AdapterFactory.ts
 import { ModelAdapter, AdapterConfig } from './ModelAdapter';
 import { GeminiAdapter } from './GeminiAdapter';
+import { OpenAICompatibleAdapter } from '../../adapters/openAICompatibleAdapter';
 import { AIProvider } from '../providers/AIProvider';
 import { GEMINI_FLASH } from '../../constants/geminiModels';
 
@@ -20,6 +21,14 @@ export class AdapterFactory {
         switch (provider) {
             case AIProvider.GEMINI:
                 return new GeminiAdapter(apiKey, modelName, temperature, maxTokens);
+
+            case AIProvider.OPENAI_COMPATIBLE: {
+                const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+                const resolvedModel = modelName || process.env.OPENAI_MODEL || 'gpt-4o';
+                // OpenAICompatibleAdapter implements the legacy ModelAdapter interface,
+                // which is a superset of the domain ModelAdapter interface.
+                return new OpenAICompatibleAdapter(apiKey, baseUrl, resolvedModel, temperature, maxTokens) as unknown as ModelAdapter;
+            }
 
             default:
                 throw new Error(`Unsupported provider: ${provider}`);

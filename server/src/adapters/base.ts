@@ -2,10 +2,6 @@
 
 import { Readable } from 'stream';
 
-import { EnhancedGenerateContentResponse } from '@google/generative-ai';
-
-import { GEMINI_FLASH } from '../constants/geminiModels';
-
 export interface GenerateContentOptions {
   temperature?: number;
   maxTokens?: number;
@@ -84,13 +80,19 @@ export abstract class ModelAdapter {
 }
 
 /**
- * In-memory store for active Gemini chat sessions.
- * Keyed by sessionId → { chatSession, createdAt }
+ * Generic chat session interface — provider implementations store their own session objects
  */
-export const chatSessions = new Map<string, {
-  chatSession: import('@google/generative-ai').ChatSession;
+export interface GenericChatSession {
+  /** Provider-specific session handle (e.g. Gemini ChatSession, message history array, etc.) */
+  handle: unknown;
   createdAt: number;
-}>();
+}
+
+/**
+ * In-memory store for active chat sessions.
+ * Keyed by sessionId → GenericChatSession
+ */
+export const chatSessions = new Map<string, GenericChatSession>();
 
 /**
  * Generate a unique session ID
@@ -113,4 +115,3 @@ export function cleanupExpiredSessions(): void {
   });
   keysToDelete.forEach(id => chatSessions.delete(id));
 }
-

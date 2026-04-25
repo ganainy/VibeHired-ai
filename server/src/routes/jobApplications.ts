@@ -7,7 +7,6 @@ import { ScraperService } from '../services/scraperService';
 import { extractJobDataFromUrl, extractJobDataFromText, ExtractedJobData } from '../utils/aiExtractor';
 import mongoose from 'mongoose'; // Import mongoose for ObjectId type
 import { JsonResumeSchema } from '../types/jsonresume'; // Import if needed for validation
-import { normalizeCvFieldNames } from '../utils/cvNormalizer';
 import { validateRequest, ValidatedRequest } from '../middleware/validateRequest';
 import { getJobRecommendation } from '../services/jobRecommendationService';
 import { usageLimiter } from '../middleware/usageLimiter';
@@ -146,7 +145,7 @@ const getJobsHandler: RequestHandler = async (req, res) => {
 
     // --- Fetch paginated jobs ---
     let jobQuery = JobApplication.find(query)
-      .select('-draftCvJson -draftCoverLetterText -jobDescriptionText -chatHistory')
+      .select('-draftCoverLetterText -jobDescriptionText -chatHistory')
       .sort(sortOptions);
     if (limit) {
       jobQuery = jobQuery.skip(skip).limit(limit);
@@ -891,7 +890,7 @@ const getJobDraftHandler: RequestHandler = async (req: ValidatedRequest, res) =>
     // Find the job, ensure it belongs to the user, and select only the draft fields + status
     const job = await JobApplication.findOne(
       { _id: jobId, userId: userId },
-      'draftCvJson draftCoverLetterText generationStatus companyName jobTitle'
+      'draftCoverLetterText generationStatus companyName jobTitle'
     );
 
     if (!job) {
@@ -904,7 +903,6 @@ const getJobDraftHandler: RequestHandler = async (req: ValidatedRequest, res) =>
       jobTitle: job.jobTitle,
       companyName: job.companyName,
       generationStatus: job.generationStatus,
-      draftCvJson: job.draftCvJson || null,
       draftCoverLetterText: job.draftCoverLetterText || null,
     });
 
@@ -929,14 +927,14 @@ const updateJobDraftHandler: RequestHandler = async (req: ValidatedRequest, res)
 
   const { id: jobId } = req.validated!.params!;
   const userId = user._id;
-  const { draftCvJson, draftCoverLetterText } = req.validated!.body!;
+  const { draftCoverLetterText } = req.validated!.body!;
 
   try {
     const updateData: any = {
       generationStatus: 'draft_ready'
     };
-    if (draftCvJson !== undefined) {
-      updateData.draftCvJson = draftCvJson;
+    if (draftCoverLetterText !== undefined) {
+      updateData.draftCoverLetterText = draftCoverLetterText;
     }
     if (draftCoverLetterText !== undefined) {
       updateData.draftCoverLetterText = draftCoverLetterText;

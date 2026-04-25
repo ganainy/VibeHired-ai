@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
-import Header from './Header';
 import CreditLimitModal from '../usage/CreditLimitModal';
 import RouteOnboarding from '../onboarding/RouteOnboarding';
 import { listPendingSuggestions } from '../../services/emailSuggestionsApi';
@@ -48,16 +47,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
             {/* Main content area */}
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-                {/* Mobile header (hidden on md+) */}
-                <Header pendingEmailCount={pendingCount} />
-
                 {/* Page content */}
                 <main
                     data-onboarding="main-content"
                     className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar"
                     style={{ backgroundColor: 'var(--bg-base)' }}
                 >
-                    <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+                    <div className="max-w-7xl mx-auto w-full px-6 lg:px-8 py-6">
                         {children}
                     </div>
                 </main>

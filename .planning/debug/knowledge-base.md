@@ -39,3 +39,12 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Files changed:** client/src/pages/review-finalize/hooks/usePdfGeneration.ts, client/src/pages/review-finalize/hooks/useReviewCoverLetterPdf.ts, server/src/services/coverLetterService.ts, server/src/validations/commonSchemas.ts
 
 ---
+
+## manage-cv-setisanalysisoutdated-undefined — Manage CV page throws setIsAnalysisOutdated is not defined
+- **Date:** 2026-04-23
+- **Error patterns:** Manage CV, setIsAnalysisOutdated is not defined, useState, missing declaration, CVManagementPage.tsx
+- **Root cause:** Missing `useState` declaration for `isAnalysisOutdated` in `CVManagementPage.tsx`. The setter `setIsAnalysisOutdated` was used in three places but the corresponding state tuple was never destructured from a `useState` call.
+- **Fix:** Added `const [isAnalysisOutdated, setIsAnalysisOutdated] = useState<boolean>(false);` to the analysis state block in `CVManagementPage.tsx`.
+- **Files changed:** client/src/pages/CVManagementPage.tsx
+
+---

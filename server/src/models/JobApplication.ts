@@ -1,6 +1,5 @@
 // server/src/models/JobApplication.ts
 import mongoose, { Document, Schema } from 'mongoose';
-import { JsonResumeSchema } from '../types/jsonresume'; // Assuming this type exists
 
 // Define allowed statuses
 type GenerationStatus = 'none' | 'pending_input' | 'draft_ready' | 'finalized' | 'error';
@@ -88,7 +87,6 @@ export interface IJobApplication extends Document {
     };
 
     // --- New Fields for Drafts & Status ---
-    draftCvJson?: JsonResumeSchema | mongoose.Schema.Types.Mixed; // Store draft CV data
     draftCoverLetterText?: string; // Store draft Cover Letter text
     // Email fields for cover letter
     coverLetterFileName?: string; // Suggested filename for downloads
@@ -199,7 +197,6 @@ const JobApplicationSchema: Schema = new Schema(
         },
 
         // --- Schema Definitions for New Fields ---
-        draftCvJson: { type: Schema.Types.Mixed, required: false },
         draftCoverLetterText: { type: String, required: false },
         // Email fields for cover letter
         coverLetterFileName: { type: String, required: false },

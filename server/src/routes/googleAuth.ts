@@ -56,14 +56,18 @@ function buildOAuth2Client(redirectUri?: string) {
 /**
  * GET /api/auth/google/status
  * Returns whether the current user has Google Calendar connected.
+ * Also checks if the stored token has the required gmail.modify scope.
  */
 router.get('/status', authMiddleware, asyncHandler(async (req: Request, res: Response) => {
     const userId = String(req.user!._id);
     const profile = await Profile.findOne({ userId });
     const g = profile?.integrations?.google;
+    const connected = !!(g?.enabled && g?.accessToken);
+    const hasModifyScope = connected && (g?.scope ?? '').includes('https://www.googleapis.com/auth/gmail.modify');
     res.json({
-        connected: !!(g?.enabled && g?.accessToken),
+        connected,
         email: g?.email ?? null,
+        needsReauth: connected && !hasModifyScope,
     });
 }));
 
@@ -128,6 +132,7 @@ router.get('/callback', asyncHandler(async (req: Request, res: Response) => {
                     : undefined,
                 'integrations.google.email': googleEmail,
                 'integrations.google.enabled': true,
+                'integrations.google.scope': tokens.scope ?? undefined,
             },
         },
         { upsert: true }

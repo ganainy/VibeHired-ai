@@ -43,7 +43,7 @@ export function VibeHiredLogo({ className, size = 64 }: VibeHiredLogoProps) {
         className="flex items-baseline font-bold tracking-tight"
         style={{
           fontSize: size * 0.8,
-          fontFamily: "Fraunces, serif",
+          fontFamily: "Inter, sans-serif",
         }}
         initial="hidden"
         animate="visible"
@@ -91,7 +91,7 @@ export function VibeHiredLogo({ className, size = 64 }: VibeHiredLogoProps) {
             }}
             style={{
               fontSize: size * 0.4,
-              color: "var(--accent)",
+              color: "var(--amber)",
             }}
           >
             ✦

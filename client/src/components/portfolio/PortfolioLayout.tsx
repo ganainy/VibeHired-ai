@@ -117,7 +117,7 @@ const PortfolioLayout: React.FC<PortfolioLayoutProps> = ({
     fontWeight: 500,
     background: activeSection === section ? 'var(--accent-bg)' : 'transparent',
     color: activeSection === section ? 'var(--accent)' : 'var(--text-secondary)',
-    border: activeSection === section ? '1px solid rgba(232,184,68,0.25)' : '1px solid transparent',
+    border: activeSection === section ? '1px solid rgba(0,98,65,0.25)' : '1px solid transparent',
     cursor: 'pointer',
     transition: 'all 0.2s',
   });

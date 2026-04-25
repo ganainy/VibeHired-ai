@@ -33,7 +33,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     const describedBy = [errorId, helperId].filter(Boolean).join(' ') || undefined;
 
     const errorClasses = error
-      ? 'border-[color:var(--rose)] focus:border-[color:var(--rose)] focus:shadow-[0_0_0_3px_rgba(244,100,100,0.15)]'
+      ? 'border-[color:var(--rose)] focus:border-[color:var(--rose)] focus:shadow-[0_0_0_3px_rgba(200,32,20,0.15)]'
       : '';
 
     const iconPadding = icon ? 'pl-10' : '';

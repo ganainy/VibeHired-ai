@@ -342,6 +342,15 @@ router.post(
                 });
                 return;
             }
+
+            if (err?.code === 'GMAIL_INSUFFICIENT_SCOPES') {
+                res.status(403).json({
+                    message: err.message || 'Gmail access is limited. Please reconnect your Google account to enable full email processing.',
+                    code: 'GMAIL_INSUFFICIENT_SCOPES',
+                });
+                return;
+            }
+
             // fallback: generic error
             res.status(500).json({ message: err?.message || 'Failed to poll Gmail.' });
         }

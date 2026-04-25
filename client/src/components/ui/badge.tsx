@@ -13,17 +13,24 @@ export const Badge: React.FC<BadgeProps> = ({
   const baseClasses = 'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-all duration-200';
   
   const variantClasses = {
-    default: 'border-transparent bg-blue-500 text-white shadow-sm hover:bg-blue-600',
-    secondary: 'border-transparent bg-gray-200 text-gray-800 shadow-sm hover:bg-gray-300',
-    destructive: 'border-transparent bg-red-500 text-white shadow-sm hover:bg-red-600',
-    outline: 'text-gray-900 border-gray-300 bg-white hover:bg-gray-50',
+    default: 'border-transparent text-white shadow-sm',
+    secondary: 'border-transparent shadow-sm',
+    destructive: 'border-transparent text-white shadow-sm',
+    outline: 'hover:bg-[var(--bg-elevated)]',
+  };
+
+  const variantStyles: Record<string, React.CSSProperties> = {
+    default: { backgroundColor: 'var(--accent)', borderColor: 'transparent' },
+    secondary: { backgroundColor: 'var(--bg-elevated)', color: 'var(--text-secondary)', borderColor: 'var(--border)' },
+    destructive: { backgroundColor: 'var(--rose)', borderColor: 'transparent' },
+    outline: { color: 'var(--text-primary)', borderColor: 'var(--border)', backgroundColor: 'var(--bg-surface)' },
   };
   
   return (
     <div 
       className={cn(baseClasses, variantClasses[variant], className)}
+      style={variantStyles[variant]}
       {...props}
     />
   );
 };
-

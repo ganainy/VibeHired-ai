@@ -216,13 +216,13 @@ const EditSuggestionModal: React.FC<EditSuggestionModalProps> = ({ suggestion, o
                     <div className="flex items-center gap-2">
                         <div 
                             className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: 'rgba(232, 184, 68, 0.15)', color: 'var(--accent)' }}
+                            style={{ backgroundColor: 'rgba(0,98,65,0.15)', color: 'var(--accent)' }}
                         >
                             <EditIcon />
                         </div>
                         <h2 
                             className="text-lg font-semibold"
-                            style={{ color: 'var(--text-primary)', fontFamily: 'Fraunces, Georgia, serif' }}
+                            style={{ color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
                         >
                             Edit Suggestion
                         </h2>
@@ -382,7 +382,7 @@ const EditSuggestionModal: React.FC<EditSuggestionModalProps> = ({ suggestion, o
                                                     className="w-full text-left px-3 py-2 text-sm transition-colors"
                                                     style={{
                                                         color: !jobApplicationId ? 'var(--accent)' : 'var(--text-muted)',
-                                                        backgroundColor: !jobApplicationId ? 'rgba(232,184,68,0.08)' : 'transparent',
+                                                        backgroundColor: !jobApplicationId ? 'var(--accent-bg)' : 'transparent',
                                                     }}
                                                 >
                                                     -- No matching job --
@@ -405,10 +405,10 @@ const EditSuggestionModal: React.FC<EditSuggestionModalProps> = ({ suggestion, o
                                                             className="w-full text-left px-3 py-2 text-sm transition-colors"
                                                             style={{
                                                                 color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
-                                                                backgroundColor: isSelected ? 'rgba(232,184,68,0.08)' : 'transparent',
+                                                                backgroundColor: isSelected ? 'var(--accent-bg)' : 'transparent',
                                                             }}
                                                             onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(255,255,255,0.04)'; }}
-                                                            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = isSelected ? 'rgba(232,184,68,0.08)' : 'transparent'; }}
+                                                            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = isSelected ? 'var(--accent-bg)' : 'transparent'; }}
                                                         >
                                                             {highlightMatch(label, jobSearch)}
                                                         </button>
@@ -564,9 +564,9 @@ const EditSuggestionModal: React.FC<EditSuggestionModalProps> = ({ suggestion, o
                                         onClick={() => setEmailCategory(cat)}
                                         className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all"
                                         style={{
-                                            backgroundColor: isActive ? 'rgba(232,184,68,0.12)' : 'var(--bg-elevated)',
+                                            backgroundColor: isActive ? 'rgba(0,98,65,0.12)' : 'var(--bg-elevated)',
                                             color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                                            border: `1px solid ${isActive ? 'rgba(232,184,68,0.35)' : 'var(--border)'}`,
+                                            border: `1px solid ${isActive ? 'rgba(0,98,65,0.35)' : 'var(--border)'}`,
                                         }}
                                     >
                                         {cat === 'application_response' ? 'Application' : 'Job Lead'}

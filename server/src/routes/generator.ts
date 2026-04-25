@@ -17,11 +17,6 @@ import { generateDocumentsBodySchema, improveSectionBodySchema } from '../valida
 import { jobIdParamSchema, filenameParamSchema } from '../validations/commonSchemas';
 import { improveCvSection } from '../controllers/generatorController';
 import { asyncHandler } from '../utils/asyncHandler';
-import { generateDescriptorFromJson } from '../services/generatorService';
-import { CvSectionDescriptor } from '../types/cvDescriptor';
-import { normalizeFreeformCvTags } from '../utils/vhTagNormalizer';
-import { normalizeCvFieldNames, normalizeSectionNames } from '../utils/cvNormalizer';
-import { detectCvFormat } from '../utils/cvFormatDetector';
 
 
 const router: Router = express.Router();
@@ -96,9 +91,6 @@ const renderFinalPdfsHandler: RequestHandler = async (req: ValidatedRequest, res
         let cvJsonData: JsonResumeSchema | null = null;
         if (jobCv && jobCv.cvJson) {
             cvJsonData = jobCv.cvJson;
-        } else if (job.draftCvJson && typeof job.draftCvJson === 'object' && Object.keys(job.draftCvJson).length > 0) {
-            // Fallback to legacy field
-            cvJsonData = job.draftCvJson as JsonResumeSchema;
         }
 
         if (!cvJsonData || Object.keys(cvJsonData).length === 0) {
@@ -300,9 +292,6 @@ const renderCvPdfHandler: RequestHandler = async (req: ValidatedRequest, res): P
         let cvJsonData: JsonResumeSchema | null = null;
         if (jobCv && jobCv.cvJson) {
             cvJsonData = jobCv.cvJson;
-        } else if (job.draftCvJson && typeof job.draftCvJson === 'object' && Object.keys(job.draftCvJson).length > 0) {
-            // Fallback to legacy field
-            cvJsonData = job.draftCvJson as JsonResumeSchema;
         }
 
         if (!cvJsonData || Object.keys(cvJsonData).length === 0) {
@@ -401,9 +390,6 @@ const renderCoverLetterPdfHandler: RequestHandler = async (req: ValidatedRequest
         let cvJsonData: JsonResumeSchema | null = null;
         if (jobCv && jobCv.cvJson) {
             cvJsonData = jobCv.cvJson;
-        } else if (job.draftCvJson && typeof job.draftCvJson === 'object' && Object.keys(job.draftCvJson).length > 0) {
-            // Fallback to legacy field
-            cvJsonData = job.draftCvJson as JsonResumeSchema;
         }
 
         // If no CV data, use empty object (cover letter might not need much from CV except header)
@@ -594,48 +580,17 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             console.log('Alternative fields found:', foundAlternatives);
         }
 
-        // Detect freeform BEFORE normalization.
-        // Prefer the stored cvFormat flag set at upload time.
-        // For legacy CVs (cvFormat === null), fall back to key-ratio detection.
-        let isFreeformCv: boolean;
-        if (baseCvDocument?.cvFormat === 'freeform') {
-            isFreeformCv = true;
-        } else if (baseCvDocument?.cvFormat === 'json-resume') {
-            isFreeformCv = false;
-        } else {
-            // No stored format (legacy or override data) — detect from raw JSON
-            isFreeformCv = detectCvFormat(baseCvJson as Record<string, any>) === 'freeform';
-        }
-
-        // STEP 1: Normalize section names ONLY for non-freeform CVs
-        if (!isFreeformCv) {
-            baseCvJson = normalizeSectionNames(baseCvJson as Record<string, any>) as JsonResumeSchema;
-            console.log('=== After section name normalization ===');
-            console.log('Top-level keys:', Object.keys(baseCvJson));
-        } else {
-            console.log('=== Skipping section name normalization for freeform CV ===');
-        }
-
-        // STEP 2: Normalize field names within sections (company → subtitle, etc.)
-        baseCvJson = normalizeCvFieldNames(baseCvJson as Record<string, any>) as JsonResumeSchema;
-        console.log('=== After field name normalization ===');
-        console.log('Top-level keys:', Object.keys(baseCvJson));
-
         // Validate that base CV has meaningful content
         const hasBasics = baseCvJson.basics && typeof baseCvJson.basics === 'object' && Object.keys(baseCvJson.basics).length > 0;
         const hasWork = Array.isArray(baseCvJson.work) && baseCvJson.work.length > 0;
         const hasEducation = Array.isArray(baseCvJson.education) && baseCvJson.education.length > 0;
         const hasSkills = Array.isArray(baseCvJson.skills) && baseCvJson.skills.length > 0;
-        // For freeform CVs, check for any non-empty, non-tag array/object section
-        const hasFreeformContent = isFreeformCv && Object.entries(baseCvJson as Record<string, any>)
-            .filter(([k]) => k !== '__vh_tags')
-            .some(([, v]) => (Array.isArray(v) && v.length > 0) || (v && typeof v === 'object' && Object.keys(v).length > 0) || (typeof v === 'string' && v.trim().length > 0));
 
         console.log('=== DEBUG: After normalization ===');
         console.log('Top-level keys:', Object.keys(baseCvJson));
-        console.log('isFreeformCv:', isFreeformCv, 'hasBasics:', hasBasics, 'hasWork:', hasWork, 'hasEducation:', hasEducation, 'hasSkills:', hasSkills, 'hasFreeformContent:', hasFreeformContent);
+        console.log('hasBasics:', hasBasics, 'hasWork:', hasWork, 'hasEducation:', hasEducation, 'hasSkills:', hasSkills);
 
-        if (!hasBasics && !hasWork && !hasEducation && !hasSkills && !hasFreeformContent) {
+        if (!hasBasics && !hasWork && !hasEducation && !hasSkills) {
             console.error('Base CV is empty or has no meaningful content. CV ID:', usedBaseCvId);
             console.error('All keys:', JSON.stringify(Object.keys(baseCvJson)));
             res.write(`data: ${JSON.stringify({ type: 'error', error: 'The base CV has no meaningful content. Please upload a properly formatted CV or use the CV editor to add your information first.' })}\n\n`);
@@ -643,11 +598,11 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             return;
         }
 
-        if (!hasBasics && !isFreeformCv) {
+        if (!hasBasics) {
             console.warn('Base CV has empty "basics" section. CV ID:', usedBaseCvId);
         }
 
-        console.log(`Base CV validation - isFreeform: ${isFreeformCv}, basics: ${hasBasics ? '✓' : '✗'}, work: ${(baseCvJson.work as any)?.length || 0}, education: ${(baseCvJson.education as any)?.length || 0}, skills: ${(baseCvJson.skills as any)?.length || 0}`);
+        console.log(`Base CV validation - basics: ${hasBasics ? '✓' : '✗'}, work: ${(baseCvJson.work as any)?.length || 0}, education: ${(baseCvJson.education as any)?.length || 0}, skills: ${(baseCvJson.skills as any)?.length || 0}`);
 
         // 3. Fetch Custom Prompt (if any) or use override
         const profile = await Profile.findOne({ userId: userId });
@@ -666,7 +621,6 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
             baseCvJson,
             job.jobDescriptionText,
             languageName,
-            isFreeformCv,
             showChanges,
             sendProgress,
         );
@@ -684,87 +638,39 @@ const generateCvOnlyHandler: RequestHandler = async (req: ValidatedRequest, res)
 
 let finalCvJson = tailoredCvJson;
 
-        if (!isFreeformCv) {
-            // For JSON Resume CVs: copy any missing standard sections from base CV
-            const majorSections = ['basics', 'summary', 'work', 'education', 'skills', 'languages', 'certifications', 'projects'];
-            const finalCvAny = finalCvJson as Record<string, any>;
-            const baseCvAny = baseCvJson as Record<string, any>;
+        // Copy any missing standard sections from base CV
+        const majorSections = ['basics', 'summary', 'work', 'education', 'skills', 'languages', 'certifications', 'projects'];
+        const finalCvAny = finalCvJson as Record<string, any>;
+        const baseCvAny = baseCvJson as Record<string, any>;
 
-            for (const section of majorSections) {
-                const hasInFinal = finalCvAny[section] && (
-                    (Array.isArray(finalCvAny[section]) && finalCvAny[section].length > 0) ||
-                    (typeof finalCvAny[section] === 'object' && !Array.isArray(finalCvAny[section]) && Object.keys(finalCvAny[section]).length > 0)
-                );
+        for (const section of majorSections) {
+            const hasInFinal = finalCvAny[section] && (
+                (Array.isArray(finalCvAny[section]) && finalCvAny[section].length > 0) ||
+                (typeof finalCvAny[section] === 'object' && !Array.isArray(finalCvAny[section]) && Object.keys(finalCvAny[section]).length > 0)
+            );
 
-                if (!hasInFinal && baseCvAny[section]) {
-                    const hasInBase = Array.isArray(baseCvAny[section])
-                        ? baseCvAny[section].length > 0
-                        : (typeof baseCvAny[section] === 'object' && Object.keys(baseCvAny[section]).length > 0);
+            if (!hasInFinal && baseCvAny[section]) {
+                const hasInBase = Array.isArray(baseCvAny[section])
+                    ? baseCvAny[section].length > 0
+                    : (typeof baseCvAny[section] === 'object' && Object.keys(baseCvAny[section]).length > 0);
 
-                    if (hasInBase) {
-                        console.log(`Copying ${section} from base CV (missing in AI response)`);
-                        finalCvAny[section] = JSON.parse(JSON.stringify(baseCvAny[section]));
-                    }
+                if (hasInBase) {
+                    console.log(`Copying ${section} from base CV (missing in AI response)`);
+                    finalCvAny[section] = JSON.parse(JSON.stringify(baseCvAny[section]));
                 }
             }
-            finalCvJson = finalCvAny as JsonResumeSchema;
-        } else {
-            // For freeform CVs: verify all original top-level sections are present in the patch result
-            const finalCvAny = finalCvJson as Record<string, any>;
-            const baseCvAny = baseCvJson as Record<string, any>;
-            const baseKeys = Object.keys(baseCvAny).filter(k => k !== '__vh_tags');
-
-            for (const key of baseKeys) {
-                if (!(key in finalCvAny)) {
-                    console.log(`Freeform section "${key}" missing from tailored CV — restoring from base`);
-                    finalCvAny[key] = JSON.parse(JSON.stringify(baseCvAny[key]));
-                }
-            }
-            // Always preserve the original __vh_tags from base CV for freeform
-            finalCvAny.__vh_tags = baseCvAny.__vh_tags;
-            finalCvJson = finalCvAny as JsonResumeSchema;
         }
-
-        // Safety-net normalizers: only run on JSON Resume CVs.
-        // Freeform CVs must preserve their original section keys exactly
-        // because __vh_tags paths are keyed to those exact names.
-        if (!isFreeformCv) {
-            finalCvJson = normalizeSectionNames(finalCvJson as Record<string, any>) as JsonResumeSchema;
-            finalCvJson = normalizeCvFieldNames(finalCvJson as Record<string, any>) as JsonResumeSchema;
-        }
-        // Tag enrichment runs on all CVs
-        normalizeFreeformCvTags(finalCvJson);
+        finalCvJson = finalCvAny as JsonResumeSchema;
 
         // Address matching: replace CV address with job location when enabled
         if (matchAddress) {
             const jobLocation = job.extractedData?.location;
-            if (jobLocation) {
-                if (!isFreeformCv && finalCvJson.basics) {
-                    console.log(`  → Matching address to job location: "${jobLocation}"`);
-                    finalCvJson.basics.location = {
-                        ...(finalCvJson.basics.location || {}),
-                        address: jobLocation,
-                    };
-                } else if (isFreeformCv) {
-                    // For freeform CVs, look for a section containing location/address info
-                    const headerKey = Object.keys(finalCvJson).find(k =>
-                        /header|personal|contact|info/i.test(k) && k !== '__vh_tags'
-                    );
-                    if (headerKey && Array.isArray(finalCvJson[headerKey])) {
-                        const headerArr = finalCvJson[headerKey] as any[];
-                        const locationEntry = headerArr.find((e: any) =>
-                            e && typeof e === 'object' && (
-                                e.__vh_field_type === 'location' ||
-                                /location|address|stadt|ort|wohnort/i.test(e.category || '') ||
-                                /location|address|stadt|ort|wohnort/i.test(e.content || '')
-                            )
-                        );
-                        if (locationEntry) {
-                            console.log(`  → Matching freeform address to job location: "${jobLocation}"`);
-                            locationEntry.content = jobLocation;
-                        }
-                    }
-                }
+            if (jobLocation && finalCvJson.basics) {
+                console.log(`  → Matching address to job location: "${jobLocation}"`);
+                finalCvJson.basics.location = {
+                    ...(finalCvJson.basics.location || {}),
+                    address: jobLocation,
+                };
             } else {
                 console.log('  → matchAddress enabled but no job location found in extractedData');
             }
@@ -805,7 +711,6 @@ let finalCvJson = tailoredCvJson;
 
         if (jobCv) {
             jobCv.cvJson = finalCvJson;
-            jobCv.cvFormat = isFreeformCv ? 'freeform' : 'json-resume';
             jobCv.tailoringChanges = tailoringChanges;
             jobCv.tailoringDetails = tailoringDetailsData;
             await jobCv.save();
@@ -821,23 +726,9 @@ let finalCvJson = tailoredCvJson;
                 isDefault: false,
                 displayName,
                 cvJson: finalCvJson,
-                cvFormat: isFreeformCv ? 'freeform' : 'json-resume',
                 tailoringChanges,
                 tailoringDetails: tailoringDetailsData,
             });
-        }
-
-        // Non-fatally generate dynamic descriptor for the review tab (only for non-JSON-Resume CVs)
-        if (!isJsonResumeLike(finalCvJson)) {
-            try {
-                const descriptorPayload = await generateDescriptorFromJson(finalCvJson, userId);
-                await CV.findOneAndUpdate(
-                    { jobApplicationId: jobId, userId },
-                    { $set: { cvDescriptor: descriptorPayload.descriptor, cvData: descriptorPayload.data } },
-                );
-            } catch (descErr: any) {
-                console.warn(`Descriptor generation failed (non-fatal): ${descErr.message}`);
-            }
         }
 
         res.write(`data: ${JSON.stringify({

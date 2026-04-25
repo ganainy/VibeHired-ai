@@ -696,7 +696,7 @@ const CalendarPage: React.FC = () => {
                         <div>
                             <h2
                                 className="text-xl font-semibold mb-2"
-                                style={{ color: 'var(--text-primary)', fontFamily: 'Fraunces, Georgia, serif' }}
+                                style={{ color: 'var(--text-primary)', fontFamily: 'Lora, Georgia, serif' }}
                             >
                                 Connect Google Calendar
                             </h2>
@@ -810,7 +810,7 @@ const CalendarPage: React.FC = () => {
                                     <div className="flex items-center gap-3 mb-3">
                                         <p
                                             className="text-sm font-semibold"
-                                            style={{ color: 'var(--text-primary)', fontFamily: 'Fraunces, Georgia, serif' }}
+                                            style={{ color: 'var(--text-primary)', fontFamily: 'Lora, Georgia, serif' }}
                                         >
                                             Next Week
                                         </p>
@@ -906,7 +906,7 @@ const CalendarPage: React.FC = () => {
                                                 className="text-sm font-semibold"
                                                 style={{
                                                     color: today ? 'var(--accent)' : 'var(--text-primary)',
-                                                    fontFamily: 'Fraunces, Georgia, serif',
+                                                    fontFamily: 'Lora, Georgia, serif',
                                                 }}
                                             >
                                                 {formatDateHeading(dateKey)}

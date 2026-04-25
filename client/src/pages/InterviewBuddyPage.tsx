@@ -106,7 +106,7 @@ const InterviewBuddyPage: React.FC = () => {
   useEffect(() => {
     getJobs()
       .then((data) => {
-        const active = data.filter((j) => j.status !== 'Rejected' && j.status !== 'Closed');
+        const active = data.jobs.filter((j) => j.status !== 'Rejected' && j.status !== 'Closed');
         setJobs(active);
         if (active.length > 0) setSelectedJobId(active[0]._id);
       })
@@ -220,18 +220,6 @@ const InterviewBuddyPage: React.FC = () => {
 
   return (
     <div className="min-h-screen px-6 py-10 max-w-4xl mx-auto" style={{ color: 'var(--text-primary)' }}>
-
-      {/* Mobile-only notice  hidden on sm+ */}
-      <div className="sm:hidden flex flex-col items-center justify-center text-center gap-4 py-20">
-        <span className="material-symbols-outlined text-5xl" style={{ color: 'var(--accent)' }}>computer</span>
-        <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>Desktop Only</h2>
-        <p className="text-sm max-w-xs" style={{ color: 'var(--text-secondary)' }}>
-          AI Interview Buddy requires the desktop companion app. Please open this page on your PC or Mac to get started.
-        </p>
-      </div>
-
-      {/* Desktop content  hidden on mobile */}
-      <div className="hidden sm:block">
 
       {/*  Header  */}
       <div className="mb-10">
@@ -680,7 +668,6 @@ const InterviewBuddyPage: React.FC = () => {
         )}
       </div>
 
-      </div>{/* end hidden sm:block desktop wrapper */}
     </div>
   );
 };

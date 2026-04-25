@@ -4,513 +4,513 @@ import { InterviewMaterial, MaterialJobRef, MaterialType } from '../../types/int
 import { canPreviewInline } from '../jobs/MaterialPreviewModal';
 
 function getJobRef(material: InterviewMaterial): MaterialJobRef | null {
-    if (!material.jobApplicationId) return null;
-    if (typeof material.jobApplicationId === 'string') return null;
-    return material.jobApplicationId as MaterialJobRef;
+ if (!material.jobApplicationId) return null;
+ if (typeof material.jobApplicationId === 'string') return null;
+ return material.jobApplicationId as MaterialJobRef;
 }
 
 function getJobId(material: InterviewMaterial): string | null {
-    if (!material.jobApplicationId) return null;
-    if (typeof material.jobApplicationId === 'string') return material.jobApplicationId;
-    return (material.jobApplicationId as MaterialJobRef)._id;
+ if (!material.jobApplicationId) return null;
+ if (typeof material.jobApplicationId === 'string') return material.jobApplicationId;
+ return (material.jobApplicationId as MaterialJobRef)._id;
 }
 
 function formatBytes(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+ if (bytes < 1024) return `${bytes} B`;
+ if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+ return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatDate(dateStr: string): string {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+ const d = new Date(dateStr);
+ return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function iconForType(type: MaterialType): string {
-    switch (type) {
-        case 'pdf': return 'picture_as_pdf';
-        case 'image': return 'image';
-        case 'docx': return 'description';
-        case 'text': return 'article';
-        case 'markdown': return 'code';
-        case 'link': return 'link';
-        default: return 'attach_file';
-    }
+ switch (type) {
+ case 'pdf': return 'picture_as_pdf';
+ case 'image': return 'image';
+ case 'docx': return 'description';
+ case 'text': return 'article';
+ case 'markdown': return 'code';
+ case 'link': return 'link';
+ default: return 'attach_file';
+ }
 }
 
 function toDownloadCloudinaryUrl(url: string): string {
-    return url.replace('/upload/', '/upload/fl_attachment/');
+ return url.replace('/upload/', '/upload/fl_attachment/');
 }
 
 interface GlobalMaterialCardProps {
-    material: InterviewMaterial;
-    showJobChip?: boolean;
-    isAssignedToJob?: boolean;
-    onRemoveGlobal: (id: string) => void;
-    onDelete: (id: string) => void;
-    onPreview: (m: InterviewMaterial) => void;
-    onToggleFavorite: (id: string) => void;
-    onEdit: (id: string, payload: import('../../types/interviewMaterial').UpdateMaterialPayload) => Promise<void>;
-    onShare: (id: string) => void;
-    onShowShare: (m: InterviewMaterial) => void;
-    isUpdating: boolean;
+ material: InterviewMaterial;
+ showJobChip?: boolean;
+ isAssignedToJob?: boolean;
+ onRemoveGlobal: (id: string) => void;
+ onDelete: (id: string) => void;
+ onPreview: (m: InterviewMaterial) => void;
+ onToggleFavorite: (id: string) => void;
+ onEdit: (id: string, payload: import('../../types/interviewMaterial').UpdateMaterialPayload) => Promise<void>;
+ onShare: (id: string) => void;
+ onShowShare: (m: InterviewMaterial) => void;
+ isUpdating: boolean;
 }
 
 const GlobalMaterialCard: React.FC<GlobalMaterialCardProps> = ({
-    material,
-    showJobChip = false,
-    isAssignedToJob = false,
-    onRemoveGlobal,
-    onDelete,
-    onPreview,
-    onToggleFavorite,
-    onEdit,
-    onShare,
-    onShowShare,
-    isUpdating,
+ material,
+ showJobChip = false,
+ isAssignedToJob = false,
+ onRemoveGlobal,
+ onDelete,
+ onPreview,
+ onToggleFavorite,
+ onEdit,
+ onShare,
+ onShowShare,
+ isUpdating,
 }) => {
-    const [confirmDelete, setConfirmDelete] = useState(false);
-    const [editMode, setEditMode] = useState(false);
-    const [editForm, setEditForm] = useState({
-        title: material.title,
-        description: material.description ?? '',
-        content: material.content ?? '',
-        url: material.url ?? '',
-    });
-    const [isSaving, setIsSaving] = useState(false);
+ const [confirmDelete, setConfirmDelete] = useState(false);
+ const [editMode, setEditMode] = useState(false);
+ const [editForm, setEditForm] = useState({
+ title: material.title,
+ description: material.description ?? '',
+ content: material.content ?? '',
+ url: material.url ?? '',
+ });
+ const [isSaving, setIsSaving] = useState(false);
 
-    const EDITABLE_TYPES: MaterialType[] = ['text', 'markdown', 'link', 'docx'];
-    const isEditable = EDITABLE_TYPES.includes(material.type);
-    const hasContent = material.type === 'text' || material.type === 'markdown';
-    const isLink = material.type === 'link';
-    const clickable = !editMode && (canPreviewInline(material.type) || isLink);
-    const jobRef = getJobRef(material);
-    const jobId = getJobId(material);
-    void isAssignedToJob;
-    const dimmedMutedIconStyle = { color: 'var(--text-muted)', opacity: 0.62 } as const;
-    const cardCursorClass = clickable ? 'cursor-pointer' : 'cursor-default';
+ const EDITABLE_TYPES: MaterialType[] = ['text', 'markdown', 'link', 'docx'];
+ const isEditable = EDITABLE_TYPES.includes(material.type);
+ const hasContent = material.type === 'text' || material.type === 'markdown';
+ const isLink = material.type === 'link';
+ const clickable = !editMode && (canPreviewInline(material.type) || isLink);
+ const jobRef = getJobRef(material);
+ const jobId = getJobId(material);
+ void isAssignedToJob;
+ const dimmedMutedIconStyle = { color: 'var(--text-muted)', opacity: 0.62 } as const;
+ const cardCursorClass = clickable ? 'cursor-pointer' : 'cursor-default';
 
-    const handleCardClick = () => {
-        if (editMode) return;
-        if (isLink && material.url) {
-            window.open(material.url, '_blank', 'noopener,noreferrer');
-        } else if (canPreviewInline(material.type)) {
-            onPreview(material);
-        }
-    };
+ const handleCardClick = () => {
+ if (editMode) return;
+ if (isLink && material.url) {
+ window.open(material.url, '_blank', 'noopener,noreferrer');
+ } else if (canPreviewInline(material.type)) {
+ onPreview(material);
+ }
+ };
 
-    const openEdit = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setEditForm({
-            title: material.title,
-            description: material.description ?? '',
-            content: material.content ?? '',
-            url: material.url ?? '',
-        });
-        setEditMode(true);
-    };
+ const openEdit = (e: React.MouseEvent) => {
+ e.stopPropagation();
+ setEditForm({
+ title: material.title,
+ description: material.description ?? '',
+ content: material.content ?? '',
+ url: material.url ?? '',
+ });
+ setEditMode(true);
+ };
 
-    const handleSave = async (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!editForm.title.trim()) return;
-        setIsSaving(true);
-        try {
-            const payload: import('../../types/interviewMaterial').UpdateMaterialPayload = {
-                title: editForm.title.trim(),
-                description: editForm.description.trim() || undefined,
-                ...(hasContent ? { content: editForm.content } : {}),
-                ...(isLink ? { url: editForm.url.trim() } : {}),
-            };
-            await onEdit(material._id, payload);
-            setEditMode(false);
-        } catch {
-            // onEdit throws on failure — keep edit mode open
-        } finally {
-            setIsSaving(false);
-        }
-    };
+ const handleSave = async (e: React.MouseEvent) => {
+ e.stopPropagation();
+ if (!editForm.title.trim()) return;
+ setIsSaving(true);
+ try {
+ const payload: import('../../types/interviewMaterial').UpdateMaterialPayload = {
+ title: editForm.title.trim(),
+ description: editForm.description.trim() || undefined,
+ ...(hasContent ? { content: editForm.content } : {}),
+ ...(isLink ? { url: editForm.url.trim() } : {}),
+ };
+ await onEdit(material._id, payload);
+ setEditMode(false);
+ } catch {
+ // onEdit throws on failure — keep edit mode open
+ } finally {
+ setIsSaving(false);
+ }
+ };
 
-    const handleDownload = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (material.type === 'link') {
-            if (material.url) window.open(material.url, '_blank', 'noopener,noreferrer');
-            return;
-        }
-        if (material.type === 'text' || material.type === 'markdown') {
-            const blob = new Blob([material.content || ''], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${material.title}.${material.type === 'markdown' ? 'md' : 'txt'}`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            return;
-        }
-    };
+ const handleDownload = (e: React.MouseEvent) => {
+ e.stopPropagation();
+ if (material.type === 'link') {
+ if (material.url) window.open(material.url, '_blank', 'noopener,noreferrer');
+ return;
+ }
+ if (material.type === 'text' || material.type === 'markdown') {
+ const blob = new Blob([material.content || ''], { type: 'text/plain' });
+ const url = window.URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = `${material.title}.${material.type === 'markdown' ? 'md' : 'txt'}`;
+ document.body.appendChild(a);
+ a.click();
+ window.URL.revokeObjectURL(url);
+ document.body.removeChild(a);
+ return;
+ }
+ };
 
-    return (
-        <div
-            onClick={clickable ? handleCardClick : undefined}
-            className={`group relative flex flex-col gap-4 p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${cardCursorClass} hover:-translate-y-0.5 hover:shadow-sm`}
-            style={{
-                backgroundColor: editMode ? 'var(--bg-surface)' : 'var(--bg-elevated)',
-                borderColor: editMode ? 'var(--accent)' : 'var(--border)',
-                borderWidth: editMode ? '2px' : '1px',
-            }}
-        >
-            {editMode ? (
-                /* Edit Mode */
-                <div className="space-y-4" onClick={e => e.stopPropagation()}>
-                    {/* Header */}
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--accent-bg-hover)', color: 'var(--accent)' }}>
-                                <span className="material-symbols-outlined text-base" style={{ color: 'var(--bg-base)' }}>
-                                    {iconForType(material.type)}
-                                </span>
-                            </div>
-                            <span className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>
-                                Editing {material.type}
-                            </span>
-                        </div>
-                    </div>
+ return (
+ <div
+ onClick={clickable ? handleCardClick : undefined}
+ className={`group relative flex flex-col gap-4 p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${cardCursorClass} hover:-translate-y-0.5 hover:shadow-sm`}
+ style={{
+ backgroundColor: editMode ? 'var(--bg-surface)' : 'var(--bg-elevated)',
+ borderColor: editMode ? 'var(--accent)' : 'var(--border)',
+ borderWidth: editMode ? '2px' : '1px',
+ }}
+ >
+ {editMode ? (
+ /* Edit Mode */
+ <div className="space-y-4" onClick={e => e.stopPropagation()}>
+ {/* Header */}
+ <div className="flex items-center justify-between gap-2 mb-4">
+ <div className="flex items-center gap-2">
+ <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--accent-bg-hover)', color: 'var(--accent)' }}>
+ <span className="material-symbols-outlined text-base" style={{ color: 'var(--bg-base)' }}>
+ {iconForType(material.type)}
+ </span>
+ </div>
+ <span className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>
+ Editing {material.type}
+ </span>
+ </div>
+ </div>
 
-                    {/* Form Fields */}
-                    <div className="space-y-4">
-                        {/* Title */}
-                        <div>
-                            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                                Title
-                            </label>
-                            <input
-                                type="text"
-                                value={editForm.title}
-                                onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
-                                className="w-full px-3.5 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400/50"
-                                style={{
-                                    backgroundColor: 'var(--bg-surface)',
-                                    borderColor: 'var(--border)',
-                                    color: 'var(--text-primary)',
-                                }}
-                            />
-                        </div>
+ {/* Form Fields */}
+ <div className="space-y-4">
+ {/* Title */}
+ <div>
+ <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
+ Title
+ </label>
+ <input
+ type="text"
+ value={editForm.title}
+ onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+ className="w-full px-3.5 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400/50"
+ style={{
+ backgroundColor: 'var(--bg-surface)',
+ borderColor: 'var(--border)',
+ color: 'var(--text-primary)',
+ }}
+ />
+ </div>
 
-                        {/* Description */}
-                        <div>
-                            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                                Description
-                                <span className="font-normal opacity-60">(optional)</span>
-                            </label>
-                            <textarea
-                                value={editForm.description}
-                                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
-                                rows={4}
-                                className="w-full px-3.5 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400/50 resize-y font-mono"
-                                style={{
-                                    backgroundColor: 'var(--bg-surface)',
-                                    borderColor: 'var(--border)',
-                                    color: 'var(--text-primary)',
-                                }}
-                            />
-                        </div>
+ {/* Description */}
+ <div>
+ <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
+ Description
+ <span className="font-normal opacity-60">(optional)</span>
+ </label>
+ <textarea
+ value={editForm.description}
+ onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+ rows={4}
+ className="w-full px-3.5 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400/50 resize-y font-mono"
+ style={{
+ backgroundColor: 'var(--bg-surface)',
+ borderColor: 'var(--border)',
+ color: 'var(--text-primary)',
+ }}
+ />
+ </div>
 
-                        {/* Content (text / markdown) */}
-                        {hasContent && (
-                            <div>
-                                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                                    {material.type === 'markdown' ? 'Content (Markdown)' : 'Content'}
-                                </label>
-                                <textarea
-                                    value={editForm.content}
-                                    onChange={e => setEditForm(f => ({ ...f, content: e.target.value }))}
-                                    rows={6}
-                                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400/50 resize-y font-mono"
-                                    style={{
-                                        backgroundColor: 'var(--bg-surface)',
-                                        borderColor: 'var(--border)',
-                                        color: 'var(--text-primary)',
-                                    }}
-                                />
-                            </div>
-                        )}
+ {/* Content (text / markdown) */}
+ {hasContent && (
+ <div>
+ <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
+ {material.type === 'markdown' ? 'Content (Markdown)' : 'Content'}
+ </label>
+ <textarea
+ value={editForm.content}
+ onChange={e => setEditForm(f => ({ ...f, content: e.target.value }))}
+ rows={6}
+ className="w-full px-3.5 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400/50 resize-y font-mono"
+ style={{
+ backgroundColor: 'var(--bg-surface)',
+ borderColor: 'var(--border)',
+ color: 'var(--text-primary)',
+ }}
+ />
+ </div>
+ )}
 
-                        {/* URL (link) */}
-                        {isLink && (
-                            <div>
-                                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                                    URL
-                                </label>
-                                <input
-                                    type="url"
-                                    value={editForm.url}
-                                    onChange={e => setEditForm(f => ({ ...f, url: e.target.value }))}
-                                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400/50"
-                                    style={{
-                                        backgroundColor: 'var(--bg-surface)',
-                                        borderColor: 'var(--border)',
-                                        color: 'var(--text-primary)',
-                                    }}
-                                />
-                            </div>
-                        )}
+ {/* URL (link) */}
+ {isLink && (
+ <div>
+ <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
+ URL
+ </label>
+ <input
+ type="url"
+ value={editForm.url}
+ onChange={e => setEditForm(f => ({ ...f, url: e.target.value }))}
+ className="w-full px-3.5 py-2.5 text-sm rounded-lg border focus:outline-none focus:ring-1 focus:ring-amber-400/50"
+ style={{
+ backgroundColor: 'var(--bg-surface)',
+ borderColor: 'var(--border)',
+ color: 'var(--text-primary)',
+ }}
+ />
+ </div>
+ )}
 
-                        {/* docx note */}
-                        {material.type === 'docx' && (
-                            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                To replace the file itself, delete this item and re-upload.
-                            </p>
-                        )}
-                    </div>
+ {/* docx note */}
+ {material.type === 'docx' && (
+ <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+ To replace the file itself, delete this item and re-upload.
+ </p>
+ )}
+ </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 pt-2">
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving || !editForm.title.trim()}
-                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
-                            style={{
-                                backgroundColor: isSaving ? 'var(--bg-elevated)' : 'var(--accent)',
-                                color: 'var(--bg-base)',
-                            }}
-                        >
-                            {isSaving ? (
-                                <span className="flex items-center gap-2">
-                                    <span className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}>
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 018 8V0C5.373 0 0.5.373 0 12h4z"></path>
-                                    </span>
-                                    Saving…
-                                </span>
-                            ) : (
-                                <>
-                                    <span className="material-symbols-outlined text-sm">check</span>
-                                    Save Changes
-                                </>
-                            )}
-                        </button>
-                        <button
-                            onClick={e => { e.stopPropagation(); setEditMode(false); }}
-                            disabled={isSaving}
-                            className="px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors disabled:opacity-50"
-                            style={{
-                                backgroundColor: 'var(--bg-surface)',
-                                borderColor: 'var(--border)',
-                                color: 'var(--text-secondary)',
-                            }}
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            ) : (
-                /* Normal View */
-                <>
-                    <div className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                            <div className="flex items-start min-w-0">
-                                <div className="flex-1 min-w-0 space-y-1">
-                                    <p className="text-base font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>
-                                        {material.title}
-                                    </p>
+ {/* Actions */}
+ <div className="flex items-center gap-2 pt-2">
+ <button
+ onClick={handleSave}
+ disabled={isSaving || !editForm.title.trim()}
+ className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+ style={{
+ backgroundColor: isSaving ? 'var(--bg-elevated)' : 'var(--accent)',
+ color: 'var(--bg-base)',
+ }}
+ >
+ {isSaving ? (
+ <span className="flex items-center gap-2">
+ <span className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}>
+ <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+ <path className="opacity-75" fill="currentColor" d="M4 12a8 8 018 8V0C5.373 0 0.5.373 0 12h4z"></path>
+ </span>
+ Saving…
+ </span>
+ ) : (
+ <>
+ <span className="material-symbols-outlined text-sm">check</span>
+ Save Changes
+ </>
+ )}
+ </button>
+ <button
+ onClick={e => { e.stopPropagation(); setEditMode(false); }}
+ disabled={isSaving}
+ className="px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors disabled:opacity-50"
+ style={{
+ backgroundColor: 'var(--bg-surface)',
+ borderColor: 'var(--border)',
+ color: 'var(--text-secondary)',
+ }}
+ >
+ Cancel
+ </button>
+ </div>
+ </div>
+ ) : (
+ /* Normal View */
+ <>
+ <div className="flex flex-col gap-4">
+ <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+ <div className="flex items-start min-w-0">
+ <div className="flex-1 min-w-0 space-y-1">
+ <p className="text-base font-semibold leading-tight" style={{ color: 'var(--text-primary)' }}>
+ {material.title}
+ </p>
 
-                                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                                        <span
-                                            className="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider"
-                                            style={{
-                                                backgroundColor: 'var(--bg-surface)',
-                                                color: 'var(--text-muted)',
-                                            }}
-                                        >
-                                            {material.type}
-                                        </span>
+ <div className="flex flex-wrap items-center gap-2 mt-1.5">
+ <span
+ className="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider"
+ style={{
+ backgroundColor: 'var(--bg-surface)',
+ color: 'var(--text-muted)',
+ }}
+ >
+ {material.type}
+ </span>
 
-                                        {material.fileSize !== undefined && (
-                                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                                {formatBytes(material.fileSize)}
-                                            </span>
-                                        )}
+ {material.fileSize !== undefined && (
+ <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+ {formatBytes(material.fileSize)}
+ </span>
+ )}
 
-                                        {material.createdAt && (
-                                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                                {formatDate(material.createdAt)}
-                                            </span>
-                                        )}
+ {material.createdAt && (
+ <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+ {formatDate(material.createdAt)}
+ </span>
+ )}
 
-                                        {material.url && (
-                                            <span className="truncate max-w-[200px] underline text-xs" style={{ color: 'var(--accent)' }}>
-                                                {material.url}
-                                            </span>
-                                        )}
+ {material.url && (
+ <span className="truncate max-w-[200px] underline text-xs" style={{ color: 'var(--accent)' }}>
+ {material.url}
+ </span>
+ )}
 
-                                        {/* Job chip (shown in flat view) */}
-                                        {showJobChip && jobRef && jobId && (
-                                            <span
-                                                className="px-3 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80"
-                                                style={{
-                                                    backgroundColor: 'var(--accent-bg)',
-                                                    color: 'var(--accent)',
-                                                }}
-                                            >
-                                                {jobRef.companyName} — {jobRef.jobTitle}
-                                            </span>
-                                        )}
-                                    </div>
+ {/* Job chip (shown in flat view) */}
+ {showJobChip && jobRef && jobId && (
+ <span
+ className="px-3 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80"
+ style={{
+ backgroundColor: 'var(--accent-bg)',
+ color: 'var(--accent)',
+ }}
+ >
+ {jobRef.companyName} — {jobRef.jobTitle}
+ </span>
+ )}
+ </div>
 
-                                    {material.description && (
-                                        <p className="text-sm mt-1 line-clamp-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                                            {material.description}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
+ {material.description && (
+ <p className="text-sm mt-1 line-clamp-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+ {material.description}
+ </p>
+ )}
+ </div>
+ </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                {confirmDelete ? (
-                                    <div
-                                        className="flex items-center gap-2 rounded-full border px-3 py-1.5"
-                                        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
-                                    >
-                                        <button
-                                            onClick={() => onDelete(material._id)}
-                                            disabled={isUpdating}
-                                            className="text-xs px-3 py-1.5 rounded-full bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors disabled:opacity-50"
-                                        >
-                                            Delete
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmDelete(false)}
-                                            className="text-xs px-3 py-1.5 rounded-full transition-colors"
-                                            style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div
-                                        className="flex items-center gap-1 rounded-full border p-1.5"
-                                        style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
-                                    >
-                                        {/* Favorite Star */}
-                                        <button
-                                            onClick={() => onToggleFavorite(material._id)}
-                                            disabled={isUpdating}
-                                            title={material.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                                            aria-label={material.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                                            className="p-2 rounded-full transition-all hover:opacity-100 disabled:opacity-50"
-                                            style={{
-                                                color: material.isFavorite ? 'var(--accent)' : 'var(--text-muted)',
-                                                opacity: material.isFavorite ? 0.9 : 0.6,
-                                            }}
-                                        >
-                                            <span
-                                                className="material-symbols-outlined text-base"
-                                                style={material.isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                                            >
-                                                star
-                                            </span>
-                                        </button>
+ {/* Actions */}
+ <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+ {confirmDelete ? (
+ <div
+ className="flex items-center gap-2 rounded-full border px-3 py-1.5"
+ style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+ >
+ <button
+ onClick={() => onDelete(material._id)}
+ disabled={isUpdating}
+ className="text-xs px-3 py-1.5 rounded-full bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors disabled:opacity-50"
+ >
+ Delete
+ </button>
+ <button
+ onClick={() => setConfirmDelete(false)}
+ className="text-xs px-3 py-1.5 rounded-full transition-colors"
+ style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--text-muted)' }}
+ >
+ Cancel
+ </button>
+ </div>
+ ) : (
+ <div
+ className="flex items-center gap-1 rounded-full border p-1.5"
+ style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+ >
+ {/* Favorite Star */}
+ <button
+ onClick={() => onToggleFavorite(material._id)}
+ disabled={isUpdating}
+ title={material.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+ aria-label={material.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+ className="p-2 rounded-full transition-all hover:opacity-100 disabled:opacity-50"
+ style={{
+ color: material.isFavorite ? 'var(--accent)' : 'var(--text-muted)',
+ opacity: material.isFavorite ? 0.9 : 0.6,
+ }}
+ >
+ <span
+ className="material-symbols-outlined text-base"
+ style={material.isFavorite ? { fontVariationSettings: "'FILL' 1" } : undefined}
+ >
+ star
+ </span>
+ </button>
 
-                                        {/* Edit Button */}
-                                        {isEditable && (
-                                            <button
-                                                onClick={openEdit}
-                                                title="Edit"
-                                                aria-label="Edit"
-                                                disabled={isUpdating}
-                                                className="p-2 rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
-                                                style={dimmedMutedIconStyle}
-                                            >
-                                                <span className="material-symbols-outlined text-base">edit</span>
-                                            </button>
-                                        )}
+ {/* Edit Button */}
+ {isEditable && (
+ <button
+ onClick={openEdit}
+ title="Edit"
+ aria-label="Edit"
+ disabled={isUpdating}
+ className="p-2 rounded-full transition-colors hover:bg-gray-100 hover:opacity-100 disabled:opacity-50"
+ style={dimmedMutedIconStyle}
+ >
+ <span className="material-symbols-outlined text-base">edit</span>
+ </button>
+ )}
 
-                                        {/* Download Button */}
-                                        {material.type !== 'link' && (
-                                            <button
-                                                onClick={handleDownload}
-                                                title="Download"
-                                                aria-label="Download"
-                                                className="p-2 rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
-                                                style={dimmedMutedIconStyle}
-                                            >
-                                                <span className="material-symbols-outlined text-base">download</span>
-                                            </button>
-                                        )}
+ {/* Download Button */}
+ {material.type !== 'link' && (
+ <button
+ onClick={handleDownload}
+ title="Download"
+ aria-label="Download"
+ className="p-2 rounded-full transition-colors hover:bg-gray-100 hover:opacity-100 disabled:opacity-50"
+ style={dimmedMutedIconStyle}
+ >
+ <span className="material-symbols-outlined text-base">download</span>
+ </button>
+ )}
 
-                                        {/* Share / Open Button */}
-                                        {material.cloudinaryUrl ? (
-                                            <button
-                                                onClick={() => {
-                                                    const cloudinaryUrl = material.cloudinaryUrl;
-                                                    if (cloudinaryUrl) {
-                                                        window.open(toDownloadCloudinaryUrl(cloudinaryUrl), '_blank', 'noopener,noreferrer');
-                                                    }
-                                                }}
-                                                title="Open file"
-                                                aria-label="Open file"
-                                                className="p-2 rounded-full transition-colors hover:opacity-100"
-                                                style={{ color: 'var(--accent)', opacity: 0.8 }}
-                                            >
-                                                <span className="material-symbols-outlined text-base">open_in_new</span>
-                                            </button>
-                                        ) : material.shareToken ? (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); onShowShare(material); }}
-                                                title="Sharing is on - click to manage"
-                                                aria-label="Manage sharing"
-                                                className="p-2 rounded-full transition-colors hover:opacity-100"
-                                                style={{ color: 'var(--accent)', opacity: 0.8 }}
-                                            >
-                                                <span className="material-symbols-outlined text-base">link</span>
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); onShare(material._id); }}
-                                                title="Share"
-                                                aria-label="Share"
-                                                disabled={isUpdating}
-                                                className="p-2 rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:opacity-100 disabled:opacity-50"
-                                                style={dimmedMutedIconStyle}
-                                            >
-                                                <span className="material-symbols-outlined text-base">share</span>
-                                            </button>
-                                        )}
+ {/* Share / Open Button */}
+ {material.cloudinaryUrl ? (
+ <button
+ onClick={() => {
+ const cloudinaryUrl = material.cloudinaryUrl;
+ if (cloudinaryUrl) {
+ window.open(toDownloadCloudinaryUrl(cloudinaryUrl), '_blank', 'noopener,noreferrer');
+ }
+ }}
+ title="Open file"
+ aria-label="Open file"
+ className="p-2 rounded-full transition-colors hover:opacity-100"
+ style={{ color: 'var(--accent)', opacity: 0.8 }}
+ >
+ <span className="material-symbols-outlined text-base">open_in_new</span>
+ </button>
+ ) : material.shareToken ? (
+ <button
+ onClick={(e) => { e.stopPropagation(); onShowShare(material); }}
+ title="Sharing is on - click to manage"
+ aria-label="Manage sharing"
+ className="p-2 rounded-full transition-colors hover:opacity-100"
+ style={{ color: 'var(--accent)', opacity: 0.8 }}
+ >
+ <span className="material-symbols-outlined text-base">link</span>
+ </button>
+ ) : (
+ <button
+ onClick={(e) => { e.stopPropagation(); onShare(material._id); }}
+ title="Share"
+ aria-label="Share"
+ disabled={isUpdating}
+ className="p-2 rounded-full transition-colors hover:bg-gray-100 hover:opacity-100 disabled:opacity-50"
+ style={dimmedMutedIconStyle}
+ >
+ <span className="material-symbols-outlined text-base">share</span>
+ </button>
+ )}
 
-                                        {/* Delete Button */}
-                                        <button
-                                            onClick={() => setConfirmDelete(true)}
-                                            title="Delete"
-                                            aria-label="Delete"
-                                            disabled={isUpdating}
-                                            className="p-2 rounded-full transition-colors hover:text-red-500 hover:opacity-100 disabled:opacity-50"
-                                            style={dimmedMutedIconStyle}
-                                        >
-                                            <span className="material-symbols-outlined text-base">delete</span>
-                                        </button>
+ {/* Delete Button */}
+ <button
+ onClick={() => setConfirmDelete(true)}
+ title="Delete"
+ aria-label="Delete"
+ disabled={isUpdating}
+ className="p-2 rounded-full transition-colors hover:text-red-500 hover:opacity-100 disabled:opacity-50"
+ style={dimmedMutedIconStyle}
+ >
+ <span className="material-symbols-outlined text-base">delete</span>
+ </button>
 
-                                        <span className="w-px h-6" style={{ backgroundColor: 'var(--border)' }} />
+ <span className="w-px h-6" style={{ backgroundColor: 'var(--border)' }} />
 
-                                        {/* Remove from Library Button */}
-                                        <button
-                                            onClick={() => onRemoveGlobal(material._id)}
-                                            disabled={isUpdating}
-                                            className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors hover:opacity-100 disabled:opacity-50"
-                                            style={{ color: 'var(--error)' }}
-                                        >
-                                            Remove from library
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
-        </div>
-    );
+ {/* Remove from Library Button */}
+ <button
+ onClick={() => onRemoveGlobal(material._id)}
+ disabled={isUpdating}
+ className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors hover:opacity-100 disabled:opacity-50"
+ style={{ color: 'var(--error)' }}
+ >
+ Remove from library
+ </button>
+ </div>
+ )}
+ </div>
+ </div>
+ </div>
+ </>
+ )}
+ </div>
+ );
 };
 
 export default GlobalMaterialCard;

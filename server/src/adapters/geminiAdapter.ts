@@ -281,7 +281,7 @@ export class GeminiAdapter extends ModelAdapter {
       ],
     });
     const sessionId = generateSessionId();
-    chatSessions.set(sessionId, { chatSession, createdAt: Date.now() });
+    chatSessions.set(sessionId, { handle: chatSession, createdAt: Date.now() });
     return sessionId;
   }
 
@@ -293,8 +293,9 @@ export class GeminiAdapter extends ModelAdapter {
     if (!session) {
       throw new Error(`Chat session ${sessionId} not found`);
     }
+    const chatSession = session.handle as import('@google/generative-ai').ChatSession;
     try {
-      const result = await session.chatSession.sendMessageStream(message);
+      const result = await chatSession.sendMessageStream(message);
       const readable = new Readable({
         read() {
           return { done: true } as any;

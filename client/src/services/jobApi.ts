@@ -100,7 +100,6 @@ export interface JobApplication {
     language?: 'en' | 'de'; // More specific type
     jobPrerequisites?: string; // AI-extracted job requirements and prerequisites
     jobType?: 'full-time' | 'part-time' | 'working-student' | 'internship' | 'contract' | 'freelance' | null; // Employment type
-    draftCvJson?: any | null; // Use JsonResumeSchema if imported, else any
     draftCoverLetterText?: string | null;
     // Email fields for cover letter
     coverLetterFileName?: string;
@@ -164,7 +163,7 @@ export interface ParsedReminder {
     dateTimeISO: string;
     notificationMinutesBefore: number;
 }
-export type CreateJobPayload = Omit<JobApplication, '_id' | 'createdAt' | 'updatedAt' | 'draftCvJson' | 'draftCoverLetterText' | 'generationStatus'> & { createdAt?: string }; // Allow optional createdAt on create
+export type CreateJobPayload = Omit<JobApplication, '_id' | 'createdAt' | 'updatedAt' | 'draftCoverLetterText' | 'generationStatus'> & { createdAt?: string }; // Allow optional createdAt on create
 export type UpdateJobPayload = Partial<Omit<JobApplication, '_id' | 'userId' | 'updatedAt'>>; // Allow updating most fields including createdAt
 
 interface ScrapeResponse {
@@ -182,7 +181,6 @@ export interface JobDraftData {
     jobTitle: string;
     companyName: string;
     generationStatus?: 'none' | 'pending_input' | 'draft_ready' | 'finalized' | 'error';
-    draftCvJson: JsonResumeSchema | null | any; // Use specific type or any
     draftCoverLetterText: string | null;
 }
 
@@ -398,7 +396,6 @@ export const getJobDraft = async (jobId: string): Promise<JobDraftData> => {
 
 // ---  Update Draft Data Function ---
 interface UpdateDraftPayload {
-    draftCvJson?: JsonResumeSchema | any; // Allow sending partial updates potentially
     draftCoverLetterText?: string;
 }
 interface UpdateDraftResponse {
@@ -505,9 +502,8 @@ export const getPendingFollowUpSuggestionsApi = async (): Promise<IFollowUpSugge
 export const getJobsWithCvs = async (): Promise<JobApplication[]> => {
     try {
         const response = await axios.get(`${API_BASE_URL}/job-applications`);
-        // Filter to only return jobs that have generated CVs
         const allJobs = response.data;
-        return allJobs.filter((job: JobApplication) => job.draftCvJson && Object.keys(job.draftCvJson).length > 0);
+        return allJobs.filter((job: JobApplication) => job.generationStatus === 'draft_ready' || job.generationStatus === 'finalized');
     } catch (error) {
         console.error("Error fetching jobs with CVs:", error);
         throw error;

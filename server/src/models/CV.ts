@@ -19,7 +19,6 @@ export interface ICV extends Document {
     isDefault: boolean;           // One default base CV per user (used by AI generation)
     category: string | null;       // e.g., "Software Engineering", "Cybersecurity", null = primary
     displayName: string;           // User-friendly name: "My SE Resume", "Cyber CV"
-    cvFormat?: 'json-resume' | 'freeform' | null;
     
     jobApplicationId?: Types.ObjectId | null;
     cvJson?: JsonResumeSchema | null;
@@ -83,11 +82,6 @@ const CVSchema = new Schema<ICV>(
             required: true,
             default: false,
             index: true,
-        },
-        cvFormat: {
-            type: String,
-            enum: ['json-resume', 'freeform'],
-            default: null,
         },
         category: {
             type: String,

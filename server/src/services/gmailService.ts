@@ -76,16 +76,16 @@ async function getOAuth2Client(userId: string) {
 }
 
 /**
- * Returns true if the user has Google connected (token stored).
- * We don't make a live probe call here because any transient API error would
- * incorrectly report "no scope" to the user.  Scope/permission errors surface
- * naturally when fetchNewMessages is called and are logged server-side.
+ * Returns true if the user has Google connected AND the stored token includes
+ * the gmail.modify scope (required for batchModify / label operations).
  */
 export async function hasGmailScope(userId: string): Promise<boolean> {
     try {
         const profile = await Profile.findOne({ userId });
         const g = profile?.integrations?.google;
-        return !!(g?.enabled && g?.accessToken);
+        if (!g?.enabled || !g?.accessToken) return false;
+        const scope = g.scope ?? '';
+        return scope.includes('https://www.googleapis.com/auth/gmail.modify');
     } catch {
         return false;
     }
@@ -268,6 +268,7 @@ export async function fetchNewMessages(userId: string, limit: number, includeRea
                         'integrations.google.refreshToken': null,
                         'integrations.google.email': null,
                         'integrations.google.enabled': false,
+                        'integrations.google.scope': null,
                     },
                 }
             );
@@ -276,6 +277,18 @@ export async function fetchNewMessages(userId: string, limit: number, includeRea
             e.code = 'GMAIL_AUTH_EXPIRED';
             throw e;
         }
+
+        // Handle 403 Insufficient Permission (old token missing gmail.modify scope)
+        const status = err?.response?.status;
+        const errorCode = err?.response?.data?.error?.code;
+        const errorMessage = err?.response?.data?.error?.message ?? err?.message ?? '';
+        if (status === 403 || errorCode === 403 || errorMessage.toLowerCase().includes('insufficient permission')) {
+            console.error('[GmailService] Detected insufficient scopes (403). User needs to re-authenticate.');
+            const e: any = new Error('Gmail access is limited. Please reconnect your Google account to enable full email processing.');
+            e.code = 'GMAIL_INSUFFICIENT_SCOPES';
+            throw e;
+        }
+
         throw err;
     }
 }

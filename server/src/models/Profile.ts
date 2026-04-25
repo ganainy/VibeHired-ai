@@ -57,6 +57,8 @@ export interface IProfile extends Document {
       refreshToken?: string;
       email?: string;
       enabled?: boolean;
+      /** Space-separated list of granted OAuth scopes (e.g. "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify") */
+      scope?: string;
     };
   };
   settings?: {
@@ -213,6 +215,7 @@ const ProfileSchema: Schema = new Schema(
         accessToken: String,
         refreshToken: String,
         email: String,
+        scope: String,
         enabled: {
           type: Boolean,
           default: false,

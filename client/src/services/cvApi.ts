@@ -59,8 +59,6 @@ export interface CVDocument {
      * CV data in JsonResume format.
      */
     cvJson?: JsonResumeSchema | null;
-    /** Format classification set at upload time. */
-    cvFormat?: 'json-resume' | null;
     hasOriginalCvJson?: boolean;
     extractionMode?: 'strict' | 'standard' | null;
     extractionTimestamp?: string | null;
@@ -556,22 +554,6 @@ export const updateCv = async (
             throw error.response.data;
         }
         throw { message: 'An unknown error occurred updating CV.' };
-    }
-};
-
-/**
- * Re-generate descriptor and data from the stored cvJson (for legacy CVs or manual refresh).
- */
-export const restructureCv = async (cvId: string): Promise<{ message: string; cvDescriptor: CvSectionDescriptor[]; cvData: Record<string, any> }> => {
-    try {
-        const response = await axios.post(`${API_BASE_URL}/${cvId}/restructure`);
-        return response.data;
-    } catch (error: any) {
-        console.error('Restructure CV API error:', error);
-        if (axios.isAxiosError(error) && error.response) {
-            throw error.response.data;
-        }
-        throw { message: 'An unknown error occurred restructuring the CV.' };
     }
 };
 

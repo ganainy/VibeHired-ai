@@ -334,11 +334,11 @@ const MaterialPreviewModal: React.FC<Props> = ({ material, onClose }) => {
                     <div className="flex items-center gap-2.5 min-w-0">
                         <span
                             className={`material-symbols-outlined text-lg flex-shrink-0 ${
-                                material.type === 'pdf' ? 'text-red-500'
+                                material.type === 'pdf' ? 'text-error'
                                 : material.type === 'image' ? 'text-purple-500'
-                                : material.type === 'docx' ? 'text-blue-500'
+                                : material.type === 'docx' ? 'text-green-house'
                                 : material.type === 'markdown' ? 'text-cyan-500'
-                                : 'text-green-500'
+                                : 'text-green'
                             }`}
                         >
                             {material.type === 'pdf' ? 'picture_as_pdf'
@@ -377,7 +377,7 @@ const MaterialPreviewModal: React.FC<Props> = ({ material, onClose }) => {
                                 <button
                                     onClick={handleDownload}
                                     title="Download"
-                                    className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border transition-colors hover:text-green-500"
+                                    className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border transition-colors hover:text-green"
                                     style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-surface)' }}
                                 >
                                     <span className="material-symbols-outlined text-sm">download</span>

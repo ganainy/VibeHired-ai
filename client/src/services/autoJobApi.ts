@@ -56,7 +56,6 @@ export interface AutoJob {
     };
 
     // Draft content (mapped from customizedResumeHtml/coverLetterText)
-    draftCvJson?: any;
     draftCoverLetterText?: string;
     generationStatus?: 'none' | 'pending_input' | 'pending_generation' | 'draft_ready' | 'finalized' | 'error';
 

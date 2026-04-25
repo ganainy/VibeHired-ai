@@ -1,22 +1,8 @@
 // client/src/pages/VerifyEmailPage.tsx
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
 import { verifyEmailToken, resendVerificationEmail } from '../services/authApi';
 import Spinner from '../components/common/Spinner';
-
-const SunIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="4" />
-        <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-    </svg>
-);
-
-const MoonIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-    </svg>
-);
 
 const VerifyEmailPage: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -25,7 +11,7 @@ const VerifyEmailPage: React.FC = () => {
     const [message, setMessage] = useState('');
     const [resendEmail, setResendEmail] = useState('');
     const [resendState, setResendState] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
-    const { theme, toggleTheme } = useTheme();
+    
     const navigate = useNavigate();
 
     const handleResend = async () => {
@@ -65,17 +51,7 @@ const VerifyEmailPage: React.FC = () => {
             className="min-h-screen flex flex-col items-center justify-center p-6"
             style={{ backgroundColor: 'var(--bg-base)' }}
         >
-            {/* Theme toggle */}
-            <div className="absolute top-5 right-5">
-                <button
-                    onClick={toggleTheme}
-                    className="p-2 rounded-lg transition-colors"
-                    style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                    aria-label="Toggle theme"
-                >
-                    {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-                </button>
-            </div>
+            
 
             <div
                 className="w-full max-w-[420px] rounded-2xl p-8"
@@ -95,7 +71,7 @@ const VerifyEmailPage: React.FC = () => {
                         <div className="py-4">
                             <div
                                 className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
-                                style={{ backgroundColor: 'rgba(45,212,160,0.12)', border: '1px solid rgba(45,212,160,0.25)' }}
+                                style={{ backgroundColor: 'rgba(0,98,65,0.10)', border: '1px solid rgba(0,98,65,0.2)' }}
                             >
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <polyline points="20 6 9 17 4 12" />
@@ -103,7 +79,7 @@ const VerifyEmailPage: React.FC = () => {
                             </div>
                             <h1
                                 className="text-2xl font-semibold mb-2"
-                                style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
+                                style={{ fontFamily: 'Lora, Georgia, serif', color: 'var(--text-primary)' }}
                             >
                                 Email Verified
                             </h1>
@@ -116,7 +92,7 @@ const VerifyEmailPage: React.FC = () => {
                                 style={{
                                     backgroundColor: 'var(--accent)',
                                     color: 'var(--text-on-accent)',
-                                    boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(232,184,68,0.2)',
+                                    boxShadow: '0 1px 0 rgba(255,255,255,0.15) inset, 0 2px 8px rgba(0,98,65,0.2)',
                                 }}
                             >
                                 Sign In
@@ -136,11 +112,11 @@ const VerifyEmailPage: React.FC = () => {
                             </div>
                             <h1
                                 className="text-2xl font-semibold mb-2"
-                                style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--text-primary)' }}
+                                style={{ fontFamily: 'Lora, Georgia, serif', color: 'var(--text-primary)' }}
                             >
                                 Verification Failed
                             </h1>
-                            <p className="text-sm mb-6" style={{ color: 'var(--rose, var(--error))' }}>
+                            <p className="text-sm mb-6" style={{ color: 'var(--rose)' }}>
                                 {message}
                             </p>
 
@@ -153,15 +129,15 @@ const VerifyEmailPage: React.FC = () => {
                                     onChange={(e) => setResendEmail(e.target.value)}
                                     placeholder="your@email.com"
                                     className="w-full rounded-xl px-3 py-2.5 text-sm mb-2 outline-none"
-                                    style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Outfit, sans-serif' }}
+                                    style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}
                                     onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
                                     onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
                                 />
                                 {resendState === 'sent' && (
-                                    <p className="text-xs mb-2" style={{ color: 'var(--jade, var(--success))' }}>New link sent  check your inbox!</p>
+                                    <p className="text-xs mb-2" style={{ color: 'var(--jade)' }}>New link sent  check your inbox!</p>
                                 )}
                                 {resendState === 'error' && (
-                                    <p className="text-xs mb-2" style={{ color: 'var(--rose, var(--error))' }}>Could not send. Please try again.</p>
+                                    <p className="text-xs mb-2" style={{ color: 'var(--rose)' }}>Could not send. Please try again.</p>
                                 )}
                                 <button
                                     onClick={handleResend}

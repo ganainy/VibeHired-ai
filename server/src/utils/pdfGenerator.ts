@@ -3,8 +3,6 @@ import path from 'path';
 import fs from 'fs/promises';
 import { getCoverLetterHtml } from './pdfTemplates';
 import { renderAtsCvHtml, AtsTemplateOptions } from './atsTemplate';
-import { freeformToJsonResume } from './freeformToJsonResume';
-import { detectCvFormat } from './cvFormatDetector';
 import { JsonResumeSchema } from '../types/jsonresume';
 
 // Ensure temp directory exists
@@ -243,28 +241,11 @@ export const generateCvPdfBuffer = async (
     try {
         const resumeDataForTemplate = prepareResumeData(cvJsonResumeObject);
 
-        // If this is a freeform CV, convert it to JSON Resume structure
-        // so the ATS template can render it correctly.
-        const looksLikeFreeform = (
-            (!resumeDataForTemplate.basics?.name || resumeDataForTemplate.basics.name === 'Applicant') &&
-            (cvJsonResumeObject as any).__vh_tags
-        ) || detectCvFormat(cvJsonResumeObject as Record<string, any>) === 'freeform';
-
-        let templateInput = resumeDataForTemplate;
-        if (looksLikeFreeform) {
-            console.log('Freeform CV detected in PDF generator — converting to JSON Resume structure');
-            templateInput = freeformToJsonResume(cvJsonResumeObject as Record<string, any>);
-            // Ensure basics has minimum content
-            if (!templateInput.basics || Object.keys(templateInput.basics).length === 0) {
-                templateInput.basics = { name: 'Applicant', profiles: [] };
-            }
-        }
-
         let htmlContent: string;
         if (atsOptions) {
-            htmlContent = renderAtsCvHtml(templateInput, atsOptions);
+            htmlContent = renderAtsCvHtml(resumeDataForTemplate, atsOptions);
         } else {
-            htmlContent = renderAtsCvHtml(templateInput, { lang: 'en', pageFormat: 'a4' });
+            htmlContent = renderAtsCvHtml(resumeDataForTemplate, { lang: 'en', pageFormat: 'a4' });
         }
 
         if (!htmlContent || typeof htmlContent !== 'string' || htmlContent.trim().length < 100) {
@@ -301,25 +282,11 @@ export const generateCvPdfFromJsonResume = async (
     try {
         const resumeDataForTemplate = prepareResumeData(cvJsonResumeObject);
 
-        const looksLikeFreeform = (
-            (!resumeDataForTemplate.basics?.name || resumeDataForTemplate.basics.name === 'Applicant') &&
-            (cvJsonResumeObject as any).__vh_tags
-        ) || detectCvFormat(cvJsonResumeObject as Record<string, any>) === 'freeform';
-
-        let templateInput = resumeDataForTemplate;
-        if (looksLikeFreeform) {
-            console.log('Freeform CV detected in PDF generator — converting to JSON Resume structure');
-            templateInput = freeformToJsonResume(cvJsonResumeObject as Record<string, any>);
-            if (!templateInput.basics || Object.keys(templateInput.basics).length === 0) {
-                templateInput.basics = { name: 'Applicant', profiles: [] };
-            }
-        }
-
         let htmlContent: string;
         if (atsOptions) {
-            htmlContent = renderAtsCvHtml(templateInput, atsOptions);
+            htmlContent = renderAtsCvHtml(resumeDataForTemplate, atsOptions);
         } else {
-            htmlContent = renderAtsCvHtml(templateInput, { lang: 'en', pageFormat: 'a4' });
+            htmlContent = renderAtsCvHtml(resumeDataForTemplate, { lang: 'en', pageFormat: 'a4' });
         }
 
         if (!htmlContent || typeof htmlContent !== 'string' || htmlContent.trim().length < 100) {
