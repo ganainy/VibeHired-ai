@@ -24,15 +24,12 @@ import CvEditorPanel from '../components/cv-workspace/CvEditorPanel';
 import Toast from '../components/common/Toast';
 import { fetchAllSectionsAnalysis, fetchSectionAnalysis, SectionAnalysisResult } from '../services/analysisApi';
 import { improveSection } from '../services/generatorApi';
-import Sidebar from '../components/cv-management/Sidebar';
+import BaseCvLibraryView from '../components/cv-management/BaseCvLibraryView';
 import CreateBranchModal from '../components/cv-management/CreateBranchModal';
 import { validateCvFile, formatFileSize } from '../lib/utils';
 import ConfirmModal from '../components/common/ConfirmModal';
 import Spinner from '../components/common/Spinner';
-import TourBanner from '../components/onboarding/TourBanner';
-import { usePageTour } from '../hooks/usePageTour';
 import JobStatusBadge from '../components/jobs/JobStatusBadge';
-import { MOCK_CV } from '../data/mockTourData';
 
 const CVManagementPage: React.FC = () => {
  const isJsonResumeLike = useCallback((value: unknown): value is JsonResumeSchema => {
@@ -87,12 +84,17 @@ const CVManagementPage: React.FC = () => {
  const [isLoadingUsage, setIsLoadingUsage] = useState(false);
  const [usageExpanded, setUsageExpanded] = useState(true);
 
- // UI state
- const [activeCvId, setActiveCvId] = useState<string | null>(() => {
- // Initialize from URL parameter
- const cvId = searchParams.get('cv');
- return cvId || null;
- }); // CV's MongoDB _id (null = loading)
+  // UI state
+  const [activeCvId, setActiveCvId] = useState<string | null>(() => {
+  // Initialize from URL parameter
+  const cvId = searchParams.get('cv');
+  return cvId || null;
+  }); // CV's MongoDB _id (null = loading)
+
+  const [viewMode, setViewMode] = useState<'library' | 'editor'>(() => {
+    const cvId = searchParams.get('cv');
+    return cvId ? 'editor' : 'library';
+  });
 
  // All CVs state (master + job CVs) from unified model
  const [allCvs, setAllCvs] = useState<CVDocument[]>([]);
@@ -101,6 +103,29 @@ const CVManagementPage: React.FC = () => {
  // Create branch modal state
  const [isCreateBranchModalOpen, setIsCreateBranchModalOpen] = useState<boolean>(false);
  const [isCreatingBranch, setIsCreatingBranch] = useState<boolean>(false);
+
+ // Inline CV name editing state
+ const [isEditingName, setIsEditingName] = useState<boolean>(false);
+ const [editingName, setEditingName] = useState<string>('');
+
+ const handleStartEditName = () => {
+   if (!activeCv) return;
+   setEditingName(activeCv.displayName || '');
+   setIsEditingName(true);
+ };
+
+ const handleSaveName = async () => {
+   if (!activeCv) return;
+   const trimmed = editingName.trim();
+   setIsEditingName(false);
+   if (!trimmed || trimmed === (activeCv.displayName || '')) return;
+   await handleRenameBranch(activeCv._id, { displayName: trimmed, category: activeCv.category || null });
+ };
+
+ const handleNameKeyDown = (e: React.KeyboardEvent) => {
+   if (e.key === 'Enter') { e.preventDefault(); handleSaveName(); }
+   else if (e.key === 'Escape') setIsEditingName(false);
+ };
 
  // Track original CV data for unsaved changes detection
  const originalCvDataRef = useRef<JsonResumeSchema | null>(null);
@@ -123,12 +148,7 @@ const CVManagementPage: React.FC = () => {
  // Can be backend hash (SHA256) or frontend hash (JSON string) - both work for comparison
  const lastAnalyzedCvHashRef = useRef<string | null>(null);
 
- // Per-page demo tour
- const { showTour, dismiss: dismissCvTour } = usePageTour('manage-cv');
- // Show mock data only while the demo tour is active and no real CVs exist
- const showMockTour = showTour && allCvs.length === 0 && !isLoadingJobCvs && !isLoadingCv;
-
- useEffect(() => {
+  useEffect(() => {
  if (typeof window === 'undefined') return;
  const created = window.localStorage.getItem('vh:has-created-first-job') === '1';
  setHasCreatedFirstJob(created);
@@ -384,13 +404,7 @@ const CVManagementPage: React.FC = () => {
  fetchAllCvsData();
  }, []);
 
- // Auto-dismiss tour once the user has at least one real CV
- useEffect(() => {
- if (allCvs.length > 0) dismissCvTour();
- }, [allCvs.length]);
-
-
- const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
  if (event.target.files && event.target.files[0]) {
  const file = event.target.files[0];
 
@@ -490,7 +504,10 @@ const CVManagementPage: React.FC = () => {
  }
  return [...prev, response.cv];
  });
- if (!activeCvId && response.cv?._id) setActiveCvId(response.cv._id);
+  if (response.cv?._id) {
+    setActiveCvId(response.cv._id);
+    setViewMode('editor');
+  }
  originalCvDataRef.current = cvData ? JSON.parse(JSON.stringify(cvData)) : null;
  // Reset save trigger to ensure proper comparison
  setSaveTrigger(0);
@@ -693,10 +710,11 @@ const CVManagementPage: React.FC = () => {
  await deleteCv(cvId);
  const remaining = allCvs.filter((cv: CVDocument) => cv._id !== cvId);
  setAllCvs(remaining);
- if (activeCvId === cvId) {
- const nextCv = remaining.find(cv => !cv.jobApplicationId) || remaining[0] || null;
- setActiveCvId(nextCv?._id || null);
- }
+  if (activeCvId === cvId) {
+  const nextCv = remaining.find(cv => !cv.jobApplicationId) || remaining[0] || null;
+  setActiveCvId(nextCv?._id || null);
+  if (!nextCv) setViewMode('library');
+  }
  // If the deleted CV was the default or no CVs remain, clear the legacy
  // currentCvData fallback so the editor/preview don't ghost the deleted content.
  const deletedWasDefault = cvId === defaultCvId;
@@ -896,48 +914,25 @@ const CVManagementPage: React.FC = () => {
 
  return (
  <div className="flex flex-col h-full px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-6 gap-4 sm:gap-6 overflow-hidden" style={{ backgroundColor: 'var(--bg-base)' }}>
- {/* Page Header */}
- {allCvs.length > 0 && !showMockTour && !isReplacing && (
- <div className="flex-shrink-0 pb-2 flex items-start justify-between gap-4">
- <div>
- <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
- Base CV Library
- </h1>
- </div>
- <button
- type="button"
- onClick={() => setIsCreateBranchModalOpen(true)}
- className="btn-primary inline-flex items-center gap-2 px-4 py-2.5 text-sm"
- title="Create a specialized version for a different career focus (e.g., one for frontend, one for DevOps)"
- >
- <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
- </svg>
- New CV
- <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent)', color: 'var(--text-on-accent)' }}>2 Credits</span>
- </button>
- </div>
- )}
-
- {(isLoadingCv || isLoadingJobCvs) && !showMockTour ? (
- <div className="flex-1 flex items-center justify-center">
- <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-muted)' }}>
- <Spinner size="sm" />
- Loading CVs...
- </div>
- </div>
- ) : !hasBaseCvs && !showMockTour ? (
- /* Zero-CV hero */
- <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
- <div className="w-full max-w-lg px-4 sm:px-6 py-8 sm:py-12" data-onboarding="primary-action">
- <div className="text-center mb-8">
- <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, var(--accent-dim), var(--accent))' }}>
- <svg className="w-8 h-8 text-green-house" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
- </svg>
- </div>
- <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
-No Base CVs Yet
+  {(isLoadingCv || isLoadingJobCvs) ? (
+  <div className="flex-1 flex items-center justify-center">
+  <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+  <Spinner size="sm" />
+  Loading CVs...
+  </div>
+  </div>
+  ) : !hasBaseCvs ? (
+  /* Zero-CV hero */
+  <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
+   <div className="w-full max-w-lg px-4 sm:px-6 py-8 sm:py-12">
+  <div className="text-center mb-8">
+  <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-5" style={{ background: 'linear-gradient(135deg, var(--accent-dim), var(--accent))' }}>
+  <svg className="w-8 h-8 text-green-house" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+  </div>
+  <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+  No Base CVs Yet
   </h2>
   <p className="text-base text-muted-color max-w-md mx-auto">
   Upload a CV or start from scratch to create your first base CV. We use base CVs to generate tailored CVs for jobs later.
@@ -949,7 +944,7 @@ No Base CVs Yet
   onDragOver={handleDragOver}
   onDragLeave={handleDragLeave}
   onDrop={handleDrop}
-className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transition-all ${isDragging ? 'border-blue-500 bg-[var(--accent-bg)]' : 'border-theme'}`}
+  className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transition-all ${isDragging ? 'border-blue-500 bg-[var(--accent-bg)]' : 'border-theme'}`}
   >
   {isUploading ? (
    <p className="text-green-house">Uploading...</p>
@@ -978,213 +973,48 @@ className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transitio
   </button>
   </form>
   {uploadError && <p className="mt-4 text-error text-center">{uploadError}</p>}
- <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
- <p className="text-sm text-muted-color">
- Don't have a file?
- </p>
- <button
- type="button"
- onClick={() => {
- const emptyCvData: JsonResumeSchema = {
- basics: { name: '', label: '', email: '', phone: '', summary: '', location: { city: '', region: '', countryCode: '' }, profiles: [] },
- work: [], education: [], skills: [], projects: [], languages: [], certificates: [],
- };
- setCurrentCvData(emptyCvData);
- }}
- className="text-sm px-4 py-2 border border-theme rounded-lg hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
- >
- Create from Scratch
- </button>
- </div>
- </div>
- </div>
- ) : (
- <>
- {/* Left Sidebar */}
- {!isReplacing && (
- <Sidebar
- cvs={showMockTour ? [MOCK_CV as CVDocument] : baseCvs}
- activeCvId={activeCvId}
- isLoading={isLoadingJobCvs}
- onSelectCv={(id) => { if (id !== '__mock_cv__') setActiveCvId(id); }}
- onAddNewCv={() => {
- setIsReplacing(true);
- setSelectedFile(null);
- setCreationMode('upload');
- }}
- onReplaceCv={() => {
- setIsReplacing(true);
- setSelectedFile(null);
- setCreationMode('upload');
- }}
- onDeleteCv={showMockTour ? undefined : handleDeleteCv}
- onRenameBranch={showMockTour ? undefined : handleRenameBranch}
- onCreateBranch={showMockTour ? undefined : () => setIsCreateBranchModalOpen(true)}
- onToggleStar={showMockTour ? undefined : handleToggleStar}
- className="w-full flex-shrink-0 z-20"
- />
- )}
+  </div>
+  </div>
+  ) : (
+  <>
+  {viewMode === 'library' && !isReplacing && hasBaseCvs && (
+  <BaseCvLibraryView
+  cvs={baseCvs}
+  isLoading={isLoadingJobCvs}
+  onSelectCv={(id) => { setActiveCvId(id); setViewMode('editor'); }}
+  onUpload={() => { setIsReplacing(true); setSelectedFile(null); setCreationMode('upload'); }}
+  onDeleteCv={handleDeleteCv}
+  onCreateBranch={() => setIsCreateBranchModalOpen(true)}
+  onToggleStar={handleToggleStar}
+  />
+  )}
 
- {/* Main Content Area */}
- <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
- {showMockTour ? (
- /* Demo Tour Mock CV Editor */
- <div className="flex flex-col flex-1 min-h-0 gap-3">
- {showTour && <TourBanner pageLabel="CV Workspace" onDismiss={dismissCvTour} />}
- {/* Mock editor panel mirrors CvEditorPanel layout */}
- <div className="flex-1 min-h-0 flex flex-col rounded-xl border overflow-hidden pointer-events-none select-none"
- style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
- {/* Toolbar */}
- <div className="flex-shrink-0 px-4 py-3 border-b flex items-center justify-between gap-4"
- style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
- <div className="flex items-center gap-3">
- <select disabled className="input-base px-3 py-1.5 text-sm min-w-[160px] opacity-50 cursor-not-allowed">
- <option>German LaTeX</option>
- </select>
- </div>
- <div className="flex items-center gap-2">
- <button disabled className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold opacity-40 cursor-not-allowed" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
- Save
- </button>
- <button disabled className="btn-primary flex items-center gap-2 px-4 py-1.5 text-sm opacity-60 cursor-not-allowed">
- Download PDF
- </button>
- </div>
- </div>
- {/* Split view */}
- <div className="flex-1 min-h-0 flex overflow-hidden">
- {/* Left editor */}
- <div className="w-[45%] flex-shrink-0 overflow-y-auto p-5 flex flex-col gap-4 border-r" style={{ borderColor: 'var(--border)' }}>
- {/* Personal Info section */}
- <div className="rounded-xl border p-4 flex flex-col gap-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
- <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Personal Info</p>
- <div className="grid grid-cols-2 gap-2">
- {[['Full Name', 'Alex Johnson'], ['Job Title', 'Senior Frontend Dev'], ['Email', 'alex@example.com'], ['Phone', '+49 170 123 4567']].map(([label, val]) => (
- <div key={label} className="flex flex-col gap-1">
- <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{label}</span>
- <div className="h-9 rounded-lg px-3 flex items-center text-sm font-medium" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>{val}</div>
- </div>
- ))}
- </div>
- <div className="flex flex-col gap-1">
- <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Summary</span>
- <div className="rounded-lg px-3 py-2 text-xs leading-relaxed" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)', minHeight: '4rem' }}>
- Results-driven frontend engineer with 6+ years building scalable React applications. Passionate about clean architecture and great UX.
- </div>
- </div>
- </div>
- {/* Work Experience section */}
- <div className="rounded-xl border p-4 flex flex-col gap-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
- <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Work Experience</p>
- {[
- { title: 'Senior Frontend Engineer', company: 'TechCorp Inc.', period: 'Jan 2022 Present', desc: 'Led migration from Angular to React 18, reducing bundle size by 40%.' },
- { title: 'Frontend Developer', company: 'Startup GmbH', period: 'Mar 2019 Dec 2021', desc: 'Built and maintained 3 SaaS product dashboards used by 10k+ users.' },
- ].map((job) => (
- <div key={job.title} className="flex flex-col gap-1.5 pb-3 border-b last:border-0 last:pb-0" style={{ borderColor: 'var(--border)' }}>
- <div className="h-9 rounded-lg px-3 flex items-center text-sm font-medium" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>{job.title}</div>
- <div className="flex gap-2">
- <div className="flex-1 h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>{job.company}</div>
- <div className="h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{job.period}</div>
- </div>
- <div className="rounded-lg px-3 py-2 text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>{job.desc}</div>
- </div>
- ))}
- </div>
- {/* Education section */}
- <div className="rounded-xl border p-4 flex flex-col gap-3" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}>
- <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Education</p>
- <div className="h-9 rounded-lg px-3 flex items-center text-sm font-medium" style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>B.Sc. Computer Science</div>
- <div className="flex gap-2">
- <div className="flex-1 h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>TU Berlin</div>
- <div className="h-8 rounded-lg px-3 flex items-center text-xs" style={{ background: 'var(--bg-base)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>2015 2019</div>
- </div>
- </div>
- </div>
- {/* Right CV preview */}
- <div className="flex-1 min-w-0 overflow-y-auto p-6 flex items-start justify-center" style={{ background: 'var(--bg-base)' }}>
- <div className="w-[210mm] max-w-full rounded-xl border p-7 flex flex-col gap-5 shadow-sm shrink-0" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
- {/* Header */}
- <div className="text-center flex flex-col items-center gap-1 pb-4 border-b" style={{ borderColor: 'var(--border)' }}>
- <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Alex Johnson</h2>
- <p className="text-sm font-medium" style={{ color: 'var(--accent)' }}>Senior Frontend Developer</p>
- <p className="text-xs mt-1 flex flex-wrap justify-center gap-1 break-all" style={{ color: 'var(--text-muted)' }}>alex@example.com +49 170 123 4567 Berlin, Germany</p>
- </div>
- {/* Summary */}
- <div className="flex flex-col gap-1.5">
- <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Profile</p>
- <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
- Results-driven frontend engineer with 6+ years building scalable React applications. Passionate about clean architecture, performance optimisation, and great user experience.
- </p>
- </div>
- {/* Experience */}
- <div className="flex flex-col gap-2">
- <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Experience</p>
- {[
- { title: 'Senior Frontend Engineer', company: 'TechCorp Inc.', period: 'Jan 2022 Present', desc: 'Led migration from Angular to React 18, reducing bundle size by 40%. Mentored 3 junior developers.' },
- { title: 'Frontend Developer', company: 'Startup GmbH', period: 'Mar 2019 Dec 2021', desc: 'Built and maintained 3 SaaS product dashboards used by 10k+ monthly active users.' },
- ].map((job) => (
- <div key={job.title} className="flex flex-col gap-0.5">
- <div className="flex items-baseline justify-between">
- <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{job.title}</span>
- <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{job.period}</span>
- </div>
- <span className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>{job.company}</span>
- <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{job.desc}</p>
- </div>
- ))}
- </div>
- {/* Education */}
- <div className="flex flex-col gap-1.5">
- <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Education</p>
- <div className="flex items-baseline justify-between">
- <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>B.Sc. Computer Science</span>
- <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>2015 2019</span>
- </div>
- <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>TU Berlin</span>
- </div>
- {/* Skills */}
- <div className="flex flex-col gap-2">
- <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>Skills</p>
- <div className="flex flex-wrap gap-1.5">
- {['React', 'TypeScript', 'Node.js', 'Tailwind CSS', 'GraphQL', 'Docker', 'CI/CD'].map(skill => (
- <span key={skill} className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>{skill}</span>
- ))}
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
- ) : isReplacing && !isLoadingCv ? (
- /* "" Upload / Create Overlay "" */
- <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-theme shadow-sm p-4 sm:p-6">
- {allCvs.length > 0 && (
- <button
- onClick={() => {
- // Select the primary CV if available, otherwise select the first CV
- const cvToSelect = allCvs.find(cv => !cv.jobApplicationId) || allCvs[0];
- if (cvToSelect) {
- setActiveCvId(cvToSelect._id);
- setIsReplacing(false);
- setCreationMode('upload');
- }
- }}
- className="mb-4 sm:mb-6 flex items-center gap-2 px-4 py-2.5 text-secondary-color hover:text-primary-color bg-white border border-theme rounded-lg shadow-sm hover:shadow-md transition-all font-medium"
- >
- <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
- </svg>
- <span>Back to Base CVs</span>
- </button>
- )}
+  {(isReplacing || viewMode === 'editor') && (
+  <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+  {isReplacing && !isLoadingCv ? (
+  /* "" Upload / Create Overlay "" */
+  <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-theme shadow-sm p-4 sm:p-6">
+  {allCvs.length > 0 && (
+  <button
+  onClick={() => {
+  setIsReplacing(false);
+  setCreationMode('upload');
+  }}
+  className="mb-4 sm:mb-6 flex items-center gap-2 px-4 py-2.5 text-secondary-color hover:text-primary-color bg-white border border-theme rounded-lg shadow-sm hover:shadow-md transition-all font-medium"
+  >
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+  <span>Back to Base CVs</span>
+  </button>
+  )}
 
- {/* Upload Mode */}
- {creationMode === 'upload' && (
- <div className="max-w-2xl mx-auto mt-6 sm:mt-10">
- <div className="text-center mb-6 sm:mb-8">
- <h2 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Import a Base CV</h2>
-<p className="text-secondary-color">Upload a PDF, DOCX, or RTF file as your base CV.</p>
+  {/* Upload Mode */}
+  {creationMode === 'upload' && (
+  <div className="max-w-2xl mx-auto mt-6 sm:mt-10">
+  <div className="text-center mb-6 sm:mb-8">
+  <h2 className="text-xl sm:text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Import a Base CV</h2>
+  <p className="text-secondary-color">Upload a PDF, DOCX, or RTF file as your base CV.</p>
   </div>
 
   <form onSubmit={handleSubmit}>
@@ -1192,7 +1022,7 @@ className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transitio
   onDragOver={handleDragOver}
   onDragLeave={handleDragLeave}
   onDrop={handleDrop}
-className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transition-all ${isDragging ? 'border-blue-500 bg-[var(--accent-bg)]' : 'border-theme'}`}
+  className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transition-all ${isDragging ? 'border-blue-500 bg-[var(--accent-bg)]' : 'border-theme'}`}
   >
   {isUploading ? (
   <p className="text-green-house">Uploading...</p>
@@ -1221,188 +1051,206 @@ className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transitio
   </button>
   </form>
   {uploadError && <p className="mt-4 text-error text-center">{uploadError}</p>}
-<p className="mt-4 text-center text-sm text-muted-color">
-  Don't have a file?{' '}
+  </div>
+  )}
+  </div>
+  ) : (
+  <>
+   {hasBaseCvs && !hasCreatedFirstJob && !isNudgeDismissed && (
+  <div
+  className="mb-4 sm:mb-5 rounded-2xl border px-5 py-4 sm:px-6 sm:py-5 relative overflow-hidden"
+  style={{ borderColor: 'var(--accent-dim)', background: 'linear-gradient(135deg, var(--accent-bg), rgba(255,255,255,0.9))' }}
+  >
+  <div className="absolute -right-20 -top-20 w-48 h-48 rounded-full opacity-20" style={{ background: 'var(--accent)' }} />
+  <div className="relative flex flex-col gap-4">
+  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+  <div className="space-y-2">
+  <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
+  <span className="material-symbols-outlined text-base" style={{ color: 'var(--accent)' }}>bolt</span>
+  Next Step
+  </div>
+  <h3 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+  Your base CV is ready. Now use it to apply.
+  </h3>
+  <p className="text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+  Add a job in the dashboard, then generate a tailored CV and cover letter for that role.
+  </p>
+  </div>
+  <div className="flex items-center gap-2">
+  <Link
+   to="/dashboard"
+  className="btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
+  >
+  <span className="material-symbols-outlined text-base">dashboard</span>
+  Go to Dashboard
+  </Link>
   <button
- type="button"
- onClick={() => {
- const emptyCvData: JsonResumeSchema = {
- basics: { name: '', label: '', email: '', phone: '', summary: '', location: { city: '', region: '', countryCode: '' }, profiles: [] },
- work: [], education: [], skills: [], projects: [], languages: [], certificates: [],
- };
- setCurrentCvData(emptyCvData);
- setIsReplacing(false);
- }}
- className="underline hover:text-secondary-color transition-colors"
- >
- Start from scratch instead
- </button>
- </p>
- </div>
- )}
- </div>
- ) : (
- <>
- {hasBaseCvs && !showMockTour && !hasCreatedFirstJob && !isNudgeDismissed && (
- <div
- className="mb-4 sm:mb-5 rounded-2xl border px-5 py-4 sm:px-6 sm:py-5 relative overflow-hidden"
- style={{ borderColor: 'var(--accent-dim)', background: 'linear-gradient(135deg, var(--accent-bg), rgba(255,255,255,0.9))' }}
- >
- <div className="absolute -right-20 -top-20 w-48 h-48 rounded-full opacity-20" style={{ background: 'var(--accent)' }} />
- <div className="relative flex flex-col gap-4">
- <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
- <div className="space-y-2">
- <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
- <span className="material-symbols-outlined text-base" style={{ color: 'var(--accent)' }}>bolt</span>
- Next Step
- </div>
- <h3 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
- Your base CV is ready. Now use it to apply.
- </h3>
- <p className="text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
- Add a job in the dashboard, then generate a tailored CV and cover letter for that role.
- </p>
- </div>
- <div className="flex items-center gap-2">
- <Link
- to="/dashboard?highlightAddJob=1"
- className="btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
- >
- <span className="material-symbols-outlined text-base">dashboard</span>
- Go to Dashboard
- </Link>
- <button
- type="button"
- onClick={handleDismissFirstUploadNudge}
- className="px-3 py-2 text-sm font-medium rounded-lg border transition-colors"
- style={{ borderColor: 'var(--text-primary)', color: 'var(--text-secondary)' }}
- >
- Dismiss
- </button>
- </div>
- </div>
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
- {[
- {
- title: 'Pick a job to apply for',
- detail: 'Create or import a job in the dashboard.',
- icon: 'work'
- },
- {
- title: 'Generate a tailored CV',
- detail: 'Use this base CV to craft the job-specific version.',
- icon: 'auto_awesome'
- },
- {
- title: 'Finish with a cover letter',
- detail: 'Let the workspace draft a targeted cover letter.',
- icon: 'mail'
- }
- ].map((step, index) => (
- <div
- key={step.title}
- className="rounded-xl border px-4 py-3 flex items-start gap-3"
- style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}
- >
- <div className="w-9 h-9 rounded-lg flex items-center justify-center font-semibold" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
- {index + 1}
- </div>
- <div className="space-y-1">
- <div className="flex items-center gap-2">
- <span className="material-symbols-outlined text-base" style={{ color: 'var(--accent)' }}>{step.icon}</span>
- <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{step.title}</p>
- </div>
- <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{step.detail}</p>
- </div>
- </div>
- ))}
- </div>
- </div>
- </div>
- )}
- <CvEditorPanel
- data={activeCvData || currentCvData}
- onChange={handleCvChange}
- onSave={() => handleSaveCv()}
- saveStatus={saveStatus}
- hasUnsavedChanges={hasUnsavedChanges}
- onImproveSection={handleImproveSection}
- improvingSections={improvingSections}
- className={isBaseCv ? 'flex-1 min-h-0' : 'h-full'}
- cvId={activeCv?._id}
- cvDescriptor={liveCvDescriptor}
- cvData={liveCvData}
- onDynamicChange={handleDynamicChange}
- pdfBase64={editingPdfBase64}
- pdfFilename={activeCv?.filename || null}
- onPdfSave={handlePdfSave}
- isPdfSaving={isSavingPdf}
- isLoadingPdf={isLoadingPdf}
- onDownload={handleDownloadOriginalPdf}
- onDelete={activeCv?._id ? () => handleDeleteCv(activeCv._id) : undefined}
- />
- {/* Used in Jobs section only for base CVs */}
- {isBaseCv && (
- <div className="flex-shrink-0 border-t mt-3" style={{ borderColor: 'var(--border)' }}>
- <button
- onClick={() => setUsageExpanded(!usageExpanded)}
- className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium hover:bg-[var(--bg-elevated)] transition-colors"
- style={{ color: 'var(--text-secondary)' }}
- >
- <span className="flex items-center gap-2">
- <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
- </svg>
- Used in Jobs
- {cvUsageJobs.length > 0 && (
- <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
- {cvUsageJobs.length}
- </span>
- )}
- </span>
- <svg className={`w-4 h-4 transition-transform ${usageExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
- <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
- </svg>
- </button>
- {usageExpanded && (
- <div className="px-4 pb-3">
- {isLoadingUsage ? (
- <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading...</p>
- ) : cvUsageJobs.length === 0 ? (
- <p className="text-xs" style={{ color: 'var(--text-muted)' }}>This resume hasn't been used for any applications yet.</p>
- ) : (
- <ul className="space-y-1.5">
- {cvUsageJobs.map(job => (
- <li key={job._id}>
- <Link
- to={`/jobs/${job._id}/workspace/job-description`}
- className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors group"
- >
- <span className="truncate" style={{ color: 'var(--text-primary)' }}>
- {job.jobTitle}
- </span>
- {job.companyName && (
- <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
- at {job.companyName}
- </span>
- )}
- <span className="ml-auto flex-shrink-0">
- <JobStatusBadge type="application" status={job.status as any} className="text-xs" />
- </span>
- </Link>
- </li>
- ))}
- </ul>
- )}
- </div>
- )}
- </div>
- )}
- </>
- )}
- </div>
- </>
- )}
+  type="button"
+  onClick={handleDismissFirstUploadNudge}
+  className="px-3 py-2 text-sm font-medium rounded-lg border transition-colors"
+  style={{ borderColor: 'var(--text-primary)', color: 'var(--text-secondary)' }}
+  >
+  Dismiss
+  </button>
+  </div>
+  </div>
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+  {[
+  {
+  title: 'Pick a job to apply for',
+  detail: 'Create or import a job in the dashboard.',
+  icon: 'work'
+  },
+  {
+  title: 'Generate a tailored CV',
+  detail: 'Use this base CV to craft the job-specific version.',
+  icon: 'auto_awesome'
+  },
+  {
+  title: 'Finish with a cover letter',
+  detail: 'Let the workspace draft a targeted cover letter.',
+  icon: 'mail'
+  }
+  ].map((step, index) => (
+  <div
+  key={step.title}
+  className="rounded-xl border px-4 py-3 flex items-start gap-3"
+  style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}
+  >
+  <div className="w-9 h-9 rounded-lg flex items-center justify-center font-semibold" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+  {index + 1}
+  </div>
+  <div className="space-y-1">
+  <div className="flex items-center gap-2">
+  <span className="material-symbols-outlined text-base" style={{ color: 'var(--accent)' }}>{step.icon}</span>
+  <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{step.title}</p>
+  </div>
+  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{step.detail}</p>
+  </div>
+  </div>
+  ))}
+  </div>
+  </div>
+  </div>
+  )}
+
+  {/* Back to Library Button */}
+  <div className="flex-shrink-0 pb-2 flex items-center gap-3">
+  <button
+  onClick={() => { setActiveCvId(null); setViewMode('library'); }}
+  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-black/60 hover:text-green bg-white border border-[#d4d0c8] rounded-lg shadow-sm hover:shadow-md transition-all"
+  >
+  <span className="material-symbols-outlined text-base">arrow_back</span>
+  Back to Library
+  </button>
+  {activeCv && (
+  isEditingName ? (
+  <input
+    autoFocus
+    value={editingName}
+    onChange={(e) => setEditingName(e.target.value)}
+    onBlur={handleSaveName}
+    onKeyDown={handleNameKeyDown}
+    className="text-lg font-semibold text-black/87 bg-white border border-green/40 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-green/30 min-w-[200px]"
+    placeholder="CV name..."
+  />
+  ) : (
+  <h2
+    onClick={handleStartEditName}
+    className="text-lg font-semibold text-black/87 truncate cursor-pointer hover:text-green transition-colors group/title flex items-center gap-1.5"
+    title="Click to rename"
+  >
+  {activeCv.displayName || activeCv.category || 'Unnamed CV'}
+  <span className="material-symbols-outlined text-sm text-black/20 group-hover/title:text-green transition-colors">edit</span>
+  </h2>
+  )
+  )}
+  </div>
+
+  <CvEditorPanel
+  data={activeCvData || currentCvData}
+  onChange={handleCvChange}
+  onSave={() => handleSaveCv()}
+  saveStatus={saveStatus}
+  hasUnsavedChanges={hasUnsavedChanges}
+  onImproveSection={handleImproveSection}
+  improvingSections={improvingSections}
+  className={isBaseCv ? 'flex-1 min-h-0' : 'h-full'}
+  cvId={activeCv?._id}
+  cvDescriptor={liveCvDescriptor}
+  cvData={liveCvData}
+  onDynamicChange={handleDynamicChange}
+  pdfBase64={editingPdfBase64}
+  pdfFilename={activeCv?.filename || null}
+  onPdfSave={handlePdfSave}
+  isPdfSaving={isSavingPdf}
+  isLoadingPdf={isLoadingPdf}
+  onDownload={handleDownloadOriginalPdf}
+  onDelete={activeCv?._id ? () => handleDeleteCv(activeCv._id) : undefined}
+  />
+  {/* Used in Jobs section only for base CVs */}
+  {isBaseCv && (
+  <div className="flex-shrink-0 border-t mt-3" style={{ borderColor: 'var(--border)' }}>
+  <button
+  onClick={() => setUsageExpanded(!usageExpanded)}
+  className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium hover:bg-[var(--bg-elevated)] transition-colors"
+  style={{ color: 'var(--text-secondary)' }}
+  >
+  <span className="flex items-center gap-2">
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+  Used in Jobs
+  {cvUsageJobs.length > 0 && (
+  <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+  {cvUsageJobs.length}
+  </span>
+  )}
+  </span>
+  <svg className={`w-4 h-4 transition-transform ${usageExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+  </svg>
+  </button>
+  {usageExpanded && (
+  <div className="px-4 pb-3">
+  {isLoadingUsage ? (
+  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading...</p>
+  ) : cvUsageJobs.length === 0 ? (
+  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>This resume hasn't been used for any applications yet.</p>
+  ) : (
+  <ul className="space-y-1.5">
+  {cvUsageJobs.map(job => (
+  <li key={job._id}>
+  <Link
+  to={`/jobs/${job._id}/workspace/job-description`}
+  className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors group"
+  >
+  <span className="truncate" style={{ color: 'var(--text-primary)' }}>
+  {job.jobTitle}
+  </span>
+  {job.companyName && (
+  <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+  at {job.companyName}
+  </span>
+  )}
+  <span className="ml-auto flex-shrink-0">
+  <JobStatusBadge type="application" status={job.status as any} className="text-xs" />
+  </span>
+  </Link>
+  </li>
+  ))}
+  </ul>
+  )}
+  </div>
+  )}
+  </div>
+  )}
+  </>
+  )}
+  </div>
+  )}
+  </>
+  )}
 
  {/* Toast Notification */}
  {toast && (

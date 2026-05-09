@@ -668,8 +668,11 @@ let finalCvJson = tailoredCvJson;
             if (jobLocation && finalCvJson.basics) {
                 console.log(`  → Matching address to job location: "${jobLocation}"`);
                 finalCvJson.basics.location = {
-                    ...(finalCvJson.basics.location || {}),
                     address: jobLocation,
+                    city: undefined,
+                    region: undefined,
+                    postalCode: undefined,
+                    country: undefined,
                 };
             } else {
                 console.log('  → matchAddress enabled but no job location found in extractedData');

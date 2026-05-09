@@ -115,7 +115,7 @@ const MaterialCard: React.FC<{
  return (
  <div
  onClick={clickable ? handleCardClick : undefined}
- className={`group relative flex flex-col gap-3 p-3.5 rounded-xl border transition-all duration-200 overflow-hidden ${
+  className={`group relative flex flex-col gap-3 p-3.5 rounded-xl border transition-all duration-200 ${
  clickable ? 'cursor-pointer hover:border-opacity-60' : ''
  }`}
  style={{

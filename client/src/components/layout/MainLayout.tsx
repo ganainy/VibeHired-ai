@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 import CreditLimitModal from '../usage/CreditLimitModal';
-import RouteOnboarding from '../onboarding/RouteOnboarding';
 import { listPendingSuggestions } from '../../services/emailSuggestionsApi';
 import { useAuth } from '../../context/AuthContext';
 import { useLocation } from 'react-router-dom';
@@ -49,7 +48,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 {/* Page content */}
                 <main
-                    data-onboarding="main-content"
                     className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar"
                     style={{ backgroundColor: 'var(--bg-base)' }}
                 >
@@ -58,8 +56,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     </div>
                 </main>
             </div>
-
-            <RouteOnboarding />
 
             {/* Global Modals */}
             <CreditLimitModal

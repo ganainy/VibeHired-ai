@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button } from '../common';
+import { Button, CreditsBadge } from '../common';
 import { JobApplication } from '../../services/jobApi';
 import { generateInterviewQuestions, evaluateAnswer, EvaluationResult } from '../../services/interviewApi';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
@@ -438,17 +438,19 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
  answeredProgress: isEnglish ? '{n} answered' : '{n} beantwortet',
  };
 
- return (
- <div className="w-full max-w-5xl mx-auto space-y-6">
- <div className="flex items-center gap-3">
- <div className="flex items-center justify-center w-10 h-10 rounded-xl text-green-house shadow-sm" style={{background:"var(--accent)"}}>
- <span className="material-symbols-outlined text-[22px]">mic</span>
- </div>
- <div className="min-w-0">
-<h2 className="text-xl font-bold text-primary-color">{labels.title}</h2>
-  <p className="text-sm text-muted-color truncate">{labels.subtitle}</p>
- </div>
- </div>
+  return (
+  <div className="w-full max-w-4xl mx-auto space-y-8">
+  <header className="flex items-center gap-4">
+  <div className="w-14 h-14 flex items-center justify-center rounded-2xl shadow-lg" style={{ background: 'var(--accent)' }}>
+  <span className="material-symbols-outlined text-white text-3xl">mic</span>
+  </div>
+  <div>
+  <h1 className="text-2xl md:text-3xl font-extrabold leading-none" style={{ color: 'var(--accent)' }}>
+  {labels.title}
+  </h1>
+  <p className="text-sm mt-1 font-medium" style={{ color: 'var(--text-muted)' }}>{labels.subtitle}</p>
+  </div>
+  </header>
 
  {error && (
 <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-error text-sm">
@@ -460,135 +462,142 @@ const MockInterviewPanel: React.FC<Props> = ({ jobApplication, jobId, cvData, co
  </div>
  )}
 
- {/* ── SELECT LEVEL ── */}
- {phase === 'select-level' && (
-<div className="bg-white rounded-2xl border border-theme p-6 md:p-7 text-center space-y-5 shadow-sm">
-  <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
-  <span className="material-symbols-outlined text-3xl" style={{color:"var(--accent)"}}>record_voice_over</span>
+  {/* ── SELECT LEVEL ── */}
+  {phase === 'select-level' && (
+  <main className="card p-8 md:p-12">
+  <div className="flex flex-col items-center text-center">
+  <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6" style={{ background: 'var(--accent-bg)' }}>
+  <span className="material-symbols-outlined text-4xl" style={{ color: 'var(--accent)' }}>record_voice_over</span>
+  </div>
+  <div className="max-w-2xl mb-10">
+  <p className="text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+  {isEnglish
+  ? <>The AI will generate tailored interview questions based on your <strong className="font-bold" style={{ color: 'var(--text-primary)' }}>CV</strong> and the <strong className="font-bold" style={{ color: 'var(--text-primary)' }}>job description</strong>. Answer each one and get instant feedback.</>
+  : <>Die KI erstellt passende Interviewfragen basierend auf deinem <strong className="font-bold" style={{ color: 'var(--text-primary)' }}>Lebenslauf</strong> und der <strong className="font-bold" style={{ color: 'var(--text-primary)' }}>Stellenbeschreibung</strong>. Beantworte jede Frage und erhalte sofortiges Feedback.</>}
+  </p>
+  </div>
+
+  <p className="label-overline mb-6">{labels.selectLevel}</p>
+
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-10">
+  <button
+  onClick={() => { setLevel('first'); startInterview(); }}
+  className="relative text-left p-6 rounded-card border-2 transition-all group overflow-hidden" style={{ borderColor: 'var(--accent)', background: 'var(--accent-bg)' }}
+  >
+  <CreditsBadge amount={labels.startCredits} variant="accent" className="absolute top-4 right-4" />
+  <div className="mb-4">
+  <span className="material-symbols-outlined text-3xl" style={{ color: 'var(--accent)' }}>auto_awesome</span>
+  </div>
+  <h4 className="text-lg font-bold mb-2" style={{ color: 'var(--accent)' }}>{labels.firstInterviewLabel}</h4>
+  <p className="text-sm leading-snug" style={{ color: 'var(--text-muted)' }}>{labels.firstLevelDesc}</p>
+  </button>
+  <button
+  onClick={() => { setLevel('second'); startInterview(); }}
+  className="relative text-left p-6 rounded-card border-2 transition-all group overflow-hidden" style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}
+  >
+  <CreditsBadge amount={labels.startCredits} variant="dim" className="absolute top-4 right-4" />
+  <div className="mb-4">
+  <span className="material-symbols-outlined text-3xl" style={{ color: 'var(--text-muted)' }}>terminal</span>
+  </div>
+  <h4 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>{labels.secondInterviewLabel}</h4>
+  <p className="text-sm leading-snug" style={{ color: 'var(--text-muted)' }}>{labels.secondLevelDesc}</p>
+  </button>
+  </div>
+
+  <div className="w-full" style={{ borderTop: '1px solid var(--border)' }}></div>
+
+ <details className="w-full pt-8">
+   <summary className="list-none cursor-pointer flex items-center justify-center gap-2 text-sm font-medium transition-colors" style={{ color: 'var(--text-muted)' }}>
+  <span className="material-symbols-outlined text-[20px]">content_copy</span>
+  <span>{isEnglish ? 'Use with ChatGPT / Claude' : 'Mit ChatGPT / Claude verwenden'}</span>
+  <span className="material-symbols-outlined text-[18px]">expand_more</span>
+  </summary>
+  <div className="flex flex-wrap justify-center gap-4 mt-6">
+  <button
+  onClick={() => copyToClipboard(buildFirstInterviewPrompt(), 'first')}
+  className="min-w-[220px]" style={{ height: 50, borderRadius: 9999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px', fontWeight: 600, background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '0.8125rem' }}
+  >
+  {copiedKey === 'first' ? labels.copied : (isEnglish ? 'Copy 1st Round Prompt' : '1. Runde Prompt kopieren')}
+  </button>
+  <button
+  onClick={() => copyToClipboard(buildSecondInterviewPrompt(), 'second')}
+  className="min-w-[220px]" style={{ height: 50, borderRadius: 9999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px', fontWeight: 600, background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '0.8125rem' }}
+  >
+  {copiedKey === 'second' ? labels.copied : (isEnglish ? 'Copy 2nd Round Prompt' : '2. Runde Prompt kopieren')}
+  </button>
+  </div>
+  </details>
+  </div>
+  </main>
+  )}
+
+  {/* ── RESUME INTERVIEW ── */}
+  {phase === 'resume' && (
+  <div className="card p-8 text-center space-y-6">
+  <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center" style={{ background: 'var(--accent-bg)' }}>
+  <span className="material-symbols-outlined text-4xl" style={{ color: 'var(--accent)' }}>play_circle</span>
   </div>
   <div>
-  <p className="text-secondary-color text-sm leading-relaxed max-w-lg mx-auto">
- {isEnglish
- ? <>The AI will generate tailored interview questions based on your <strong>CV</strong> and the <strong>job description</strong>. Answer each one and get instant feedback.</>
- : <>Die KI erstellt passende Interviewfragen basierend auf deinem <strong>Lebenslauf</strong> und der <strong>Stellenbeschreibung</strong>. Beantworte jede Frage und erhalte sofortiges Feedback.</>}
- </p>
- </div>
-
- <div className="space-y-3 max-w-3xl mx-auto">
- <p className="text-sm font-medium text-secondary-color">{labels.selectLevel}</p>
- <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
- <button
- onClick={() => { setLevel('first'); startInterview(); }}
- className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all relative ${level === 'first' ? 'border-gold bg-gold-50' : 'border-theme hover:border-gold-light'}`}
- >
- <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gold text-green-house">{labels.startCredits}</span>
- <span className="material-symbols-outlined text-2xl" style={{color: 'var(--jade)'}}>waving_hand</span>
- <span className="font-semibold text-sm">{labels.firstInterviewLabel}</span>
- <span className="text-xs text-center text-muted-color">{labels.firstLevelDesc}</span>
- </button>
- <button
- onClick={() => { setLevel('second'); startInterview(); }}
- className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all relative ${level === 'second' ? 'border-gold bg-gold-50' : 'border-theme hover:border-gold-light'}`}
- >
- <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gold text-green-house">{labels.startCredits}</span>
- <span className="material-symbols-outlined text-2xl" style={{color: 'var(--rose)'}}>terminal</span>
- <span className="font-semibold text-sm">{labels.secondInterviewLabel}</span>
- <span className="text-xs text-center text-muted-color">{labels.secondLevelDesc}</span>
- </button>
- </div>
- </div>
-
-<details className="border-t border-theme pt-4">
-  <summary className="list-none cursor-pointer inline-flex items-center gap-2 text-xs text-muted-color hover:text-secondary-color transition-colors">
- <span className="material-symbols-outlined text-sm">content_copy</span>
- <span>{isEnglish ? 'Use with ChatGPT / Claude' : 'Mit ChatGPT / Claude verwenden'}</span>
- <span className="material-symbols-outlined text-sm">expand_more</span>
- </summary>
- <div className="flex flex-wrap gap-2 justify-center mt-3">
- <button
- onClick={() => copyToClipboard(buildFirstInterviewPrompt(), 'first')}
- className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-secondary-color hover:bg-[var(--bg-base)] transition-all" style={{ background: 'var(--bg-elevated)' }}
- >
- {copiedKey === 'first' ? labels.copied : (isEnglish ? 'Copy 1st level prompt' : '1. Runde Prompt kopieren')}
- </button>
- <button
- onClick={() => copyToClipboard(buildSecondInterviewPrompt(), 'second')}
- className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-secondary-color hover:bg-[var(--bg-base)] transition-all" style={{ background: 'var(--bg-elevated)' }}
- >
- {copiedKey === 'second' ? labels.copied : (isEnglish ? 'Copy 2nd level prompt' : '2. Runde Prompt kopieren')}
- </button>
- </div>
- </details>
- </div>
- )}
-
- {/* ── RESUME INTERVIEW ── */}
- {phase === 'resume' && (
-<div className="bg-white rounded-2xl border border-theme p-8 text-center space-y-6 shadow-sm">
-  <div className="mx-auto w-20 h-20 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
-  <span className="material-symbols-outlined text-4xl" style={{color:"var(--accent)"}}>play_circle</span>
+  <p className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{labels.resumeTitle}</p>
+  <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{labels.resumeDesc}</p>
+  <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium" style={{ background: 'var(--ember-bg)', color: 'var(--ember)' }}>
+  <span className="material-symbols-outlined text-sm">info</span>
+  {level === 'first' ? labels.firstInterviewLabel : labels.secondInterviewLabel} · {results.length} / {questions.length} {isEnglish ? 'answered' : 'beantwortet'}
   </div>
-  <div>
-  <p className="text-lg font-bold text-primary-color">{labels.resumeTitle}</p>
-  <p className="text-sm text-muted-color mt-1">{labels.resumeDesc}</p>
- <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--ember-bg)] text-ember text-xs font-medium">
- <span className="material-symbols-outlined text-sm">info</span>
- {level === 'first' ? labels.firstInterviewLabel : labels.secondInterviewLabel} · {results.length} / {questions.length} {isEnglish ? 'answered' : 'beantwortet'}
- </div>
- </div>
-
- <div className="space-y-3">
- <Button
- onClick={continueInterview}
- className="w-full font-semibold rounded-xl"
- >
- <span className="material-symbols-outlined text-base">play_arrow</span>
- {labels.continueInterview}
- </Button>
- <button
- onClick={regenerateInterview}
- className="w-full px-4 py-2.5 rounded-xl text-sm font-medium border border-theme text-secondary-color hover:bg-[var(--bg-elevated)] transition-all"
- >
- <span className="material-symbols-outlined text-base mr-1">refresh</span>
- {labels.regenerateInterview}
- </button>
- </div>
- </div>
- )}
-
- {/* ── LOADING ── */}
- {phase === 'loading' && (
-<div className="bg-white rounded-2xl border border-theme p-12 text-center space-y-4 shadow-sm">
-  <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
-  <span className="material-symbols-outlined text-3xl animate-pulse" style={{color:"var(--accent)"}}>auto_awesome</span>
   </div>
-  <p className="text-secondary-color text-sm">{labels.generating}</p>
- </div>
- )}
 
- {/* ── QUESTION ── */}
- {(phase === 'question' || phase === 'evaluating' || phase === 'result') && (
-<div className="bg-white rounded-2xl border border-theme shadow-sm overflow-hidden">
+  <div className="space-y-3 max-w-xs mx-auto">
+  <Button
+  onClick={continueInterview}
+  className="w-full font-semibold rounded-pill"
+  >
+  <span className="material-symbols-outlined text-base">play_arrow</span>
+  {labels.continueInterview}
+  </Button>
+  <button
+  onClick={regenerateInterview}
+  className="w-full px-4 py-2.5 rounded-pill text-sm font-medium border transition-all" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+  >
+  <span className="material-symbols-outlined text-base mr-1">refresh</span>
+  {labels.regenerateInterview}
+  </button>
+  </div>
+  </div>
+  )}
+
+  {/* ── LOADING ── */}
+  {phase === 'loading' && (
+  <main className="card p-12 text-center space-y-4">
+  <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'var(--accent-bg)' }}>
+  <span className="material-symbols-outlined text-3xl animate-pulse" style={{ color: 'var(--accent)' }}>auto_awesome</span>
+  </div>
+  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{labels.generating}</p>
+  </main>
+  )}
+
+  {/* ── QUESTION ── */}
+  {(phase === 'question' || phase === 'evaluating' || phase === 'result') && (
+  <div className="card overflow-hidden">
   <div className="w-full h-1.5" style={{ background: 'var(--bg-elevated)' }}>
   <div className="h-1.5 transition-all duration-500" style={{ width: `${((currentIndex) / totalQuestions) * 100}%`, background: 'var(--accent)' }} />
- </div>
+  </div>
 
- <div className="p-6 space-y-5">
- <div className="flex items-center justify-between">
- <span className="text-xs font-semibold uppercase tracking-wider" style={{color:"var(--accent)"}}>
- {isEnglish ? `Question ${currentIndex + 1} of ${totalQuestions}` : `Frage ${currentIndex + 1} von ${totalQuestions}`}
- </span>
- <div className="flex items-center gap-2">
- <button
- onClick={() => setShowReview(!showReview)}
-className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-secondary-color hover:bg-gold-50"
+  <div className="p-6 md:p-8 space-y-6">
+  <div className="flex items-center justify-between">
+  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>
+  {isEnglish ? `Question ${currentIndex + 1} of ${totalQuestions}` : `Frage ${currentIndex + 1} von ${totalQuestions}`}
+  </span>
+  <div className="flex items-center gap-2">
+  <button
+  onClick={() => setShowReview(!showReview)}
+  className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-medium transition-all" style={{ color: 'var(--text-secondary)' }}
   >
   <span className="material-symbols-outlined text-base">list</span>
   {labels.review}
   </button>
   <button
   onClick={endInterview}
-  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-error hover:bg-red-100"
+  className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-medium transition-all" style={{ color: 'var(--rose)', background: 'var(--rose-bg)' }}
   >
   <span className="material-symbols-outlined text-base">stop</span>
   {labels.endInterview}
@@ -596,268 +605,269 @@ className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium 
   </div>
   </div>
 
-  <p className="text-primary-color text-lg font-medium leading-relaxed">
- {currentQuestion}
- </p>
+  <p className="text-lg font-medium leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+  {currentQuestion}
+  </p>
 
- {tts.isSupported && (
- <button
- onClick={handleReadAloud}
- className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${tts.isSpeaking ? 'text-green-house' : 'text-secondary-color hover:bg-gold-50 hover:text-gold-dark'}`}
- >
- <span className="material-symbols-outlined text-base">{tts.isSpeaking ? 'stop_circle' : 'volume_up'}</span>
- {tts.isSpeaking ? labels.stop : labels.readAloud}
- </button>
- )}
-
- <div className="relative">
- <textarea
- value={answer}
- onChange={(e) => setAnswer(e.target.value)}
- rows={5}
- placeholder={labels.typeAnswer}
- className="w-full px-4 py-3 border border-theme rounded-xl text-primary-color text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold transition-all" style={{ background: 'var(--bg-elevated)' }}
- disabled={phase === 'evaluating' || phase === 'result'}
- />
- {stt.isListening && (
- <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-red-500 text-white text-xs font-medium px-2 py-1 rounded-full animate-pulse">
- <span className="w-2 h-2 rounded-full bg-white" />
- {labels.listening}
- </div>
- )}
- </div>
-
- <div className="flex items-center justify-between gap-3">
- {stt.isSupported ? (
- <button
- onClick={toggleMic}
- disabled={phase === 'evaluating' || phase === 'result'}
- className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${stt.isListening ? 'bg-red-50 border-red-300 text-error' : ''}`} style={!stt.isListening ? { background: 'var(--bg-elevated)', borderColor: 'var(--border)' } : undefined}
- >
- <span className="material-symbols-outlined text-base">{stt.isListening ? 'mic_off' : 'mic'}</span>
- {stt.isListening ? labels.micStop : labels.micStart}
- </button>
- ) : <div />}
-
- {phase === 'question' && (
- <div className="flex items-center gap-2">
- <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>
- {labels.evalCredits}
- </span>
- <Button
- onClick={submitAnswer}
- disabled={!answer.trim()}
- className="text-sm rounded-xl"
- >
- <span className="material-symbols-outlined text-base">send</span>
- {labels.submit}
- </Button>
- </div>
- )}
- </div>
- </div>
- </div>
- )}
-
- {/* ── EVALUATING ── */}
- {phase === 'evaluating' && (
-<div className="bg-white rounded-2xl border border-theme p-12 text-center space-y-4 shadow-sm">
-  <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{background:"var(--accent-bg)"}}>
-  <span className="material-symbols-outlined text-3xl animate-spin" style={{color:"var(--accent)"}}>progress_activity</span>
+  <div className="flex items-center gap-3">
+  {tts.isSupported && (
+  <button
+  onClick={handleReadAloud}
+  className="flex items-center gap-1.5 px-4 py-2 rounded-pill text-xs font-medium border transition-all" style={{ borderColor: 'var(--border)', color: tts.isSpeaking ? 'var(--accent)' : 'var(--text-secondary)' }}
+  >
+  <span className="material-symbols-outlined text-base">{tts.isSpeaking ? 'stop_circle' : 'volume_up'}</span>
+  {tts.isSpeaking ? labels.stop : labels.readAloud}
+  </button>
+  )}
   </div>
-  <p className="text-secondary-color text-sm">{labels.evaluating}</p>
- </div>
- )}
 
- {/* ── RESULT ── */}
- {phase === 'result' && currentEvaluation && (
-<div className="bg-white rounded-2xl border border-theme shadow-sm overflow-hidden">
+  <div className="relative">
+  <textarea
+  value={answer}
+  onChange={(e) => setAnswer(e.target.value)}
+  rows={5}
+  placeholder={labels.typeAnswer}
+  className="w-full px-4 py-3 border rounded-card text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 transition-all" style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)' }}
+  disabled={phase === 'evaluating' || phase === 'result'}
+  />
+  {stt.isListening && (
+  <div className="absolute top-3 right-3 flex items-center gap-1.5 text-white text-xs font-medium px-2 py-1 rounded-full animate-pulse" style={{ background: 'var(--rose)' }}>
+  <span className="w-2 h-2 rounded-full bg-white" />
+  {labels.listening}
+  </div>
+  )}
+  </div>
+
+  <div className="flex items-center justify-between gap-3">
+  {stt.isSupported ? (
+  <button
+  onClick={toggleMic}
+  disabled={phase === 'evaluating' || phase === 'result'}
+  className="flex items-center gap-2 px-4 py-2.5 rounded-pill text-sm font-medium border transition-all" style={{
+  background: stt.isListening ? 'var(--rose-bg)' : 'var(--bg-elevated)',
+  borderColor: stt.isListening ? 'var(--rose)' : 'var(--border)',
+  color: stt.isListening ? 'var(--rose)' : 'var(--text-secondary)',
+  }}
+  >
+  <span className="material-symbols-outlined text-base">{stt.isListening ? 'mic_off' : 'mic'}</span>
+  {stt.isListening ? labels.micStop : labels.micStart}
+  </button>
+  ) : <div />}
+
+  {phase === 'question' && (
+  <div className="flex items-center gap-2">
+  <CreditsBadge amount={labels.evalCredits} variant="ember" />
+  <Button
+  onClick={submitAnswer}
+  disabled={!answer.trim()}
+  className="text-sm rounded-pill"
+  >
+  <span className="material-symbols-outlined text-base">send</span>
+  {labels.submit}
+  </Button>
+  </div>
+  )}
+  </div>
+  </div>
+  </div>
+  )}
+
+  {/* ── EVALUATING ── */}
+  {phase === 'evaluating' && (
+  <main className="card p-12 text-center space-y-4">
+  <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'var(--accent-bg)' }}>
+  <span className="material-symbols-outlined text-3xl animate-spin" style={{ color: 'var(--accent)' }}>progress_activity</span>
+  </div>
+  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{labels.evaluating}</p>
+  </main>
+  )}
+
+  {/* ── RESULT ── */}
+  {phase === 'result' && currentEvaluation && (
+  <div className="card overflow-hidden">
   <div className="w-full h-1.5" style={{ background: 'var(--bg-elevated)' }}>
   <div className="h-1.5 transition-all duration-500" style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%`, background: 'var(--accent)' }} />
- </div>
+  </div>
 
- <div className="p-6 space-y-5">
- <div className="flex items-start justify-between gap-4">
-<p className="text-secondary-color text-sm italic leading-relaxed flex-1">"{currentQuestion}"</p>
+  <div className="p-6 md:p-8 space-y-6">
+  <div className="flex items-start justify-between gap-4">
+  <p className="text-sm italic leading-relaxed flex-1" style={{ color: 'var(--text-secondary)' }}>"{currentQuestion}"</p>
   <div className="shrink-0 flex flex-col items-end gap-1">
-  <span className="text-xs text-muted-color">{labels.score}</span>
- <ScoreBadge score={currentEvaluation.score} />
- </div>
- </div>
+  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{labels.score}</span>
+  <ScoreBadge score={currentEvaluation.score} />
+  </div>
+  </div>
 
-<div className="p-4 rounded-xl border" style={{background: 'var(--bg-elevated)', borderColor: 'var(--border)'}}>
-  <p className="text-xs font-semibold text-muted-color mb-2 uppercase tracking-wider">{labels.yourAnswer}</p>
-  <p className="text-sm text-secondary-color leading-relaxed">{answer}</p>
- </div>
+  <div className="p-4 rounded-card border" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}>
+  <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{labels.yourAnswer}</p>
+  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{answer}</p>
+  </div>
 
- {currentEvaluation.strengths.length > 0 && (
- <div>
- <p className="text-xs font-semibold text-green uppercase tracking-wider mb-2 flex items-center gap-1">
- <span className="material-symbols-outlined text-sm">check_circle</span>
- {labels.strengths}
- </p>
- <ul className="space-y-1.5">
- {currentEvaluation.strengths.map((s, i) => (
-<li key={i} className="flex items-start gap-2 text-sm text-secondary-color">
-  <span className="text-green mt-0.5 shrink-0">•</span>
- {s}
- </li>
- ))}
- </ul>
- </div>
- )}
+  {currentEvaluation.strengths.length > 0 && (
+  <div>
+  <p className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1" style={{ color: 'var(--jade)' }}>
+  <span className="material-symbols-outlined text-sm">check_circle</span>
+  {labels.strengths}
+  </p>
+  <ul className="space-y-1.5">
+  {currentEvaluation.strengths.map((s, i) => (
+  <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+  <span className="shrink-0 mt-0.5" style={{ color: 'var(--jade)' }}>•</span>
+  {s}
+  </li>
+  ))}
+  </ul>
+  </div>
+  )}
 
- {currentEvaluation.improvements.length > 0 && (
- <div>
- <p className="text-xs font-semibold text-ember uppercase tracking-wider mb-2 flex items-center gap-1">
- <span className="material-symbols-outlined text-sm">tips_and_updates</span>
- {labels.improvements}
- </p>
- <ul className="space-y-1.5">
- {currentEvaluation.improvements.map((imp, i) => (
-<li key={i} className="flex items-start gap-2 text-sm text-secondary-color">
-  <span className="text-ember mt-0.5 shrink-0">•</span>
- {imp}
- </li>
- ))}
- </ul>
- </div>
- )}
+  {currentEvaluation.improvements.length > 0 && (
+  <div>
+  <p className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1" style={{ color: 'var(--ember)' }}>
+  <span className="material-symbols-outlined text-sm">tips_and_updates</span>
+  {labels.improvements}
+  </p>
+  <ul className="space-y-1.5">
+  {currentEvaluation.improvements.map((imp, i) => (
+  <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+  <span className="shrink-0 mt-0.5" style={{ color: 'var(--ember)' }}>•</span>
+  {imp}
+  </li>
+  ))}
+  </ul>
+  </div>
+  )}
 
- <div className="p-4 rounded-xl border" style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)"}}>
- <p className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1" style={{color:"var(--accent)"}}>
- <span className="material-symbols-outlined text-sm">stars</span>
- {labels.modelAnswer}
- </p>
- <p className="text-sm text-secondary-color leading-relaxed">{currentEvaluation.modelAnswer}</p>
- </div>
+  <div className="p-4 rounded-card border" style={{ background: 'var(--accent-bg)', borderColor: 'var(--accent-dim)' }}>
+  <p className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1" style={{ color: 'var(--accent)' }}>
+  <span className="material-symbols-outlined text-sm">stars</span>
+  {labels.modelAnswer}
+  </p>
+  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{currentEvaluation.modelAnswer}</p>
+  </div>
 
- <div className="flex justify-end">
- <Button onClick={handleNext} className="text-sm rounded-xl">
- <span className="material-symbols-outlined text-base">
- {currentIndex + 1 >= totalQuestions ? 'flag' : 'arrow_forward'}
- </span>
- {currentIndex + 1 >= totalQuestions ? labels.finish : labels.nextQuestion}
- </Button>
- </div>
- </div>
- </div>
- )}
+  <div className="flex justify-end">
+  <Button onClick={handleNext} className="text-sm rounded-pill">
+  <span className="material-symbols-outlined text-base">
+  {currentIndex + 1 >= totalQuestions ? 'flag' : 'arrow_forward'}
+  </span>
+  {currentIndex + 1 >= totalQuestions ? labels.finish : labels.nextQuestion}
+  </Button>
+  </div>
+  </div>
+  </div>
+  )}
 
- {/* ── FINISHED ── */}
- {phase === 'finished' && (
- <div className="space-y-6">
-<div className="bg-white rounded-2xl border border-theme shadow-sm p-8 text-center space-y-4">
-  <p className="text-lg font-bold text-primary-color">{labels.interviewComplete}</p>
+  {/* ── FINISHED ── */}
+  {phase === 'finished' && (
+  <div className="space-y-6">
+  <div className="card p-8 text-center space-y-4">
+  <p className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{labels.interviewComplete}</p>
   <div className="flex flex-col items-center gap-2">
-  <span className="text-xs text-muted-color uppercase tracking-wider font-medium">{labels.overallScore}</span>
- <div className={`text-5xl font-extrabold ${overallScore >= 8 ? 'text-green' : overallScore >= 5 ? 'text-ember' : 'text-error'}`}>
- {overallScore}<span className="text-2xl text-muted-color">/10</span>
- </div>
- </div>
- <Button onClick={() => setPhase('select-level')} className="rounded-xl">
- <span className="material-symbols-outlined text-base">replay</span>
- {labels.retake}
- <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>{labels.startCredits}</span>
- </Button>
- </div>
+  <span className="label-overline">{labels.overallScore}</span>
+  <div className="text-5xl font-extrabold" style={{ color: overallScore >= 8 ? 'var(--jade)' : overallScore >= 5 ? 'var(--ember)' : 'var(--rose)' }}>
+  {overallScore}<span className="text-2xl" style={{ color: 'var(--text-muted)' }}>/10</span>
+  </div>
+  </div>
+  <Button onClick={() => setPhase('select-level')} className="rounded-pill">
+  <span className="material-symbols-outlined text-base">replay</span>
+  {labels.retake}
+  </Button>
+  </div>
 
-<div className="bg-white rounded-xl border border-theme shadow-sm p-4">
-  <p className="text-sm font-semibold text-secondary-color mb-4">{labels.review}</p>
- <div className="space-y-4">
- {results.map((r, idx) => (
-<details key={idx} className="rounded-lg overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
-  <summary className="flex items-center justify-between gap-4 cursor-pointer px-4 py-3 hover:bg-[var(--bg-base)] transition-colors">
+  <div className="card p-4 md:p-6">
+  <p className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>{labels.review}</p>
+  <div className="space-y-3">
+  {results.map((r, idx) => (
+  <details key={idx} className="rounded-card overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+  <summary className="flex items-center justify-between gap-4 cursor-pointer px-4 py-3 transition-colors" style={{ borderBottom: results.length > 1 && idx < results.length - 1 ? '1px solid var(--border)' : 'none' }}>
   <div className="flex items-center gap-3 min-w-0">
-  <span className="shrink-0 text-xs font-bold text-muted-color w-5 text-center">{idx + 1}</span>
-  <p className="text-sm text-secondary-color truncate">{r.question}</p>
- </div>
- <div className="flex items-center gap-3 shrink-0">
- <ScoreBadge score={r.evaluation.score} />
- </div>
- </summary>
- <div className="px-4 pb-4 space-y-3 border-t border-theme">
- <div className="pt-3">
-<p className="text-xs font-semibold text-muted-color mb-1.5 uppercase">{labels.yourAnswer}</p>
-  <p className="text-sm text-secondary-color">{r.answer}</p>
- </div>
- <div className="p-3 rounded-lg border" style={{background:"var(--accent-bg)", borderColor:"var(--accent-dim)"}}>
- <p className="text-xs font-semibold uppercase mb-1.5" style={{color:"var(--accent)"}}>{labels.modelAnswer}</p>
- <p className="text-sm text-secondary-color">{r.evaluation.modelAnswer}</p>
- </div>
- </div>
- </details>
- ))}
- </div>
- </div>
- </div>
- )}
+  <span className="shrink-0 text-xs font-bold w-5 text-center" style={{ color: 'var(--text-muted)' }}>{idx + 1}</span>
+  <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{r.question}</p>
+  </div>
+  <ScoreBadge score={r.evaluation.score} />
+  </summary>
+  <div className="px-4 pb-4 space-y-3" style={{ borderTop: '1px solid var(--border)' }}>
+  <div className="pt-3">
+  <p className="text-xs font-semibold mb-1.5 uppercase" style={{ color: 'var(--text-muted)' }}>{labels.yourAnswer}</p>
+  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{r.answer}</p>
+  </div>
+  <div className="p-3 rounded-card border" style={{ background: 'var(--accent-bg)', borderColor: 'var(--accent-dim)' }}>
+  <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: 'var(--accent)' }}>{labels.modelAnswer}</p>
+  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{r.evaluation.modelAnswer}</p>
+  </div>
+  </div>
+  </details>
+  ))}
+  </div>
+  </div>
+  </div>
+  )}
 
- {/* ── REVIEW PANEL (During Interview) ── */}
- {showReview && results.length > 0 && (phase === 'question' || phase === 'result') && (
-<div className="bg-white rounded-2xl border border-theme shadow-sm p-4 space-y-3">
-  <p className="text-sm font-semibold text-secondary-color">{labels.review}</p>
- <div className="space-y-2 max-h-64 overflow-y-auto">
- {results.map((r, idx) => (
-<div key={idx} className="p-3 rounded-lg" style={{ background: 'var(--bg-elevated)' }}>
+  {/* ── REVIEW PANEL (During Interview) ── */}
+  {showReview && results.length > 0 && (phase === 'question' || phase === 'result') && (
+  <div className="card p-4 space-y-3">
+  <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>{labels.review}</p>
+  <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+  {results.map((r, idx) => (
+  <div key={idx} className="p-3 rounded-card" style={{ background: 'var(--bg-elevated)' }}>
   <div className="flex items-center justify-between mb-1">
-  <span className="text-xs font-medium text-muted-color">{idx + 1}. {r.question.slice(0, 50)}...</span>
- <ScoreBadge score={r.evaluation.score} />
- </div>
- <p className="text-xs text-secondary-color line-clamp-2">{r.answer}</p>
- </div>
- ))}
- </div>
- </div>
- )}
+  <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{idx + 1}. {r.question.slice(0, 50)}...</span>
+  <ScoreBadge score={r.evaluation.score} />
+  </div>
+  <p className="text-xs line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{r.answer}</p>
+  </div>
+  ))}
+  </div>
+  </div>
+  )}
 
- {/* ── COPY PROMPTS (Always Visible when not select-level) ── */}
- {showCopyPromptsDuringInterview && phase !== 'select-level' && (
-<div className="rounded-xl border border-theme p-4" style={{ background: 'var(--bg-elevated)' }}>
+  {/* ── COPY PROMPTS (Always Visible when not select-level) ── */}
+  {showCopyPromptsDuringInterview && phase !== 'select-level' && (
+  <div className="card p-4" style={{ background: 'var(--bg-elevated)' }}>
   <div className="flex items-center justify-between mb-3">
   <div className="flex items-center gap-2">
-  <span className="material-symbols-outlined text-base text-muted-color">smart_toy</span>
-  <span className="text-xs font-medium text-secondary-color">{isEnglish ? 'Copy prompts for ChatGPT / Claude' : 'Prompts für ChatGPT / Claude kopieren'}</span>
+  <span className="material-symbols-outlined text-base" style={{ color: 'var(--text-muted)' }}>smart_toy</span>
+  <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{isEnglish ? 'Copy prompts for ChatGPT / Claude' : 'Prompts für ChatGPT / Claude kopieren'}</span>
   </div>
   <button
   onClick={() => setShowCopyPrompts(!showCopyPrompts)}
-  className="text-xs text-muted-color hover:text-secondary-color"
+  className="text-xs transition-colors" style={{ color: 'var(--text-muted)' }}
   >
- {showCopyPrompts ? (isEnglish ? 'Hide' : 'Ausblenden') : (isEnglish ? 'Show' : 'Einblenden')}
- </button>
- </div>
- {showCopyPrompts && (
- <div className="flex gap-2">
- <button
- onClick={() => copyToClipboard(buildFirstInterviewPrompt(), 'first')}
- className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-white border border-theme text-secondary-color hover:bg-[var(--bg-elevated)] transition-all"
- >
- <span className="material-symbols-outlined text-sm" style={{color: 'var(--jade)'}}>
- {copiedKey === 'first' ? 'check' : 'person'}
- </span>
- {copiedKey === 'first' ? labels.copied : (isEnglish ? '1st Round' : '1. Runde')}
- </button>
- <button
- onClick={() => copyToClipboard(buildSecondInterviewPrompt(), 'second')}
- className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-white border border-theme text-secondary-color hover:bg-[var(--bg-elevated)] transition-all"
- >
- <span className="material-symbols-outlined text-sm" style={{color: 'var(--rose)'}}>
- {copiedKey === 'second' ? 'check' : 'code'}
- </span>
- {copiedKey === 'second' ? labels.copied : (isEnglish ? '2nd Round' : '2. Runde')}
- </button>
- </div>
- )}
- </div>
- )}
+  {showCopyPrompts ? (isEnglish ? 'Hide' : 'Ausblenden') : (isEnglish ? 'Show' : 'Einblenden')}
+  </button>
+  </div>
+  {showCopyPrompts && (
+  <div className="flex gap-2">
+  <button
+  onClick={() => copyToClipboard(buildFirstInterviewPrompt(), 'first')}
+  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-pill text-xs font-medium border transition-all" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+  >
+  <span className="material-symbols-outlined text-sm" style={{ color: 'var(--jade)' }}>
+  {copiedKey === 'first' ? 'check' : 'person'}
+  </span>
+  {copiedKey === 'first' ? labels.copied : (isEnglish ? '1st Round' : '1. Runde')}
+  </button>
+  <button
+  onClick={() => copyToClipboard(buildSecondInterviewPrompt(), 'second')}
+  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-pill text-xs font-medium border transition-all" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+  >
+  <span className="material-symbols-outlined text-sm" style={{ color: 'var(--rose)' }}>
+  {copiedKey === 'second' ? 'check' : 'code'}
+  </span>
+  {copiedKey === 'second' ? labels.copied : (isEnglish ? '2nd Round' : '2. Runde')}
+  </button>
+  </div>
+  )}
+  </div>
+  )}
 
- {/* ── ADD MORE QUESTIONS BUTTON ── */}
- {phase === 'finished' && (
- <Button variant="secondary" onClick={addMoreQuestions} className="w-full rounded-xl py-3">
- <span className="material-symbols-outlined text-base">add</span>
- {labels.addMore}
- </Button>
- )}
+  {/* ── ADD MORE QUESTIONS BUTTON ── */}
+  {phase === 'finished' && (
+  <Button variant="secondary" onClick={addMoreQuestions} className="w-full rounded-pill py-3">
+  <span className="material-symbols-outlined text-base">add</span>
+  {labels.addMore}
+  </Button>
+  )}
  </div>
  );
 };

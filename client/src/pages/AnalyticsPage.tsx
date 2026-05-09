@@ -8,29 +8,16 @@ import { RecentActivityWidget } from '../components/analytics/RecentActivityWidg
 import { WorkTrackerStatsWidget } from '../components/analytics/WorkTrackerStatsWidget';
 import { WorkHoursChart } from '../components/analytics/WorkHoursChart';
 import { EmployerDistributionChart } from '../components/analytics/EmployerDistributionChart';
-// import ApplicationPipelineKanban from '../components/jobs/ApplicationPipelineKanban'; // Archived
 import { getWorkTrackerAnalytics, WorkTrackerAnalytics, getWorkMonths } from '../services/workTrackerApi';
 import Spinner from '../components/common/Spinner';
 import ErrorAlert from '../components/common/ErrorAlert';
 import { Briefcase, Clock, ChevronDown } from 'lucide-react';
-import TourBanner from '../components/onboarding/TourBanner';
-import { usePageTour } from '../hooks/usePageTour';
-import { getMockAnalyticsData } from '../data/mockTourData';
+
 
 const AnalyticsPage: React.FC = () => {
     const [jobs, setJobs] = useState<JobApplication[]>([]);
     const [stats, setStats] = useState<ApplicationStats | null>(null);
     const [workAnalytics, setWorkAnalytics] = useState<WorkTrackerAnalytics | null>(null);
-
-    const { showTour: showAnalyticsTour, dismiss: dismissAnalyticsTour } = usePageTour('analytics');
-
-    // Auto-dismiss tour when user has real job data
-    useEffect(() => {
-        if (jobs.length > 0) dismissAnalyticsTour();
-    }, [jobs.length]);
-
-    // Stable mock data for the demo tour (generated once on mount)
-    const mockAnalyticsData = React.useMemo(() => getMockAnalyticsData(), []);
 
     const [activeTab, setActiveTab] = useState<'jobs' | 'work'>(() => {
         return (localStorage.getItem('analytics_activeTab') as 'jobs' | 'work') || 'jobs';
@@ -59,11 +46,9 @@ const AnalyticsPage: React.FC = () => {
         return saved ? parseInt(saved, 10) : 20;
     });
 
-    // When in demo tour mode, feed mock data into the real widgets
-    const isDemo = showAnalyticsTour && jobs.length === 0 && !isLoadingJobs;
-    const displayJobs = isDemo ? mockAnalyticsData.jobs : jobs;
-    const displayStats = isDemo ? mockAnalyticsData.stats : stats;
-    const displayWeeklyGoalTarget = isDemo ? mockAnalyticsData.weeklyGoalTarget : weeklyGoal;
+    const displayJobs = jobs;
+    const displayStats = stats;
+    const displayWeeklyGoalTarget = weeklyGoal;
 
 
     const monthOptions = [
@@ -211,43 +196,38 @@ const AnalyticsPage: React.FC = () => {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-7xl animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div className="max-w-6xl mx-auto px-6 py-8 md:px-12 md:py-12 space-y-8 animate-in fade-in duration-500">
+            {/* Header */}
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="page-title">Analytics Dashboard</h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>Track your application progress and work performance.</p>
+                    <h1
+                        className="text-3xl font-extrabold"
+                        style={{ color: 'var(--accent)', fontFamily: "'Manrope', sans-serif" }}
+                    >
+                        Analytics Dashboard
+                    </h1>
+                    <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        Track your application progress and work performance.
+                    </p>
                 </div>
 
-                <div className="flex flex-col items-center md:items-end gap-3">
-                    <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }} data-onboarding="primary-action">
-                        {[
-                            { key: 'jobs', label: 'Job Applications', icon: <Briefcase size={15} /> },
-                            { key: 'work', label: 'Work Tracker', icon: <Clock size={15} /> },
-                        ].map((tab) => (
-                            <button
-                                key={tab.key}
-                                onClick={() => handleTabChange(tab.key as any)}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                                style={{
-                                    background: activeTab === tab.key ? 'var(--bg-raised)' : 'transparent',
-                                    border: activeTab === tab.key ? '1px solid var(--border-bright)' : '1px solid transparent',
-                                    color: activeTab === tab.key ? 'var(--text-primary)' : 'var(--text-muted)',
-                                    boxShadow: activeTab === tab.key ? '0 1px 4px rgba(14,14,23,0.4)' : 'none',
-                                }}
-                            >
-                                <span style={{ color: activeTab === tab.key ? 'var(--accent)' : 'inherit' }}>{tab.icon}</span>
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex items-center gap-3 p-1 px-4 rounded-xl transition-all hover:bg-[var(--bg-elevated)]" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                        <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Period:</span>
+                <div className="flex items-center gap-3 flex-wrap">
+                    {/* Period Selector */}
+                    <div
+                        className="flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-semibold"
+                        style={{
+                            background: 'var(--bg-surface)',
+                            border: '1px solid var(--border)',
+                        }}
+                    >
+                        <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                            Period:
+                        </span>
                         <div className="relative flex items-center">
                             <select
                                 value={selectedMonth}
                                 onChange={(e) => setSelectedMonth(e.target.value)}
-                                className="appearance-none bg-transparent border-none focus:ring-0 text-sm font-bold cursor-pointer pr-6 py-0.5"
+                                className="appearance-none bg-transparent border-none focus:ring-0 text-sm font-bold cursor-pointer pr-5 py-0"
                                 style={{ color: 'var(--text-primary)' }}
                             >
                                 {currentMonthOptions.map(option => (
@@ -259,47 +239,99 @@ const AnalyticsPage: React.FC = () => {
                             <ChevronDown size={14} className="absolute right-0 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {/*  Demo Tour Banner  */}
-            {isDemo && (
-                <div className="mb-6">
-                    <TourBanner pageLabel="Analytics Dashboard" onDismiss={dismissAnalyticsTour} />
+                    {/* Tab Switcher */}
+                    <div
+                        className="flex p-1 rounded-pill"
+                        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
+                    >
+                        {[
+                            { key: 'jobs', label: 'Job Applications', icon: <Briefcase size={15} /> },
+                            { key: 'work', label: 'Work Tracker', icon: <Clock size={15} /> },
+                        ].map((tab) => (
+                            <button
+                                key={tab.key}
+                                onClick={() => handleTabChange(tab.key as any)}
+                                className="flex items-center gap-1.5 px-5 py-2 rounded-pill text-sm font-bold transition-all"
+                                style={{
+                                    background: activeTab === tab.key ? 'var(--bg-surface)' : 'transparent',
+                                    color: activeTab === tab.key ? 'var(--accent)' : 'var(--text-muted)',
+                                    boxShadow: activeTab === tab.key ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+                                    border: activeTab === tab.key ? '1px solid var(--border)' : '1px solid transparent',
+                                }}
+                            >
+                                {tab.icon}
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            )}
+            </header>
 
             {activeTab === 'jobs' ? (
                 /* Application Sections */
-                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="md:col-span-1">
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Weekly Goal */}
+                        <div
+                            className="p-8 rounded-xl flex flex-col items-center justify-between text-center min-h-[360px]"
+                            style={{
+                                background: 'var(--bg-surface)',
+                                border: '1px solid var(--border)',
+                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+                            }}
+                        >
                             <WeeklyGoalWidget
                                 jobs={displayJobs}
                                 target={displayWeeklyGoalTarget}
                                 onUpdateTarget={handleUpdateWeeklyGoal}
+                                hideCardStyles={true}
                             />
                         </div>
 
-                        <div className="md:col-span-2 border rounded-xl p-8 overflow-hidden shadow-sm flex flex-col h-full" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-                            <div className="flex justify-between items-center mb-10">
-                                <h3 className="text-sm font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Pipeline Conversion</h3>
+                        {/* Pipeline Conversion */}
+                        <div
+                            className="lg:col-span-2 p-8 rounded-xl overflow-hidden flex flex-col h-full"
+                            style={{
+                                background: 'var(--bg-surface)',
+                                border: '1px solid var(--border)',
+                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+                            }}
+                        >
+                            <div className="flex justify-between items-center mb-8">
+                                <h3
+                                    className="text-xs font-bold uppercase tracking-widest"
+                                    style={{ color: 'var(--text-muted)' }}
+                                >
+                                    Pipeline Conversion
+                                </h3>
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
                                 <PipelineConversionWidget stats={displayStats} hideCardStyles={true} />
                             </div>
                         </div>
 
+                        {/* Application Volume Over Time */}
                         {selectedMonth !== 'today' && (
-                            <div className="md:col-span-3 card p-3 md:p-4 lg:p-6 flex flex-col h-[450px] md:h-[400px] min-w-0 overflow-hidden">
+                            <div
+                                className="lg:col-span-3 p-8 rounded-xl flex flex-col h-[450px] md:h-[400px] min-w-0 overflow-hidden"
+                                style={{
+                                    background: 'var(--bg-surface)',
+                                    border: '1px solid var(--border)',
+                                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+                                }}
+                            >
                                 <div className="flex items-center gap-2 mb-6">
-                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-bg-dim)' }}>
-                                        <span className="material-symbols-outlined text-[20px]" style={{ color: 'var(--accent)' }}>trending_up</span>
-                                    </div>
-                                    <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Application Volume Over Time</h3>
+                                    <span className="material-symbols-outlined text-[20px]" style={{ color: 'var(--accent)' }}>trending_up</span>
+                                    <h3
+                                        className="font-bold text-lg"
+                                        style={{ color: 'var(--text-primary)', fontFamily: "'Manrope', sans-serif" }}
+                                    >
+                                        Application Volume Over Time
+                                    </h3>
                                 </div>
                                 <div className="flex-1 min-h-0">
-                                    {isLoadingStats && !isDemo ? (
+                                    {isLoadingStats ? (
                                         <div className="h-full flex items-center justify-center"><Spinner /></div>
                                     ) : (
                                         <ApplicationsOverTimeChart
@@ -312,9 +344,8 @@ const AnalyticsPage: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="card p-3 sm:p-6 overflow-hidden shadow-sm">
-                        <RecentActivityWidget jobs={displayJobs} />
-                    </div>
+                    {/* Recent Activity */}
+                    <RecentActivityWidget jobs={displayJobs} />
 
                     {/* Archived Application Pipeline Section
                     <div>
@@ -336,12 +367,17 @@ const AnalyticsPage: React.FC = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                         {/* Daily Hours Chart */}
-                        <div className="md:col-span-2 card p-3 md:p-4 lg:p-6 overflow-hidden h-[400px] md:h-[450px]">
+                        <div
+                            className="md:col-span-2 p-8 rounded-xl overflow-hidden h-[400px] md:h-[450px]"
+                            style={{
+                                background: 'var(--bg-surface)',
+                                border: '1px solid var(--border)',
+                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+                            }}
+                        >
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-bg-dim)' }}>
-                                        <span className="material-symbols-outlined text-[20px]" style={{ color: 'var(--accent)' }}>bar_chart</span>
-                                    </div>
+                                    <span className="material-symbols-outlined text-[20px]" style={{ color: 'var(--accent)' }}>bar_chart</span>
                                     <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Daily Work Hours Breakdown</h3>
                                 </div>
                             </div>
@@ -351,11 +387,16 @@ const AnalyticsPage: React.FC = () => {
                         </div>
 
                         {/* Employer Distribution Chart */}
-                        <div className="md:col-span-1 card p-3 md:p-4 lg:p-6 overflow-hidden h-[400px] md:h-[450px]">
+                        <div
+                            className="md:col-span-1 p-8 rounded-xl overflow-hidden h-[400px] md:h-[450px]"
+                            style={{
+                                background: 'var(--bg-surface)',
+                                border: '1px solid var(--border)',
+                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+                            }}
+                        >
                             <div className="flex items-center gap-2 mb-6">
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent-bg-dim)' }}>
-                                    <span className="material-symbols-outlined text-[20px]" style={{ color: 'var(--accent)' }}>pie_chart</span>
-                                </div>
+                                <span className="material-symbols-outlined text-[20px]" style={{ color: 'var(--accent)' }}>pie_chart</span>
                                 <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Hours by Employer</h3>
                             </div>
                             <div className="h-[340px]">

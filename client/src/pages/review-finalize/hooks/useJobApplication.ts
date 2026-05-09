@@ -31,9 +31,7 @@ export const useJobApplication = (jobId: string | undefined) => {
             const data = await getJobById(jobId);
             setJob(data);
 
-            if (data.reminders) {
-                // Reminders state handled by useReminders hook
-            }
+
         } catch (error: any) {
             console.error('Error fetching job application:', error);
             setError(error.response?.data instanceof Blob

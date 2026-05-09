@@ -52,4 +52,5 @@ export interface UpdateMaterialPayload {
     url?: string;
     isGlobal?: boolean;
     isFavorite?: boolean;
+    jobApplicationId?: string | null;
 }

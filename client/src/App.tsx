@@ -9,7 +9,6 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CVManagementPage from './pages/CVManagementPage';
 import JobApplicationWorkspacePage from './pages/JobApplicationWorkspacePage';
-import MockJobReviewPage from './pages/MockJobReviewPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import PortfolioPage from './pages/PortfolioPage';
 import PortfolioSetupPage from './pages/PortfolioSetupPage';
@@ -23,7 +22,6 @@ import InterviewMaterialsPage from './pages/InterviewMaterialsPage';
 import WorkTrackerPage from './pages/WorkTrackerPage';
 import CalendarPage from './pages/CalendarPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
-import AdminUsersPage from './pages/AdminUsersPage';
 import AdminUserDetailPage from './pages/AdminUserDetailPage';
 import AdminErrorsPage from './pages/AdminErrorsPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
@@ -125,10 +123,6 @@ function App() {
           element={<Navigate to="../cv" relative="path" replace />}
         />
         <Route
-          path="/jobs/__mock_job__/workspace/:tab?"
-          element={<MockJobReviewPage />}
-        />
-        <Route
           path="/jobs/:jobId/workspace/:tab?"
           element={
             <ProtectedRoute>
@@ -137,7 +131,7 @@ function App() {
           }
         />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
-        <Route path="/admin/users" element={<ProtectedRoute><AdminUsersPage /></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
         <Route path="/admin/users/:userId" element={<ProtectedRoute><AdminUserDetailPage /></ProtectedRoute>} />
         <Route path="/admin/errors" element={<ProtectedRoute><AdminRoute><AdminErrorsPage /></AdminRoute></ProtectedRoute>} />
         <Route path="/interview-buddy" element={<ProtectedRoute><InterviewBuddyPage /></ProtectedRoute>} />

@@ -75,6 +75,7 @@ export interface UpdateMaterialDto {
     url?: string;
     isGlobal?: boolean;
     isFavorite?: boolean;
+    jobApplicationId?: string | null;
 }
 
 // ── Service functions ─────────────────────────────────────────────────────────
@@ -177,6 +178,11 @@ export async function updateMaterial(
     if (dto.url !== undefined) material.url = dto.url;
     if (dto.isGlobal !== undefined) material.isGlobal = dto.isGlobal;
     if (dto.isFavorite !== undefined) material.isFavorite = dto.isFavorite;
+    if (dto.jobApplicationId !== undefined) {
+        material.jobApplicationId = dto.jobApplicationId
+            ? (new mongoose.Types.ObjectId(dto.jobApplicationId) as any)
+            : null;
+    }
 
     return material.save();
 }

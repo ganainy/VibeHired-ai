@@ -15,6 +15,7 @@ import Profile from '../models/Profile';
 import { env } from '../config/env';
 import { decrypt, encrypt } from '../utils/encryption';
 import { GEMINI_FLASH } from '../constants/geminiModels';
+import { calculateEffectiveHourlyRate, BonusInput } from '../utils/bonusCalculator';
 
 import { PDFParse } from 'pdf-parse';
 
@@ -123,9 +124,17 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   }
 
   const entries = await WorkEntry.find(filter)
-    .populate('employerId', 'name logoUrl')
+    .populate('employerId', 'name logoUrl hourlyRate bonuses')
     .populate('appointmentTypeId', 'name')
     .sort({ date: 1, startTime: 1 });
+
+  // Log bonus data for shift entries to help debug bonus application
+  for (const entry of entries) {
+    const emp = entry.employerId as any;
+    if (entry.type === 'shift' && emp?.bonuses?.length > 0) {
+      console.log('[GET /work-tracker] Entry:', entry._id, '| Employer:', emp.name, '| Bonuses:', JSON.stringify(emp.bonuses), '| Date:', entry.date, '| Time:', entry.startTime, '-', entry.endTime);
+    }
+  }
 
   res.json(entries);
 }));
@@ -207,7 +216,7 @@ router.get('/analytics', asyncHandler(async (req: Request, res: Response) => {
     userId,
     date: { $gte: start, $lt: end },
     status: 'done' // Usually analytics focus on completed work
-  }).populate('employerId', 'name');
+  }).populate('employerId', 'name hourlyRate bonuses');
 
   const dailyMap: Record<string, any> = {};
   const employerMap: Record<string, any> = {};
@@ -238,15 +247,37 @@ router.get('/analytics', asyncHandler(async (req: Request, res: Response) => {
     if (entry.type === 'shift') {
       const empId = String(entry.employerId?._id || 'unknown');
       if (!employerMap[empId]) {
-        employerMap[empId] = { id: empId, name: empName, hours: 0, count: 0 };
+        const rate = (entry.employerId as any)?.hourlyRate ?? null;
+        employerMap[empId] = { id: empId, name: empName, hours: 0, count: 0, hourlyRate: rate, earnings: 0 };
       }
       employerMap[empId].hours += hours;
       employerMap[empId].count += 1;
+      const effectiveRate = calculateEffectiveHourlyRate(
+        (entry.employerId as any)?.hourlyRate ?? null,
+        (entry.employerId as any)?.bonuses ?? [] as BonusInput[],
+        dateKey,
+        entry.startTime,
+        entry.endTime
+      );
+      if ((entry.employerId as any)?.bonuses?.length > 0) {
+        console.log('[GET /work-tracker/analytics] Entry:', entry._id, '| Employer:', (entry.employerId as any)?.name, '| Base rate:', (entry.employerId as any)?.hourlyRate, '| Bonuses:', JSON.stringify((entry.employerId as any)?.bonuses), '| Effective rate:', effectiveRate);
+      }
+      if (typeof effectiveRate === 'number' && effectiveRate > 0) {
+        employerMap[empId].earnings += hours * effectiveRate;
+      }
     }
   });
 
   const dailyHours = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
-  const employerBreakdown = Object.values(employerMap).sort((a, b) => b.hours - a.hours);
+  const employerBreakdown = Object.values(employerMap)
+    .map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      hours: item.hours,
+      count: item.count,
+      earnings: item.earnings > 0 ? Math.round(item.earnings * 100) / 100 : undefined,
+    }))
+    .sort((a, b) => b.hours - a.hours);
 
   // 2. Aggregated Summary
   const summary = {

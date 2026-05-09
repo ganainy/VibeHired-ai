@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { postChatMessage, getChatHistory, ChatMessage } from '../../services/chatApi';
 import { useAuth } from '../../context/AuthContext';
-import { Button } from '../common';
+import { Button, CreditsBadge } from '../common';
 import Spinner from '../common/Spinner';
 import ErrorAlert from '../common/ErrorAlert';
 
@@ -230,7 +230,7 @@ const JobChatWindow: React.FC<JobChatWindowProps> = ({
  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
  </svg>
- <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>1 Credit</span>
+  <CreditsBadge amount="1 Credit" variant="gold" className="ml-1" />
  </>
  )}
  </Button>

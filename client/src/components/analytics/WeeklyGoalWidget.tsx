@@ -8,9 +8,10 @@ interface WeeklyGoalWidgetProps {
  jobs: JobApplication[];
  target: number;
  onUpdateTarget: (newTarget: number) => void;
+ hideCardStyles?: boolean;
 }
 
-export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target, onUpdateTarget }) => {
+export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target, onUpdateTarget, hideCardStyles = false }) => {
  const [isMenuOpen, setIsMenuOpen] = useState(false);
  const [isEditing, setIsEditing] = useState(false);
  const [editValue, setEditValue] = useState(target.toString());
@@ -55,8 +56,16 @@ export const WeeklyGoalWidget: React.FC<WeeklyGoalWidgetProps> = ({ jobs, target
  const radius = 60;
  const circumference = 2 * Math.PI * radius;
 
- return (
- <div className="bg-white px-6 py-6 pb-4 rounded-xl border border-[var(--border-subtle)] flex flex-col h-full relative" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+  const containerClass = hideCardStyles
+    ? "flex flex-col h-full relative"
+    : "bg-white px-6 py-6 pb-4 rounded-xl border border-[var(--border-subtle)] flex flex-col h-full relative";
+
+  const containerStyle = hideCardStyles
+    ? {}
+    : { background: 'var(--bg-surface)', borderColor: 'var(--border)' };
+
+  return (
+  <div className={containerClass} style={containerStyle}>
  <div className="flex justify-between items-start mb-6">
  <h3 className="text-sm font-bold uppercase tracking-widest w-full text-center" style={{ color: 'var(--text-muted)' }}>Weekly Goal</h3>
  <div className="absolute right-4 top-4" ref={menuRef}>

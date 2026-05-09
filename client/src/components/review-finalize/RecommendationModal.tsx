@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Spinner from '../common/Spinner';
+import CreditsBadge from '../common/CreditsBadge';
 import { JobRecommendation } from '../../services/jobRecommendationApi';
 
 interface RecommendationModalProps {
@@ -52,19 +53,19 @@ const RecommendationModal: React.FC<RecommendationModalProps> = ({
  <span className="material-symbols-outlined text-sm">refresh</span>
  )}
  <span>Refresh</span>
- <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credit</span>
- </button>
- <button
- onClick={onClose}
- className="p-1.5 rounded-full text-secondary-color hover:text-primary-color hover:bg-[var(--bg-raised)] transition-colors"
- title="Close"
- >
- <span className="material-symbols-outlined">close</span>
- </button>
- </div>
- </div>
-
- {isLoadingRecommendation && (
+  <CreditsBadge amount="2 Credit" variant="gold" className="ml-1" />
+  </button>
+  <button
+  onClick={onClose}
+  className="p-1.5 rounded-full text-secondary-color hover:text-primary-color hover:bg-[var(--bg-raised)] transition-colors"
+  title="Close"
+  >
+  <span className="material-symbols-outlined">close</span>
+  </button>
+  </div>
+  </div>
+ 
+  {isLoadingRecommendation && (
  <div className="flex items-center gap-3 py-8 justify-center">
  <Spinner size="md" />
  <span className="text-secondary-color">Analyzing job match...</span>
@@ -215,13 +216,13 @@ const RecommendationModal: React.FC<RecommendationModalProps> = ({
  <span className="material-symbols-outlined text-sm">auto_awesome</span>
  )}
  <span>Generate Recommendation</span>
- <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: '#e8b844', color: '#0e0e17' }}>2 Credit</span>
- </button>
- </div>
- )}
- </div>
- </div>
- );
+  <CreditsBadge amount="2 Credit" variant="gold" className="ml-1" />
+  </button>
+  </div>
+  )}
+  </div>
+  </div>
+  );
 };
 
 export default RecommendationModal;

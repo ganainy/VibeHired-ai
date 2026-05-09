@@ -15,7 +15,18 @@ export interface PopulatedEmployer {
   _id: string;
   name: string;
   logoUrl: string | null;
+  hourlyRate?: number | null;
   subLocations: { _id: string; name: string }[];
+  bonuses: {
+    _id: string;
+    name: string;
+    multiplier: number;
+    conditionType: 'day_of_week' | 'time_range' | 'specific_dates';
+    daysOfWeek?: number[];
+    startTime?: string;
+    endTime?: string;
+    specificDates?: string[];
+  }[];
 }
 
 export interface WorkEntry {
@@ -65,6 +76,7 @@ export interface WorkTrackerAnalytics {
     name: string;
     hours: number;
     count: number;
+    earnings?: number;
   }[];
   summary: {
     totalHours: number;

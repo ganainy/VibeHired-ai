@@ -53,22 +53,37 @@ router.use(authMiddleware as RequestHandler);
  * Helper: Parse AI response to JSON Resume schema
  */
 function parseJsonResponseToSchema(responseText: string): JsonResumeSchema | null {
-    const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+    // Try extracting from code fence first
+    const jsonRegex = /```(?:json)?\s*([\s\S]*?)\s*```/;
     const jsonMatch = responseText.match(jsonRegex);
 
+    let jsonString: string | null = null;
+
     if (jsonMatch && jsonMatch[1]) {
-        const extractedJsonString = jsonMatch[1].trim();
+        jsonString = jsonMatch[1].trim();
+    } else {
+        // Fallback: try to find raw JSON object in the response
+        const braceStart = responseText.indexOf('{');
+        const braceEnd = responseText.lastIndexOf('}');
+        if (braceStart !== -1 && braceEnd > braceStart) {
+            jsonString = responseText.slice(braceStart, braceEnd + 1);
+        }
+    }
+
+    if (jsonString) {
         try {
-            const parsedObject = JSON.parse(extractedJsonString);
+            const parsedObject = JSON.parse(jsonString);
             if (typeof parsedObject === 'object' && parsedObject !== null) {
                 return parsedObject as JsonResumeSchema;
             }
             throw new Error('AI response was not a valid object structure.');
         } catch (parseError: any) {
             console.error('JSON.parse failed:', parseError.message);
+            console.error('Attempted to parse (first 500 chars):', jsonString.slice(0, 500));
             throw new Error('AI response was not valid JSON.');
         }
     }
+    console.error('AI response did not contain recognizable JSON. Response (first 500 chars):', responseText.slice(0, 500));
     throw new Error('AI failed to return CV data in expected format.');
 }
 

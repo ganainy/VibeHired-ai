@@ -97,7 +97,7 @@ const CvEditorPanel: React.FC<CvEditorPanelProps> = ({
  };
  const statusDisplay = saveStatusConfig[saveStatus];
 
- const isPdfEditing = Boolean(pdfBase64 && onPdfSave);
+ const isPdfEditing = Boolean(pdfBase64 && onPdfSave && !hasMeaningfulContent(data));
 
  // Recalculate total pages whenever data changes or the container resizes.
  useEffect(() => {

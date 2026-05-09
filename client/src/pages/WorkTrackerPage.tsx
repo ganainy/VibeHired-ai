@@ -24,6 +24,7 @@ import {
  FileText,
  Mic,
  Info,
+ Banknote,
 } from 'lucide-react';
 import {
  getEntries,
@@ -66,9 +67,11 @@ import Spinner from '../components/common/Spinner';
 import { parseApiErrorMessage } from '../utils/parseApiError';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useAuth } from '../context/AuthContext';
-import TourBanner from '../components/onboarding/TourBanner';
-import { usePageTour } from '../hooks/usePageTour';
-
+import {
+  calculateEffectiveHourlyRate,
+  formatBonusCondition,
+  getApplicableBonuses,
+} from '../utils/bonusCalculator';
 // Helpers 
 
 const MONTH_NAMES = [
@@ -300,42 +303,31 @@ interface StatCardProps {
  value: string | number;
  sub?: string;
  icon: React.ReactNode;
- accent?: boolean;
+ colorScheme?: 'emerald' | 'blue' | 'amber' | 'purple';
 }
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, sub, icon, accent }) => (
- <div
- className="card flex items-start gap-4 p-3 sm:p-5"
- style={{ flex: '1 1 160px' }}
- >
- <div
- style={{
- width: 40,
- height: 40,
- borderRadius: 10,
- background: accent ? 'var(--accent-bg)' : 'var(--bg-elevated)',
- border: `1px solid ${accent ? 'var(--accent-dim)' : 'var(--border)'}`,
- display: 'flex',
- alignItems: 'center',
- justifyContent: 'center',
- color: accent ? 'var(--accent)' : 'var(--text-muted)',
- flexShrink: 0,
- }}
- >
- {icon}
- </div>
- <div style={{ minWidth: 0 }}>
- <p className="label-overline mb-0.5">{label}</p>
- <p className="font-mono text-2xl font-bold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
- {value}
- </p>
- {sub && <p className="font-mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{sub}</p>}
- </div>
- </div>
-);
+const COLOR_MAP: Record<string, { iconBg: string; iconText: string }> = {
+ emerald: { iconBg: 'bg-emerald-50', iconText: 'text-emerald-600' },
+ blue: { iconBg: 'bg-blue-50', iconText: 'text-blue-600' },
+ amber: { iconBg: 'bg-amber-50', iconText: 'text-amber-600' },
+ purple: { iconBg: 'bg-purple-50', iconText: 'text-purple-600' },
+};
 
-// AI Schedule Import Modal 
-
+const StatCard: React.FC<StatCardProps> = ({ label, value, sub, icon, colorScheme = 'emerald' }) => {
+ const c = COLOR_MAP[colorScheme];
+ return (
+ <div className="bg-white p-5 rounded-lg shadow-card border border-slate-100 flex items-start gap-4">
+ <div className={`p-3 ${c.iconBg} rounded-lg`}>
+ <div className={c.iconText}>{icon}</div>
+ </div>
+ <div>
+ <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">{label}</p>
+ <h3 className="text-2xl font-bold text-green">{value}</h3>
+ {sub && <p className="text-xs text-slate-500 mt-1">{sub}</p>}
+ </div>
+ </div>
+ );
+};
 type ImportStep = 'upload' | 'review' | 'saving' | 'done';
 
 interface ReviewEntry {
@@ -1416,18 +1408,63 @@ const EntryModal: React.FC<EntryModalProps> = ({ employers, appointmentTypes, ed
  </div>
  )}
 
- {/* Hours preview */}
- {type === 'shift' && previewHours > 0 && (
- <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
- <Timer size={14} style={{ color: 'var(--accent)' }} />
- <span className="font-mono text-sm font-semibold" style={{ color: 'var(--accent)' }}>
- {previewHours}h
- </span>
- <span className="text-xs" style={{ color: 'var(--text-muted)' }}>duration</span>
- </div>
- )}
+  {/* Hours preview + bonus info */}
+  {type === 'shift' && previewHours > 0 && selectedEmployer && (
+  <div className="space-y-2">
+  <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)' }}>
+  <Timer size={14} style={{ color: 'var(--accent)' }} />
+  <span className="font-mono text-sm font-semibold" style={{ color: 'var(--accent)' }}>
+  {previewHours}h
+  </span>
+  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>duration</span>
+  </div>
+  {selectedEmployer.hourlyRate != null && (
+    (() => {
+      const effRate = calculateEffectiveHourlyRate(
+        selectedEmployer.hourlyRate,
+        selectedEmployer.bonuses,
+        date,
+        startTime,
+        endTime
+      );
+      const applicable = getApplicableBonuses(
+        selectedEmployer.bonuses,
+        date,
+        startTime,
+        endTime
+      );
+      if (effRate == null) return null;
+      return (
+        <div className="rounded-lg p-3 space-y-1.5" style={{ background: 'var(--jade-bg)', border: '1px solid var(--jade-dim)' }}>
+        <div className="flex items-center gap-2">
+          <Banknote size={14} style={{ color: 'var(--jade)' }} />
+          <span className="text-sm font-medium" style={{ color: 'var(--jade)' }}>
+            {selectedEmployer.hourlyRate !== effRate && (
+              <span className="opacity-60 line-through mr-1">{selectedEmployer.hourlyRate}/hr</span>
+            )}
+            {effRate}/hr effective
+            <span className="ml-1 opacity-80">
+              ({Math.round(previewHours * effRate * 100) / 100})
+            </span>
+          </span>
+        </div>
+        {applicable.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {applicable.map((b) => (
+              <span key={b._id} className="text-[10px] px-1.5 py-0.5 rounded bg-white/60 text-amber-800 border border-amber-200 font-medium">
+                {b.name} +{Math.round(b.multiplier * 100)}%
+              </span>
+            ))}
+          </div>
+        )}
+        </div>
+      );
+    })()
+  )}
+  </div>
+  )}
 
- {/* Notes */}
+  {/* Notes */}
  <div>
  <div className="flex items-center justify-between mb-2">
  <label className="label-overline">Notes <span style={{ color: 'var(--text-muted)', fontStyle: 'normal' }}>(optional)</span></label>
@@ -1568,6 +1605,7 @@ const EmployerCard: React.FC<EmployerCardProps> = ({ emp, deletingEmployerId, on
  <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{emp.name}</p>
  <p className="font-mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
  {emp.entryCount} entr{emp.entryCount !== 1 ? 'ies' : 'y'}
+ {emp.hourlyRate != null && ` • ${emp.hourlyRate}/hr`}
  </p>
  </div>
  {/* Actions */}
@@ -1603,6 +1641,14 @@ const EmployerCard: React.FC<EmployerCardProps> = ({ emp, deletingEmployerId, on
  <p className="label-overline text-[9px]">Entries</p>
  <p className="font-mono text-xl font-bold mt-0.5" style={{ color: 'var(--text-secondary)' }}>{emp.entryCount}</p>
  </div>
+ {emp.hourlyRate != null && (
+ <div className="flex-1">
+ <p className="label-overline text-[9px]">Earnings</p>
+ <p className="font-mono text-xl font-bold mt-0.5" style={{ color: 'var(--jade)' }}>
+ {Math.round(emp.totalHours * emp.hourlyRate * 100) / 100}
+ </p>
+ </div>
+ )}
  </div>
 
  {/* Sub-locations section */}
@@ -1715,9 +1761,22 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
  const [name, setName] = useState(editEmployer?.name ?? '');
  const [logoFile, setLogoFile] = useState<File | null>(null);
  const [logoPreview, setLogoPreview] = useState<string | null>(editEmployer?.logoUrl ?? null);
+ const [hourlyRate, setHourlyRate] = useState(editEmployer?.hourlyRate != null ? String(editEmployer.hourlyRate) : '');
+ const [bonuses, setBonuses] = useState(editEmployer?.bonuses ?? []);
+ const bonusesRef = useRef(bonuses);
+ bonusesRef.current = bonuses;
  const [saving, setSaving] = useState(false);
  const [error, setError] = useState('');
  const fileInputRef = useRef<HTMLInputElement>(null);
+
+ // New bonus form state
+ const [newBonusName, setNewBonusName] = useState('');
+ const [newBonusMultiplier, setNewBonusMultiplier] = useState('');
+ const [newBonusConditionType, setNewBonusConditionType] = useState<'day_of_week' | 'time_range' | 'specific_dates'>('day_of_week');
+ const [newBonusDays, setNewBonusDays] = useState<number[]>([]);
+ const [newBonusStartTime, setNewBonusStartTime] = useState('22:00');
+ const [newBonusEndTime, setNewBonusEndTime] = useState('06:00');
+ const [newBonusDates, setNewBonusDates] = useState('');
 
  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
  const file = e.target.files?.[0];
@@ -1738,15 +1797,79 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
  reader.readAsDataURL(file);
  };
 
+ const handleAddBonus = () => {
+ const multiplier = Number(newBonusMultiplier) / 100;
+ if (!newBonusName.trim() || isNaN(multiplier) || multiplier < 0) return;
+
+ const base: any = {
+ _id: `temp-${Date.now()}`,
+ name: newBonusName.trim(),
+ multiplier,
+ conditionType: newBonusConditionType,
+ };
+
+ if (newBonusConditionType === 'day_of_week') {
+ if (newBonusDays.length === 0) return;
+ base.daysOfWeek = [...newBonusDays].sort((a, b) => a - b);
+ } else if (newBonusConditionType === 'time_range') {
+ base.startTime = newBonusStartTime;
+ base.endTime = newBonusEndTime;
+ } else if (newBonusConditionType === 'specific_dates') {
+ const dates = newBonusDates
+ .split(/[\n,]+/)
+ .map((d) => d.trim())
+ .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d));
+ if (dates.length === 0) return;
+ base.specificDates = dates;
+ }
+
+ setBonuses((prev) => [...prev, base]);
+ setNewBonusName('');
+ setNewBonusMultiplier('');
+ setNewBonusDays([]);
+ setNewBonusDates('');
+ };
+
+ const handleRemoveBonus = (idx: number) => {
+ setBonuses((prev) => prev.filter((_, i) => i !== idx));
+ };
+
+ const toggleDay = (day: number) => {
+ setNewBonusDays((prev) =>
+ prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+ );
+ };
+
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault();
  if (!name.trim()) return setError('Employer name is required.');
  setSaving(true);
  setError('');
  try {
+ // Use ref to guarantee we read the latest bonuses value
+ const currentBonuses = bonusesRef.current;
+ console.log('[EmployerModal handleSubmit] State bonuses:', bonuses.length, '| Ref bonuses:', currentBonuses.length);
+ const bonusesPayload = currentBonuses.map((b: any) => ({
+   _id: b._id && !String(b._id).startsWith('temp-') ? b._id : undefined,
+   name: b.name,
+   multiplier: b.multiplier,
+   conditionType: b.conditionType,
+   daysOfWeek: b.daysOfWeek,
+   startTime: b.startTime,
+   endTime: b.endTime,
+   specificDates: b.specificDates,
+ }));
+ const bonusesJson = JSON.stringify(bonusesPayload);
+ console.log('[EmployerModal handleSubmit] Bonuses JSON being sent:', bonusesJson);
+
  const fd = new FormData();
  fd.append('name', name.trim());
+ fd.append('hourlyRate', hourlyRate.trim());
+ fd.append('bonuses', bonusesJson);
  if (logoFile) fd.append('logo', logoFile);
+
+ // Verify what's in the FormData
+ console.log('[EmployerModal handleSubmit] FormData bonuses entry:', fd.get('bonuses'));
 
  let saved: Employer;
  if (editEmployer) {
@@ -1754,6 +1877,7 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
  } else {
  saved = await createEmployer(fd);
  }
+ console.log('[EmployerModal handleSubmit] Server response bonuses:', JSON.stringify(saved.bonuses));
  onSaved(saved);
  } catch (err: any) {
  setError(err?.response?.data?.message ?? 'Failed to save employer.');
@@ -1762,9 +1886,11 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
  }
  };
 
+ const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
  return (
  <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(14,14,23,0.82)', backdropFilter: 'blur(4px)' }}>
- <div className="card-elevated w-full max-w-md">
+ <div className="card-elevated w-full max-w-md" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
  {/* Header */}
  <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
  <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -1788,6 +1914,145 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
  required
  autoFocus
  />
+ </div>
+
+ {/* Hourly rate */}
+ <div>
+ <label className="label-overline mb-2 block">Hourly rate <span style={{ color: 'var(--text-muted)', fontStyle: 'normal' }}>(optional)</span></label>
+ <input
+ className="input-base w-full"
+ type="number"
+ min="0"
+ step="0.01"
+ placeholder="e.g. 25.00"
+ value={hourlyRate}
+ onChange={(e) => setHourlyRate(e.target.value)}
+ />
+ <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Used to calculate expected earnings in the Time Log.</p>
+ </div>
+
+ {/* Bonus rules */}
+ <div className="space-y-3">
+ <label className="label-overline block">Bonus rules <span style={{ color: 'var(--text-muted)', fontStyle: 'normal' }}>(optional)</span></label>
+
+ {bonuses.length > 0 && (
+ <div className="space-y-2">
+ {bonuses.map((bonus, idx) => (
+ <div key={bonus._id || idx} className="rounded-lg p-3 flex items-center justify-between gap-3" style={{ background: 'var(--bg-raised)', border: '1px solid var(--border)' }}>
+ <div className="min-w-0">
+ <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{bonus.name}</p>
+ <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+ +{Math.round(bonus.multiplier * 100)}% extra &middot; {formatBonusCondition(bonus)}
+ </p>
+ </div>
+ <button
+ type="button"
+ onClick={() => handleRemoveBonus(idx)}
+ className="p-1 rounded shrink-0"
+ style={{ color: 'var(--rose)' }}
+ title="Remove bonus"
+ >
+ <X size={14} />
+ </button>
+ </div>
+ ))}
+ </div>
+ )}
+
+ <div className="rounded-lg p-3 space-y-3" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+   onKeyDown={(e) => {
+     if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+       e.preventDefault();
+       handleAddBonus();
+     }
+   }}
+ >
+ <input
+ className="input-base w-full text-sm"
+ type="text"
+ placeholder="Bonus name (e.g. Night shift, Sunday)"
+ value={newBonusName}
+ onChange={(e) => setNewBonusName(e.target.value)}
+ />
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="text-[10px] uppercase font-bold tracking-wider block mb-1" style={{ color: 'var(--text-muted)' }}>Extra pay %</label>
+ <input
+ className="input-base w-full text-sm"
+ type="number"
+ min="0"
+ step="1"
+ placeholder="e.g. 10"
+ value={newBonusMultiplier}
+ onChange={(e) => setNewBonusMultiplier(e.target.value)}
+ />
+ </div>
+ <div>
+ <label className="text-[10px] uppercase font-bold tracking-wider block mb-1" style={{ color: 'var(--text-muted)' }}>Applies when</label>
+ <select
+ className="input-base w-full text-sm"
+ value={newBonusConditionType}
+ onChange={(e) => setNewBonusConditionType(e.target.value as 'day_of_week' | 'time_range' | 'specific_dates')}
+ >
+ <option value="day_of_week">Days of week</option>
+ <option value="time_range">Time range</option>
+ <option value="specific_dates">Specific dates</option>
+ </select>
+ </div>
+ </div>
+
+ {newBonusConditionType === 'day_of_week' && (
+ <div className="flex flex-wrap gap-2">
+ {dayLabels.map((label, i) => (
+ <button
+ key={i}
+ type="button"
+ onClick={() => toggleDay(i)}
+ className="px-2.5 py-1 text-xs font-medium rounded-md transition-all"
+ style={{
+ background: newBonusDays.includes(i) ? 'var(--accent)' : 'var(--bg-surface)',
+ color: newBonusDays.includes(i) ? 'var(--text-on-accent)' : 'var(--text-secondary)',
+ border: `1px solid ${newBonusDays.includes(i) ? 'var(--accent)' : 'var(--border)'}`,
+ }}
+ >
+ {label}
+ </button>
+ ))}
+ </div>
+ )}
+
+ {newBonusConditionType === 'time_range' && (
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="text-[10px] uppercase font-bold tracking-wider block mb-1" style={{ color: 'var(--text-muted)' }}>From</label>
+ <input className="input-base w-full text-sm" type="time" value={newBonusStartTime} onChange={(e) => setNewBonusStartTime(e.target.value)} />
+ </div>
+ <div>
+ <label className="text-[10px] uppercase font-bold tracking-wider block mb-1" style={{ color: 'var(--text-muted)' }}>To</label>
+ <input className="input-base w-full text-sm" type="time" value={newBonusEndTime} onChange={(e) => setNewBonusEndTime(e.target.value)} />
+ </div>
+ </div>
+ )}
+
+ {newBonusConditionType === 'specific_dates' && (
+ <textarea
+ className="input-base w-full text-xs"
+ rows={2}
+ placeholder="YYYY-MM-DD, one per line or comma separated"
+ value={newBonusDates}
+ onChange={(e) => setNewBonusDates(e.target.value)}
+ />
+ )}
+
+ <button
+ type="button"
+ onClick={handleAddBonus}
+ className="btn-secondary text-xs w-full"
+ disabled={!newBonusName.trim() || !newBonusMultiplier.trim() || (newBonusConditionType === 'day_of_week' && newBonusDays.length === 0)}
+ >
+ <Plus size={12} className="inline mr-1" /> Add bonus rule
+ </button>
+ </div>
  </div>
 
  {/* Logo upload */}
@@ -1858,14 +2123,13 @@ const EmployerModal: React.FC<EmployerModalProps> = ({ editEmployer, onClose, on
 // Main Page 
 
 const WorkTrackerPage: React.FC = () => {
- const [activeTab, setActiveTab] = useState<'timelog' | 'employers' | 'appointments'>('timelog');
- const [entryTypeFilter, setEntryTypeFilter] = useState<'all' | 'shifts' | 'appointments' | 'calendar'>('all');
+ const [entryTypeFilter, setEntryTypeFilter] = useState<'all' | 'shifts' | 'appointments'>('all');
+ const [showAllEmployers, setShowAllEmployers] = useState(false);
+ const [showAllTypes, setShowAllTypes] = useState(false);
 
  // Data state 
  const [entries, setEntries] = useState<WorkEntry[]>([]);
  const [employers, setEmployers] = useState<Employer[]>([]);
-
- const { showTour: showWorkTour, dismiss: dismissWorkTour } = usePageTour('work-tracker');
 
  const [appointmentTypes, setAppointmentTypes] = useState<PopulatedAppointmentType[]>([]);
  const [stats, setStats] = useState<WorkTrackerStats | null>(null);
@@ -1874,11 +2138,10 @@ const WorkTrackerPage: React.FC = () => {
  const [loadingAppointmentTypes, setLoadingAppointmentTypes] = useState(true);
  const [loadingStats, setLoadingStats] = useState(true);
 
- // Calendar events (inline in Time Log) 
+ // Calendar events (inline in Time Log)
  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
  const [calendarConnected, setCalendarConnected] = useState(false);
  const [loadingCalendarEvents, setLoadingCalendarEvents] = useState(false);
- const showMockWorkTour = showWorkTour && entries.length === 0 && calendarEvents.length === 0 && !loadingCalendarEvents && !loadingEntries;
 
  // Month navigation 
  const now = new Date();
@@ -1913,7 +2176,6 @@ const WorkTrackerPage: React.FC = () => {
  const [remindLoadingId, setRemindLoadingId] = useState<string | null>(null);
  const [reminderFeedback, setReminderFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string; showConnectAction?: boolean } | null>(null);
  const [togglingId, setTogglingId] = useState<string | null>(null);
- const [expandedEmployers, setExpandedEmployers] = useState<Set<string>>(new Set());
 
  useEffect(() => {
  if (!entryEmployerId && employers.length === 1) {
@@ -2142,15 +2404,18 @@ const WorkTrackerPage: React.FC = () => {
  fetchStats();
  };
 
- // Employer actions 
+ // Employer actions
  const handleEmployerSaved = (emp: Employer) => {
  setShowEmployerModal(false);
  setEditingEmployer(null);
+ console.log('[handleEmployerSaved] Employer saved:', emp._id, emp.name, '| Bonuses:', JSON.stringify(emp.bonuses));
  setEmployers((prev) => {
  const exists = prev.find((e) => e._id === emp._id);
  if (exists) return prev.map((e) => (e._id === emp._id ? emp : e));
  return [...prev, emp];
  });
+ // Re-fetch entries so populated employer data (including bonuses) is up-to-date
+ fetchEntries();
  fetchStats();
  };
 
@@ -2199,360 +2464,372 @@ const WorkTrackerPage: React.FC = () => {
  const monthEmployers = new Set(entries.map((e) => e.employerId?._id).filter(Boolean)).size;
  const monthLabel = `${MONTH_NAMES[viewMonth - 1]} ${viewYear}`;
 
- const grouped = groupEntriesByDate(entries);
- // Apply type filter to planned/done groups
+  // Earnings: compute from entries with employer hourlyRate + bonuses populated from the list
+  const monthEarnings = React.useMemo(() => {
+    let total = 0;
+    for (const entry of entries) {
+      if (entry.type === 'shift' && entry.employerId) {
+        const emp = employers.find((e) => e._id === entry.employerId!._id);
+        if (emp?.hourlyRate != null) {
+          const effectiveRate = calculateEffectiveHourlyRate(
+            emp.hourlyRate,
+            emp.bonuses,
+            entry.date.split('T')[0],
+            entry.startTime,
+            entry.endTime
+          );
+          if (effectiveRate != null) {
+            total += entry.hours * effectiveRate;
+          }
+        }
+      }
+    }
+    return Math.round(total * 100) / 100;
+  }, [entries, employers]);
+
+  // Filter employers/types to those with entries this month unless switches are on
+  const filteredEmployers = React.useMemo(() => {
+    if (showAllEmployers) return employers;
+    const activeIds = new Set(entries.map((e) => e.employerId?._id).filter(Boolean) as string[]);
+    return employers.filter((emp) => activeIds.has(emp._id));
+  }, [employers, entries, showAllEmployers]);
+
+  const filteredAppointmentTypes = React.useMemo(() => {
+    if (showAllTypes) return appointmentTypes;
+    const activeIds = new Set(entries.map((e) => e.appointmentTypeId?._id).filter(Boolean) as string[]);
+    return appointmentTypes.filter((apt) => activeIds.has(apt._id));
+  }, [appointmentTypes, entries, showAllTypes]);
+
+  const grouped = groupEntriesByDate(entries);
+ // Apply type filter
  const filteredEntries = entryTypeFilter === 'all' ? entries
  : entryTypeFilter === 'shifts' ? entries.filter((e) => e.type === 'shift')
- : entryTypeFilter === 'appointments' ? entries.filter((e) => e.type === 'appointment')
- : []; // 'calendar' no work entries
- const filteredCalendarEvents = (entryTypeFilter === 'all' || entryTypeFilter === 'calendar') ? calendarEvents : [];
- // Planned: work entries + calendar events for the month
- const plannedGrouped = groupItemsByDate(filteredEntries.filter((e) => e.status === 'planned'), filteredCalendarEvents);
- // Done: work entries only (calendar events have no status)
- const doneGrouped = groupItemsByDate(filteredEntries.filter((e) => e.status === 'done'), []);
+ : entries.filter((e) => e.type === 'appointment');
+ const filteredCalendarEvents = calendarEvents;
  const sortedDateKeys = Array.from(grouped.keys()).sort();
- const plannedDateKeys = Array.from(plannedGrouped.keys()).sort(); // ascending soonest first
- const doneDateKeys = Array.from(doneGrouped.keys()).sort().reverse(); // descending most recent first
-
- // Per-employer summary from entries in current view
- type EmployerSummary = { totalHours: number; planned: number; done: number; lastDate: string | null };
- const employerSummary = new Map<string, EmployerSummary>();
- for (const entry of entries) {
- if (entry.type === 'shift' && entry.employerId) {
- const eid = entry.employerId._id;
- const cur = employerSummary.get(eid) ?? { totalHours: 0, planned: 0, done: 0, lastDate: null };
- cur.totalHours += entry.hours;
- if (entry.status === 'planned') cur.planned++; else cur.done++;
- if (!cur.lastDate || entry.date > cur.lastDate) cur.lastDate = entry.date;
- employerSummary.set(eid, cur);
- }
- }
 
 
 
- const renderDayCard = (dateKey: string, dayItems: TimeLogItem[]) => {
+ // Reusable avatar color picker for employers
+ const AVATAR_COLORS = [
+ { bg: 'bg-red-100', text: 'text-red-600' },
+ { bg: 'bg-green-100', text: 'text-green-600' },
+ { bg: 'bg-blue-100', text: 'text-blue-600' },
+ { bg: 'bg-amber-100', text: 'text-amber-600' },
+ { bg: 'bg-purple-100', text: 'text-purple-600' },
+ { bg: 'bg-indigo-100', text: 'text-indigo-600' },
+ { bg: 'bg-teal-100', text: 'text-teal-600' },
+ ];
+ const SIDEBAR_COLORS = [
+ { bg: 'bg-indigo-50', text: 'text-indigo-600' },
+ { bg: 'bg-teal-50', text: 'text-teal-600' },
+ { bg: 'bg-rose-50', text: 'text-rose-600' },
+ { bg: 'bg-amber-50', text: 'text-amber-600' },
+ { bg: 'bg-violet-50', text: 'text-violet-600' },
+ { bg: 'bg-cyan-50', text: 'text-cyan-600' },
+ ];
+
+ const getAvatarColor = (id?: string) => {
+ if (!id) return AVATAR_COLORS[0];
+ return AVATAR_COLORS[id.charCodeAt(0) % AVATAR_COLORS.length];
+ };
+
+ // Group all filtered entries + calendar events by date for chronological display
+ const allFilteredGrouped = groupItemsByDate(filteredEntries, filteredCalendarEvents);
+ const allFilteredDateKeys = Array.from(allFilteredGrouped.keys()).sort();
+
+ // Render a single day group (entries + calendar events)
+ const renderDayGroup = (dateKey: string, dayItems: TimeLogItem[]) => {
  const workEntries = dayItems.filter((i): i is { kind: 'entry'; data: WorkEntry } => i.kind === 'entry');
  const dayHours = workEntries.reduce((sum, i) => sum + (i.data.type === 'shift' ? i.data.hours : 0), 0);
- const allDone = workEntries.length > 0 && workEntries.every((i) => i.data.status === 'done');
  return (
- <div key={dateKey} className="card overflow-hidden">
- <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
- <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
- {formatDate(dateKey)}
- </span>
+ <div key={dateKey} className="space-y-2">
+ <div className="flex items-center justify-between px-2">
+ <span className="text-sm font-semibold text-slate-500">{formatDate(dateKey)}</span>
  {dayHours > 0 && (
- <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: allDone ? 'rgba(45,212,160,0.1)' : 'var(--accent-bg)', color: allDone ? 'var(--jade)' : 'var(--accent)', border: `1px solid ${allDone ? 'rgba(45,212,160,0.2)' : 'var(--accent-dim)'}` }}>
- {dayHours}h
- </span>
+ <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{dayHours}h</span>
  )}
  </div>
- <ul className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
- {dayItems.map((item) => {
+ <div className="bg-white border border-slate-100 rounded-lg shadow-card">
+ {dayItems.map((item, idx) => {
+ const isLast = idx === dayItems.length - 1;
+
  if (item.kind === 'calendar') {
  const event = item.data;
  const startStr = event.start.dateTime ? formatCalendarTime(event.start.dateTime) : null;
  const endStr = event.end.dateTime ? formatCalendarTime(event.end.dateTime) : null;
  return (
- <li key={`cal-${event.id}`} className="flex items-start gap-3 px-4 py-3 transition-colors" style={{ background: 'rgba(99,102,241,0.025)' }}>
- {/* Spacer matching the toggle button width calendar rows are read-only */}
- <div className="mt-0.5 shrink-0 flex items-center justify-center" style={{ width: 20, height: 20, color: 'var(--accent)', opacity: 0.55 }}>
- <CalendarDays size={15} />
+ <React.Fragment key={`cal-${event.id}`}>
+ <div className="flex items-center justify-between p-4">
+ <div className="flex items-center gap-3">
+ <div className="w-10 h-10 bg-slate-50 rounded flex items-center justify-center">
+ <CalendarDays size={18} className="text-slate-400" />
  </div>
- <div className="flex-1 min-w-0">
- <div className="flex items-center gap-2 flex-wrap">
- <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
- {event.summary || '(No title)'}
- </span>
- <span
- className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded"
- style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)', color: 'var(--accent)' }}
- >
- <CalendarDays size={9} /> Google Calendar
- </span>
+ <div>
+ <div className="flex items-center gap-2">
+ <h4 className="font-bold text-slate-900">{event.summary || '(No title)'}</h4>
+ <span className="text-[9px] bg-green-accent/10 text-green-accent px-1.5 py-0.5 rounded border border-green-accent/20 uppercase font-bold tracking-wider">Google Calendar</span>
  </div>
- <div className="flex items-center gap-3 mt-1 flex-wrap">
- {startStr && endStr ? (
- <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
- {startStr} &ndash; {endStr}
- </span>
- ) : !event.start.dateTime ? (
- <span className="text-xs" style={{ color: 'var(--text-muted)' }}>All day</span>
- ) : null}
- {event.location && (
- <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
- <MapPin size={10} />{event.location}
- </span>
- )}
+ <p className="text-xs text-slate-500">
+ {startStr && endStr ? `${startStr} – ${endStr}` : !event.start.dateTime ? 'All day' : ''}
+ </p>
  </div>
  </div>
- {/* No action buttons read-only calendar rows */}
- <div style={{ width: 28 }} />
- </li>
+ </div>
+ {!isLast && <div className="h-px bg-slate-100 mx-4" />}
+ </React.Fragment>
  );
  }
 
- // Work entry row (unchanged) 
- const entry = item.data;
- const isDone = entry.status === 'done';
- const isToggling = togglingId === entry._id;
- const isConfirmDelete = deletingEntryId === entry._id;
- const isReminding = remindLoadingId === entry._id;
- return (
- <li key={entry._id} className="flex items-start gap-3 px-4 py-3 transition-colors group" style={{ background: isDone ? 'rgba(45,212,160,0.02)' : 'transparent' }}>
+  const entry = item.data;
+  const isDone = entry.status === 'done';
+  const isConfirmDelete = deletingEntryId === entry._id;
+  const employerName = entry.type === 'appointment' && entry.appointmentTypeId
+  ? entry.appointmentTypeId.name
+  : entry.employerId?.name || 'Unknown';
+  const initials = employerName.slice(0, 3).toUpperCase();
+  const ac = getAvatarColor(entry.employerId?._id);
+
+  // Compute effective rate and applicable bonuses for shift entries
+  const entryEffectiveRate = entry.type === 'shift' && entry.employerId?.hourlyRate != null
+    ? calculateEffectiveHourlyRate(
+        entry.employerId.hourlyRate,
+        entry.employerId.bonuses,
+        entry.date.split('T')[0],
+        entry.startTime,
+        entry.endTime
+      )
+    : null;
+  const entryApplicableBonuses = entry.type === 'shift' && entry.employerId?.bonuses?.length
+    ? getApplicableBonuses(
+        entry.employerId.bonuses,
+        entry.date.split('T')[0],
+        entry.startTime,
+        entry.endTime
+      )
+    : [];
+
+  // Debug: log when employer has bonuses but none apply to this entry
+  if (entry.type === 'shift' && entry.employerId?.bonuses?.length && entryApplicableBonuses.length === 0) {
+    console.log(
+      '[bonus-debug] Entry:', entry._id,
+      '| Employer:', entry.employerId.name,
+      '| Has', entry.employerId.bonuses.length, 'bonus(es) but 0 applicable',
+      '| date:', entry.date.split('T')[0],
+      '| time:', entry.startTime, '-', entry.endTime,
+      '| bonus conditions:', entry.employerId.bonuses.map(b => `${b.name}(${b.conditionType})`)
+    );
+  }
+  const entryEarnings = entryEffectiveRate != null ? Math.round(entry.hours * entryEffectiveRate * 100) / 100 : null;
+
+  return (
+  <React.Fragment key={entry._id}>
+  <div className={`flex flex-wrap items-center justify-between gap-4 p-4 ${isDone ? 'opacity-50' : ''}`}>
+  <div className="flex items-center gap-3">
+  <button
+  onClick={() => !togglingId && handleToggleDone(entry)}
+  className="shrink-0 transition-all"
+  style={{ opacity: togglingId === entry._id ? 0.4 : 1 }}
+  title={isDone ? 'Mark as planned' : 'Mark as done'}
+  >
+  {isDone ? <CheckCircle2 size={18} className="text-emerald-600" /> : <Circle size={18} className="text-slate-300" />}
+  </button>
+  <div className={`w-10 h-10 ${ac.bg} rounded flex items-center justify-center overflow-hidden`}>
+  {entry.employerId?.logoUrl ? (
+  <img src={entry.employerId.logoUrl} alt={employerName} className="w-full h-full object-cover" />
+  ) : (
+  <span className={`font-bold ${ac.text} text-xs text-center leading-tight`}>{initials}</span>
+  )}
+  </div>
+  <div>
+  <div className="flex items-center gap-2 flex-wrap">
+  <h4 className={`font-bold ${isDone ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+  {employerName}
+  </h4>
+  {entry.title && <span className="text-xs font-normal text-slate-400">&mdash; {entry.title}</span>}
+  <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
+  {entry.type}
+  </span>
+  {entry.subLocationName && (
+  <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{entry.subLocationName}</span>
+  )}
+  {entryApplicableBonuses.map((b) => (
+  <span key={b._id} className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100 font-medium" title={`${b.name}: +${Math.round(b.multiplier * 100)}% extra`}>
+  {b.name} +{Math.round(b.multiplier * 100)}%
+  </span>
+  ))}
+  </div>
+  <p className="text-xs text-slate-500">
+  {entry.startTime} – {entry.endTime}
+  <span className="text-emerald-600 font-bold ml-1">{entry.hours}h</span>
+  {entry.breakMinutes > 0 && <span className="opacity-50 ml-1">({entry.breakMinutes}m break)</span>}
+  {(entry.paidKilometers ?? 0) > 0 && <span className="opacity-50 ml-1">{entry.paidKilometers} km</span>}
+  {entry.notes && <span className="opacity-50 ml-1">{entry.notes}</span>}
+  {entryEffectiveRate != null && (
+  <span className="ml-1.5 font-medium" style={{ color: 'var(--jade)' }}>
+  {entry.employerId!.hourlyRate !== entryEffectiveRate && (
+    <span className="opacity-50 line-through mr-1">{entry.employerId!.hourlyRate}/hr</span>
+  )}
+  {entryEffectiveRate}/hr
+  {entryEarnings != null && (
+    <span className="ml-1">({entryEarnings})</span>
+  )}
+  </span>
+  )}
+  </p>
+  </div>
+  </div>
+ <div className="flex gap-1">
  <button
- onClick={() => !isToggling && handleToggleDone(entry)}
- className="mt-0.5 shrink-0 transition-all"
- style={{ color: isDone ? 'var(--jade)' : 'var(--text-muted)', opacity: isToggling ? 0.5 : 1 }}
- title={isDone ? 'Mark as planned' : 'Mark as done'}
+ onClick={() => entry.reminderCreated ? handleRemoveReminder(entry) : (!remindLoadingId && handleCreateReminder(entry))}
+ disabled={remindLoadingId === entry._id}
+ className="p-2 hover:bg-slate-50 rounded-full transition-colors"
+ title={entry.reminderCreated ? 'Remove reminder' : 'Add reminder'}
  >
- {isDone ? <CheckCircle2 size={20} /> : <Circle size={20} />}
- </button>
- <div className="flex-1 min-w-0">
- <div className="flex items-center gap-2 flex-wrap">
- {entry.type === 'shift' && entry.employerId ? (
- <EmployerAvatar employer={entry.employerId} size={22} />
- ) : (
- <div style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
- <CalendarDays size={12} style={{ color: 'var(--text-muted)' }} />
- </div>
- )}
- <span className="text-sm font-medium truncate" style={{ color: isDone ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: isDone ? 'line-through' : 'none' }}>
- {entry.type === 'appointment' && entry.appointmentTypeId ? entry.appointmentTypeId.name : entry.employerId?.name || 'Unknown'}
- {entry.title && <span className="font-normal ml-1" style={{ color: 'var(--text-muted)' }}>&mdash; {entry.title}</span>}
- </span>
- {entry.subLocationName && (
- <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
- <MapPin size={9} />{entry.subLocationName}
- </span>
- )}
- <span className={`badge ${entry.type === 'shift' ? 'badge-gold' : 'badge-ink'} text-[10px]`}>{entry.type}</span>
- </div>
- <div className="flex items-center gap-3 mt-1 flex-wrap">
- <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>{entry.startTime} &ndash; {entry.endTime}</span>
- <span className="font-mono text-xs font-semibold" style={{ color: isDone ? 'var(--jade)' : 'var(--accent)' }}>{entry.hours}h</span>
- {entry.breakMinutes > 0 && (
- <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>({entry.breakMinutes}m break)</span>
- )}
- {(entry.paidKilometers ?? 0) > 0 && (
- <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>({entry.paidKilometers} km)</span>
- )}
- {entry.notes && (
- <span className="text-xs truncate max-w-[220px]" style={{ color: 'var(--text-muted)' }} title={entry.notes}>{entry.notes}</span>
- )}
- </div>
- </div>
- <div className="flex items-center gap-1 shrink-0">
- <button
- onClick={() => entry.reminderCreated ? handleRemoveReminder(entry) : (!isReminding && handleCreateReminder(entry))}
- disabled={isReminding}
- title={entry.reminderCreated ? 'Click to remove reminder from Google Calendar' : 'Add 1-day reminder to Google Calendar'}
- className="p-1.5 rounded-lg transition-all"
- style={{ color: entry.reminderCreated ? 'var(--jade)' : 'var(--text-muted)', background: 'transparent', cursor: isReminding ? 'not-allowed' : 'pointer', opacity: isReminding ? 0.5 : 1 }}
- onMouseEnter={(e) => { if (!entry.reminderCreated) (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
- onMouseLeave={(e) => { if (!entry.reminderCreated) (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
- >
- {entry.reminderCreated ? <CheckCircle2 size={16} /> : isReminding ? <span className="animate-spin inline-block"><CalendarDays size={16} /></span> : <CalendarDays size={16} />}
+ {entry.reminderCreated
+ ? <CheckCircle2 size={16} className="text-emerald-600" />
+ : remindLoadingId === entry._id
+ ? <span className="animate-spin inline-block"><CalendarDays size={16} className="text-slate-400" /></span>
+ : <CalendarDays size={16} className="text-slate-400" />
+ }
  </button>
  <button
  onClick={() => { setEditingEntry(entry); setShowEntryModal(true); }}
- className="p-1.5 rounded-lg transition-all"
- style={{ color: 'var(--text-muted)' }}
- title="Edit"
- onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'}
- onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}
+ className="p-2 hover:bg-slate-50 rounded-full transition-colors"
  >
- <Pencil size={14} />
+ <Pencil size={16} className="text-slate-400" />
  </button>
  <button
  onClick={() => handleDeleteEntry(entry._id)}
- className="p-1.5 rounded-lg transition-all"
- style={{ color: isConfirmDelete ? 'var(--rose)' : 'var(--text-muted)' }}
- title={isConfirmDelete ? 'Click again to confirm delete' : 'Delete'}
- onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.color = 'var(--rose)'}
- onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.color = isConfirmDelete ? 'var(--rose)' : 'var(--text-muted)'}
+ className="p-2 hover:bg-red-50 rounded-full transition-colors group"
  >
- {isConfirmDelete ? <span className="text-[10px] font-mono font-bold px-1">confirm?</span> : <Trash2 size={14} />}
+ {isConfirmDelete
+ ? <span className="text-[10px] font-bold text-red-500 px-0.5">?</span>
+ : <Trash2 size={16} className="text-slate-400 group-hover:text-red-500" />
+ }
  </button>
  </div>
- </li>
+ </div>
+ {!isLast && <div className="h-px bg-slate-100 mx-4" />}
+ </React.Fragment>
  );
  })}
- </ul>
+ </div>
  </div>
  );
  };
 
- // Render 
+ // Render
  return (
  <div className="h-full overflow-y-auto custom-scrollbar px-2" style={{ background: 'var(--bg-base)' }}>
- <div className="py-6 md:py-8 space-y-6 md:space-y-8">
+ <div className="py-6 md:py-8 max-w-7xl mx-auto space-y-8">
 
  {/* Page header */}
- <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
  <div>
- <h1 className="text-2xl md:text-3xl font-display font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
- Time Tracker
- </h1>
- <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
- Plan and log your working hours across employers.
- </p>
+ <h1 className="text-3xl font-extrabold text-green tracking-tight">Time Tracker</h1>
+ <p className="text-slate-500 mt-1">Plan and log your working hours across employers.</p>
  </div>
 
- {/* Tabs */}
- <div className="flex flex-wrap items-center gap-1 p-1 rounded-xl self-start sm:self-auto" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
- {[
- { key: 'timelog', label: 'Time Log', icon: <Clock size={15} /> },
- { key: 'employers', label: 'Employers', icon: <Building2 size={15} /> },
- { key: 'appointments', label: 'Appointments', icon: <CalendarDays size={15} /> },
- ].map((tab) => (
+ {/* Stats grid */}
+ <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+ <StatCard
+ label="Total Hours"
+ value={loadingEntries ? '' : `${monthHours}h`}
+ sub={loadingEntries ? undefined : `${monthDoneHours}h done · ${entries.length} entries`}
+ icon={<Clock size={20} />}
+ colorScheme="emerald"
+ />
+ <StatCard
+ label="Employers"
+ value={loadingEntries ? '' : monthEmployers}
+ sub={`${employers.length} registered`}
+ icon={<Building2 size={20} />}
+ colorScheme="blue"
+ />
+ <StatCard
+ label="Shifts"
+ value={loadingEntries ? '' : `${monthPlanned + monthDone}`}
+ sub={`${monthPlanned} planned · ${monthDone} done`}
+ icon={<Briefcase size={20} />}
+ colorScheme="amber"
+ />
+ <StatCard
+ label="Appointments"
+ value={loadingEntries ? '' : monthAppointments}
+ sub={monthLabel}
+ icon={<CalendarDays size={20} />}
+ colorScheme="purple"
+ />
+ </section>
+
+ {/* Main 2-column layout */}
+ <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+ {/* Left column: Entries */}
+ <div className="lg:col-span-8 space-y-6">
+ {/* Reminder feedback */}
+ {reminderFeedback && (
+ <div className={`rounded-lg px-4 py-3 flex items-start gap-3 ${
+ reminderFeedback.type === 'success' ? 'bg-emerald-50 border border-emerald-200' :
+ reminderFeedback.type === 'info' ? 'bg-blue-50 border border-blue-200' :
+ 'bg-red-50 border border-red-200'
+ }`}>
+ <AlertCircle size={16} className={`mt-0.5 shrink-0 ${
+ reminderFeedback.type === 'success' ? 'text-emerald-600' :
+ reminderFeedback.type === 'info' ? 'text-blue-600' :
+ 'text-red-600'
+ }`} />
+ <div className="flex-1 min-w-0">
+ <p className="text-sm text-slate-800">{reminderFeedback.message}</p>
+ {reminderFeedback.showConnectAction && (
+ <a href="/settings?googleCalendar" className="text-xs font-semibold underline mt-1 inline-block text-green-accent">Connect Google Calendar</a>
+ )}
+ </div>
+ <button onClick={() => setReminderFeedback(null)} className="text-xs text-slate-400 hover:text-slate-600">&times;</button>
+ </div>
+ )}
+
+ {/* Section header: filter pills + actions */}
+ <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+ <div>
+ <h2 className="text-xl font-bold text-green">Recent Entries</h2>
+ {/* Month navigation */}
+ <div className="flex items-center gap-2 mt-2">
+ <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+ <ChevronLeft size={16} className="text-slate-400" />
+ </button>
+ <span className="text-sm font-semibold text-slate-600 min-w-[120px] text-center">{monthLabel}</span>
+ <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+ <ChevronRight size={16} className="text-slate-400" />
+ </button>
+ </div>
+ {/* Filter pills */}
+ <div className="flex gap-2 mt-3">
+ {(['all', 'shifts', 'appointments'] as const).map((key) => (
  <button
- key={tab.key}
- onClick={() => setActiveTab(tab.key as any)}
- className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
- style={{
- background: activeTab === tab.key ? 'var(--bg-raised)' : 'transparent',
- border: activeTab === tab.key ? '1px solid var(--border-bright)' : '1px solid transparent',
- color: activeTab === tab.key ? 'var(--text-primary)' : 'var(--text-muted)',
- boxShadow: activeTab === tab.key ? '0 1px 4px rgba(14,14,23,0.4)' : 'none',
- }}
+ key={key}
+ onClick={() => setEntryTypeFilter(key)}
+ className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
+ entryTypeFilter === key
+ ? 'bg-green-accent text-white'
+ : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+ }`}
  >
- <span style={{ color: activeTab === tab.key ? 'var(--accent)' : 'inherit' }}>{tab.icon}</span>
- {tab.label}
+ {key === 'all' ? 'All' : key === 'shifts' ? 'Shifts' : 'Appointments'}
  </button>
  ))}
  </div>
  </div>
-
- {/* Stats bar */}
- <div className="flex flex-wrap gap-4">
- <StatCard
- label="Total hours"
- value={loadingEntries ? '' : showMockWorkTour ? '24h' : `${monthHours}h`}
- sub={loadingEntries ? undefined : showMockWorkTour ? '16h done 4 entries' : `${monthDoneHours}h done ${entries.length} entries`}
- icon={<Clock size={18} />}
- accent
- />
- <StatCard
- label="Employers"
- value={loadingEntries ? '' : showMockWorkTour ? 2 : monthEmployers}
- sub={showMockWorkTour ? '2 registered' : `${employers.length} registered`}
- icon={<Building2 size={18} />}
- />
- <StatCard
- label="Shifts"
- value={loadingEntries ? '' : showMockWorkTour ? '3' : `${monthPlanned + monthDone}`}
- sub={showMockWorkTour ? '1 planned 2 done' : `${monthPlanned} planned ${monthDone} done`}
- icon={<Briefcase size={18} />}
- />
- <StatCard
- label="Appointments"
- value={loadingEntries ? '' : showMockWorkTour ? 1 : monthAppointments}
- sub={monthLabel}
- icon={<CalendarDays size={18} />}
- />
- </div>
-
- {/* TIME LOG TAB */}
- {activeTab === 'timelog' && (
- <div className="space-y-6">
-
- {reminderFeedback && (
- <div
- className="rounded-xl px-4 py-3 flex items-start gap-3"
- style={{
- background: reminderFeedback.type === 'success'
- ? 'rgba(45,212,160,0.10)'
- : reminderFeedback.type === 'info'
- ? 'rgba(99,102,241,0.10)'
- : 'rgba(239,68,68,0.10)',
- border: reminderFeedback.type === 'success'
- ? '1px solid rgba(45,212,160,0.30)'
- : reminderFeedback.type === 'info'
- ? '1px solid rgba(99,102,241,0.30)'
- : '1px solid rgba(239,68,68,0.30)',
- }}
- >
- <AlertCircle
- size={16}
- style={{
- color: reminderFeedback.type === 'success'
- ? 'var(--jade)'
- : reminderFeedback.type === 'info'
- ? 'var(--accent)'
- : 'var(--rose)',
- marginTop: 1,
- flexShrink: 0,
- }}
- />
- <div className="flex-1 min-w-0">
- <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
- {reminderFeedback.message}
- </p>
- {reminderFeedback.showConnectAction && (
- <a
- href="/settings?googleCalendar"
- className="text-xs font-semibold underline mt-1 inline-block"
- style={{ color: 'var(--accent)' }}
- >
- Connect Google Calendar
- </a>
- )}
- </div>
+ <div className="flex flex-wrap items-center gap-3">
  <button
- onClick={() => setReminderFeedback(null)}
- className="text-xs opacity-60 hover:opacity-100 transition-opacity"
- style={{ color: 'var(--text-muted)' }}
- aria-label="Dismiss reminder feedback"
- >
- 
- </button>
- </div>
- )}
-
- {/* Month navigator + Actions */}
- <div className="flex items-center justify-between flex-wrap gap-4">
- <div className="flex items-center gap-2">
- <button
- onClick={prevMonth}
- className="btn-ghost p-2 rounded-lg"
- aria-label="Previous month"
- >
- <ChevronLeft size={18} />
- </button>
- <span className="font-semibold text-sm min-w-[130px] text-center" style={{ color: 'var(--text-primary)' }}>
- {MONTH_NAMES[viewMonth - 1]} {viewYear}
- </span>
- <button
- onClick={nextMonth}
- className="btn-ghost p-2 rounded-lg"
- aria-label="Next month"
- >
- <ChevronRight size={18} />
- </button>
- </div>
-
- <div className="flex items-center gap-2.5 flex-wrap">
- <Button
  onClick={() => setShowImportModal(true)}
- variant="secondary"
- size="md"
- className="group flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all"
- style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-dim)' }}
- title="Import with AI"
- data-onboarding="primary-action"
+ className="bg-green-accent hover:bg-green text-white px-6 py-2.5 rounded-pill font-bold text-sm flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-green-accent/20"
  >
- <Sparkles size={15} />
- <span className="flex flex-col items-start leading-tight">
- <span className="text-sm font-semibold">Import with AI</span>
- <span className="text-[11px] opacity-80">Parse image, PDF, or pasted text</span>
- </span>
- <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>1 Credit</span>
- </Button>
-
- <Button
+ <Sparkles size={16} /> Import with AI
+ </button>
+ <button
  onClick={() => {
  setEditingEntry(null);
- // Reset pre-filled values to defaults
  setEntryType('shift');
  setEntryEmployerId(employers.length === 1 ? employers[0]._id : '');
  setEntryAppointmentTypeId('');
@@ -2564,402 +2841,253 @@ const WorkTrackerPage: React.FC = () => {
  setEntryNotes('');
  setShowEntryModal(true);
  }}
- variant="secondary"
- size="md"
- className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition-all"
- style={{
- background: 'var(--bg-elevated)',
- border: '1px solid var(--border)',
- color: 'var(--text-primary)',
- }}
- title="Add manual entry"
+ className="border border-green-accent text-green-accent hover:bg-green-accent/5 px-6 py-2.5 rounded-pill font-bold text-sm flex items-center gap-2 transition-all active:scale-95"
  >
- <Plus size={16} />
- <span className="flex flex-col items-start leading-tight">
- <span className="text-sm font-semibold">Manual entry</span>
- <span className="text-[11px] opacity-80">Add one shift or appointment</span>
- </span>
- </Button>
- </div>
- </div>
-
- {/* Type filter pills */}
- <div className="flex items-center gap-1.5 flex-wrap">
- {([
- { key: 'all', label: 'All', icon: <Clock size={13} /> },
- { key: 'shifts', label: 'Shifts', icon: <Briefcase size={13} /> },
- { key: 'appointments', label: 'Appointments',icon: <CalendarDays size={13} /> },
- { key: 'calendar', label: 'Google Calendar', icon: <Calendar size={13} /> },
- ] as { key: typeof entryTypeFilter; label: string; icon: React.ReactNode }[]).map((f) => (
- <button
- key={f.key}
- onClick={() => setEntryTypeFilter(f.key)}
- className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
- style={{
- background: entryTypeFilter === f.key ? 'var(--accent-bg)' : 'var(--bg-elevated)',
- border: `1px solid ${entryTypeFilter === f.key ? 'var(--accent-dim)' : 'var(--border)'}`,
- color: entryTypeFilter === f.key ? 'var(--accent)' : 'var(--text-muted)',
- }}
- >
- {f.icon}{f.label}
+ <Plus size={16} /> Add Entry
  </button>
- ))}
- </div>
-
- {/* Demo Tour Section */}
- {showMockWorkTour && (
- <div className="space-y-4">
- <TourBanner pageLabel="Time Tracker" onDismiss={dismissWorkTour} />
- <div className="opacity-80 select-none pointer-events-none">
-
- {/* Planned section */}
- <div className="space-y-3">
- <div className="flex items-center gap-2">
- <p className="label-overline flex items-center gap-1.5"><Circle size={10} /> Planned</p>
- <span className="badge badge-ember text-[10px]">1</span>
- </div>
- <div className="space-y-3">
- {/* Day card: planned shift */}
- <div className="card overflow-hidden">
- <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
- <div className="flex items-center gap-2">
- <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Thu, 12 Mar 2026</span>
- <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>demo</span>
- </div>
- <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>8h</span>
- </div>
- <ul className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
- <li className="flex items-start gap-3 px-4 py-3">
- <div className="mt-0.5 shrink-0" style={{ color: 'var(--text-muted)' }}><Circle size={20} /></div>
- <div className="flex-1 min-w-0">
- <div className="flex items-center gap-2 flex-wrap">
- <div style={{ width: 22, height: 22, borderRadius: 8, background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>AC</div>
- <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Acme Corp</span>
- <span className="font-normal ml-1 text-sm" style={{ color: 'var(--text-muted)' }}>&mdash; Morning Shift</span>
- <span className="badge badge-gold text-[10px]">shift</span>
- </div>
- <div className="flex items-center gap-3 mt-1">
- <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>08:00 &ndash; 16:30</span>
- <span className="font-mono text-xs font-semibold" style={{ color: 'var(--accent)' }}>8h</span>
- <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>(30m break)</span>
- </div>
- </div>
- <div className="flex items-center gap-1 shrink-0">
- <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><CalendarDays size={16} /></div>
- <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Pencil size={14} /></div>
- <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Trash2 size={14} /></div>
- </div>
- </li>
- </ul>
- </div>
  </div>
  </div>
 
- {/* Done section */}
- <div className="space-y-3">
- <div className="flex items-center gap-2">
- <p className="label-overline flex items-center gap-1.5"><CheckCircle2 size={10} /> Done</p>
- <span className="badge badge-jade text-[10px]">2</span>
- </div>
- <div className="space-y-3">
- {/* Day card: done shift */}
- <div className="card overflow-hidden">
- <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
- <div className="flex items-center gap-2">
- <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Tue, 10 Mar 2026</span>
- <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>demo</span>
- </div>
- <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(45,212,160,0.1)', color: 'var(--jade)', border: '1px solid rgba(45,212,160,0.2)' }}>8h</span>
- </div>
- <ul className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
- <li className="flex items-start gap-3 px-4 py-3" style={{ background: 'rgba(45,212,160,0.02)' }}>
- <div className="mt-0.5 shrink-0" style={{ color: 'var(--jade)' }}><CheckCircle2 size={20} /></div>
- <div className="flex-1 min-w-0">
- <div className="flex items-center gap-2 flex-wrap">
- <div style={{ width: 22, height: 22, borderRadius: 8, background: 'var(--accent-bg)', border: '1px solid var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>AC</div>
- <span className="text-sm font-medium" style={{ color: 'var(--text-muted)', textDecoration: 'line-through' }}>Acme Corp</span>
- <span className="font-normal ml-1 text-sm" style={{ color: 'var(--text-muted)', textDecoration: 'line-through' }}>&mdash; Evening Shift</span>
- <span className="badge badge-gold text-[10px]">shift</span>
- </div>
- <div className="flex items-center gap-3 mt-1">
- <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>14:00 &ndash; 22:30</span>
- <span className="font-mono text-xs font-semibold" style={{ color: 'var(--jade)' }}>8h</span>
- <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>(30m break)</span>
- </div>
- </div>
- <div className="flex items-center gap-1 shrink-0">
- <div className="p-1.5 rounded-lg" style={{ color: 'var(--jade)' }}><CheckCircle2 size={16} /></div>
- <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Pencil size={14} /></div>
- <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Trash2 size={14} /></div>
- </div>
- </li>
- </ul>
- </div>
- {/* Day card: done appointment */}
- <div className="card overflow-hidden">
- <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
- <div className="flex items-center gap-2">
- <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Mon, 9 Mar 2026</span>
- <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}>demo</span>
- </div>
- </div>
- <ul className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
- <li className="flex items-start gap-3 px-4 py-3" style={{ background: 'rgba(45,212,160,0.02)' }}>
- <div className="mt-0.5 shrink-0" style={{ color: 'var(--jade)' }}><CheckCircle2 size={20} /></div>
- <div className="flex-1 min-w-0">
- <div className="flex items-center gap-2 flex-wrap">
- <div style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
- <CalendarDays size={12} style={{ color: 'var(--text-muted)' }} />
- </div>
- <span className="text-sm font-medium" style={{ color: 'var(--text-muted)', textDecoration: 'line-through' }}>Client Strategy Meeting</span>
- <span className="badge badge-ink text-[10px]">appointment</span>
- </div>
- <div className="flex items-center gap-3 mt-1">
- <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>09:00 &ndash; 11:00</span>
- <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>Prep strategy deck beforehand</span>
- </div>
- </div>
- <div className="flex items-center gap-1 shrink-0">
- <div className="p-1.5 rounded-lg" style={{ color: 'var(--jade)' }}><CheckCircle2 size={16} /></div>
- <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Pencil size={14} /></div>
- <div className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}><Trash2 size={14} /></div>
- </div>
- </li>
- </ul>
- </div>
- </div>
- </div>
- </div>
- </div>
- )}
-
- {/* Entry list */}
+ {/* Entries list */}
  <div className="space-y-4">
  {loadingEntries ? (
- <div className="h-64 flex items-center justify-center card">
+ <div className="h-64 flex items-center justify-center bg-white rounded-lg border border-slate-100 shadow-card">
  <Spinner size="lg" />
  </div>
- ) : showMockWorkTour ? (
- // Suppress empty state when mock demo data is showing above
- null
- ) : plannedDateKeys.length === 0 && doneDateKeys.length === 0 ? (
- <div className="card flex flex-col items-center justify-center py-12 text-center gap-3">
- <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
- {entryTypeFilter === 'shifts' ? <Briefcase size={20} /> : entryTypeFilter === 'appointments' ? <CalendarDays size={20} /> : entryTypeFilter === 'calendar' ? <Calendar size={20} /> : <Clock size={20} />}
+  ) : allFilteredDateKeys.length === 0 ? (
+ <div className="bg-white rounded-lg border border-slate-100 shadow-card flex flex-col items-center justify-center py-12 text-center gap-3">
+ <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center">
+ {entryTypeFilter === 'shifts' ? <Briefcase size={20} className="text-slate-400" /> :
+ entryTypeFilter === 'appointments' ? <CalendarDays size={20} className="text-slate-400" /> :
+ <Clock size={20} className="text-slate-400" />}
  </div>
  <div>
- <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No {entryTypeFilter === 'all' ? 'entries' : entryTypeFilter} for {MONTH_NAMES[viewMonth - 1]} {viewYear}</p>
- <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Try a different filter or month.</p>
+ <p className="text-sm font-medium text-slate-600">No {entryTypeFilter === 'all' ? 'entries' : entryTypeFilter} for {monthLabel}</p>
+ <p className="text-xs text-slate-400 mt-1">Try a different filter or month.</p>
  </div>
  </div>
- ) : (
- <>
- {/* Planned section */}
- {plannedDateKeys.length > 0 && (
- <div className="space-y-3">
- <div className="flex items-center gap-2">
- <p className="label-overline flex items-center gap-1.5">
- <Circle size={10} /> Planned
- </p>
- <span className="badge badge-ember text-[10px]">{entries.filter((e) => e.status === 'planned').length}</span>
- </div>
- <div className="space-y-3 animate-stagger">
- {plannedDateKeys.map((dk) => renderDayCard(dk, plannedGrouped.get(dk)!))}
- </div>
- </div>
- )}
-
- {/* Done section */}
- {doneDateKeys.length > 0 && (
- <div className="space-y-3">
- <div className="flex items-center gap-2">
- <p className="label-overline flex items-center gap-1.5">
- <CheckCircle2 size={10} /> Done
- </p>
- <span className="badge badge-jade text-[10px]">{entries.filter((e) => e.status === 'done').length}</span>
- </div>
- <div className="space-y-3 animate-stagger">
- {doneDateKeys.map((dk) => renderDayCard(dk, doneGrouped.get(dk)!))}
- </div>
- </div>
- )}
+  ) : (
+  <>
+  {allFilteredDateKeys.map((dateKey) => {
+ const dayItems = allFilteredGrouped.get(dateKey);
+ if (!dayItems || dayItems.length === 0) return null;
+ return renderDayGroup(dateKey, dayItems);
+ })}
  </>
  )}
  </div>
+ </div>
 
- {/* Employer summary accordion for this month */}
- {entries.length > 0 && (
- <div>
- <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>
- Workplace breakdown {MONTH_NAMES[viewMonth - 1]}
- </h2>
- <div className="space-y-2">
- {Array.from(employerSummary.entries()).map(([empId, summary]) => {
- const emp = employers.find((e) => e._id === empId);
- if (!emp) return null;
- const isOpen = expandedEmployers.has(empId);
+ {/* Right column: Sidebar */}
+ <div className="lg:col-span-4 space-y-8">
+  {/* Employers section */}
+  <section className="space-y-4">
+  <div className="flex justify-between items-center">
+  <h2 className="text-xl font-bold text-green">Employers</h2>
+  <button
+  onClick={() => { setEditingEmployer(null); setShowEmployerModal(true); }}
+  className="bg-green-accent/10 hover:bg-green-accent/20 text-green-accent p-2 rounded-full transition-all active:scale-95"
+  >
+  <Plus size={18} />
+  </button>
+  </div>
+  <div className="flex items-center justify-between gap-3">
+  <span className="text-xs text-slate-500">Show only this month</span>
+  <button
+  role="switch"
+  aria-checked={!showAllEmployers}
+  onClick={() => setShowAllEmployers((v) => !v)}
+  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${!showAllEmployers ? 'bg-green-accent' : 'bg-slate-200'}`}
+  >
+  <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${!showAllEmployers ? 'translate-x-4' : 'translate-x-0'}`} />
+  </button>
+  </div>
+  {loadingEmployers ? (
+  <div className="h-32 flex items-center justify-center">
+  <Spinner size="md" />
+  </div>
+  ) : filteredEmployers.length === 0 ? (
+  <div className="bg-white rounded-lg border border-slate-100 shadow-card p-6 text-center">
+  <Building2 size={24} className="mx-auto text-slate-300 mb-2" />
+  <p className="text-sm text-slate-500">{employers.length === 0 ? 'No employers yet' : 'No employers this month'}</p>
+  <button
+  onClick={() => { setEditingEmployer(null); setShowEmployerModal(true); }}
+  className="text-sm text-green-accent font-semibold mt-2 hover:underline"
+  >
+  {employers.length === 0 ? 'Add your first employer' : 'Add employer'}
+  </button>
+  </div>
+  ) : (
+  <div className="space-y-3">
+  {filteredEmployers.map((emp) => {
+ const isConfirmDelete = deletingEmployerId === emp._id;
+ const empInitials = emp.name.slice(0, 2).toUpperCase();
+ const cIdx = emp._id.charCodeAt(0) % SIDEBAR_COLORS.length;
+ const sc = SIDEBAR_COLORS[cIdx];
+
+ // Compute month-scoped stats for this employer
+ const monthEntries = entries.filter((e) => e.type === 'shift' && e.employerId?._id === emp._id);
+ const monthEmpHours = Math.round(monthEntries.reduce((s, e) => s + e.hours, 0) * 10) / 10;
+ const monthEmpCount = monthEntries.length;
+  const monthEmpEarnings = emp.hourlyRate != null
+    ? (() => {
+        let total = 0;
+        for (const entry of monthEntries) {
+          const effectiveRate = calculateEffectiveHourlyRate(
+            emp.hourlyRate,
+            emp.bonuses,
+            entry.date.split('T')[0],
+            entry.startTime,
+            entry.endTime
+          );
+          if (effectiveRate != null) {
+            total += entry.hours * effectiveRate;
+          }
+        }
+        return Math.round(total * 100) / 100;
+      })()
+    : null;
 
  return (
- <div key={empId} className="card overflow-hidden">
- <button
- className="w-full flex items-center gap-3 px-4 py-3 transition-colors text-left"
- style={{ background: isOpen ? 'var(--bg-elevated)' : 'transparent' }}
- onClick={() => {
- setExpandedEmployers((prev) => {
- const next = new Set(prev);
- if (isOpen) next.delete(empId); else next.add(empId);
- return next;
- });
- }}
- >
- <EmployerAvatar employer={emp} size={28} />
- <span className="flex-1 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{emp.name}</span>
- <span className="font-mono text-sm font-bold" style={{ color: 'var(--accent)' }}>{summary.totalHours}h</span>
- <ChevronRight size={14} style={{ color: 'var(--text-muted)', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
- </button>
-
- {isOpen && (
- <div className="px-4 pb-4 pt-2 grid grid-cols-3 gap-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
- <div>
- <p className="label-overline">Planned</p>
- <p className="font-mono text-lg font-bold mt-0.5" style={{ color: 'var(--ember)' }}>{summary.planned}</p>
- </div>
- <div>
- <p className="label-overline">Done</p>
- <p className="font-mono text-lg font-bold mt-0.5" style={{ color: 'var(--jade)' }}>{summary.done}</p>
- </div>
- <div>
- <p className="label-overline">Last entry</p>
- <p className="font-mono text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
- {summary.lastDate ? formatDate(summary.lastDate) : ''}
- </p>
- </div>
+ <div key={emp._id} className="bg-white border border-slate-100 p-4 rounded-lg shadow-card group hover:border-green-accent/30 transition-all">
+ <div className="flex items-center justify-between mb-4">
+ <div className="flex items-center gap-3">
+ {emp.logoUrl ? (
+ <img src={emp.logoUrl} alt={emp.name} className="w-8 h-8 rounded-lg object-cover" />
+ ) : (
+ <div className={`w-8 h-8 ${sc.bg} rounded-lg flex items-center justify-center font-bold ${sc.text}`}>
+ {empInitials}
  </div>
  )}
+  <div>
+  <h4 className="font-bold text-sm text-slate-900 leading-none">{emp.name}</h4>
+  <p className="text-[10px] text-slate-500 mt-1">{monthEmpCount} entr{monthEmpCount !== 1 ? 'ies' : 'y'} in {monthLabel}</p>
+  {emp.bonuses && emp.bonuses.length > 0 && (
+    <p className="text-[10px] mt-0.5 flex flex-wrap gap-1">
+      {emp.bonuses.map((b) => (
+        <span key={b._id} className="px-1 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100">
+          {b.name} +{Math.round(b.multiplier * 100)}%
+        </span>
+      ))}
+    </p>
+  )}
+  </div>
+ </div>
+ <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+ <button
+ onClick={() => { setEditingEmployer(emp); setShowEmployerModal(true); }}
+ className="p-1.5 hover:bg-slate-100 rounded"
+ >
+ <Pencil size={14} className="text-slate-400" />
+ </button>
+ <button
+ onClick={() => handleDeleteEmployer(emp._id)}
+ className="p-1.5 hover:bg-red-50 rounded"
+ >
+ {isConfirmDelete
+ ? <span className="text-[10px] font-bold text-red-500">?</span>
+ : <Trash2 size={14} className="text-slate-400" />
+ }
+ </button>
+ </div>
+ </div>
+ <div className="flex justify-between items-end">
+ <div>
+ <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Total Hours</p>
+ <p className="text-lg font-extrabold text-emerald-600">{monthEmpHours}h</p>
+ </div>
+ <div className="text-right">
+ <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Entries</p>
+ <p className="text-lg font-extrabold text-slate-900">{monthEmpCount}</p>
+ </div>
+ {monthEmpEarnings != null && (
+ <div className="text-right">
+ <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Earnings</p>
+ <p className="text-lg font-extrabold text-emerald-600">
+ {monthEmpEarnings}
+ </p>
+ </div>
+ )}
+ </div>
  </div>
  );
  })}
  </div>
- </div>
  )}
- </div>
- )}
+ </section>
 
- {/* EMPLOYERS TAB */}
- {activeTab === 'employers' && (
- <div className="space-y-5">
- <div className="flex items-center justify-between">
- <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
- {employers.length === 0 ? 'No employers added yet.' : `${employers.length} employer${employers.length !== 1 ? 's' : ''} registered`}
- </p>
- <button
- onClick={() => { setEditingEmployer(null); setShowEmployerModal(true); }}
- className="btn-primary flex items-center gap-2 text-sm"
- >
- <Plus size={16} />
- Add employer
- </button>
- </div>
-
- {loadingEmployers ? (
- <div className="h-64 flex items-center justify-center card w-full">
- <Spinner size="lg" />
- </div>
- ) : employers.length === 0 ? (
- <div className="card flex flex-col items-center justify-center py-16 text-center gap-4">
- <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
- <Building2 size={24} />
- </div>
- <div>
- <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No employers yet</p>
- <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Add your employers to start logging hours.</p>
- </div>
- <button onClick={() => { setEditingEmployer(null); setShowEmployerModal(true); }} className="btn-primary text-sm flex items-center gap-1.5">
- <Plus size={14} /> Add first employer
- </button>
- </div>
- ) : (
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
- {employers.map((emp) => (
- <EmployerCard
- key={emp._id}
- emp={emp as Employer & { totalHours: number; entryCount: number }}
- deletingEmployerId={deletingEmployerId}
- onEdit={() => { setEditingEmployer(emp); setShowEmployerModal(true); }}
- onDelete={() => handleDeleteEmployer(emp._id)}
- onSubLocationsChanged={handleSubLocationsChanged}
- />
- ))}
- </div>
- )}
- </div>
- )}
-
- {/* APPOINTMENTS TAB */}
- {activeTab === 'appointments' && (
- <div className="space-y-4">
- <div className="flex items-center justify-between">
- <div>
- <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Appointment Types</h2>
- <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Manage appointment types you use frequently.</p>
- </div>
- <button onClick={() => { setEditingAppointmentType(null); setShowAppointmentTypeModal(true); }} className="btn-primary flex items-center gap-2 text-sm max-w-fit">
- <Plus size={16} /> <span>Add type</span>
- </button>
- </div>
-
- {loadingAppointmentTypes ? (
- <div className="h-64 flex items-center justify-center card w-full">
- <Spinner size="lg" />
- </div>
- ) : appointmentTypes.length === 0 ? (
- <div className="card flex flex-col items-center justify-center py-16 text-center gap-4">
- <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--bg-elevated)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
- <CalendarDays size={24} />
- </div>
- <div>
- <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No appointment types yet</p>
- <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Create appointment types like "Doctor" or "Meetings".</p>
- </div>
- <button onClick={() => { setEditingAppointmentType(null); setShowAppointmentTypeModal(true); }} className="btn-primary text-sm flex items-center gap-1.5">
- <Plus size={14} /> Add first appointment type
- </button>
- </div>
- ) : (
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
- {appointmentTypes.map((apt) => (
- <div key={apt._id} className="card p-5 group flex flex-col justify-between">
- <div className="flex items-start justify-between">
- <div className="flex items-center gap-3 min-w-0 flex-1">
- <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', color: 'var(--text-primary)', flexShrink: 0, fontWeight: 600 }}>
+  {/* Appointment Types section */}
+  <section className="space-y-4">
+  <div className="flex justify-between items-center">
+  <h2 className="text-xl font-bold text-green">Types</h2>
+  <button
+  onClick={() => { setEditingAppointmentType(null); setShowAppointmentTypeModal(true); }}
+  className="bg-green-accent/10 hover:bg-green-accent/20 text-green-accent p-2 rounded-full transition-all active:scale-95"
+  >
+  <Plus size={18} />
+  </button>
+  </div>
+  <div className="flex items-center justify-between gap-3">
+  <span className="text-xs text-slate-500">Show only this month</span>
+  <button
+  role="switch"
+  aria-checked={!showAllTypes}
+  onClick={() => setShowAllTypes((v) => !v)}
+  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${!showAllTypes ? 'bg-green-accent' : 'bg-slate-200'}`}
+  >
+  <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${!showAllTypes ? 'translate-x-4' : 'translate-x-0'}`} />
+  </button>
+  </div>
+  {loadingAppointmentTypes ? (
+  <div className="h-24 flex items-center justify-center">
+  <Spinner size="md" />
+  </div>
+  ) : filteredAppointmentTypes.length === 0 ? (
+  <div className="bg-white rounded-lg border border-slate-100 shadow-card p-6 text-center">
+  <CalendarDays size={24} className="mx-auto text-slate-300 mb-2" />
+  <p className="text-sm text-slate-500">{appointmentTypes.length === 0 ? 'No types yet' : 'No types this month'}</p>
+  <button
+  onClick={() => { setEditingAppointmentType(null); setShowAppointmentTypeModal(true); }}
+  className="text-sm text-green-accent font-semibold mt-2 hover:underline"
+  >
+  {appointmentTypes.length === 0 ? 'Add first type' : 'Add type'}
+  </button>
+  </div>
+  ) : (
+  <div className="space-y-3">
+  {filteredAppointmentTypes.map((apt) => {
+ const isConfirmDelete = deletingAppointmentTypeId === apt._id;
+ return (
+ <div key={apt._id} className="bg-white border border-slate-100 p-4 rounded-lg shadow-card">
+ <div className="flex items-center gap-3 mb-4">
+ <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center font-bold text-slate-600">
  {apt.name.substring(0, 2).toUpperCase()}
  </div>
- <h3 className="font-semibold text-sm truncate pr-2 w-full" style={{ color: 'var(--text-primary)' }}>
- {apt.name}
- </h3>
+ <h4 className="font-bold text-slate-900">{apt.name}</h4>
  </div>
- </div>
- <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--border-subtle)]">
+ <div className="h-px bg-slate-100 mb-4" />
+ <div className="flex gap-4">
  <button
  onClick={() => { setEditingAppointmentType(apt); setShowAppointmentTypeModal(true); }}
- className="btn-ghost flex-1 py-1.5 text-xs flex items-center justify-center gap-1.5"
+ className="flex-1 text-xs font-bold py-2 rounded-md hover:bg-slate-50 flex items-center justify-center gap-1.5 text-slate-500 transition-colors"
  >
- <Pencil size={12} /> Edit
+ <Pencil size={14} /> Edit
  </button>
  <button
  onClick={() => handleDeleteAppointmentType(apt._id)}
- className="btn-ghost flex-1 py-1.5 text-xs flex items-center justify-center gap-1.5"
- style={{ color: deletingAppointmentTypeId === apt._id ? 'var(--ember)' : 'inherit', background: deletingAppointmentTypeId === apt._id ? 'rgba(255,82,82,0.1)' : 'transparent' }}
+ className="flex-1 text-xs font-bold py-2 rounded-md hover:bg-red-50 flex items-center justify-center gap-1.5 text-slate-500 hover:text-red-600 transition-colors"
  >
- {deletingAppointmentTypeId === apt._id ? 'Confirm?' : <><Trash2 size={12} /> Delete</>}
+ {isConfirmDelete ? 'Confirm?' : <><Trash2 size={14} /> Delete</>}
  </button>
  </div>
  </div>
- ))}
+ );
+ })}
  </div>
  )}
+ </section>
  </div>
- )}
+ </div>
 
  </div>
 
@@ -2969,7 +3097,7 @@ const WorkTrackerPage: React.FC = () => {
  employers={employers}
  appointmentTypes={appointmentTypes}
  onClose={() => setShowImportModal(false)}
- onDone={() => { setShowImportModal(false); fetchEntries(); fetchStats(); setActiveTab('timelog'); }}
+ onDone={() => { setShowImportModal(false); fetchEntries(); fetchStats(); }}
  />
  )}
 
@@ -3014,7 +3142,7 @@ const WorkTrackerPage: React.FC = () => {
  );
 };
 
-// AppointmentTypeModal Component 
+// AppointmentTypeModal Component
 interface AppointmentTypeModalProps {
  editAppointmentType?: PopulatedAppointmentType | null;
  onClose: () => void;
@@ -3079,8 +3207,3 @@ const AppointmentTypeModal: React.FC<AppointmentTypeModalProps> = ({ editAppoint
 };
 
 export default WorkTrackerPage;
-
-
-
-
-

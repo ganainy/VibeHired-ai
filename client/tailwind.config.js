@@ -54,6 +54,7 @@ export default {
         display: ['Lora', 'Georgia', 'serif'],
         mono: ['Inter', 'Menlo', 'monospace'],
         body: ['Inter', 'sans-serif'],
+        manrope: ['Manrope', 'sans-serif'],
       },
       borderRadius: {
         'sm': '0.375rem',
@@ -71,6 +72,9 @@ export default {
         'warm-xl': '0 8px 12px rgba(0,0,0,0.14), 0 0 6px rgba(0,0,0,0.24)',
         'card': '0 0 0.5px rgba(0,0,0,0.14), 0 1px 1px rgba(0,0,0,0.24)',
         'green-glow': '0 0 20px rgba(0,98,65,0.2)',
+        'whisper': '0 2px 4px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.08)',
+        'frap': '0 8px 24px rgba(0, 98, 65, 0.3)',
+        'soft': '0 4px 20px rgba(0, 0, 0, 0.05)',
       },
       keyframes: {
         'fade-in': {

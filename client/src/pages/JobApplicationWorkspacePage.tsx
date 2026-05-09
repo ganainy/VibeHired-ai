@@ -1,8 +1,8 @@
 // client/src/pages/JobApplicationWorkspacePage.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getJobById, updateJob, JobApplication, deleteJob, IReminder } from '../services/jobApi';
-import { getGoogleCalendarStatus } from '../services/googleCalendarApi';
+import { getJobById, updateJob, JobApplication, deleteJob } from '../services/jobApi';
+
 import { improveSection } from '../services/generatorApi';
 import { JsonResumeSchema } from '../../../server/src/types/jsonresume';
 // import { downloadCvAsPdf } from '../services/pdfService'; // Removed as we use react-to-print now
@@ -21,14 +21,13 @@ import EmailFormatModal from '../components/EmailFormatModal';
 import { JobChatWindow, FloatingChatButton } from '../components/chat';
 
 import MockInterviewPanel from '../components/jobs/MockInterviewPanel';
-import RemindersPanel from '../components/jobs/RemindersPanel';
-import InterviewMaterialsPanel from '../components/jobs/InterviewMaterialsPanel';
+
 import JobDetailsSection from '../components/jobs/JobDetailsSection';
 import TailoredCvPage from '../components/review-finalize/TailoredCvPage';
 import CoverLetterPage from '../components/review-finalize/CoverLetterPage';
 import ReviewTabsNavigation from '../components/review-finalize/ReviewTabsNavigation';
 import ReviewPageHeader from '../components/review-finalize/ReviewPageHeader';
-import JobDescriptionInsights from '../components/review-finalize/JobDescriptionInsights';
+import JobDescriptionTab from '../components/review-finalize/JobDescriptionTab';
 import RecommendationModal from '../components/review-finalize/RecommendationModal';
 import GenerationProgressModal from '../components/review-finalize/GenerationProgressModal';
 import { useReviewTabState } from '../hooks/useReviewTabState';
@@ -88,9 +87,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
  const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false);
 
- // Reminders & Google Calendar
- const [reminders, setReminders] = useState<IReminder[]>([]);
- const [googleCalConnected, setGoogleCalConnected] = useState<boolean>(false);
+
 
  // Tailor Job CV Form State
  const [tailoredJobTitle, setTailoredJobTitle] = useState<string>('');
@@ -113,8 +110,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
  try {
  const data = await getJobById(jobId);
  setJobApplication(data);
- // Initialize reminders from loaded job
- setReminders(data.reminders ?? []);
+
 
  // Fetch Job CV from Unified Model
  try {
@@ -245,12 +241,7 @@ const JobApplicationWorkspacePage: React.FC = () => {
  setSelectedClBaseCvId,
  });
 
- // Fetch Google Calendar connection status once on mount
- useEffect(() => {
- getGoogleCalendarStatus()
- .then((s) => setGoogleCalConnected(s.connected))
- .catch(() => { /* Google Calendar not configured not a fatal error */ });
- }, []);
+
 
  // Reset initial load flag after data is loaded
  useEffect(() => {
@@ -604,50 +595,38 @@ const JobApplicationWorkspacePage: React.FC = () => {
  <div className="mt-6">
  <section className={`mx-auto w-full ${activeTabMaxWidth}`}>
  <div className="animate-in fade-in duration-200">
- {activeTab === 'job-description' && (
- <div className="w-full space-y-6">
- <JobDetailsSection
- jobApplication={jobApplication}
- isEditing={isEditingJobDetails}
- setIsEditing={setIsEditingJobDetails}
- formData={jobDetailsForm}
- hasChanges={jobDetailsHasChanges}
- isSaving={isSavingJobDetails}
- saveError={jobDetailsSaveError}
- setSaveError={setJobDetailsSaveError}
- onInputChange={handleJobDetailsInputChange}
- onUrlChange={handleJobUrlFieldChange}
- onAddUrl={handleAddJobUrlField}
- onRemoveUrl={handleRemoveJobUrlField}
- onSave={handleSaveJobDetails}
- onCancel={handleCancelJobDetails}
- availableCvs={availableCvs}
- formatDateForInput={formatDateForInput}
- />
- </div>
- )}
-
- {activeTab === 'job-description' && (
- <JobDescriptionInsights jobApplication={jobApplication} />
- )}
-
- {activeTab === 'job-description' && (
- <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
- <div className="flex items-center gap-2 mb-4">
- <span className="material-symbols-outlined text-primary">description</span>
- <h2 className="text-lg font-bold text-text-main-light">Job Description</h2>
- </div>
- {jobApplication?.jobDescriptionText ? (
- <div className="whitespace-pre-wrap text-sm text-text-sub-light leading-relaxed">
- {jobApplication.jobDescriptionText}
- </div>
- ) : (
- <p className="text-sm text-text-sub-light italic">
- No job description available.
- </p>
- )}
- </div>
- )}
+  {activeTab === 'job-description' && (
+  <>
+  {isEditingJobDetails ? (
+  <div className="w-full space-y-6">
+  <JobDetailsSection
+  jobApplication={jobApplication}
+  isEditing={isEditingJobDetails}
+  setIsEditing={setIsEditingJobDetails}
+  formData={jobDetailsForm}
+  hasChanges={jobDetailsHasChanges}
+  isSaving={isSavingJobDetails}
+  saveError={jobDetailsSaveError}
+  setSaveError={setJobDetailsSaveError}
+  onInputChange={handleJobDetailsInputChange}
+  onUrlChange={handleJobUrlFieldChange}
+  onAddUrl={handleAddJobUrlField}
+  onRemoveUrl={handleRemoveJobUrlField}
+  onSave={handleSaveJobDetails}
+  onCancel={handleCancelJobDetails}
+  availableCvs={availableCvs}
+  formatDateForInput={formatDateForInput}
+  />
+  </div>
+  ) : (
+  <JobDescriptionTab
+  jobApplication={jobApplication}
+  isEditing={isEditingJobDetails}
+  setIsEditing={setIsEditingJobDetails}
+  />
+  )}
+  </>
+  )}
 
  {activeTab === 'cover-letter' && (
  <CoverLetterPage
@@ -776,30 +755,11 @@ const JobApplicationWorkspacePage: React.FC = () => {
  />
  )}
 
- {/* Tab 5: Mock Interview */}
- {activeTab === 'mock-interview' && jobApplication && (
- <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} coverLetterText={coverLetterText} />
- )}
-
- {/* Tab 6: Reminders */}
- {activeTab === 'reminders' && jobApplication && (
- <RemindersPanel
- jobId={jobId!}
- jobTitle={jobApplication.jobTitle}
- companyName={jobApplication.companyName}
- reminders={reminders}
- googleConnected={googleCalConnected}
- language={jobApplication.language}
- onRemindersChange={setReminders}
- onToast={showToast}
- />
- )}
-
- {/* Tab 7: Prep Materials */}
- {activeTab === 'materials' && jobId && (
- <InterviewMaterialsPanel jobId={jobId} />
- )}
- </div>
+  {/* Tab 5: Mock Interview */}
+  {activeTab === 'mock-interview' && jobApplication && (
+  <MockInterviewPanel jobApplication={jobApplication} jobId={jobId!} cvData={cvData} coverLetterText={coverLetterText} />
+  )}
+  </div>
  </section>
  </div>
 

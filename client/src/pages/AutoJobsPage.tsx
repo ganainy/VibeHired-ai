@@ -21,6 +21,7 @@ import {
 import Toast from '../components/common/Toast';
 import Spinner from '../components/common/Spinner';
 import SimpleLoader from '../components/common/SimpleLoader';
+import CreditsBadge from '../components/common/CreditsBadge';
 import ConfirmModal from '../components/common/ConfirmModal';
 import JobRecommendationBadge from '../components/jobs/JobRecommendationBadge';
 import { formatDate } from '../utils/dateUtils';
@@ -680,9 +681,8 @@ const AutoJobsPage: React.FC = () => {
  onClick={handleTrigger}
  disabled={isWorkflowRunning || isTriggering}
  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
- title={`Run auto-jobs workflow (3 base + ${(settings.maxJobs || 100) * 0.25} credits = ${3 + (settings.maxJobs || 100) * 0.25} total)`}
- data-onboarding="primary-action"
- >
+  title={`Run auto-jobs workflow (3 base + ${(settings.maxJobs || 100) * 0.25} credits = ${3 + (settings.maxJobs || 100) * 0.25} total)`}
+  >
  {(isWorkflowRunning || isTriggering) ? (
  <>
  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -692,7 +692,7 @@ const AutoJobsPage: React.FC = () => {
  <span>{isTriggering ? 'Starting...' : 'Running...'}</span>
  </>
  ) : (
- <> Run Now <span className="text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full" style={{ background: 'var(--accent-dim)', color: 'var(--text-on-accent)' }}>3 base + 0.25 Credits/job</span></>
+ <> Run Now <CreditsBadge amount="3 base + 0.25 Credits/job" variant="dim" className="ml-1" /></>
  )}
  </button>
  </div>

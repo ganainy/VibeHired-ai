@@ -1,6 +1,6 @@
 /* client/src/index.css */
 /* Starbucks-Inspired Warm Light Design System */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -19,10 +19,10 @@
     --border-subtle: #e8e6e1;
     --border-bright: #c4bfb5;
 
-    /* Text — never pure black */
+    /* Text — WCAG AA compliant on #f2f0eb background */
     --text-primary: rgba(0, 0, 0, 0.87);
-    --text-secondary: rgba(0, 0, 0, 0.58);
-    --text-muted: rgba(0, 0, 0, 0.38);
+    --text-secondary: rgba(0, 0, 0, 0.65);
+    --text-muted: rgba(0, 0, 0, 0.55);
 
     /* Four-tier green system */
     --accent: #006241;
@@ -95,6 +95,17 @@
     outline: 2px solid var(--accent);
     outline-offset: 2px;
     border-radius: 4px;
+  }
+
+  /* Consistent text selection across the app */
+  ::selection {
+    background-color: var(--accent);
+    color: #ffffff;
+  }
+
+  ::-moz-selection {
+    background-color: var(--accent);
+    color: #ffffff;
   }
 }
 
@@ -549,6 +560,22 @@
   .rounded-pill {
     border-radius: 50px;
   }
+
+  .whisper-shadow {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .frap-shadow {
+    box-shadow: 0 8px 24px rgba(0, 98, 65, 0.3);
+  }
+
+  .squish {
+    transition: transform 0.1s ease;
+  }
+
+  .squish:active {
+    transform: scale(0.95);
+  }
 }
 
 @keyframes fade-in-up {
@@ -631,130 +658,4 @@
   }
 }
 
-/* Intro.js onboarding theme */
-.introjs-overlay {
-  backdrop-filter: blur(2px);
-}
 
-.introjs-helperLayer {
-  border-radius: 12px;
-  box-shadow: 0 0 0 2px rgba(0, 98, 65, 0.35), 0 8px 12px rgba(0, 0, 0, 0.14);
-}
-
-.introjs-tooltipReferenceLayer {
-  z-index: 2147483000 !important;
-}
-
-.introjs-tooltip {
-  min-width: min(360px, calc(100vw - 24px));
-  max-width: min(420px, calc(100vw - 24px));
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  box-shadow: 0 0 0.5px rgba(0, 0, 0, 0.14), 0 8px 12px rgba(0, 0, 0, 0.14);
-  padding: 14px 14px 10px;
-}
-
-.introjs-tooltip-header {
-  margin: 0 0 8px;
-  padding-right: 56px;
-}
-
-.introjs-tooltip-title {
-  margin: 0;
-  font-size: 1.12rem;
-  line-height: 1.2;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text-primary);
-}
-
-.introjs-tooltiptext {
-  margin: 0;
-  padding: 0;
-  color: var(--text-secondary);
-  font-size: 1.03rem;
-  line-height: 1.55;
-}
-
-.introjs-tooltipbuttons {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border-top: 0;
-  margin-top: 12px;
-  padding-top: 0;
-}
-
-.introjs-progress {
-  margin: 12px 0 14px;
-  border-radius: 999px;
-  background: var(--bg-elevated);
-  height: 8px;
-}
-
-.introjs-progressbar {
-  border-radius: 999px;
-  background: var(--accent);
-}
-
-.introjs-button,
-.introjs-button:focus,
-.introjs-prevbutton,
-.introjs-nextbutton,
-.introjs-donebutton {
-  background: var(--accent) !important;
-  color: #ffffff !important;
-  border-color: var(--accent) !important;
-  border-radius: 50px !important;
-}
-
-.introjs-nextbutton:hover,
-.introjs-donebutton:hover {
-  background: var(--accent-hover) !important;
-  border-color: var(--accent-hover) !important;
-}
-
-.introjs-skipbutton {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  color: var(--text-muted);
-  font-weight: 700;
-  font-size: 0.9rem;
-  text-decoration: none;
-  line-height: 1;
-}
-
-.introjs-skipbutton:hover,
-.introjs-skipbutton:focus {
-  color: var(--text-primary);
-}
-
-.introjs-disabled,
-.introjs-disabled:hover,
-.introjs-disabled:focus {
-  opacity: 0.48;
-  cursor: not-allowed;
-}
-
-/* Onboarding controls: equal button sizes */
-.introjs-tooltipbuttons .introjs-button {
-  width: 104px;
-  min-width: 104px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-/* Remove Intro.js button label glow */
-.introjs-prevbutton,
-.introjs-nextbutton,
-.introjs-donebutton,
-.introjs-tooltipbuttons .introjs-button {
-  text-shadow: none !important;
-}

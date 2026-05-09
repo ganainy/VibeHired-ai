@@ -8,12 +8,25 @@ export interface SubLocation {
   name: string;
 }
 
+export interface EmployerBonus {
+  _id: string;
+  name: string;
+  multiplier: number; // e.g. 0.5 = 50% extra pay
+  conditionType: 'day_of_week' | 'time_range' | 'specific_dates';
+  daysOfWeek?: number[];
+  startTime?: string;
+  endTime?: string;
+  specificDates?: string[];
+}
+
 export interface Employer {
   _id: string;
   name: string;
   logoUrl: string | null;
   logoPublicId?: string | null;
+  hourlyRate?: number | null;
   subLocations: SubLocation[];
+  bonuses: EmployerBonus[];
   totalHours: number;
   entryCount: number;
   createdAt: string;
@@ -27,17 +40,13 @@ export const getEmployers = async (): Promise<Employer[]> => {
 
 /** Create a new employer. Pass a FormData containing `name` and optionally `logo` (File). */
 export const createEmployer = async (formData: FormData): Promise<Employer> => {
-  const res = await axios.post<Employer>(`${API_BASE_URL}/employers`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const res = await axios.post<Employer>(`${API_BASE_URL}/employers`, formData);
   return res.data;
 };
 
 /** Update an employer's name and/or logo. */
 export const updateEmployer = async (id: string, formData: FormData): Promise<Employer> => {
-  const res = await axios.put<Employer>(`${API_BASE_URL}/employers/${id}`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const res = await axios.put<Employer>(`${API_BASE_URL}/employers/${id}`, formData);
   return res.data;
 };
 

@@ -224,29 +224,29 @@ function sanitizePatchNulls(patch: ContentPatchResult, baseCv: Record<string, an
 /**
  * Build short snippets for each patched key (first 100 chars of stringified value).
  */
-function buildSnippets(obj: Record<string, any>, keys: string[]): Record<string, string> {
+function buildSnippets(obj: Record<string, any>, keys: string[], maxLen: number = 100): Record<string, string> {
   const snippets: Record<string, string> = {};
   for (const key of keys) {
     const val = obj[key];
     if (val === undefined) {
       snippets[key] = '(removed)';
     } else if (typeof val === 'string') {
-      snippets[key] = val.substring(0, 100);
+      snippets[key] = val.substring(0, maxLen);
     } else if (Array.isArray(val)) {
       const texts = val.slice(0, 3).map((item: any) => {
         if (typeof item === 'string') return item;
         if (item && typeof item === 'object') {
           return item.title || item.name || item.description || item.content ||
-                 item.company || item.institution || item.skill || JSON.stringify(item).substring(0, 80);
+                 item.company || item.institution || item.skill || JSON.stringify(item).substring(0, Math.min(200, maxLen));
         }
         return String(item);
       }).filter(Boolean).join('; ');
-      snippets[key] = texts.length > 100 ? texts.substring(0, 100) + '...' : texts;
+      snippets[key] = texts.length > maxLen ? texts.substring(0, maxLen) + '...' : texts;
     } else if (typeof val === 'object') {
       const str = JSON.stringify(val);
-      snippets[key] = str.substring(0, 100);
+      snippets[key] = str.substring(0, maxLen);
     } else {
-      snippets[key] = String(val).substring(0, 100);
+      snippets[key] = String(val).substring(0, maxLen);
     }
   }
   return snippets;
@@ -379,7 +379,7 @@ Do not include any explanation or markdown. Only the JSON object.`;
     // If no patches were applied, generate changes from the JD analysis alone
     if (patchKeys.length === 0) {
       console.log('     No patches to compare — generating changes from JD analysis only');
-      const baseSnippets = buildSnippets(baseCvJson, tailorableKeys);
+      const baseSnippets = buildSnippets(baseCvJson, tailorableKeys, 300);
       const analysisSnippet = `Keywords extracted: ${jdAnalysis.extractedKeywords.slice(0, 10).join(', ')}...`;
       changesResult = await generateStructuredResponse<TailoringChangesResult>(userId, buildChangesPrompt(tailorableKeys, baseSnippets, { analysis: analysisSnippet }, jobDescription.split('\n')[0].substring(0, 80)), {
         maxTokens: 4096,
@@ -388,8 +388,8 @@ Do not include any explanation or markdown. Only the JSON object.`;
       });
       console.log(`     Generated ${changesResult.changes.length} changes`);
     } else {
-      const baseSnippets = buildSnippets(baseCvJson, patchKeys);
-      const patchSnippets = buildSnippets(sanitizedPatch, patchKeys);
+      const baseSnippets = buildSnippets(baseCvJson, patchKeys, 300);
+      const patchSnippets = buildSnippets(sanitizedPatch, patchKeys, 300);
       changesResult = await generateStructuredResponse<TailoringChangesResult>(userId, buildChangesPrompt(patchKeys, baseSnippets, patchSnippets, jobDescription.split('\n')[0].substring(0, 80)), {
         maxTokens: 4096,
         responseJsonSchema: changesOnlyJsonSchema,
@@ -397,6 +397,17 @@ Do not include any explanation or markdown. Only the JSON object.`;
       });
       console.log(`     Generated ${changesResult.changes.length} changes`);
     }
+  }
+
+  // Fallback: if AI returned 0 changes but patches were applied, generate summaries from patch keys
+  if (changesResult.changes.length === 0 && patchKeys.length > 0) {
+    console.log('     ⚠️  AI returned 0 changes despite patches — generating fallback change descriptions');
+    const keywordHints = jdAnalysis.keywordInjections.slice(0, 5).map(i => i.jdKeyword).join(', ');
+    changesResult.changes = patchKeys.map(key => ({
+      section: key,
+      description: `Tailored ${key} content for this role`,
+      reason: `Optimized ${key} to align with job requirements${keywordHints ? ` (e.g., ${keywordHints})` : ''}`,
+    }));
   }
 
   // ── Log tailoring details ──

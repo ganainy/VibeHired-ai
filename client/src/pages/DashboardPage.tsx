@@ -27,10 +27,6 @@ import SimpleLoader from '../components/common/SimpleLoader';
 import Toast from '../components/common/Toast';
 import { TableOrCards, ColumnDef } from '../components/common/TableOrCards';
 import DuplicateJobWarningModal from '../components/jobs/DuplicateJobWarningModal';
-import TourBanner from '../components/onboarding/TourBanner';
-import { usePageTour } from '../hooks/usePageTour';
-import { MOCK_JOB } from '../data/mockTourData';
-
 type JobPlatform = 'linkedin' | 'indeed' | 'xing' | 'stepstone' | null;
 
 const ExpandableText: React.FC<{
@@ -623,8 +619,6 @@ const favoriteCount = useMemo(() => allJobs.filter((job) => job.isFavorite === t
 
 
 
- const { showTour: showJobTour, dismiss: dismissJobTour } = usePageTour('dashboard');
-
  const hasAnyCv = cvsFetched ? cvs.length > 0 : true; // Assume true until fetched to avoid blocking journey banner
  const hasAnyJob = totalJobs > 0;
  const everHadJobsRef = useRef(false);
@@ -856,17 +850,6 @@ return orderedGroups;
  setModalError(null);
  setModalMode('add');
  };
-
- useEffect(() => {
- const shouldHighlight = searchParams.get('highlightAddJob') === '1' || searchParams.get('createJob') === '1';
- if (!shouldHighlight) return;
- handleOpenAddJobPopup();
- const nextParams = new URLSearchParams(searchParams);
- nextParams.delete('highlightAddJob');
- nextParams.delete('createJob');
- setSearchParams(nextParams, { replace: true });
- }, [searchParams, setSearchParams, handleOpenAddJobPopup]);
-
 
  const handleCloseModal = () => {
  if (isSubmitting) return;
@@ -1343,8 +1326,101 @@ const statusOptionColors: Record<JobApplication['status'], { dot: string; text: 
   </svg>
   );
 
-  // --- TableOrCards Configuration ---
+  // --- JobCard Component (new card layout) ---
+ const JobCard: React.FC<{ job: JobApplication }> = ({ job }) => {
+ const isArchived = ['Rejected', 'Closed', 'Withdrawn'].includes(job.status);
+ const platform = job.jobUrl ? (() => {
+ const urls = parseMultipleUrls(job.jobUrl);
+ return urls.length > 0 ? getJobPlatform(urls[0]) : null;
+ })() : null;
 
+ const getStatusBadgeStyles = (status: string) => {
+ switch (status) {
+ case 'Interview':
+ return { bg: '#faf6ee', color: '#cba258', border: 'rgba(223,196,157,0.30)' };
+ case 'Applied':
+ return { bg: '#d4e9e2', color: '#006241', border: 'rgba(0,117,74,0.20)' };
+ case 'Offer':
+ return { bg: '#d4e9e2', color: '#006241', border: 'rgba(0,117,74,0.20)' };
+ case 'Assessment':
+ return { bg: 'var(--ember-bg)', color: '#d4a017', border: 'rgba(212,160,23,0.20)' };
+ case 'Rejected':
+ return { bg: 'var(--rose-bg)', color: '#c82014', border: 'rgba(200,32,20,0.20)' };
+ case 'Closed':
+ return { bg: '#f5f5f4', color: '#78716c', border: '#e7e5e4' };
+ default:
+ return { bg: '#f5f5f4', color: '#78716c', border: '#e7e5e4' };
+ }
+ };
+
+ const badgeStyles = getStatusBadgeStyles(job.status);
+ const appliedDate = job.dateApplied || job.createdAt;
+
+ return (
+ <div
+ className={`bg-white rounded-2xl p-6 whisper-shadow border flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer hover:shadow-lg transition-all group ${isArchived ? 'opacity-80' : ''}`}
+ style={{
+ borderColor: isArchived ? 'rgba(231,229,228,0.50)' : '#f5f5f4',
+ background: isArchived ? 'rgba(255,255,255,0.60)' : '#ffffff'
+ }}
+ onClick={() => handleRowClick(job._id)}
+ >
+ <div className="flex items-center gap-6 w-full md:w-auto">
+ {/* Company avatar */}
+ <div
+ className="w-16 h-16 bg-stone-50 rounded-xl flex items-center justify-center p-3 border shrink-0 group-hover:scale-105 transition-transform"
+ style={{ borderColor: '#f5f5f4' }}
+ >
+ {platform ? (
+ <PlatformIcon platform={platform} className="w-8 h-8" />
+ ) : (
+ <span className="text-2xl font-black" style={{ color: 'var(--accent)' }}>
+ {(job.companyName || '?')[0].toUpperCase()}
+ </span>
+ )}
+ </div>
+ <div>
+ <h3 className={`font-manrope font-extrabold text-xl tracking-tight ${isArchived ? 'line-through opacity-60' : ''}`} style={{ color: isArchived ? '#a8a29e' : 'var(--accent)' }}>
+ {job.jobTitle}
+ </h3>
+ <p className="font-semibold text-sm" style={{ color: isArchived ? '#a8a29e' : '#78716c' }}>{job.companyName}</p>
+ </div>
+ </div>
+ <div className="flex flex-wrap items-center gap-8 w-full md:w-auto justify-between md:justify-end">
+ <div className="flex flex-col">
+ <span className="text-[10px] uppercase font-black tracking-widest mb-1.5" style={{ color: isArchived ? '#d6d3d1' : '#a8a29e' }}>Status</span>
+ <StatusDropdown job={job} />
+ </div>
+ <div className="flex flex-col">
+ <span className="text-[10px] uppercase font-black tracking-widest mb-1.5" style={{ color: isArchived ? '#d6d3d1' : '#a8a29e' }}>Applied Date</span>
+ <span className="text-sm font-bold" style={{ color: isArchived ? '#a8a29e' : '#44403c' }}>
+ {appliedDate ? new Date(appliedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
+ </span>
+ </div>
+ <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+ <button
+ onClick={(e) => handleToggleFavorite(job, e)}
+ className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 ${job.isFavorite ? 'text-gold bg-gold-lightest' : 'text-stone-400 hover:text-green-600'}`}
+ title={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+ aria-label={job.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+ >
+ <StarIcon filled={!!job.isFavorite} />
+ </button>
+ <button
+ onClick={(e) => handleDeleteClick(job, e)}
+ className="w-10 h-10 flex items-center justify-center text-stone-400 hover:text-red-500 rounded-full transition-all active:scale-90"
+ title="Delete"
+ aria-label="Delete job application"
+ >
+ <DeleteIcon />
+ </button>
+ </div>
+ </div>
+ </div>
+ );
+ };
+
+  // --- TableOrCards Configuration ---
  const jobColumns: ColumnDef<JobApplication>[] = [
  {
  key: 'jobTitle',
@@ -1531,46 +1607,28 @@ const statusOptionColors: Record<JobApplication['status'], { dot: string; text: 
  </a>
 
  {/* Main Content */}
- <div id="main-content" className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
- {/* Header Section */}
- <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
- <div className="space-y-1">
- <h1 className="page-title">From CV to tailored applications</h1>
- <p style={{ color: 'var(--text-secondary)' }}>Upload your CV, add a target job, generate a tailored CV + cover letter, then prep with interview tools and reminders.</p>
+ <div id="main-content" className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-6xl mx-auto w-full">
+ {/* Title and Stats Brief */}
+ <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+ <div>
+ <h1 className="text-3xl font-black tracking-tight font-manrope" style={{ color: 'var(--accent)' }}>Applications</h1>
+ <p className="font-medium mt-1" style={{ color: '#78716c' }}>Tracking your career journey</p>
  </div>
- <div className="flex flex-wrap items-center gap-2">
+ <div className="flex gap-4 text-sm font-bold" style={{ color: '#57534e' }}>
  {(() => {
- const todayCount = allJobs.filter(job => {
- const jobDate = new Date(job.createdAt);
- const today = new Date();
- return job.status === 'Applied' &&
- jobDate.getDate() === today.getDate() &&
- jobDate.getMonth() === today.getMonth() &&
- jobDate.getFullYear() === today.getFullYear();
- }).length;
- return todayCount > 0 ? (
-<div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-theme bg-[var(--bg-base)] text-primary-color">
-  <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold bg-gold text-white">
- {todayCount}
- </span>
- <span className="text-xs font-semibold tracking-wide">TODAY'S APPLICATIONS</span>
+ const activeCount = allJobs.filter(j => !['Rejected', 'Archived', 'Withdrawn'].includes(j.status)).length;
+ const interviewCount = allJobs.filter(j => j.status && j.status.toLowerCase().includes('interview')).length;
+ return (
+ <>
+ <div className="px-4 py-2 rounded-xl border" style={{ background: 'rgba(255,255,255,0.50)', borderColor: 'rgba(231,229,228,0.50)' }}>
+ <span style={{ color: 'var(--accent)' }}>{activeCount}</span> Active
  </div>
- ) : null;
+ <div className="px-4 py-2 rounded-xl border" style={{ background: 'rgba(255,255,255,0.50)', borderColor: 'rgba(231,229,228,0.50)' }}>
+ <span style={{ color: 'var(--amber)' }}>{interviewCount}</span> Interviews
+ </div>
+ </>
+ );
  })()}
-
- <button
- ref={addJobTriggerRef}
- type="button"
- onClick={handleOpenAddJobPopup}
- className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg text-base font-semibold transition-all hover:shadow-lg active:scale-[0.97]"
- style={{ background: 'var(--accent)', color: 'var(--text-on-accent)', boxShadow: '0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent)' }}
- data-onboarding="primary-action"
- >
- <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
- <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
- </svg>
- Add a target job
- </button>
  </div>
  </div>
 
@@ -1663,233 +1721,198 @@ const statusOptionColors: Record<JobApplication['status'], { dot: string; text: 
 
  {/* Job List Section */}
  <div className="space-y-6">
- {/* Filter Controls */}
- <div>
- <div className="flex flex-wrap items-end gap-3 mb-4">
+ {/* Filters Section */}
+ <section className="mb-8">
+ <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+ <div className="flex flex-wrap gap-2">
+ {/* All Apps pill - active when no filters */}
+ {(() => {
+ const isAllActive = !filterStatus && !filterFavorite && !filterHasNotes && !filterJobType && filterTags.length === 0;
+ return (
+ <button
+ onClick={() => { setFilterStatus(''); setFilterFavorite(false); setFilterHasNotes(false); setFilterJobType(''); setFilterTags([]); }}
+ className={`px-6 py-2.5 rounded-full font-bold text-sm shadow-md active:scale-95 transition-all ${isAllActive ? 'text-white' : 'bg-white text-stone-600 border hover:bg-stone-50 hover:border-stone-300 active:scale-95'}`}
+ style={isAllActive
+ ? { background: 'var(--accent)' }
+ : { borderColor: '#e7e5e4' }}
+ aria-pressed={isAllActive}
+ >
+ All Apps
+ </button>
+ );
+ })()}
 
- {/* Search */}
- <div className="flex-1 min-w-[200px]">
- <label className="block text-xs font-medium mb-1.5 label-overline" htmlFor="filter-title">Search (Title, Company, Contact)</label>
- <div className="relative">
- <div className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
- <SearchIcon />
+ {/* Favorites pill */}
+ <button
+ onClick={() => { setFilterFavorite(!filterFavorite); }}
+ className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all active:scale-95 ${filterFavorite ? 'text-white shadow-md' : 'bg-white text-stone-600 border hover:bg-stone-50 hover:border-stone-300'}`}
+ style={filterFavorite
+ ? { background: 'var(--accent)' }
+ : { borderColor: '#e7e5e4' }}
+ aria-pressed={filterFavorite}
+ >
+ Favorites ({favoriteCount})
+ </button>
+
+ {/* Applied pill */}
+ <button
+ onClick={() => setFilterStatus(filterStatus === 'Applied' ? '' : 'Applied')}
+ className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all active:scale-95 ${filterStatus === 'Applied' ? 'text-white shadow-md' : 'bg-white text-stone-600 border hover:bg-stone-50 hover:border-stone-300'}`}
+ style={filterStatus === 'Applied'
+ ? { background: 'var(--accent)' }
+ : { borderColor: '#e7e5e4' }}
+ aria-pressed={filterStatus === 'Applied'}
+ >
+ Applied
+ </button>
+
+ {/* Needs Follow-up pill - jobs with interview status */}
+ <button
+ onClick={() => setFilterStatus(filterStatus === 'Interview' ? '' : 'Interview')}
+ className={`px-6 py-2.5 rounded-full font-bold text-sm transition-all active:scale-95 ${filterStatus === 'Interview' ? 'text-white shadow-md' : 'bg-white text-stone-600 border hover:bg-stone-50 hover:border-stone-300'}`}
+ style={filterStatus === 'Interview'
+ ? { background: 'var(--accent)' }
+ : { borderColor: '#e7e5e4' }}
+ aria-pressed={filterStatus === 'Interview'}
+ >
+ Needs Follow-up
+ </button>
  </div>
+
+ <div className="w-full lg:w-auto flex gap-3">
+ {/* Search */}
+ <div className="relative flex-grow lg:w-72">
+ <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xl">search</span>
  <input
  type="text"
  id="filter-title"
  value={filterText}
  onChange={(e) => setFilterText(e.target.value)}
- placeholder="Title, company or contact name"
- className="input-base w-full pl-9 h-10 text-sm"
+ placeholder="Search company or role..."
+ className="w-full pl-11 pr-4 py-3 bg-white rounded-full focus:ring-2 focus:border-transparent text-sm font-medium"
+ style={{ border: '1px solid #e7e5e4', focusRingColor: 'var(--accent)' }}
  aria-label="Search jobs by title, company, or contact name"
  />
  </div>
- </div>
 
- {/* Status */}
- <div className="min-w-[150px]">
- <label className="block text-xs font-medium mb-1.5 label-overline" htmlFor="filter-status">Status</label>
- <select
- id="filter-status"
- value={filterStatus}
- onChange={(e) => setFilterStatus(e.target.value)}
- className="input-base w-full h-10 text-sm"
- aria-label="Filter by status"
- >
- <option value="">All Statuses</option>
- {statusOptions.map(status => (
- <option key={status} value={status}>{status}</option>
- ))}
- </select>
- </div>
-
- {/* Job Type */}
- <div className="min-w-[150px]">
- <label className="block text-xs font-medium mb-1.5 label-overline" htmlFor="filter-jobtype">Job Type</label>
- <select
- id="filter-jobtype"
- value={filterJobType}
- onChange={(e) => setFilterJobType(e.target.value)}
- className="input-base w-full h-10 text-sm"
- aria-label="Filter by job type"
- >
- <option value="">All Types</option>
- <option value="full-time">Full-time</option>
- <option value="part-time">Part-time</option>
- <option value="working-student">Working Student</option>
- <option value="internship">Internship</option>
- <option value="contract">Contract</option>
- <option value="freelance">Freelance</option>
- </select>
- </div>
-
- {/* Tags */}
- <div className="w-full">
- <label className="block text-xs font-medium mb-1.5 label-overline">Tags</label>
- <div className="flex items-center gap-2 w-full" ref={fieldMenuRef}>
- {fieldFilterOptions.length > 0 ? (
- <>
- <div className="flex-1 min-w-0 flex items-center gap-2 flex-nowrap overflow-hidden">
- {visibleFieldOptions.map((option) => {
- const isActive = filterTags.includes(option.key);
- return (
+ {/* Filter dropdown button */}
+ <div className="relative" ref={fieldMenuRef}>
  <button
- key={option.key}
- type="button"
- onClick={() => toggleTagFilter(option.key)}
- className="inline-flex items-center gap-1.5 h-9 min-h-[36px] px-3 rounded-full border text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0"
- style={isActive
- ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
- : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
- aria-pressed={isActive}
- >
- {option.label}
- <span
- className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[9px] font-bold leading-none"
- style={isActive
- ? { background: 'rgba(255,255,255,0.25)', color: 'var(--text-on-accent)' }
- : { background: 'var(--bg-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
- >
- {option.count}
- </span>
- </button>
- );
- })}
- </div>
- {hiddenFieldOptions.length > 0 && (
- <div className="relative flex-shrink-0">
- <button
- type="button"
  onClick={() => setIsFieldMenuOpen((prev) => !prev)}
  ref={fieldMenuTriggerRef}
- className="inline-flex items-center gap-1.5 h-9 min-h-[36px] px-3 rounded-full border text-xs font-semibold transition-all whitespace-nowrap"
- style={{ background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+ className="p-3 bg-white border rounded-full text-stone-600 hover:bg-stone-50 active:scale-95 transition-all flex items-center justify-center"
+ style={{ borderColor: '#e7e5e4' }}
+ aria-label="More filters"
  aria-expanded={isFieldMenuOpen}
  aria-haspopup="true"
  >
- More
- <span className="text-[10px] font-bold">+{hiddenFieldOptions.length}</span>
+ <span className="material-symbols-outlined">filter_list</span>
  </button>
  {isFieldMenuOpen && (
  <div
- className="rounded-xl border p-3 shadow-lg overflow-y-auto"
+ className="rounded-xl border p-4 shadow-lg overflow-y-auto"
  style={{
  ...fieldMenuStyle,
- background: 'var(--bg-elevated)',
- borderColor: 'var(--border)'
+ background: '#ffffff',
+ borderColor: '#e7e5e4'
  }}
  >
- <div className="flex flex-wrap gap-2">
- {hiddenFieldOptions.map((option) => {
+ <div className="space-y-3">
+ {/* Status filter */}
+ <div>
+ <label className="block text-[10px] uppercase font-black tracking-widest mb-2" style={{ color: '#a8a29e' }}>Status</label>
+ <div className="flex flex-wrap gap-1.5">
+ {['', ...statusOptions].map((status) => (
+ <button
+ key={status || 'all'}
+ onClick={() => setFilterStatus(status)}
+ className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${filterStatus === status ? 'text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+ style={filterStatus === status ? { background: 'var(--accent)' } : {}}
+ >
+ {status || 'All'}
+ </button>
+ ))}
+ </div>
+ </div>
+
+ {/* Job Type filter */}
+ <div>
+ <label className="block text-[10px] uppercase font-black tracking-widest mb-2" style={{ color: '#a8a29e' }}>Job Type</label>
+ <div className="flex flex-wrap gap-1.5">
+ {['', 'full-time', 'part-time', 'working-student', 'internship', 'contract', 'freelance'].map((type) => (
+ <button
+ key={type || 'all'}
+ onClick={() => setFilterJobType(type)}
+ className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${filterJobType === type ? 'text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+ style={filterJobType === type ? { background: 'var(--accent)' } : {}}
+ >
+ {type ? type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ') : 'All'}
+ </button>
+ ))}
+ </div>
+ </div>
+
+ {/* Tags filter */}
+ {fieldFilterOptions.length > 0 && (
+ <div>
+ <label className="block text-[10px] uppercase font-black tracking-widest mb-2" style={{ color: '#a8a29e' }}>Tags</label>
+ <div className="flex flex-wrap gap-1.5">
+ {fieldFilterOptions.map((option) => {
  const isActive = filterTags.includes(option.key);
  return (
  <button
  key={option.key}
- type="button"
- onClick={() => {
- toggleTagFilter(option.key);
- setIsFieldMenuOpen(false);
- }}
- className="inline-flex items-center gap-1.5 h-8 min-h-[32px] px-3 rounded-full border text-[11px] font-semibold transition-all whitespace-nowrap"
- style={isActive
- ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
- : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+ onClick={() => toggleTagFilter(option.key)}
+ className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${isActive ? 'text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+ style={isActive ? { background: 'var(--accent)' } : {}}
  aria-pressed={isActive}
  >
  {option.label}
- <span
- className="inline-flex items-center justify-center min-w-[16px] h-[16px] rounded-full text-[8px] font-bold leading-none"
- style={isActive
- ? { background: 'rgba(255,255,255,0.25)', color: 'var(--text-on-accent)' }
- : { background: 'var(--bg-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
- >
- {option.count}
- </span>
  </button>
  );
  })}
  </div>
  </div>
  )}
- </div>
- )}
- </>
- ) : (
- <span className="text-xs" style={{ color: 'var(--text-muted)' }}>No tags yet</span>
- )}
- </div>
- </div>
 
- {/* Toggle pills */}
- <div className="flex flex-wrap items-end gap-3 pb-0">
- <div>
- <label className="block text-xs font-medium mb-1.5 label-overline">Quick filters</label>
- <div className="flex flex-wrap items-center gap-2">
- <button
- onClick={() => setFilterFavorite(!filterFavorite)}
- className={`inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all ${filterFavorite
- ? 'text-green-house border-transparent'
- : 'border-transparent hover:opacity-80'
- }`}
- style={filterFavorite
- ? { background: 'var(--accent)', color: 'var(--text-on-accent)' }
- : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
- title="Favorites only"
- aria-label="Toggle favorites filter"
- aria-pressed={filterFavorite}
- >
- <StarIcon filled={filterFavorite} />
- <span>Favorites</span>
-<span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-gold text-white">
-  {favoriteCount}
-</span>
- </button>
-
+ {/* Quick toggles */}
+ <div className="flex flex-wrap gap-1.5 pt-1">
  <button
  onClick={() => setFilterHasNotes(!filterHasNotes)}
- className="inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all hover:opacity-80"
- style={filterHasNotes
- ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
- : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
- title="Only show jobs with notes"
- aria-label="Toggle notes filter"
+ className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${filterHasNotes ? 'text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+ style={filterHasNotes ? { background: 'var(--accent)' } : {}}
  aria-pressed={filterHasNotes}
  >
- <span className="material-symbols-outlined text-base" style={{ fontSize: '16px' }}>sticky_note_2</span>
- <span>Has Notes</span>
-<span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-gold text-white">
-   {notesCount}
-</span>
-  </button>
-
-  <button
+ <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>sticky_note_2</span>
+ Has Notes
+ </button>
+ <button
  onClick={() => setGroupByTag(prev => !prev)}
  disabled={!hasFieldOptions}
- className="inline-flex items-center gap-1.5 h-10 min-h-[44px] px-3 rounded-lg border text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
- style={groupByTag
- ? { background: 'var(--accent)', color: 'var(--text-on-accent)', border: '1px solid transparent' }
- : { background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+ className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${groupByTag ? 'text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+ style={groupByTag ? { background: 'var(--accent)' } : {}}
  aria-pressed={groupByTag}
- title={hasFieldOptions ? 'Group by field' : 'Add field tags to enable grouping'}
  >
- <span className="material-symbols-outlined text-base" style={{ fontSize: '16px' }}>view_list</span>
- <span>Group by tag</span>
+ <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>view_list</span>
+ Group by tag
  </button>
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+ </div>
+ </section>
 
- 
- </div>
- </div>
- </div>
- </div>
-
- {/* Table */}
- <div className="overflow-x-auto">
+ {/* Job Cards List */}
+ <section className="space-y-4">
  {jobs.length === 0 ? (
  <div className="text-center py-12 px-4">
  {everHadJobsRef.current ? (
  <>
-<h3 className="mt-2 text-sm font-medium text-primary-color">No matches found</h3>
-  <p className="mt-1 text-sm text-secondary-color">
+ <h3 className="mt-2 text-sm font-medium text-primary-color">No matches found</h3>
+ <p className="mt-1 text-sm text-secondary-color">
  No job applications match your current filters. Try adjusting your search or filter criteria.
  </p>
  <div className="mt-6">
@@ -1901,85 +1924,14 @@ const statusOptionColors: Record<JobApplication['status'], { dot: string; text: 
  </button>
  </div>
  </>
- ) : (
- <>
- {/* Demo Tour Section: show mock only while tour is active */}
- {showJobTour && (<div className="py-6 px-4 space-y-3">
- <TourBanner pageLabel="Job Dashboard" onDismiss={dismissJobTour} />
- <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--border)' }}>
- <table className="w-full text-left">
- <thead>
- <tr>
-<th className="p-4 text-sm font-semibold text-secondary-color">Job Title</th>
-  <th className="p-4 text-sm font-semibold text-secondary-color">Company</th>
-  <th className="p-4 text-sm font-semibold text-secondary-color">Status</th>
-  <th className="p-4 text-sm font-semibold text-secondary-color">Date Added</th>
-  <th className="p-4 text-sm font-semibold text-secondary-color">Type</th>
-  <th className="p-4 text-sm font-semibold text-secondary-color">Salary</th>
-  <th className="p-4 text-sm font-semibold text-secondary-color">Contact</th>
-  <th className="p-4 text-sm font-semibold text-secondary-color text-right">Actions</th>
- </tr>
- </thead>
- <tbody>
- <tr
- className="border-t border-theme cursor-pointer hover:bg-[var(--bg-elevated)] transition-colors"
- onClick={() => navigate('/jobs/__mock_job__/workspace/job-description')}
- >
- <td className="p-4 font-medium text-primary-color">
- <div className="flex items-center gap-2">
- <span
- className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
- style={{ background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-dim)' }}
- >
- demo
- </span>
- {MOCK_JOB.jobTitle}
- </div>
- </td>
-<td className="p-4 text-secondary-color">
-  <div className="flex items-center gap-2">
-  <span className="w-4 h-4 rounded-full bg-[var(--bg-raised)] shrink-0" />
-  <span>{MOCK_JOB.companyName}</span>
- </div>
- </td>
- <td className="p-4">
- <span
- className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
- style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}
- >
- {MOCK_JOB.status}
- </span>
- </td>
-<td className="p-4 text-secondary-color">
-  <div className="flex flex-col">
-  <span className="text-xs text-muted-color">09:00</span>
- <span>Today</span>
- </div>
- </td>
-<td className="p-4 text-secondary-color">Full-time</td>
-  <td className="p-4 text-secondary-color">
- <div className="flex flex-col gap-0.5">
- <span className="text-xs font-medium">{MOCK_JOB.salary}</span>
- </div>
- </td>
-<td className="p-4 text-muted-color"></td>
-  <td className="p-4">
-  <div className="flex items-center justify-end gap-1">
-  <button className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-muted-color" aria-label="Add to favorites (demo)">
- <StarIcon filled={false} />
- </button>
- <button className="flex items-center justify-center w-8 h-8 min-h-[44px] rounded-md text-red-400" aria-label="Delete job (demo)">
- <DeleteIcon />
- </button>
- </div>
- </td>
- </tr>
- </tbody>
- </table>
- </div>
- </div>)}
- </>
- )}
+  ) : (
+  <>
+  <h3 className="mt-2 text-sm font-medium text-primary-color">No jobs yet</h3>
+  <p className="mt-1 text-sm text-secondary-color">
+  Add your first job application to get started.
+  </p>
+  </>
+  )}
  </div>
  ) : (
  <>
@@ -1993,24 +1945,21 @@ const statusOptionColors: Record<JobApplication['status'], { dot: string; text: 
  {group.jobs.length}
  </span>
  </div>
- <TableOrCards
- data={group.jobs}
- columns={jobColumns}
-
- onRowClick={(job) => handleRowClick(job._id)}
- aria-label={`Job applications table for ${group.label}`}
- />
+ <div className="space-y-4">
+ {group.jobs.map((job) => (
+ <JobCard key={job._id} job={job} />
+ ))}
+ </div>
  </div>
  ))}
  </div>
  ) : (
  <>
- <TableOrCards
- data={paginatedJobs}
- columns={jobColumns}
- onRowClick={(job) => handleRowClick(job._id)}
- aria-label="Job applications table"
- />
+ <div className="space-y-4">
+ {paginatedJobs.map((job) => (
+ <JobCard key={job._id} job={job} />
+ ))}
+ </div>
  {/* Pagination */}
  <div className="flex items-center justify-between pt-4">
  <p className="text-sm text-secondary-color">
@@ -2020,18 +1969,22 @@ const statusOptionColors: Record<JobApplication['status'], { dot: string; text: 
  <button
  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
  disabled={currentPage === 1}
-className="flex items-center justify-center w-10 h-10 rounded-xl border border-theme bg-surface hover:bg-[var(--bg-elevated)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-  >
-  <ChevronLeftIcon />
+ className="flex items-center justify-center w-10 h-10 rounded-xl border bg-white hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+ style={{ borderColor: '#e7e5e4' }}
+ >
+ <ChevronLeftIcon />
  </button>
  {Array.from({ length: totalPagesServer }, (_, i) => i + 1).map((page) => (
  <button
  key={page}
  onClick={() => setCurrentPage(page)}
  className={`flex items-center justify-center w-10 h-10 rounded-xl text-sm font-semibold transition-all ${currentPage === page
-? 'bg-[var(--accent)] text-white'
-  : 'border-theme bg-surface hover:bg-[var(--bg-elevated)] text-secondary-color'
+ ? 'text-white'
+ : 'bg-white hover:bg-stone-50'
  }`}
+ style={currentPage === page
+ ? { background: 'var(--accent)' }
+ : { color: '#78716c', border: '1px solid #e7e5e4' }}
  >
  {page}
  </button>
@@ -2039,9 +1992,10 @@ className="flex items-center justify-center w-10 h-10 rounded-xl border border-t
  <button
  onClick={() => setCurrentPage(prev => Math.min(totalPagesServer, prev + 1))}
  disabled={currentPage === totalPagesServer}
-className="flex items-center justify-center w-10 h-10 rounded-xl border border-theme bg-surface hover:bg-[var(--bg-elevated)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-  >
-  <ChevronRightIcon />
+ className="flex items-center justify-center w-10 h-10 rounded-xl border bg-white hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+ style={{ borderColor: '#e7e5e4' }}
+ >
+ <ChevronRightIcon />
  </button>
  </div>
  </div>
@@ -2049,7 +2003,7 @@ className="flex items-center justify-center w-10 h-10 rounded-xl border border-t
  )}
  </>
  )}
- </div>
+ </section>
  </div>
  </div>
 
@@ -2755,7 +2709,6 @@ className="flex items-center justify-center w-10 h-10 rounded-xl border border-t
  />
  )}
  </div>
- </div>
 
  {/* Duplicate Job Warning Modal */}
  <DuplicateJobWarningModal
@@ -2765,6 +2718,17 @@ className="flex items-center justify-center w-10 h-10 rounded-xl border border-t
  onAddAnyway={handleAddAnywayConfirm}
  isSubmitting={isCreatingFromText}
  />
+
+ {/* Floating Action Button */}
+ <button
+ ref={addJobTriggerRef}
+ onClick={handleOpenAddJobPopup}
+  className="fixed bottom-10 right-10 w-16 h-16 rounded-full flex items-center justify-center frap-shadow hover:scale-110 active:scale-90 transition-all z-50 group"
+  style={{ background: 'var(--accent)', color: '#ffffff' }}
+  aria-label="Add a target job"
+ >
+ <span className="material-symbols-outlined text-3xl group-hover:rotate-90 transition-transform duration-300">add</span>
+ </button>
  </div>
  );
 };

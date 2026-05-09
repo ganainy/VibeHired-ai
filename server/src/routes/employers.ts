@@ -5,7 +5,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import authMiddleware from '../middleware/authMiddleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ValidationError, NotFoundError } from '../utils/errors/AppError';
-import Employer from '../models/Employer';
+import Employer, { IEmployerBonus } from '../models/Employer';
 import WorkEntry from '../models/WorkEntry';
 
 const router: Router = express.Router();
@@ -25,6 +25,49 @@ const upload = multer({
     }
   },
 });
+
+function parseBonuses(raw: unknown): IEmployerBonus[] {
+  console.log('[parseBonuses] Input type:', typeof raw, '| value preview:', JSON.stringify(raw)?.slice(0, 200));
+  if (!raw) {
+    console.log('[parseBonuses] No bonuses provided, returning empty array');
+    return [];
+  }
+  let arr: any[] = [];
+  if (typeof raw === 'string') {
+    try { arr = JSON.parse(raw); } catch (e) {
+      console.warn('[parseBonuses] Failed to parse JSON string:', (e as Error).message);
+      return [];
+    }
+  } else if (Array.isArray(raw)) {
+    arr = raw;
+  }
+  if (!Array.isArray(arr)) {
+    console.warn('[parseBonuses] Parsed value is not an array:', typeof arr);
+    return [];
+  }
+  console.log('[parseBonuses] Parsed array length:', arr.length, '| items:', JSON.stringify(arr));
+  const result = arr
+    .filter((b) => b && typeof b === 'object')
+    .map((b) => ({
+      _id: typeof b._id === 'string' && /^[0-9a-fA-F]{24}$/.test(b._id) ? b._id : undefined,
+      name: String(b.name ?? '').trim(),
+      multiplier: Math.max(0, Number(b.multiplier) || 0),
+      conditionType: ['day_of_week', 'time_range', 'specific_dates'].includes(b.conditionType)
+        ? (b.conditionType as 'day_of_week' | 'time_range' | 'specific_dates')
+        : 'day_of_week',
+      daysOfWeek: Array.isArray(b.daysOfWeek)
+        ? b.daysOfWeek.filter((d: any) => typeof d === 'number' && d >= 0 && d <= 6)
+        : undefined,
+      startTime: typeof b.startTime === 'string' && /^\d{2}:\d{2}$/.test(b.startTime) ? b.startTime : undefined,
+      endTime: typeof b.endTime === 'string' && /^\d{2}:\d{2}$/.test(b.endTime) ? b.endTime : undefined,
+      specificDates: Array.isArray(b.specificDates)
+        ? b.specificDates.filter((d: any) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
+        : undefined,
+    }))
+    .filter((b) => b.name.length > 0);
+  console.log('[parseBonuses] Returning', result.length, 'bonuses:', JSON.stringify(result));
+  return result;
+}
 
 /** Upload buffer to Cloudinary and return { url, publicId } */
 async function uploadLogoToCloudinary(
@@ -79,12 +122,15 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
   const result = employers.map((emp) => {
     const stats = hoursMap.get(String(emp._id)) ?? { totalHours: 0, entryCount: 0 };
+    console.log('[GET /employers] Employer:', emp._id, emp.name, '| bonuses:', JSON.stringify(emp.bonuses));
     return {
       _id: emp._id,
       name: emp.name,
       logoUrl: emp.logoUrl ?? null,
       logoPublicId: emp.logoPublicId ?? null,
+      hourlyRate: emp.hourlyRate ?? null,
       subLocations: emp.subLocations ?? [],
+      bonuses: emp.bonuses ?? [],
       totalHours: stats.totalHours,
       entryCount: stats.entryCount,
       createdAt: emp.createdAt,
@@ -115,13 +161,22 @@ router.post('/', upload.single('logo'), asyncHandler(async (req: Request, res: R
     logoPublicId = result.publicId;
   }
 
+  const rawRate = req.body.hourlyRate;
+  const hourlyRate = rawRate !== undefined && rawRate !== '' ? Number(rawRate) : null;
+
+  const parsedBonuses = parseBonuses(req.body.bonuses);
+  console.log('[POST /employers] Creating employer with', parsedBonuses.length, 'bonuses:', JSON.stringify(parsedBonuses));
+
   const employer = await Employer.create({
     userId,
     name: String(name).trim(),
     logoUrl,
     logoPublicId,
+    hourlyRate: hourlyRate !== null && !isNaN(hourlyRate) && hourlyRate >= 0 ? hourlyRate : null,
+    bonuses: parsedBonuses,
   });
 
+  console.log('[POST /employers] Created employer:', employer._id, '| bonuses:', JSON.stringify(employer.bonuses));
   res.status(201).json(employer);
 }));
 
@@ -140,6 +195,18 @@ router.put('/:id', upload.single('logo'), asyncHandler(async (req: Request, res:
     employer.name = trimmed;
   }
 
+  if (req.body.hourlyRate !== undefined) {
+    const rate = Number(req.body.hourlyRate);
+    employer.hourlyRate = !isNaN(rate) && rate >= 0 ? rate : null;
+  }
+
+  if (req.body.bonuses !== undefined) {
+    console.log('[PUT /employers/:id] Updating bonuses. Employer:', employer._id, '| Existing bonuses count:', employer.bonuses.length);
+    employer.bonuses = parseBonuses(req.body.bonuses);
+    employer.markModified('bonuses');
+    console.log('[PUT /employers/:id] Bonuses set on employer. New count:', employer.bonuses.length, '| bonuses:', JSON.stringify(employer.bonuses));
+  }
+
   if (req.file) {
     const result = await uploadLogoToCloudinary(
       req.file.buffer,
@@ -152,6 +219,7 @@ router.put('/:id', upload.single('logo'), asyncHandler(async (req: Request, res:
   }
 
   await employer.save();
+  console.log('[PUT /employers/:id] Saved employer:', employer._id, '| bonuses in saved doc:', JSON.stringify(employer.bonuses));
   res.json(employer);
 }));
 

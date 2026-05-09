@@ -4,22 +4,23 @@
  *
  * Works with any provider that implements the OpenAI chat completions API:
  *   - OpenAI (GPT-4o, GPT-4, GPT-3.5, etc.)
- *   - GLM / Z.AI (glm-5.1, glm-5-turbo, glm-4.7, glm-4.6, glm-4.5, etc.)
- *   - DeepSeek, Mistral, and other OpenAI-compatible endpoints
+ *   - DeepSeek (deepseek-v4-pro, deepseek-v4-flash, etc.)
+ *   - GLM / Z.AI, Mistral, and other OpenAI-compatible endpoints
  *
- * GLM-specific notes:
- *   - Base URL: https://api.z.ai/api/paas/v4
- *   - Auth: Bearer <api_key>  (set GLM_API_KEY or OPENAI_API_KEY)
+ * DeepSeek-specific notes:
+ *   - Base URL: https://api.deepseek.com
+ *   - Auth: Bearer <api_key>  (set DEEPSEEK_API_KEY or OPENAI_API_KEY)
+ *   - Thinking: supported via thinking: { type: 'enabled' }
+ *   - Reasoning effort: low, medium, high
  *   - Images: base64 data URLs (jpg/png/jpeg, max 5MB) or public URLs
- *   - Files: GLM supports file_url for PDF/txt/word/etc. but ONLY via public URLs.
- *     For local files we extract text (PDF → pdf-parse, text → raw read).
+ *   - Files: not supported (use base64 images instead)
  *   - JSON mode: supported via response_format: { type: 'json_object' }
  *   - Streaming: supported via SSE (stream: true)
  *   - Temperature range: 0.0 – 1.0
- *   - Max output tokens: up to 128K (model-dependent)
+ *   - Max output tokens: up to 64K (model-dependent)
  *
- * Get your GLM API key: https://z.ai/manage-apikey/apikey-list
- * Docs: https://docs.z.ai/llms.txt
+ * Get your DeepSeek API key: https://platform.deepseek.com
+ * Docs: https://platform.deepseek.com/docs
  */
 import * as fs from 'fs';
 import { Readable } from 'stream';
@@ -28,12 +29,13 @@ import { ModelAdapter, GenerateContentOptions, GenerateContentResult, chatSessio
 import { AIProvider } from '../constants/modelProviders';
 
 // Lazy-load pdf-parse to avoid issues if not used
-let pdfParse: any = null;
+let PDFParseClass: any = null;
 async function getPdfParse() {
-  if (!pdfParse) {
-    pdfParse = await import('pdf-parse');
+  if (!PDFParseClass) {
+    const mod = await import('pdf-parse');
+    PDFParseClass = mod.PDFParse;
   }
-  return pdfParse.default || pdfParse;
+  return PDFParseClass;
 }
 
 /**
@@ -89,9 +91,10 @@ async function fileToContentParts(filePath: string, mimeType: string): Promise<A
 
   if (mimeType === 'application/pdf') {
     try {
-      const parse = await getPdfParse();
+      const PDFParse = await getPdfParse();
       const buffer = fs.readFileSync(filePath);
-      const pdfData = await parse(buffer);
+      const parser = new PDFParse({ data: buffer });
+      const pdfData = await parser.getText();
       return [{ type: 'text', text: `[PDF CONTENT START]\n${pdfData.text || ''}\n[PDF CONTENT END]` }];
     } catch (err) {
       console.warn('Failed to parse PDF for OpenAI-compatible adapter:', err);

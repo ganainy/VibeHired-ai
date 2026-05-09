@@ -23,7 +23,7 @@ function resolveProvider(providerOverride?: string): AIProvider {
 
 /**
  * Get API key for a provider from environment variables.
- * For OPENAI_COMPATIBLE, also checks GLM_API_KEY as a fallback.
+ * For OPENAI_COMPATIBLE, also checks DEEPSEEK_API_KEY as a fallback.
  */
 function getApiKey(provider: AIProvider): string {
   const keys = PROVIDER_ENV_KEYS[provider];

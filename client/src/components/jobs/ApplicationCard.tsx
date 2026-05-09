@@ -66,9 +66,9 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
  className={`
 bg-white
   p-4 rounded-lg border border-theme shadow-sm
- cursor-pointer hover:shadow-md transition-shadow
- mb-3 overflow-hidden
- ${isDragging ? 'opacity-50' : ''}
+  cursor-pointer hover:shadow-md transition-shadow
+  mb-3
+  ${isDragging ? 'opacity-50' : ''}
  `}
  >
 <h5 className="font-semibold text-primary-color mb-1 break-words">{job.jobTitle}</h5>

@@ -3,8 +3,6 @@ export const REVIEW_FINALIZE_TABS = [
     'cover-letter',
     'cv',
     'mock-interview',
-    'reminders',
-    'materials',
 ] as const;
 
 export type ActiveReviewTab = typeof REVIEW_FINALIZE_TABS[number];
